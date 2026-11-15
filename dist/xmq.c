@@ -48,6 +48,34 @@ THE SOFTWARE.
    See CONTRIBUTORS for the libxml2 contributors.
 */
 
+/* The xslt 1.0 parts (PART C XML_LIBXSLT1_*) are ported from libxslt (version 1.1.45
+   as found in the libxmq fork), which is covered by the following notice (from
+   libxslt/Copyright):
+
+ Copyright (C) 2001-2002 Daniel Veillard.  All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is fur-
+nished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FIT-
+NESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+DANIEL VEILLARD BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CON-
+NECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Except as contained in this notice, the name of Daniel Veillard shall not
+be used in advertising or otherwise to promote the sale, use or other deal-
+ings in this Software without prior written authorization from him.
+*/
+
 #include"xmq.h"
 
 #include<assert.h>
@@ -1470,6 +1498,673 @@ char *xml_xpath_format_number(double d);
 double xml_xpath_string_to_number(const char *s);
 
 #define XML_XPATH_MODULE
+
+// PART H XML_URI ////////////////////////////////////////
+
+/* URI references (RFC 3986), parsing, saving and resolving against a base,
+   a port of libxml2 uri.c. Used to resolve xml:base, xsl:import, xsl:include
+   and document() the way libxml2 xmlBuildURI does. */
+
+#include<stddef.h>
+
+/** A parsed URI reference (libxml2 xmlURI). */
+typedef struct XmlURI
+{
+    char *scheme;
+    char *opaque;
+    char *authority;
+    char *server;
+    char *user;
+    int port;
+    char *path;
+    char *query;
+    char *fragment;
+    int cleanup;
+    char *query_raw;
+} XmlURI;
+
+XmlURI *xml_uri_create(void);
+/** Parse a URI reference, returns 0 or an error code (-1 for out of memory). */
+int xml_uri_parse_safe(const char *str, XmlURI **uri_out);
+XmlURI *xml_uri_parse(const char *str);
+int xml_uri_parse_reference(XmlURI *uri, const char *str);
+XmlURI *xml_uri_parse_raw(const char *str, int raw);
+/** The uri as an escaped string, malloced. */
+char *xml_uri_save(XmlURI *uri);
+void xml_uri_free(XmlURI *uri);
+int xml_uri_normalize_uri_path(char *path);
+/** Unescape %XX sequences, len -1 for the whole string, target NULL to malloc. */
+char *xml_uri_unescape_string(const char *str, int len, char *target);
+/** Resolve uri against base (libxml2 xmlBuildURISafe): returns 0 and sets *out, or an error code
+    (the uri or base are invalid) or -1 for out of memory. */
+int xml_uri_build_safe(const char *uri, const char *base, char **out);
+/** Escape str to hex except unreserved characters, "@" and those in list (libxml2 xmlURIEscapeStr). */
+char *xml_uri_escape_str(const char *str, const char *list);
+/** Like xml_uri_build_safe, NULL on errors (libxml2 xmlBuildURI). */
+char *xml_uri_build(const char *uri, const char *base);
+
+#define XML_URI_MODULE
+
+// PART H XML_LIBXSLT1_XSLT ////////////////////////////////////////
+
+/*
+    XSLT 1.0, a port of libxslt onto the native dom (xml_dom) and xpath (xml_xpath).
+
+    This part has the patterns (pattern.c: compilation, matching, template
+    registration and lookup) and the compilation of stylesheets (xslt.c,
+    preproc.c, imports.c, attributes.c); the transformation is in
+    xml_libxslt1_transform.
+*/
+
+#ifndef BUILDING_DIST_XMQ
+#include"xml_dom.h"
+#include"xml_xpath.h"
+#include"hashmap.h"
+#endif
+
+#include<stdbool.h>
+#include<stddef.h>
+
+/** Receives the error messages, formatted like libxslt prints them. */
+typedef void (*XmlLibxslt1MessageCallback)(void *user_data, const char *message);
+
+/** What a document is loaded for (libxslt xsltLoadType). */
+typedef enum
+{
+    XML_LIBXSLT1_LOAD_START = 0,      // The main stylesheet.
+    XML_LIBXSLT1_LOAD_STYLESHEET = 1, // xsl:import and xsl:include.
+    XML_LIBXSLT1_LOAD_DOCUMENT = 2    // document().
+} XmlLibxslt1LoadType;
+
+/** Load and parse the document at uri, NULL if it cannot be loaded. The dom gets uri as its url. */
+typedef XmlDom *(*XmlLibxslt1Loader)(void *user_data, const char *uri, XmlLibxslt1LoadType type);
+
+typedef struct
+{
+    /** NULL prints the messages on stderr, like libxslt. */
+    XmlLibxslt1MessageCallback message_callback;
+    void *message_user_data;
+    /** NULL reads files and parses them with entities expanded, like libxslt XSLT_PARSE_OPTIONS. */
+    XmlLibxslt1Loader loader;
+    void *loader_user_data;
+} XmlLibxslt1Settings;
+
+/** The default loader: read the file (a file: url or a path) and parse it as xml. */
+XmlDom *xml_libxslt1_default_loader(void *user_data, const char *uri, XmlLibxslt1LoadType type);
+
+void xml_libxslt1_settings_default(XmlLibxslt1Settings *settings);
+
+/** A compiled stylesheet. */
+struct XmlLibxslt1Stylesheet;
+typedef struct XmlLibxslt1Stylesheet XmlLibxslt1Stylesheet;
+
+/** A transformation of a source document with a stylesheet. */
+struct XmlLibxslt1Transform;
+typedef struct XmlLibxslt1Transform XmlLibxslt1Transform;
+
+/** A compiled pattern (libxslt xsltCompMatch), a list of alternatives. */
+struct XmlLibxslt1Pattern;
+typedef struct XmlLibxslt1Pattern XmlLibxslt1Pattern;
+
+/**
+    Compile a stylesheet (libxslt xsltParseStylesheetDoc). The stylesheet takes
+    ownership of doc and modifies it (whitespace is stripped etc) when compilation
+    succeeds. Returns NULL after reporting errors, then doc is not taken (but may
+    have been modified).
+*/
+XmlLibxslt1Stylesheet *xml_libxslt1_compile(XmlDom *doc, const XmlLibxslt1Settings *settings);
+
+/** A description of the compiled stylesheet (output settings, templates, keys, global
+    variables, attribute sets, ...), for testing. Malloced. */
+char *xml_libxslt1_stylesheet_describe(const XmlLibxslt1Stylesheet *style);
+
+/** An empty stylesheet whose document is style_dom (not owned), patterns can be
+    compiled with namespaces from its elements. */
+XmlLibxslt1Stylesheet *xml_libxslt1_stylesheet_new_empty(XmlDom *style_dom, const XmlLibxslt1Settings *settings);
+void xml_libxslt1_stylesheet_free(XmlLibxslt1Stylesheet *style);
+
+/** Compile a pattern, element (in the stylesheet document) gives the namespaces in
+    scope. With no_variables, variable references in predicates are errors (template
+    match patterns). Returns NULL after reporting an error. */
+XmlLibxslt1Pattern *xml_libxslt1_pattern_compile(XmlLibxslt1Stylesheet *style, const char *pattern, XMQNode *element, bool no_variables);
+void xml_libxslt1_pattern_free(XmlLibxslt1Pattern *pattern);
+/** The default priority of the first alternative. */
+double xml_libxslt1_pattern_priority(const XmlLibxslt1Pattern *pattern);
+
+/** A transformation context for the source document (not owned). Compile the
+    patterns before creating it, like libxslt allocates their caches. */
+XmlLibxslt1Transform *xml_libxslt1_transform_new(XmlLibxslt1Stylesheet *style, XmlDom *source);
+void xml_libxslt1_transform_free(XmlLibxslt1Transform *t);
+
+/** Does the node match any alternative of the pattern (libxslt xsltTestCompMatchList)?
+    Returns 1 or 0, -1 on an error. */
+int xml_libxslt1_pattern_match(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Pattern *pattern);
+
+// Internals, only seen by the xml_libxslt1 parts (and in dist/xmq.c).
+#if defined(XML_LIBXSLT1_INTERNALS) || defined(BUILDING_DIST_XMQ)
+
+// Internals, shared by the xml_libxslt1 parts (the stylesheet and transformation
+// structures of libxslt xsltInternals.h). Not an API.
+
+// The priority of a template without a priority attribute (XSLT_PAT_NO_PRIORITY).
+#define XSLT_PAT_NO_PRIORITY -12345789.0f
+
+typedef enum
+{
+    XSLT_STATE_OK = 0,
+    XSLT_STATE_ERROR,
+    XSLT_STATE_STOPPED
+} XsltState;
+
+#define XSLT_NAMESPACE "http://www.w3.org/1999/XSL/Transform"
+#define XSLT_LIBXSLT_NAMESPACE "http://xmlsoft.org/XSLT/namespace"
+#define XSLT_SAXON_NAMESPACE "http://icl.com/saxon"
+#define XSLT_XT_NAMESPACE "http://www.jclark.com/xt"
+#define XSLT_XALAN_NAMESPACE "org.apache.xalan.xslt.extensions.Redirect"
+#define XSLT_UNDEFINED_DEFAULT_NS "#UNDEFINED_DEFAULT_NS"
+#define XSLT_MAX_NESTING 40
+
+typedef struct XsltTemplate XsltTemplate;
+typedef struct XsltStylePreComp XsltStylePreComp;
+
+/** A template (libxslt xsltTemplate). */
+struct XsltTemplate
+{
+    XsltTemplate *next;     // The next template in the stylesheet.
+    XmlLibxslt1Stylesheet *style;
+    char *match;
+    float priority;
+    char *name;
+    char *name_uri;
+    char *mode;
+    char *mode_uri;
+    XMQNode *content;       // The first node of the template body.
+    XMQNode *elem;          // The xsl:template element (or the document of a literal result stylesheet).
+    XmlNs **inherited_ns;   // The namespaces in scope of the template, for literal result elements.
+    int inherited_ns_nr;
+    int position;
+};
+
+/** Runtime caches of the patterns, indexed by the extras allocated at compile time. */
+typedef struct
+{
+    void *info;
+    void (*deallocate)(void *);
+    union
+    {
+        void *ptr;
+        int ival;
+    } val;
+} XsltRuntimeExtra;
+
+/** The kind of a precompiled instruction (libxslt xsltStyleType). */
+typedef enum
+{
+    XSLT_FUNC_COPY = 1,
+    XSLT_FUNC_SORT,
+    XSLT_FUNC_TEXT,
+    XSLT_FUNC_ELEMENT,
+    XSLT_FUNC_ATTRIBUTE,
+    XSLT_FUNC_COMMENT,
+    XSLT_FUNC_PI,
+    XSLT_FUNC_COPYOF,
+    XSLT_FUNC_VALUEOF,
+    XSLT_FUNC_NUMBER,
+    XSLT_FUNC_APPLYIMPORTS,
+    XSLT_FUNC_CALLTEMPLATE,
+    XSLT_FUNC_APPLYTEMPLATES,
+    XSLT_FUNC_CHOOSE,
+    XSLT_FUNC_IF,
+    XSLT_FUNC_FOREACH,
+    XSLT_FUNC_DOCUMENT,
+    XSLT_FUNC_WITHPARAM,
+    XSLT_FUNC_PARAM,
+    XSLT_FUNC_VARIABLE,
+    XSLT_FUNC_WHEN,
+    XSLT_FUNC_EXTENSION
+} XsltStyleType;
+
+/** The built in extension elements (extra.c): libxslt:debug and the document elements. */
+typedef enum
+{
+    XSLT_EXT_NONE = 0,
+    XSLT_EXT_DEBUG,
+    XSLT_EXT_DOCUMENT
+} XsltExtElement;
+
+/** xsl:number data (libxslt xsltNumberData). */
+typedef struct
+{
+    const char *level;
+    const char *count;
+    const char *from;
+    const char *value;
+    const char *format;
+    int has_format;
+    int digits_per_group;
+    int grouping_character;
+    int grouping_character_len;
+    XmlDom *doc;
+    XMQNode *node;
+    XmlLibxslt1Pattern *count_pat;
+    XmlLibxslt1Pattern *from_pat;
+} XsltNumberData;
+
+/** A precompiled instruction (libxslt xsltStylePreComp), kept as the user data of its element.
+    The strings are owned by the precomputed instruction. */
+struct XsltStylePreComp
+{
+    XsltStylePreComp *next; // All of them, in the stylesheet.
+    XsltStyleType type;
+    XsltExtElement ext;     // For XSLT_FUNC_EXTENSION and XSLT_FUNC_DOCUMENT.
+    XMQNode *inst;
+
+    char *stype;
+    int has_stype;
+    int number;
+    char *order;
+    int has_order;
+    int descending;
+    char *lang;
+    int has_lang;
+    char *case_order;
+    int lower_first;
+    char *use;
+    int has_use;
+    int noescape;
+    char *name;
+    int has_name;
+    char *ns;
+    int has_ns;
+    char *mode;
+    char *mode_uri;
+    char *test;
+    char *select;
+    int ver11;
+    char *filename;
+    int has_filename;
+    XsltTemplate *templ;    // The called template (call-template), found at runtime.
+    XsltNumberData numdata;
+    XmlXPathComp *comp;
+    XmlXPathNamespace *ns_list;
+    size_t ns_nr;
+    // Strings of numdata, owned.
+    char *num_strings[5];
+};
+
+/** The marker for elements of an unknown extension (libxslt xsltExtMarker). */
+extern char xslt1_ext_marker_;
+#define XSLT_EXT_MARKER ((void*)&xslt1_ext_marker_)
+
+/** An attribute value template (attrvt.c). Segments alternate strings and expressions. */
+typedef struct XsltAttrVT XsltAttrVT;
+struct XsltAttrVT
+{
+    XsltAttrVT *next;
+    int nb_seg;
+    int max_seg;
+    int strstart;           // Does it start with a string?
+    XmlXPathNamespace *ns_list;
+    size_t ns_nr;
+    void **segments;        // char* or XmlXPathComp*.
+};
+
+/** A key declaration (libxslt xsltKeyDef). */
+typedef struct XsltKeyDef XsltKeyDef;
+struct XsltKeyDef
+{
+    XsltKeyDef *next;
+    XMQNode *inst;
+    char *name;
+    char *name_uri;
+    char *match;
+    char *use;
+    XmlXPathComp *comp;
+    XmlXPathComp *usecomp;
+};
+
+/** A decimal format (libxslt xsltDecimalFormat). */
+typedef struct XsltDecimalFormat XsltDecimalFormat;
+struct XsltDecimalFormat
+{
+    XsltDecimalFormat *next;
+    char *name;
+    char *digit;
+    char *pattern_separator;
+    char *minus_sign;
+    char *infinity;
+    char *no_number;
+    char *decimal_point;
+    char *grouping;
+    char *percent;
+    char *permille;
+    char *zero_digit;
+    char *ns_uri;
+};
+
+/** A global variable or parameter (libxslt xsltStackElem, the compile time part). */
+typedef struct XsltStackElem XsltStackElem;
+struct XsltStackElem
+{
+    XsltStackElem *next;
+    XsltStylePreComp *comp;
+    int computed;
+    char *name;
+    char *name_uri;
+    char *select;
+    XMQNode *tree;          // The content, if there is no select.
+    XmlXPathResult *value;
+    // At runtime (the names are borrowed from comp, owns_strings is false).
+    bool owns_strings;
+    int level;              // The depth in the template, -1 for with-param, -2 persistent.
+    int flags;              // XSLT_VAR_GLOBAL, XSLT_VAR_IN_SELECT.
+    struct XsltRVT *fragment; // The result tree fragments bound to the variable.
+};
+
+/** A document loaded by the stylesheet: an included module (libxslt xsltDocument). */
+typedef struct XsltDocument XsltDocument;
+struct XsltDocument
+{
+    XsltDocument *next;
+    int main;
+    XmlDom *doc;
+    XsltDocument *includes; // The chain of includes, for the recursion check.
+    int preproc;
+};
+
+/** An extension namespace declared by extension-element-prefixes (libxslt xsltExtDef). */
+typedef struct XsltExtDef XsltExtDef;
+struct XsltExtDef
+{
+    XsltExtDef *next;
+    char *prefix;
+    char *uri;
+};
+
+/** An attribute set (attributes.c). */
+typedef struct XsltAttrElem XsltAttrElem;
+struct XsltAttrElem
+{
+    XsltAttrElem *next;
+    XMQNode *attr;          // The xsl:attribute element.
+};
+
+typedef struct XsltUseAttrSet XsltUseAttrSet;
+struct XsltUseAttrSet
+{
+    XsltUseAttrSet *next;
+    char *ncname;
+    char *ns;
+};
+
+typedef enum { XSLT_ATTRSET_UNRESOLVED = 0, XSLT_ATTRSET_RESOLVING, XSLT_ATTRSET_RESOLVED } XsltAttrSetState;
+
+typedef struct XsltAttrSet XsltAttrSet;
+struct XsltAttrSet
+{
+    XsltAttrSet *next_in_order; // The sets of a stylesheet in declaration order.
+    char *name;
+    char *ns;
+    XsltAttrSetState state;
+    XsltAttrElem *attrs;
+    XsltUseAttrSet *use_attr_sets;
+};
+
+struct XmlLibxslt1Stylesheet
+{
+    XmlLibxslt1Settings settings;
+
+    // The stylesheet import relation is kept as a tree.
+    XmlLibxslt1Stylesheet *parent;
+    XmlLibxslt1Stylesheet *next;
+    XmlLibxslt1Stylesheet *imports;
+    XsltDocument *doc_list;
+
+    XmlDom *doc;
+    HashMap *strip_spaces;      // "name\1uri" -> "strip" or "preserve".
+    int strip_all;
+    HashMap *cdata_section;     // "name\1uri" -> "cdata".
+
+    XsltStackElem *variables;   // Global variables and parameters.
+
+    XsltTemplate *templates;
+    HashMap *templates_hash;    // Template rules by the name of their last step, mode and mode uri.
+    XmlLibxslt1Pattern *root_match;
+    XmlLibxslt1Pattern *key_match;
+    XmlLibxslt1Pattern *elem_match;
+    XmlLibxslt1Pattern *attr_match;
+    XmlLibxslt1Pattern *parent_match;
+    XmlLibxslt1Pattern *text_match;
+    XmlLibxslt1Pattern *pi_match;
+    XmlLibxslt1Pattern *comment_match;
+
+    HashMap *ns_aliases;        // literal namespace -> target namespace (or XSLT_UNDEFINED_DEFAULT_NS).
+    HashMap *attribute_sets;    // "name\1uri" -> XsltAttrSet.
+    XsltAttrSet *attribute_set_list; // The same, in declaration order.
+    XsltExtDef *ns_defs;
+    XsltKeyDef *keys;
+
+    // Output.
+    char *method;
+    char *method_uri;
+    char *version;
+    char *encoding;
+    int omit_xml_declaration;
+    XsltDecimalFormat *decimal_format;
+    int standalone;
+    char *doctype_public;
+    char *doctype_system;
+    int indent;
+    char *media_type;
+
+    XsltStylePreComp *pre_comps;
+    int warnings;
+    int errors;
+    char *excl_prefix;
+    char **excl_prefix_tab;
+    int excl_prefix_nr;
+    int excl_prefix_max;
+
+    int extras_nr;              // The number of runtime extras allocated by the patterns.
+    XsltDocument *includes;     // For keeping track of nested includes.
+    XsltAttrVT *att_vts;
+    char *default_alias;
+    int nopreproc;
+    int literal_result;
+    XmlLibxslt1Stylesheet *principal;
+    int forwards_compatible;
+    HashMap *named_templates;   // name and uri -> XsltTemplate.
+    unsigned long op_count;
+    unsigned long op_limit;
+    int owns_doc;               // Freed with the stylesheet.
+};
+
+struct XmlLibxslt1Transform
+{
+    XmlLibxslt1Stylesheet *style;
+    XmlDom *source;
+    XmlXPathContext *xpath;
+    XsltState state;
+
+    XMQNode *node;          // The current node (ctxt->node).
+    XMQNode *inst;          // The current instruction (ctxt->inst).
+    // The context position and size of the libxslt xpath context.
+    long xp_position;
+    long xp_size;
+    const char *mode;
+    const char *mode_uri;
+
+    XsltRuntimeExtra *extras;
+    int extras_nr;
+    int extras_max;
+
+    // The transformation (transform.c, variables.c).
+    XmlDom *output;         // The tree being built (the result or a result tree fragment).
+    XMQNode *insert;        // Where new nodes are added.
+    int type;               // XSLT_OUTPUT_XML, XSLT_OUTPUT_HTML, XSLT_OUTPUT_TEXT.
+    XsltTemplate *templ;    // The current template.
+    XsltTemplate **templ_tab;
+    int templ_nr;
+    int templ_max;
+    XsltStackElem **vars_tab; // The stack of local variables and parameters.
+    int vars_nr;
+    int vars_max;
+    int vars_base;
+    XsltStackElem *vars;
+    HashMap *global_vars;   // "name\1uri" -> XsltStackElem
+    XsltStackElem *global_vars_list; // The same, for freeing.
+    XsltTemplate *current_template_rule;
+    struct XsltNodeList *node_list; // The node list being processed (for xsl:sort).
+    int depth;
+    int max_template_depth;
+    int max_template_vars;
+    XMQNode *initial_context_node;
+    XmlDom *initial_context_doc;
+    XsltStackElem *context_variable;
+    struct XsltRVT *tmp_rvt;    // Result tree fragments of the template (xsltRegisterTmpRVT).
+    struct XsltRVT *local_rvt;  // Of the current instruction (xsltRegisterLocalRVT).
+    struct XsltRVT *persist_rvt; // Kept until the end (global variables).
+    unsigned long op_count;
+    unsigned long op_limit;
+    struct XsltDocInfo *doc_list; // Documents of the transformation (the source and document()), with their keys.
+    struct XsltDocInfo *document; // The current document.
+    int has_templ_key_patterns;
+    int nb_keys;
+    int key_init_level;
+    const char **params;    // name, value pairs (xpath expressions), NULL terminated.
+    void *keyed_nodes;      // The source nodes with keys (XSLT_SOURCE_NODE_HAS_KEY).
+    HashMap *generated_ids; // node -> id of generate-id().
+    const char *output_file; // The file the result goes to (ctxt->outputFile), for xsl:document.
+    unsigned long current_id;
+};
+
+/** The output method of the result (libxslt xsltOutputType). */
+#define XSLT_OUTPUT_XML 0
+#define XSLT_OUTPUT_HTML 1
+#define XSLT_OUTPUT_TEXT 2
+
+/** The lifetime of a result tree fragment (libxslt XSLT_RVT_*). */
+#define XSLT_RVT_LOCAL 1
+#define XSLT_RVT_FUNC_RESULT 2
+#define XSLT_RVT_GLOBAL 3
+
+/** A result tree fragment (libxslt RVT, an xmlDoc marked as a fragment). The record is the
+    user data of the document node of its tree. */
+typedef struct XsltRVT XsltRVT;
+struct XsltRVT
+{
+    unsigned magic;
+    XmlDom *dom;
+    XsltRVT *next;
+    XsltRVT *prev;
+    int flag;               // libxslt doc->compression: XSLT_RVT_LOCAL, ...
+    struct XsltDocInfo *keys; // The key tables of the fragment (libxslt doc->_private).
+};
+#define XSLT_RVT_MAGIC 0x52565421u
+
+/** A node list being processed by apply-templates or for-each, sorted in place. */
+typedef struct XsltNodeList
+{
+    XMQNode **nodes;
+    int nr;
+} XsltNodeList;
+
+/** A document of the transformation with its key tables (libxslt xsltDocument). */
+typedef struct XsltDocInfo XsltDocInfo;
+struct XsltDocInfo
+{
+    XsltDocInfo *next;
+    int main;               // The source document.
+    XmlDom *doc;
+    int owned;              // Loaded by document(), freed with the transformation.
+    struct XsltKeyTable *keys;
+    int nb_keys_computed;
+};
+
+
+// Functions shared by the xml_libxslt1 parts.
+/** Like xsltTransformError(NULL, NULL, node, ...) with the messages going to the settings. */
+void xslt1_settings_error(const XmlLibxslt1Settings *s, XMQNode *node, const char *fmt, ...);
+XsltDecimalFormat *xslt1_decimal_format_get_by_qname(XmlLibxslt1Stylesheet *style, const char *ns_uri, const char *name);
+int xslt1_utf8_char(const char *s, int *len);
+void xslt1_comp_match_clear_cache(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *comp);
+bool xslt1_node_has_key(XmlLibxslt1Transform *t, XMQNode *node);
+int xslt1_compute_all_keys(XmlLibxslt1Transform *t, XMQNode *context_node);
+void xslt1_transform_error(XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style, XMQNode *node, const char *fmt, ...);
+void xslt1_generic_error(const XmlLibxslt1Settings *s, const char *fmt, ...);
+char *xslt1_strdup(const char *s);
+char *xslt1_strndup(const char *s, size_t n);
+bool xslt1_streq(const char *a, const char *b);
+bool xslt1_is_blank(int c);
+bool xslt1_is_xslt_elem(const XMQNode *n);
+bool xslt1_is_xslt_name(const XMQNode *n, const char *name);
+char *xslt1_get_ns_prop_exact(XMQNode *node, const char *name, const char *ns);
+char *xslt1_get_ns_prop(XMQNode *node, const char *name, const char *ns);
+XsltTemplate *xslt1_get_template(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Stylesheet *style);
+XmlLibxslt1Stylesheet *xslt1_next_import(XmlLibxslt1Stylesheet *cur);
+char *xslt1_hash3_key(const char *a, const char *b, const char *c);
+char *xslt1_key2(const char *a, const char *b);
+int xslt1_validate_qname(const char *value);
+char *xslt1_split_qname(const char *name, char **prefix);
+XmlXPathNamespace *xslt1_ns_list(XMQNode *node, size_t *num);
+XmlDom *xslt1_load(XmlLibxslt1Stylesheet *style, const char *uri, XmlLibxslt1LoadType type);
+char *xslt1_node_get_base(XmlDom *doc, XMQNode *cur);
+XmlXPathComp *xslt1_xpath_compile(const XmlLibxslt1Settings *s, XMQNode *elem, const char *str, bool no_variables);
+char *xslt1_strncat(char *a, const char *b, size_t n);
+char *xslt1_strcat(char *a, const char *b);
+int xslt1_allocate_extra_ctxt(XmlLibxslt1Transform *t);
+void xslt1_report_xpath_error(const XmlLibxslt1Settings *s, const char *expr, const XmlXPathError *err);
+bool xslt1_is_blank_str(const char *s);
+const char *xslt1_get_qname_uri(const XmlLibxslt1Settings *s, XMQNode *node, char **name);
+const XmlLibxslt1Settings *xslt1_settings_of(XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style);
+const char *xslt1_libxml2_node_name(const XMQNode *node);
+XmlXPathResult *xslt1_get_key(XmlLibxslt1Transform *t, const char *name, const char *uri, const char *value);
+bool xslt1_is_rtf(XmlLibxslt1Transform *t, XmlDom *dom);
+
+#endif // XML_LIBXSLT1_INTERNALS
+
+#define XML_LIBXSLT1_XSLT_MODULE
+
+// PART H XML_LIBXSLT1_TRANSFORM ////////////////////////////////////////
+
+/*
+    XSLT 1.0 transformations, a port of libxslt transform.c, variables.c,
+    templates.c, keys.c, functions.c, numbers.c and documents.c onto the
+    native dom and xpath. The stylesheet is compiled with xml_libxslt1_xslt.
+*/
+
+#ifndef BUILDING_DIST_XMQ
+#include"xml_dom.h"
+#include"xml_libxslt1_xslt.h"
+#include"membuffer.h"
+#endif
+
+/** The output method of a result (the same numbers as libxslt xsltOutputType). */
+#define XML_LIBXSLT1_OUTPUT_XML 0
+#define XML_LIBXSLT1_OUTPUT_HTML 1
+#define XML_LIBXSLT1_OUTPUT_TEXT 2
+
+/**
+    Apply the stylesheet to the document (libxslt xsltApplyStylesheet). params are
+    name, value pairs (the values are xpath expressions) ending with NULL, or NULL.
+    The document is not owned but whitespace may be stripped from it (xsl:strip-space).
+    Returns the result, NULL after reporting errors. *output_type (if not NULL) gets
+    XML_LIBXSLT1_OUTPUT_XML, _HTML or _TEXT.
+*/
+XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc, const char **params, int *output_type);
+
+/**
+    Serialize a result like libxslt xsltSaveResultToString: the output method, encoding,
+    indentation, xml declaration and doctype of the stylesheet. output_type is what
+    xml_libxslt1_apply_stylesheet gave. Returns the malloced bytes (zero terminated, len
+    in *len, the content may contain zeros for UTF-16).
+*/
+char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *style, int output_type, size_t *len);
+
+/** A copy of the (compiled) stylesheet document, like the xmlCopyDoc loaders give for document(''). */
+XmlDom *xml_libxslt1_copy_stylesheet_doc(const XmlLibxslt1Stylesheet *style);
+
+#define XML_LIBXSLT1_TRANSFORM_MODULE
 
 // PART H XML ////////////////////////////////////////
 
@@ -10739,6 +11434,229 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
     va_end(ap);
 
     return v;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////
+// XSLT 1.0, the native port of libxslt (parts/xml_libxslt1_*).
+
+struct XMQXslt
+{
+    XmlLibxslt1Stylesheet *style;
+    XMQXsltSettings settings;
+    MemBuffer *messages;      // The messages of the current compilation or transformation.
+    char **params;            // name, xpath value pairs, NULL terminated.
+    size_t num_params;
+};
+
+static void xmq_xslt_message(void *user_data, const char *message)
+{
+    XMQXslt *x = (XMQXslt*)user_data;
+    if (x->messages) membuffer_append(x->messages, message);
+    if (x->settings.message_callback) x->settings.message_callback(x->settings.message_user_data, message);
+    else fputs(message, stderr);
+}
+
+/** The native dom of an xmq document, taken over (the document is left empty). */
+static XmlDom *xmq_take_dom(XMQDoc *doq, const char *url)
+{
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    if (!dom) return NULL;
+    xmqSetImplementationDoc(doq, NULL);
+    if (url && !xml_dom_url(dom)) xml_dom_set_url(dom, url);
+    return dom;
+}
+
+static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1LoadType type)
+{
+    XMQXslt *x = (XMQXslt*)user_data;
+    XMQDoc *doq = NULL;
+    // document('') of a stylesheet without url: the stylesheet itself.
+    if (type == XML_LIBXSLT1_LOAD_DOCUMENT && (!uri || !*uri) && x->style) return xml_libxslt1_copy_stylesheet_doc(x->style);
+    if (x->settings.loader)
+    {
+        doq = x->settings.loader(x->settings.loader_user_data, uri);
+    }
+    else
+    {
+        const char *path = uri;
+        if (!strncmp(path, "file://", 7))
+        {
+            path += 7;
+            if (!strncmp(path, "localhost/", 10)) path += 9;
+        }
+        XMQReturnDoc rd = xmqNewDoc();
+        doq = rd.doc;
+        if (!xmqParseFileWithType(doq, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE))
+        {
+            const char *error = xmqDocError(doq);
+            if (error) xmq_xslt_message(x, error);
+            xmqFreeDoc(doq);
+            return NULL;
+        }
+    }
+    if (!doq) return NULL;
+    XmlDom *dom = xmq_take_dom(doq, uri);
+    if (x->settings.loader) xml_dom_set_url(dom, uri);
+    xmqFreeDoc(doq);
+    return dom;
+}
+
+static void xmq_set_doc_error(XMQDoc *doq, MemBuffer *mb)
+{
+    if (!doq || !mb) return;
+    membuffer_append_null(mb);
+    char *msg = free_membuffer_but_return_trimmed_content(mb);
+    if (!*msg)
+    {
+        free(msg);
+        return;
+    }
+    free((void*)doq->error_);
+    doq->error_ = msg;
+}
+
+XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings)
+{
+    XMQReturnXslt ret = { XMQ_ERROR_XSLT_COMPILE, NULL };
+    XmlDom *src = stylesheet ? (XmlDom*)xmqGetImplementationDoc(stylesheet) : NULL;
+    if (!src) return ret;
+    XMQXslt *x = (XMQXslt*)calloc(1, sizeof(XMQXslt));
+    if (settings) x->settings = *settings;
+    // A copy of the stylesheet, the compiler changes it.
+    XmlDom *dom = xml_dom_new();
+    if (xml_dom_version(src)) xml_dom_set_version(dom, xml_dom_version(src));
+    if (xml_dom_encoding(src)) xml_dom_set_encoding(dom, xml_dom_encoding(src));
+    // Relative uris in the stylesheet (import, include, document()) are resolved against the
+    // url of its dom, without one (xmq does not set it) against the current directory.
+    if (xml_dom_url(src)) xml_dom_set_url(dom, xml_dom_url(src));
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(src)); c; c = xml_node_next(c))
+    {
+        XMQNode *copy = xml_node_copy(dom, c, true);
+        if (copy) xml_node_append_child(xml_dom_document(dom), copy);
+    }
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(dom)); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ELEMENT) xml_node_reconcile_ns(c);
+    }
+    XmlLibxslt1Settings xs;
+    xml_libxslt1_settings_default(&xs);
+    xs.message_callback = xmq_xslt_message;
+    xs.message_user_data = x;
+    xs.loader = xmq_xslt_loader;
+    xs.loader_user_data = x;
+    x->messages = new_membuffer();
+    x->style = xml_libxslt1_compile(dom, &xs);
+    if (!x->style)
+    {
+        xml_dom_free(dom);
+        xmq_set_doc_error(stylesheet, x->messages);
+        x->messages = NULL;
+        free(x);
+        return ret;
+    }
+    free_membuffer_and_free_content(x->messages);
+    x->messages = NULL;
+    ret.status = XMQ_OK;
+    ret.xslt = x;
+    return ret;
+}
+
+void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is_xpath)
+{
+    if (!xslt || !name || !value) return;
+    char *v;
+    if (is_xpath)
+    {
+        v = strdup(value);
+    }
+    else
+    {
+        // A string literal, like xsltQuoteUserParams (concat() when both quotes are used).
+        if (!strchr(value, '\''))
+        {
+            v = (char*)malloc(strlen(value) + 3);
+            sprintf(v, "'%s'", value);
+        }
+        else if (!strchr(value, '"'))
+        {
+            v = (char*)malloc(strlen(value) + 3);
+            sprintf(v, "\"%s\"", value);
+        }
+        else
+        {
+            MemBuffer *mb = new_membuffer();
+            membuffer_append(mb, "concat('");
+            for (const char *p = value; *p; p++)
+            {
+                if (*p == '\'') membuffer_append(mb, "', \"'\", '");
+                else membuffer_append_char(mb, *p);
+            }
+            membuffer_append(mb, "')");
+            membuffer_append_null(mb);
+            v = free_membuffer_but_return_trimmed_content(mb);
+        }
+    }
+    // Replace an earlier value of the same parameter.
+    for (size_t i = 0; i < xslt->num_params; i++)
+    {
+        if (!strcmp(xslt->params[2 * i], name))
+        {
+            free(xslt->params[2 * i + 1]);
+            xslt->params[2 * i + 1] = v;
+            return;
+        }
+    }
+    xslt->params = (char**)realloc(xslt->params, (2 * xslt->num_params + 3) * sizeof(char*));
+    xslt->params[2 * xslt->num_params] = strdup(name);
+    xslt->params[2 * xslt->num_params + 1] = v;
+    xslt->num_params++;
+    xslt->params[2 * xslt->num_params] = NULL;
+}
+
+XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
+{
+    XMQReturnDoc ret = { XMQ_ERROR_XSLT_TRANSFORM, NULL };
+    XmlDom *source = doc ? (XmlDom*)xmqGetImplementationDoc(doc) : NULL;
+    if (!xslt || !source) return ret;
+    xslt->messages = new_membuffer();
+    int type = XML_LIBXSLT1_OUTPUT_XML;
+    XmlDom *res = xml_libxslt1_apply_stylesheet(xslt->style, source, (const char**)xslt->params, &type);
+    if (!res)
+    {
+        xmq_set_doc_error(doc, xslt->messages);
+        xslt->messages = NULL;
+        return ret;
+    }
+    free_membuffer_and_free_content(xslt->messages);
+    xslt->messages = NULL;
+    XMQReturnDoc rd = xmqNewDoc();
+    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(rd.doc);
+    xmqSetImplementationDoc(rd.doc, res);
+    if (old) xml_dom_free(old);
+    rd.doc->original_content_type_ = type == XML_LIBXSLT1_OUTPUT_HTML ? XMQ_CONTENT_HTML :
+                                     type == XML_LIBXSLT1_OUTPUT_TEXT ? XMQ_CONTENT_TEXT : XMQ_CONTENT_XML;
+    ret.status = XMQ_OK;
+    ret.doc = rd.doc;
+    return ret;
+}
+
+char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len)
+{
+    if (!xslt || !result) return NULL;
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(result);
+    XMQContentType ct = result->original_content_type_;
+    int type = ct == XMQ_CONTENT_HTML ? XML_LIBXSLT1_OUTPUT_HTML : ct == XMQ_CONTENT_TEXT ? XML_LIBXSLT1_OUTPUT_TEXT : XML_LIBXSLT1_OUTPUT_XML;
+    return xml_libxslt1_save_result_to_string(dom, xslt->style, type, len);
+}
+
+void xmqFreeXslt(XMQXslt *xslt)
+{
+    if (!xslt) return;
+    xml_libxslt1_stylesheet_free(xslt->style);
+    for (size_t i = 0; i < 2 * xslt->num_params; i++) free(xslt->params[i]);
+    free(xslt->params);
+    if (xslt->messages) free_membuffer_and_free_content(xslt->messages);
+    free(xslt);
 }
 
 #ifdef BUILDING_DIST_XMQ
@@ -26317,8 +27235,9 @@ bool xml_save_transcode(MemBuffer *out, const char *utf8, size_t len, const char
         membuffer_append_region(out, utf8, utf8 + len);
         return true;
     }
-    // The UTF-16 encoder writes a byte order mark (little endian).
-    if (enc == XML_SAVE_ENC_UTF16)
+    // The UTF-16 encoder writes a byte order mark (little endian) with the
+    // first converted bytes, nothing when there is nothing to convert.
+    if (enc == XML_SAVE_ENC_UTF16 && len > 0)
     {
         membuffer_append_char(out, (char)0xFF);
         membuffer_append_char(out, (char)0xFE);
@@ -30524,7 +31443,7 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len)
 
 // Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
 
-static bool xml_html_is_ws(int c)
+static bool xml_html_save_is_ws(int c)
 {
     return c == 0x20 || (c >= 0x09 && c <= 0x0D && c != 0x0B);
 }
@@ -30567,29 +31486,29 @@ static bool xml_html_parse_content_type(const char *val, XmlHtmlMetaOffsets *off
         p += 1;
         if (strncasecmp(p, "harset", 6) != 0) continue;
         p += 6;
-        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
         if (*p != '=') continue;
         p += 1;
-        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
         if (*p == 0) return false;
         if (*p == '"' || *p == '\'')
         {
             int quote = *p;
             p += 1;
-            while (xml_html_is_ws((unsigned char)*p)) p += 1;
+            while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
             start = (size_t)(p - val);
             end = start;
             while (*p != quote)
             {
                 if (*p == 0) return false;
-                if (!xml_html_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
+                if (!xml_html_save_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
                 p += 1;
             }
         }
         else
         {
             start = (size_t)(p - val);
-            while (*p != 0 && *p != ';' && !xml_html_is_ws((unsigned char)*p)) p += 1;
+            while (*p != 0 && *p != ';' && !xml_html_save_is_ws((unsigned char)*p)) p += 1;
             end = (size_t)(p - val);
         }
         off->start = start;
@@ -30645,8 +31564,8 @@ static XMQNode *xml_html_parse_meta_encoding(XMQNode *elem, const char **value, 
     if (!is_content_type)
     {
         size_t size = strlen(val), start = 0, end = size;
-        while (start < size && xml_html_is_ws((unsigned char)val[start])) start += 1;
-        while (end > 0 && xml_html_is_ws((unsigned char)val[end - 1])) end -= 1;
+        while (start < size && xml_html_save_is_ws((unsigned char)val[start])) start += 1;
+        while (end > 0 && xml_html_save_is_ws((unsigned char)val[end - 1])) end -= 1;
         off->start = start;
         off->end = end;
         off->size = size;
@@ -34400,6 +35319,14943 @@ void xml_xpath_result_free(XmlXPathResult *r)
 
 #endif // XML_XPATH_MODULE
 
+// PART C XML_URI_C ////////////////////////////////////////
+
+#ifdef XML_URI_MODULE
+
+// The macros of libxml2 uri.c, not shared with the other parts (dist/xmq.c is one file).
+#undef MAX_URI_LENGTH
+#undef PORT_EMPTY
+#undef PORT_EMPTY_SERVER
+#undef IS_ALPHA
+#undef IS_LOWALPHA
+#undef IS_UPALPHA
+#undef IS_DIGIT
+#undef IS_ALPHANUM
+#undef IS_MARK
+#undef IS_UNWISE
+#undef IS_RESERVED
+#undef IS_UNRESERVED
+#undef NEXT
+#undef STRNDUP
+#undef ISA_DIGIT
+#undef ISA_ALPHA
+#undef ISA_HEXDIG
+#undef ISA_SUB_DELIM
+#undef ISA_GEN_DELIM
+#undef ISA_RESERVED
+#undef ISA_STRICTLY_UNRESERVED
+#undef ISA_PCT_ENCODED
+#undef ISA_PCHAR
+#undef ISA_UCSCHAR
+#undef ISA_UNRESERVED
+#undef XML_URI_ALLOW_UNWISE
+#undef XML_URI_NO_UNESCAPE
+#undef XML_URI_ALLOW_UCSCHAR
+
+#define MAX_URI_LENGTH 1024 * 1024
+
+#define PORT_EMPTY           0
+#define PORT_EMPTY_SERVER   -1
+
+static void xml_uri_clean(XmlURI *uri);
+
+static char *xml_uri_strdup(const char *s)
+{
+    if (!s) return NULL;
+    return strdup(s);
+}
+
+static char *xml_uri_strndup(const char *s, int len)
+{
+    if (!s || len < 0) return NULL;
+    char *r = (char*)malloc((size_t)len + 1);
+    if (!r) return NULL;
+    memcpy(r, s, (size_t)len);
+    r[len] = 0;
+    return r;
+}
+
+static int xml_uri_strlen(const char *s)
+{
+    if (!s) return 0;
+    return (int)strlen(s);
+}
+
+/** Like xmlStrcat: append add to s (reallocated), s may be NULL. */
+static char *xml_uri_strcat(char *s, const char *add)
+{
+    if (!add) return s;
+    if (!s) return xml_uri_strdup(add);
+    size_t a = strlen(s), b = strlen(add);
+    char *r = (char*)realloc(s, a + b + 1);
+    if (!r)
+    {
+        free(s);
+        return NULL;
+    }
+    memcpy(r + a, add, b + 1);
+    return r;
+}
+
+static int xml_uri_streq(const char *a, const char *b)
+{
+    if (a == b) return 1;
+    if (!a || !b) return 0;
+    return !strcmp(a, b);
+}
+
+/** Port of xmlGrowCapacity (private/memory.h). */
+static int xml_uri_grow_capacity(int capacity, size_t elemSize, int min, int max)
+{
+    if (capacity <= 0) return min;
+    if ((capacity >= max) || ((size_t)capacity > SIZE_MAX / 2 / elemSize)) return -1;
+    int extra = (capacity + 1) / 2;
+    if (capacity > max - extra) return max;
+    return capacity + extra;
+}
+
+
+/*
+ * Old rule from 2396 used in legacy handling code
+ * alpha    = lowalpha | upalpha
+ */
+#define IS_ALPHA(x) (IS_LOWALPHA(x) || IS_UPALPHA(x))
+
+
+/*
+ * lowalpha = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" |
+ *            "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" |
+ *            "u" | "v" | "w" | "x" | "y" | "z"
+ */
+#define IS_LOWALPHA(x) (((x) >= 'a') && ((x) <= 'z'))
+
+/*
+ * upalpha = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" |
+ *           "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" |
+ *           "U" | "V" | "W" | "X" | "Y" | "Z"
+ */
+#define IS_UPALPHA(x) (((x) >= 'A') && ((x) <= 'Z'))
+
+#ifdef IS_DIGIT
+#undef IS_DIGIT
+#endif
+/*
+ * digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+ */
+#define IS_DIGIT(x) (((x) >= '0') && ((x) <= '9'))
+
+/*
+ * alphanum = alpha | digit
+ */
+#define IS_ALPHANUM(x) (IS_ALPHA(x) || IS_DIGIT(x))
+
+/*
+ * mark = "-" | "_" | "." | "!" | "~" | "*" | "'" | "(" | ")"
+ */
+
+#define IS_MARK(x) (((x) == '-') || ((x) == '_') || ((x) == '.') ||     \
+    ((x) == '!') || ((x) == '~') || ((x) == '*') || ((x) == '\'') ||    \
+    ((x) == '(') || ((x) == ')'))
+
+/*
+ * unwise = "{" | "}" | "|" | "\" | "^" | "`"
+ */
+#define IS_UNWISE(p)                                                    \
+      (((*(p) == '{')) || ((*(p) == '}')) || ((*(p) == '|')) ||         \
+       ((*(p) == '\\')) || ((*(p) == '^')) || ((*(p) == '[')) ||        \
+       ((*(p) == ']')) || ((*(p) == '`')))
+
+/*
+ * reserved = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | "," |
+ *            "[" | "]"
+ */
+#define IS_RESERVED(x) (((x) == ';') || ((x) == '/') || ((x) == '?') || \
+        ((x) == ':') || ((x) == '@') || ((x) == '&') || ((x) == '=') || \
+        ((x) == '+') || ((x) == '$') || ((x) == ',') || ((x) == '[') || \
+        ((x) == ']'))
+
+/*
+ * unreserved = alphanum | mark
+ */
+#define IS_UNRESERVED(x) (IS_ALPHANUM(x) || IS_MARK(x))
+
+/*
+ * Skip to next pointer char, handle escaped sequences
+ */
+#define NEXT(p) ((*p == '%')? p += 3 : p++)
+
+/*
+ * Productions from the spec.
+ *
+ *    authority     = server | reg_name
+ *    reg_name      = 1*( unreserved | escaped | "$" | "," |
+ *                        ";" | ":" | "@" | "&" | "=" | "+" )
+ *
+ * path          = [ abs_path | opaque_part ]
+ */
+#define STRNDUP(s, n) (char*)xml_uri_strndup((const char *)(s), (n))
+
+/************************************************************************
+ *									*
+ *                         RFC 3986 parser				*
+ *									*
+ ************************************************************************/
+
+#define ISA_DIGIT(p) ((*(p) >= '0') && (*(p) <= '9'))
+#define ISA_ALPHA(p) (((*(p) >= 'a') && (*(p) <= 'z')) ||		\
+                      ((*(p) >= 'A') && (*(p) <= 'Z')))
+#define ISA_HEXDIG(p)							\
+       (ISA_DIGIT(p) || ((*(p) >= 'a') && (*(p) <= 'f')) ||		\
+        ((*(p) >= 'A') && (*(p) <= 'F')))
+
+/*
+ *    sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+ *                     / "*" / "+" / "," / ";" / "="
+ */
+#define ISA_SUB_DELIM(p)						\
+      (((*(p) == '!')) || ((*(p) == '$')) || ((*(p) == '&')) ||		\
+       ((*(p) == '(')) || ((*(p) == ')')) || ((*(p) == '*')) ||		\
+       ((*(p) == '+')) || ((*(p) == ',')) || ((*(p) == ';')) ||		\
+       ((*(p) == '=')) || ((*(p) == '\'')))
+
+/*
+ *    gen-delims    = ":" / "/" / "?" / "\#" / "[" / "]" / "@"
+ */
+#define ISA_GEN_DELIM(p)						\
+      (((*(p) == ':')) || ((*(p) == '/')) || ((*(p) == '?')) ||         \
+       ((*(p) == '#')) || ((*(p) == '[')) || ((*(p) == ']')) ||         \
+       ((*(p) == '@')))
+
+/*
+ *    reserved      = gen-delims / sub-delims
+ */
+#define ISA_RESERVED(p) (ISA_GEN_DELIM(p) || (ISA_SUB_DELIM(p)))
+
+/*
+ *    unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+ */
+#define ISA_STRICTLY_UNRESERVED(p)					\
+      ((ISA_ALPHA(p)) || (ISA_DIGIT(p)) || ((*(p) == '-')) ||		\
+       ((*(p) == '.')) || ((*(p) == '_')) || ((*(p) == '~')))
+
+/*
+ *    pct-encoded   = "%" HEXDIG HEXDIG
+ */
+#define ISA_PCT_ENCODED(p)						\
+     ((*(p) == '%') && (ISA_HEXDIG(p + 1)) && (ISA_HEXDIG(p + 2)))
+
+/*
+ *    pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+ */
+#define ISA_PCHAR(u, p)							\
+     (ISA_UNRESERVED(u, p) || ISA_PCT_ENCODED(p) || ISA_SUB_DELIM(p) ||	\
+      ((*(p) == ':')) || ((*(p) == '@')))
+
+/*
+ * From https://www.w3.org/TR/leiri/
+ *
+ * " " / "<" / ">" / '"' / "{" / "}" / "|"
+ * / "\" / "^" / "`" / %x0-1F / %x7F-D7FF
+ * / %xE000-FFFD / %x10000-10FFFF
+ */
+#define ISA_UCSCHAR(p) \
+    ((*(p) <= 0x20) || (*(p) >= 0x7F) || (*(p) == '<') || (*(p) == '>') || \
+     (*(p) == '"')  || (*(p) == '{')  || (*(p) == '}') || (*(p) == '|') || \
+     (*(p) == '\\') || (*(p) == '^')  || (*(p) == '`'))
+
+#define ISA_UNRESERVED(u, p) (xml_uri_is_unreserved(u, p))
+
+#define XML_URI_ALLOW_UNWISE    1
+#define XML_URI_NO_UNESCAPE     2
+#define XML_URI_ALLOW_UCSCHAR   4
+
+static int
+xml_uri_is_unreserved(XmlURI *uri, const char *cur) {
+    if (uri == NULL)
+        return(0);
+
+    if (ISA_STRICTLY_UNRESERVED(cur))
+        return(1);
+
+    if (uri->cleanup & XML_URI_ALLOW_UNWISE) {
+        if (IS_UNWISE(cur))
+            return(1);
+    } else if (uri->cleanup & XML_URI_ALLOW_UCSCHAR) {
+        if (ISA_UCSCHAR(cur))
+            return(1);
+    }
+
+    return(0);
+}
+
+/**
+ * Parse an URI scheme
+ *
+ * ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  pointer to the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_scheme(XmlURI *uri, const char **str) {
+    const char *cur;
+
+    cur = *str;
+    if (!ISA_ALPHA(cur))
+	return(1);
+    cur++;
+
+#if defined(_WIN32)
+    /*
+     * Don't treat Windows drive letters as scheme.
+     */
+    if (*cur == ':')
+        return(1);
+#endif
+
+    while (ISA_ALPHA(cur) || ISA_DIGIT(cur) ||
+           (*cur == '+') || (*cur == '-') || (*cur == '.')) cur++;
+    if (uri != NULL) {
+	if (uri->scheme != NULL) free(uri->scheme);
+	uri->scheme = STRNDUP(*str, cur - *str);
+        if (uri->scheme == NULL)
+            return(-1);
+    }
+    *str = cur;
+    return(0);
+}
+
+/**
+ * Parse the query part of an URI
+ *
+ * fragment      = *( pchar / "/" / "?" )
+ * NOTE: the strict syntax as defined by 3986 does not allow '[' and ']'
+ *       in the fragment identifier but this is used very broadly for
+ *       xpointer scheme selection, so we are allowing it here to not break
+ *       for example all the DocBook processing chains.
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  pointer to the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_fragment(XmlURI *uri, const char **str)
+{
+    const char *cur;
+
+    cur = *str;
+
+    while ((ISA_PCHAR(uri, cur)) || (*cur == '/') || (*cur == '?') ||
+           (*cur == '[') || (*cur == ']'))
+        NEXT(cur);
+    if (uri != NULL) {
+        if (uri->fragment != NULL)
+            free(uri->fragment);
+	if (uri->cleanup & XML_URI_NO_UNESCAPE)
+	    uri->fragment = STRNDUP(*str, cur - *str);
+	else
+	    uri->fragment = xml_uri_unescape_string(*str, cur - *str, NULL);
+        if (uri->fragment == NULL)
+            return (-1);
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse the query part of an URI
+ *
+ * query = *uric
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  pointer to the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_query(XmlURI *uri, const char **str)
+{
+    const char *cur;
+
+    cur = *str;
+
+    while ((ISA_PCHAR(uri, cur)) || (*cur == '/') || (*cur == '?'))
+        NEXT(cur);
+    if (uri != NULL) {
+        if (uri->query != NULL)
+            free(uri->query);
+	if (uri->cleanup & XML_URI_NO_UNESCAPE)
+	    uri->query = STRNDUP(*str, cur - *str);
+	else
+	    uri->query = xml_uri_unescape_string(*str, cur - *str, NULL);
+        if (uri->query == NULL)
+            return (-1);
+
+	/* Save the raw bytes of the query as well.
+	 * See: http://mail.gnome.org/archives/xml/2007-April/thread.html#00114
+	 */
+	if (uri->query_raw != NULL)
+	    free (uri->query_raw);
+	uri->query_raw = STRNDUP (*str, cur - *str);
+        if (uri->query_raw == NULL)
+            return (-1);
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse a port part and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * port          = *DIGIT
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_port(XmlURI *uri, const char **str)
+{
+    const char *cur = *str;
+    int port = 0;
+
+    if (ISA_DIGIT(cur)) {
+	while (ISA_DIGIT(cur)) {
+            int digit = *cur - '0';
+
+            if (port > INT_MAX / 10)
+                return(1);
+            port *= 10;
+            if (port > INT_MAX - digit)
+                return(1);
+	    port += digit;
+
+	    cur++;
+	}
+	if (uri != NULL)
+	    uri->port = port;
+	*str = cur;
+	return(0);
+    }
+    return(1);
+}
+
+/**
+ * Parse an user information part and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * userinfo      = *( unreserved / pct-encoded / sub-delims / ":" )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_userinfo(XmlURI *uri, const char **str)
+{
+    const char *cur;
+
+    cur = *str;
+    while (ISA_UNRESERVED(uri, cur) || ISA_PCT_ENCODED(cur) ||
+           ISA_SUB_DELIM(cur) || (*cur == ':'))
+	NEXT(cur);
+    if (*cur == '@') {
+	if (uri != NULL) {
+	    if (uri->user != NULL) free(uri->user);
+	    if (uri->cleanup & XML_URI_NO_UNESCAPE)
+		uri->user = STRNDUP(*str, cur - *str);
+	    else
+		uri->user = xml_uri_unescape_string(*str, cur - *str, NULL);
+            if (uri->user == NULL)
+                return(-1);
+	}
+	*str = cur;
+	return(0);
+    }
+    return(1);
+}
+
+/**
+ *    dec-octet     = DIGIT                 ; 0-9
+ *                  / %x31-39 DIGIT         ; 10-99
+ *                  / "1" 2DIGIT            ; 100-199
+ *                  / "2" %x30-34 DIGIT     ; 200-249
+ *                  / "25" %x30-35          ; 250-255
+ *
+ * Skip a dec-octet.
+ *
+ * @param str  the string to analyze
+ * @returns 0 if found and skipped, 1 otherwise
+ */
+static int
+xml_uri_parse_dec_octet(const char **str) {
+    const char *cur = *str;
+
+    if (!(ISA_DIGIT(cur)))
+        return(1);
+    if (!ISA_DIGIT(cur+1))
+	cur++;
+    else if ((*cur != '0') && (ISA_DIGIT(cur + 1)) && (!ISA_DIGIT(cur+2)))
+	cur += 2;
+    else if ((*cur == '1') && (ISA_DIGIT(cur + 1)) && (ISA_DIGIT(cur + 2)))
+	cur += 3;
+    else if ((*cur == '2') && (*(cur + 1) >= '0') &&
+	     (*(cur + 1) <= '4') && (ISA_DIGIT(cur + 2)))
+	cur += 3;
+    else if ((*cur == '2') && (*(cur + 1) == '5') &&
+	     (*(cur + 2) >= '0') && (*(cur + 1) <= '5'))
+	cur += 3;
+    else
+        return(1);
+    *str = cur;
+    return(0);
+}
+/**
+ * Parse an host part and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * host          = IP-literal / IPv4address / reg-name
+ * IP-literal    = "[" ( IPv6address / IPvFuture  ) "]"
+ * IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
+ * reg-name      = *( unreserved / pct-encoded / sub-delims )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_host(XmlURI *uri, const char **str)
+{
+    const char *cur = *str;
+    const char *host;
+
+    host = cur;
+    /*
+     * IPv6 and future addressing scheme are enclosed between brackets
+     */
+    if (*cur == '[') {
+        cur++;
+	while ((*cur != ']') && (*cur != 0))
+	    cur++;
+	if (*cur != ']')
+	    return(1);
+	cur++;
+	goto found;
+    }
+    /*
+     * try to parse an IPv4
+     */
+    if (ISA_DIGIT(cur)) {
+        if (xml_uri_parse_dec_octet(&cur) != 0)
+	    goto not_ipv4;
+	if (*cur != '.')
+	    goto not_ipv4;
+	cur++;
+        if (xml_uri_parse_dec_octet(&cur) != 0)
+	    goto not_ipv4;
+	if (*cur != '.')
+	    goto not_ipv4;
+        if (xml_uri_parse_dec_octet(&cur) != 0)
+	    goto not_ipv4;
+	if (*cur != '.')
+	    goto not_ipv4;
+        if (xml_uri_parse_dec_octet(&cur) != 0)
+	    goto not_ipv4;
+	goto found;
+not_ipv4:
+        cur = *str;
+    }
+    /*
+     * then this should be a hostname which can be empty
+     */
+    while (ISA_UNRESERVED(uri, cur) ||
+           ISA_PCT_ENCODED(cur) || ISA_SUB_DELIM(cur))
+        NEXT(cur);
+found:
+    if (uri != NULL) {
+	if (uri->authority != NULL) free(uri->authority);
+	uri->authority = NULL;
+	if (uri->server != NULL) free(uri->server);
+	if (cur != host) {
+	    if (uri->cleanup & XML_URI_NO_UNESCAPE)
+		uri->server = STRNDUP(host, cur - host);
+	    else
+		uri->server = xml_uri_unescape_string(host, cur - host, NULL);
+            if (uri->server == NULL)
+                return(-1);
+	} else
+	    uri->server = NULL;
+    }
+    *str = cur;
+    return(0);
+}
+
+/**
+ * Parse an authority part and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * authority     = [ userinfo "@" ] host [ ":" port ]
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_authority(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+    /*
+     * try to parse an userinfo and check for the trailing @
+     */
+    ret = xml_uri_parse_userinfo(uri, &cur);
+    if (ret < 0)
+        return(ret);
+    if ((ret != 0) || (*cur != '@'))
+        cur = *str;
+    else
+        cur++;
+    ret = xml_uri_parse_host(uri, &cur);
+    if (ret != 0) return(ret);
+    if (*cur == ':') {
+        cur++;
+        ret = xml_uri_parse_port(uri, &cur);
+	if (ret != 0) return(ret);
+    }
+    *str = cur;
+    return(0);
+}
+
+/**
+ * Parse a segment and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * segment       = *pchar
+ * segment-nz    = 1*pchar
+ * segment-nz-nc = 1*( unreserved / pct-encoded / sub-delims / "@" )
+ *               ; non-zero-length segment without any colon ":"
+ *
+ * @param uri  the URI
+ * @param str  the string to analyze
+ * @param forbid  an optional forbidden character
+ * @param empty  allow an empty segment
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_segment(XmlURI *uri, const char **str, char forbid, int empty)
+{
+    const char *cur;
+
+    cur = *str;
+    if (!ISA_PCHAR(uri, cur) || (*cur == forbid)) {
+        if (empty)
+	    return(0);
+	return(1);
+    }
+    NEXT(cur);
+
+#if defined(_WIN32)
+    /*
+     * Allow Windows drive letters.
+     */
+    if ((forbid == ':') && (*cur == forbid))
+        NEXT(cur);
+#endif
+
+    while (ISA_PCHAR(uri, cur) && (*cur != forbid))
+        NEXT(cur);
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an path absolute or empty and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * path-abempty  = *( "/" segment )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_path_ab_empty(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+
+    while (*cur == '/') {
+        cur++;
+	ret = xml_uri_parse_segment(uri, &cur, 0, 1);
+	if (ret != 0) return(ret);
+    }
+    if (uri != NULL) {
+	if (uri->path != NULL) free(uri->path);
+        if (*str != cur) {
+            if (uri->cleanup & XML_URI_NO_UNESCAPE)
+                uri->path = STRNDUP(*str, cur - *str);
+            else
+                uri->path = xml_uri_unescape_string(*str, cur - *str, NULL);
+            if (uri->path == NULL)
+                return (-1);
+        } else {
+            uri->path = NULL;
+        }
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an path absolute and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * path-absolute = "/" [ segment-nz *( "/" segment ) ]
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_path_absolute(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+
+    if (*cur != '/')
+        return(1);
+    cur++;
+    ret = xml_uri_parse_segment(uri, &cur, 0, 0);
+    if (ret == 0) {
+	while (*cur == '/') {
+	    cur++;
+	    ret = xml_uri_parse_segment(uri, &cur, 0, 1);
+	    if (ret != 0) return(ret);
+	}
+    }
+    if (uri != NULL) {
+	if (uri->path != NULL) free(uri->path);
+        if (cur != *str) {
+            if (uri->cleanup & XML_URI_NO_UNESCAPE)
+                uri->path = STRNDUP(*str, cur - *str);
+            else
+                uri->path = xml_uri_unescape_string(*str, cur - *str, NULL);
+            if (uri->path == NULL)
+                return (-1);
+        } else {
+            uri->path = NULL;
+        }
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an path without root and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * path-rootless = segment-nz *( "/" segment )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_path_rootless(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+
+    ret = xml_uri_parse_segment(uri, &cur, 0, 0);
+    if (ret != 0) return(ret);
+    while (*cur == '/') {
+        cur++;
+	ret = xml_uri_parse_segment(uri, &cur, 0, 1);
+	if (ret != 0) return(ret);
+    }
+    if (uri != NULL) {
+	if (uri->path != NULL) free(uri->path);
+        if (cur != *str) {
+            if (uri->cleanup & XML_URI_NO_UNESCAPE)
+                uri->path = STRNDUP(*str, cur - *str);
+            else
+                uri->path = xml_uri_unescape_string(*str, cur - *str, NULL);
+            if (uri->path == NULL)
+                return (-1);
+        } else {
+            uri->path = NULL;
+        }
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an path which is not a scheme and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * path-noscheme = segment-nz-nc *( "/" segment )
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_path_no_scheme(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+
+    ret = xml_uri_parse_segment(uri, &cur, ':', 0);
+    if (ret != 0) return(ret);
+    while (*cur == '/') {
+        cur++;
+	ret = xml_uri_parse_segment(uri, &cur, 0, 1);
+	if (ret != 0) return(ret);
+    }
+    if (uri != NULL) {
+	if (uri->path != NULL) free(uri->path);
+        if (cur != *str) {
+            if (uri->cleanup & XML_URI_NO_UNESCAPE)
+                uri->path = STRNDUP(*str, cur - *str);
+            else
+                uri->path = xml_uri_unescape_string(*str, cur - *str, NULL);
+            if (uri->path == NULL)
+                return (-1);
+        } else {
+            uri->path = NULL;
+        }
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an hierarchical part and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * hier-part     = "//" authority path-abempty
+ *                / path-absolute
+ *                / path-rootless
+ *                / path-empty
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_hier_part(XmlURI *uri, const char **str)
+{
+    const char *cur;
+    int ret;
+
+    cur = *str;
+
+    if ((*cur == '/') && (*(cur + 1) == '/')) {
+        cur += 2;
+	ret = xml_uri_parse_authority(uri, &cur);
+	if (ret != 0) return(ret);
+        /*
+         * An empty server is marked with a special URI value.
+         */
+	if ((uri->server == NULL) && (uri->port == PORT_EMPTY))
+	    uri->port = PORT_EMPTY_SERVER;
+	ret = xml_uri_parse_path_ab_empty(uri, &cur);
+	if (ret != 0) return(ret);
+	*str = cur;
+	return(0);
+    } else if (*cur == '/') {
+        ret = xml_uri_parse_path_absolute(uri, &cur);
+	if (ret != 0) return(ret);
+    } else if (ISA_PCHAR(uri, cur)) {
+        ret = xml_uri_parse_path_rootless(uri, &cur);
+	if (ret != 0) return(ret);
+    } else {
+	/* path-empty is effectively empty */
+	if (uri != NULL) {
+	    if (uri->path != NULL) free(uri->path);
+	    uri->path = NULL;
+	}
+    }
+    *str = cur;
+    return (0);
+}
+
+/**
+ * Parse an URI string and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * relative-ref  = relative-part [ "?" query ] [ "\#" fragment ]
+ * relative-part = "//" authority path-abempty
+ *               / path-absolute
+ *               / path-noscheme
+ *               / path-empty
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_relative_ref(XmlURI *uri, const char *str) {
+    int ret;
+
+    if ((*str == '/') && (*(str + 1) == '/')) {
+        str += 2;
+	ret = xml_uri_parse_authority(uri, &str);
+	if (ret != 0) return(ret);
+	ret = xml_uri_parse_path_ab_empty(uri, &str);
+	if (ret != 0) return(ret);
+    } else if (*str == '/') {
+	ret = xml_uri_parse_path_absolute(uri, &str);
+	if (ret != 0) return(ret);
+    } else if (ISA_PCHAR(uri, str)) {
+        ret = xml_uri_parse_path_no_scheme(uri, &str);
+	if (ret != 0) return(ret);
+    } else {
+	/* path-empty is effectively empty */
+	if (uri != NULL) {
+	    if (uri->path != NULL) free(uri->path);
+	    uri->path = NULL;
+	}
+    }
+
+    if (*str == '?') {
+	str++;
+	ret = xml_uri_parse_query(uri, &str);
+	if (ret != 0) return(ret);
+    }
+    if (*str == '#') {
+	str++;
+	ret = xml_uri_parse_fragment(uri, &str);
+	if (ret != 0) return(ret);
+    }
+    if (*str != 0) {
+	xml_uri_clean(uri);
+	return(1);
+    }
+    return(0);
+}
+
+
+/**
+ * Parse an URI string and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * scheme ":" hier-part [ "?" query ] [ "\#" fragment ]
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_uri(XmlURI *uri, const char *str) {
+    int ret;
+
+    ret = xml_uri_parse_scheme(uri, &str);
+    if (ret != 0) return(ret);
+    if (*str != ':') {
+	return(1);
+    }
+    str++;
+    ret = xml_uri_parse_hier_part(uri, &str);
+    if (ret != 0) return(ret);
+    if (*str == '?') {
+	str++;
+	ret = xml_uri_parse_query(uri, &str);
+	if (ret != 0) return(ret);
+    }
+    if (*str == '#') {
+	str++;
+	ret = xml_uri_parse_fragment(uri, &str);
+	if (ret != 0) return(ret);
+    }
+    if (*str != 0) {
+	xml_uri_clean(uri);
+	return(1);
+    }
+    return(0);
+}
+
+/**
+ * Parse an URI reference string and fills in the appropriate fields
+ * of the `uri` structure
+ *
+ * URI-reference = URI / relative-ref
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+static int
+xml_uri_parse_uri_reference(XmlURI *uri, const char *str) {
+    int ret;
+
+    if (str == NULL)
+	return(-1);
+    xml_uri_clean(uri);
+
+    /*
+     * Try first to parse absolute refs, then fallback to relative if
+     * it fails.
+     */
+    ret = xml_uri_parse_uri(uri, str);
+    if (ret < 0)
+        return(ret);
+    if (ret != 0) {
+	xml_uri_clean(uri);
+        ret = xml_uri_parse_relative_ref(uri, str);
+	if (ret != 0) {
+	    xml_uri_clean(uri);
+	    return(ret);
+	}
+    }
+    return(0);
+}
+
+/**
+ * Parse an URI based on RFC 3986
+ *
+ * URI-reference = [ absoluteURI | relativeURI ] [ "\#" fragment ]
+ *
+ * @since 2.13.0
+ *
+ * @param str  the URI string to analyze
+ * @param uriOut  optional pointer to parsed URI
+ * @returns 0 on success, an error code (typically 1) if the URI is invalid
+ * or -1 if a memory allocation failed.
+ */
+int
+xml_uri_parse_safe(const char *str, XmlURI **uriOut) {
+    XmlURI *uri;
+    int ret;
+
+    if (uriOut == NULL)
+        return(1);
+    *uriOut = NULL;
+    if (str == NULL)
+	return(1);
+
+    uri = xml_uri_create();
+    if (uri == NULL)
+        return(-1);
+
+    ret = xml_uri_parse_uri_reference(uri, str);
+    if (ret) {
+        xml_uri_free(uri);
+        return(ret);
+    }
+
+    *uriOut = uri;
+    return(0);
+}
+
+/**
+ * Parse an URI based on RFC 3986
+ *
+ * URI-reference = [ absoluteURI | relativeURI ] [ "\#" fragment ]
+ *
+ * @param str  the URI string to analyze
+ * @returns a newly built XmlURI or NULL in case of error
+ */
+XmlURI *
+xml_uri_parse(const char *str) {
+    XmlURI *uri;
+    xml_uri_parse_safe(str, &uri);
+    return(uri);
+}
+
+/**
+ * Parse an URI reference string based on RFC 3986 and fills in the
+ * appropriate fields of the `uri` structure
+ *
+ * URI-reference = URI / relative-ref
+ *
+ * @param uri  pointer to an URI structure
+ * @param str  the string to analyze
+ * @returns 0 or the error code
+ */
+int
+xml_uri_parse_reference(XmlURI *uri, const char *str) {
+    return(xml_uri_parse_uri_reference(uri, str));
+}
+
+/**
+ * Parse an URI but allows to keep intact the original fragments.
+ *
+ * URI-reference = URI / relative-ref
+ *
+ * @param str  the URI string to analyze
+ * @param raw  if 1 unescaping of URI pieces are disabled
+ * @returns a newly built XmlURI or NULL in case of error
+ */
+XmlURI *
+xml_uri_parse_raw(const char *str, int raw) {
+    XmlURI *uri;
+    int ret;
+
+    if (str == NULL)
+	return(NULL);
+    uri = xml_uri_create();
+    if (uri != NULL) {
+        if (raw) {
+	    uri->cleanup |= XML_URI_NO_UNESCAPE;
+	}
+	ret = xml_uri_parse_reference(uri, str);
+        if (ret) {
+	    xml_uri_free(uri);
+	    return(NULL);
+	}
+    }
+    return(uri);
+}
+
+/************************************************************************
+ *									*
+ *			Generic URI structure functions			*
+ *									*
+ ************************************************************************/
+
+/**
+ * Simply creates an empty XmlURI
+ *
+ * @returns the new structure or NULL in case of error
+ */
+XmlURI *
+xml_uri_create(void) {
+    XmlURI *ret;
+
+    ret = (XmlURI *) malloc(sizeof(XmlURI));
+    if (ret == NULL)
+	return(NULL);
+    memset(ret, 0, sizeof(XmlURI));
+    ret->port = PORT_EMPTY;
+    return(ret);
+}
+
+/**
+ * Function to handle properly a reallocation when saving an URI
+ * Also imposes some limit on the length of an URI string output
+ */
+static char *
+xml_uri_save_realloc(char *ret, int *max) {
+    char *temp;
+    int newSize;
+
+    newSize = xml_uri_grow_capacity(*max, 1, 80, MAX_URI_LENGTH);
+    if (newSize < 0)
+        return(NULL);
+    temp = (char*)realloc(ret, newSize + 1);
+    if (temp == NULL)
+        return(NULL);
+    *max = newSize;
+    return(temp);
+}
+
+/**
+ * Save the URI as an escaped string
+ *
+ * @param uri  pointer to an XmlURI
+ * @returns a new string (to be deallocated by caller)
+ */
+char *
+xml_uri_save(XmlURI *uri) {
+    char *ret = NULL;
+    char *temp;
+    const char *p;
+    int len;
+    int max;
+
+    if (uri == NULL) return(NULL);
+
+
+    max = 80;
+    ret = (char*)malloc(max + 1);
+    if (ret == NULL)
+	return(NULL);
+    len = 0;
+
+    if (uri->scheme != NULL) {
+	p = uri->scheme;
+	while (*p != 0) {
+	    if (len >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+		ret = temp;
+	    }
+	    ret[len++] = *p++;
+	}
+	if (len >= max) {
+            temp = xml_uri_save_realloc(ret, &max);
+            if (temp == NULL) goto mem_error;
+            ret = temp;
+	}
+	ret[len++] = ':';
+    }
+    if (uri->opaque != NULL) {
+	p = uri->opaque;
+	while (*p != 0) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    if (IS_RESERVED(*(p)) || IS_UNRESERVED(*(p)))
+		ret[len++] = *p++;
+	    else {
+		int val = *(unsigned char *)p++;
+		int hi = val / 0x10, lo = val % 0x10;
+		ret[len++] = '%';
+		ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+		ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+	    }
+	}
+    } else {
+	if ((uri->server != NULL) || (uri->port != PORT_EMPTY)) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    ret[len++] = '/';
+	    ret[len++] = '/';
+	    if (uri->user != NULL) {
+		p = uri->user;
+		while (*p != 0) {
+		    if (len + 3 >= max) {
+                        temp = xml_uri_save_realloc(ret, &max);
+                        if (temp == NULL) goto mem_error;
+                        ret = temp;
+		    }
+		    if ((IS_UNRESERVED(*(p))) ||
+			((*(p) == ';')) || ((*(p) == ':')) ||
+			((*(p) == '&')) || ((*(p) == '=')) ||
+			((*(p) == '+')) || ((*(p) == '$')) ||
+			((*(p) == ',')))
+			ret[len++] = *p++;
+		    else {
+			int val = *(unsigned char *)p++;
+			int hi = val / 0x10, lo = val % 0x10;
+			ret[len++] = '%';
+			ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+			ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+		    }
+		}
+		if (len + 3 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		ret[len++] = '@';
+	    }
+	    if (uri->server != NULL) {
+		p = uri->server;
+		while (*p != 0) {
+		    if (len >= max) {
+			temp = xml_uri_save_realloc(ret, &max);
+			if (temp == NULL) goto mem_error;
+			ret = temp;
+		    }
+                    /* TODO: escaping? */
+		    ret[len++] = (char) *p++;
+		}
+	    }
+            if (uri->port > 0) {
+                if (len + 10 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+                }
+                len += snprintf((char*)&ret[len], max - len, ":%d", uri->port);
+            }
+	} else if (uri->authority != NULL) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    ret[len++] = '/';
+	    ret[len++] = '/';
+	    p = uri->authority;
+	    while (*p != 0) {
+		if (len + 3 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		if ((IS_UNRESERVED(*(p))) ||
+                    ((*(p) == '$')) || ((*(p) == ',')) || ((*(p) == ';')) ||
+                    ((*(p) == ':')) || ((*(p) == '@')) || ((*(p) == '&')) ||
+                    ((*(p) == '=')) || ((*(p) == '+')))
+		    ret[len++] = *p++;
+		else {
+		    int val = *(unsigned char *)p++;
+		    int hi = val / 0x10, lo = val % 0x10;
+		    ret[len++] = '%';
+		    ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+		    ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+		}
+	    }
+	} else if (uri->scheme != NULL) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	}
+	if (uri->path != NULL) {
+	    p = uri->path;
+	    /*
+	     * the colon in file:///d: should not be escaped or
+	     * Windows accesses fail later.
+	     */
+	    if ((uri->scheme != NULL) &&
+		(p[0] == '/') &&
+		(((p[1] >= 'a') && (p[1] <= 'z')) ||
+		 ((p[1] >= 'A') && (p[1] <= 'Z'))) &&
+		(p[2] == ':') &&
+	        (xml_uri_streq(uri->scheme, "file"))) {
+		if (len + 3 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		ret[len++] = *p++;
+		ret[len++] = *p++;
+		ret[len++] = *p++;
+	    }
+	    while (*p != 0) {
+		if (len + 3 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		if ((IS_UNRESERVED(*(p))) || ((*(p) == '/')) ||
+                    ((*(p) == ';')) || ((*(p) == '@')) || ((*(p) == '&')) ||
+	            ((*(p) == '=')) || ((*(p) == '+')) || ((*(p) == '$')) ||
+	            ((*(p) == ',')))
+		    ret[len++] = *p++;
+		else {
+		    int val = *(unsigned char *)p++;
+		    int hi = val / 0x10, lo = val % 0x10;
+		    ret[len++] = '%';
+		    ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+		    ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+		}
+	    }
+	}
+	if (uri->query_raw != NULL) {
+	    if (len + 1 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    ret[len++] = '?';
+	    p = uri->query_raw;
+	    while (*p != 0) {
+		if (len + 1 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		ret[len++] = *p++;
+	    }
+	} else if (uri->query != NULL) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    ret[len++] = '?';
+	    p = uri->query;
+	    while (*p != 0) {
+		if (len + 3 >= max) {
+                    temp = xml_uri_save_realloc(ret, &max);
+                    if (temp == NULL) goto mem_error;
+                    ret = temp;
+		}
+		if ((IS_UNRESERVED(*(p))) || (IS_RESERVED(*(p))))
+		    ret[len++] = *p++;
+		else {
+		    int val = *(unsigned char *)p++;
+		    int hi = val / 0x10, lo = val % 0x10;
+		    ret[len++] = '%';
+		    ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+		    ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+		}
+	    }
+	}
+    }
+    if (uri->fragment != NULL) {
+	if (len + 3 >= max) {
+            temp = xml_uri_save_realloc(ret, &max);
+            if (temp == NULL) goto mem_error;
+            ret = temp;
+	}
+	ret[len++] = '#';
+	p = uri->fragment;
+	while (*p != 0) {
+	    if (len + 3 >= max) {
+                temp = xml_uri_save_realloc(ret, &max);
+                if (temp == NULL) goto mem_error;
+                ret = temp;
+	    }
+	    if ((IS_UNRESERVED(*(p))) || (IS_RESERVED(*(p))))
+		ret[len++] = *p++;
+	    else {
+		int val = *(unsigned char *)p++;
+		int hi = val / 0x10, lo = val % 0x10;
+		ret[len++] = '%';
+		ret[len++] = hi + (hi > 9? 'A'-10 : '0');
+		ret[len++] = lo + (lo > 9? 'A'-10 : '0');
+	    }
+	}
+    }
+    if (len >= max) {
+        temp = xml_uri_save_realloc(ret, &max);
+        if (temp == NULL) goto mem_error;
+        ret = temp;
+    }
+    ret[len] = 0;
+    return(ret);
+
+mem_error:
+    free(ret);
+    return(NULL);
+}
+
+/**
+ * Make sure the XmlURI struct is free of content
+ *
+ * @param uri  pointer to an XmlURI
+ */
+static void
+xml_uri_clean(XmlURI *uri) {
+    if (uri == NULL) return;
+
+    if (uri->scheme != NULL) free(uri->scheme);
+    uri->scheme = NULL;
+    if (uri->server != NULL) free(uri->server);
+    uri->server = NULL;
+    if (uri->user != NULL) free(uri->user);
+    uri->user = NULL;
+    if (uri->path != NULL) free(uri->path);
+    uri->path = NULL;
+    if (uri->fragment != NULL) free(uri->fragment);
+    uri->fragment = NULL;
+    if (uri->opaque != NULL) free(uri->opaque);
+    uri->opaque = NULL;
+    if (uri->authority != NULL) free(uri->authority);
+    uri->authority = NULL;
+    if (uri->query != NULL) free(uri->query);
+    uri->query = NULL;
+    if (uri->query_raw != NULL) free(uri->query_raw);
+    uri->query_raw = NULL;
+}
+
+/**
+ * Free up the XmlURI struct
+ *
+ * @param uri  pointer to an XmlURI
+ */
+void
+xml_uri_free(XmlURI *uri) {
+    if (uri == NULL) return;
+
+    if (uri->scheme != NULL) free(uri->scheme);
+    if (uri->server != NULL) free(uri->server);
+    if (uri->user != NULL) free(uri->user);
+    if (uri->path != NULL) free(uri->path);
+    if (uri->fragment != NULL) free(uri->fragment);
+    if (uri->opaque != NULL) free(uri->opaque);
+    if (uri->authority != NULL) free(uri->authority);
+    if (uri->query != NULL) free(uri->query);
+    if (uri->query_raw != NULL) free(uri->query_raw);
+    free(uri);
+}
+
+/************************************************************************
+ *									*
+ *			Helper functions				*
+ *									*
+ ************************************************************************/
+
+static int
+xml_uri_is_path_separator(int c, int isFile) {
+    (void) isFile;
+
+    if (c == '/')
+        return(1);
+
+#if defined(_WIN32)
+    if (isFile && (c == '\\'))
+        return(1);
+#endif
+
+    return(0);
+}
+
+/**
+ * Normalize a filesystem path or URI.
+ *
+ * @param path  pointer to the path string
+ * @param isFile  true for filesystem paths, false for URIs
+ * @returns 0 or an error code
+ */
+static int
+xml_uri_normalize_path(char *path, int isFile) {
+    char *cur, *out;
+    int numSeg = 0;
+
+    if (path == NULL)
+	return(-1);
+
+    cur = path;
+    out = path;
+
+    if (*cur == 0)
+        return(0);
+
+    if (xml_uri_is_path_separator(*cur, isFile)) {
+        cur++;
+        *out++ = '/';
+    }
+
+    while (*cur != 0) {
+        /*
+         * At this point, out is either empty or ends with a separator.
+         * Collapse multiple separators first.
+         */
+        while (xml_uri_is_path_separator(*cur, isFile)) {
+#if defined(_WIN32)
+            /* Allow two separators at start of path */
+            if ((isFile) && (out == path + 1))
+                *out++ = '/';
+#endif
+            cur++;
+        }
+
+        if (*cur == '.') {
+            if (cur[1] == 0) {
+                /* Ignore "." at end of path */
+                break;
+            } else if (xml_uri_is_path_separator(cur[1], isFile)) {
+                /* Skip "./" */
+                cur += 2;
+                continue;
+            } else if ((cur[1] == '.') &&
+                       ((cur[2] == 0) || xml_uri_is_path_separator(cur[2], isFile))) {
+                if (numSeg > 0) {
+                    /* Handle ".." by removing last segment */
+                    do {
+                        out--;
+                    } while ((out > path) &&
+                             !xml_uri_is_path_separator(out[-1], isFile));
+                    numSeg--;
+
+                    if (cur[2] == 0)
+                        break;
+                    cur += 3;
+                    continue;
+                } else if (out[0] == '/') {
+                    /* Ignore extraneous ".." in absolute paths */
+                    if (cur[2] == 0)
+                        break;
+                    cur += 3;
+                    continue;
+                } else {
+                    /* Keep "../" at start of relative path */
+                    numSeg--;
+                }
+            }
+        }
+
+        /* Copy segment */
+        while ((*cur != 0) && !xml_uri_is_path_separator(*cur, isFile)) {
+            *out++ = *cur++;
+        }
+
+        /* Copy separator */
+        if (*cur != 0) {
+            cur++;
+            *out++ = '/';
+        }
+
+        numSeg++;
+    }
+
+    /* Keep "." if output is empty and it's a file */
+    if ((isFile) && (out <= path))
+        *out++ = '.';
+    *out = 0;
+
+    return(0);
+}
+
+/**
+ * Applies the 5 normalization steps to a path string--that is, RFC 2396
+ * Section 5.2, steps 6.c through 6.g.
+ *
+ * Normalization occurs directly on the string, no new allocation is done
+ *
+ * @param path  pointer to the path string
+ * @returns 0 or an error code
+ */
+int
+xml_uri_normalize_uri_path(char *path) {
+    return(xml_uri_normalize_path(path, 0));
+}
+
+static int xml_uri_is_hex(char c) {
+    if (((c >= '0') && (c <= '9')) ||
+        ((c >= 'a') && (c <= 'f')) ||
+        ((c >= 'A') && (c <= 'F')))
+	return(1);
+    return(0);
+}
+
+/**
+ * Unescaping routine, but does not check that the string is an URI. The
+ * output is a direct unsigned char translation of %XX values (no encoding)
+ * Note that the length of the result can only be smaller or same size as
+ * the input string.
+ *
+ * @param str  the string to unescape
+ * @param len  the length in bytes to unescape (or <= 0 to indicate full string)
+ * @param target  optional destination buffer
+ * @returns a copy of the string, but unescaped, will return NULL only in case
+ * of error
+ */
+char *
+xml_uri_unescape_string(const char *str, int len, char *target) {
+    char *ret, *out;
+    const char *in;
+
+    if (str == NULL)
+	return(NULL);
+    if (len <= 0) len = strlen(str);
+    if (len < 0) return(NULL);
+
+    if (target == NULL) {
+	ret = (char*)malloc(len + 1);
+	if (ret == NULL)
+	    return(NULL);
+    } else
+	ret = target;
+    in = str;
+    out = ret;
+    while(len > 0) {
+	if ((len > 2) && (*in == '%') && (xml_uri_is_hex(in[1])) && (xml_uri_is_hex(in[2]))) {
+            int c = 0;
+	    in++;
+	    if ((*in >= '0') && (*in <= '9'))
+	        c = (*in - '0');
+	    else if ((*in >= 'a') && (*in <= 'f'))
+	        c = (*in - 'a') + 10;
+	    else if ((*in >= 'A') && (*in <= 'F'))
+	        c = (*in - 'A') + 10;
+	    in++;
+	    if ((*in >= '0') && (*in <= '9'))
+	        c = c * 16 + (*in - '0');
+	    else if ((*in >= 'a') && (*in <= 'f'))
+	        c = c * 16 + (*in - 'a') + 10;
+	    else if ((*in >= 'A') && (*in <= 'F'))
+	        c = c * 16 + (*in - 'A') + 10;
+	    in++;
+	    len -= 3;
+            /* Explicit sign change */
+	    *out++ = (char) c;
+	} else {
+	    *out++ = *in++;
+	    len--;
+	}
+    }
+    *out = 0;
+    return(ret);
+}
+
+/************************************************************************
+ *									*
+ *			Public functions				*
+ *									*
+ ************************************************************************/
+
+static int
+xml_uri_is_absolute_path(const char *path) {
+    int c = path[0];
+
+    if (xml_uri_is_path_separator(c, 1))
+        return(1);
+
+#if defined(_WIN32)
+    if ((((c >= 'A') && (c <= 'Z')) ||
+         ((c >= 'a') && (c <= 'z'))) &&
+        (path[1] == ':'))
+        return(1);
+#endif
+
+    return(0);
+}
+
+/**
+ * Resolves a filesystem path from a base path.
+ *
+ * @param escRef  the filesystem path
+ * @param base  the base value
+ * @param out  pointer to result URI
+ * @returns 0 on success, -1 if a memory allocation failed or an error
+ * code if URI or base are invalid.
+ */
+static int
+xml_uri_resolve_path(const char *escRef, const char *base, char **out) {
+    const char *fragment;
+    char *tmp = NULL;
+    char *ref = NULL;
+    char *result = NULL;
+    int ret = -1;
+    int i;
+
+    if (out == NULL)
+        return(1);
+    *out = NULL;
+
+    if ((escRef == NULL) || (escRef[0] == 0)) {
+        if ((base == NULL) || (base[0] == 0))
+            return(1);
+        ref = xml_uri_strdup(base);
+        if (ref == NULL)
+            goto err_memory;
+        *out = ref;
+        return(0);
+    }
+
+    /*
+     * If a URI is resolved, we can assume it is a valid URI and not
+     * a filesystem path. This means we have to unescape the part
+     * before the fragment.
+     */
+    fragment = strchr(escRef, '#');
+    if (fragment != NULL) {
+        tmp = xml_uri_strndup(escRef, fragment - escRef);
+        if (tmp == NULL)
+            goto err_memory;
+        escRef = tmp;
+    }
+
+    ref = (char*)xml_uri_unescape_string((char*)escRef, -1, NULL);
+    if (ref == NULL)
+        goto err_memory;
+
+    if ((base == NULL) || (base[0] == 0))
+        goto done;
+
+    if (xml_uri_is_absolute_path(ref))
+        goto done;
+
+    /*
+     * Remove last segment from base
+     */
+    i = xml_uri_strlen(base);
+    while ((i > 0) && !xml_uri_is_path_separator(base[i-1], 1))
+        i--;
+
+    /*
+     * Concatenate base and ref
+     */
+    if (i > 0) {
+        int refLen = xml_uri_strlen(ref);
+
+        result = (char*)malloc(i + refLen + 1);
+        if (result == NULL)
+            goto err_memory;
+
+        memcpy(result, base, i);
+        memcpy(result + i, ref, refLen + 1);
+    }
+
+    /*
+     * Normalize
+     */
+    xml_uri_normalize_path((char*)result, 1);
+
+done:
+    if (result == NULL) {
+        result = ref;
+        ref = NULL;
+    }
+
+    if (fragment != NULL) {
+        result = xml_uri_strcat(result, fragment);
+        if (result == NULL)
+            goto err_memory;
+    }
+
+    *out = result;
+    ret = 0;
+
+err_memory:
+    free(tmp);
+    free(ref);
+    return(ret);
+}
+
+/**
+ * Computes he final URI of the reference done by checking that
+ * the given URI is valid, and building the final URI using the
+ * base URI. This is processed according to section 5.2 of the
+ * RFC 2396
+ *
+ * 5.2. Resolving Relative References to Absolute Form
+ *
+ * @since 2.13.0
+ *
+ * @param URI  the URI instance found in the document
+ * @param base  the base value
+ * @param valPtr  pointer to result URI
+ * @returns 0 on success, -1 if a memory allocation failed or an error
+ * code if URI or base are invalid.
+ */
+int
+xml_uri_build_safe(const char *URI, const char *base, char **valPtr) {
+    char *val = NULL;
+    int ret, len, indx, cur, out;
+    XmlURI *ref = NULL;
+    XmlURI *bas = NULL;
+    XmlURI *res = NULL;
+
+    if (valPtr == NULL)
+        return(1);
+    *valPtr = NULL;
+
+    if (URI == NULL)
+        return(1);
+
+    if (base == NULL) {
+        val = xml_uri_strdup(URI);
+        if (val == NULL)
+            return(-1);
+        *valPtr = val;
+        return(0);
+    }
+
+    /*
+     * 1) The URI reference is parsed into the potential four components and
+     *    fragment identifier, as described in Section 4.3.
+     *
+     *    NOTE that a completely empty URI is treated by modern browsers
+     *    as a reference to "." rather than as a synonym for the current
+     *    URI.  Should we do that here?
+     */
+    if (URI[0] != 0)
+        ret = xml_uri_parse_safe((const char*)URI, &ref);
+    else
+        ret = 0;
+    if (ret != 0)
+	goto done;
+    if ((ref != NULL) && (ref->scheme != NULL)) {
+	/*
+	 * The URI is absolute don't modify.
+	 */
+	val = xml_uri_strdup(URI);
+        if (val == NULL)
+            ret = -1;
+	goto done;
+    }
+
+    /*
+     * If base has no scheme or authority, it is assumed to be a
+     * filesystem path.
+     */
+    if (strstr(base, "://") == NULL) {
+        xml_uri_free(ref);
+        return(xml_uri_resolve_path(URI, base, valPtr));
+    }
+
+#if defined(_WIN32)
+    /*
+     * Resolve paths with a Windows drive letter as filesystem path
+     * even if base has a scheme.
+     */
+    if ((ref != NULL) && (ref->path != NULL)) {
+        int c = ref->path[0];
+
+        if ((((c >= 'A') && (c <= 'Z')) ||
+             ((c >= 'a') && (c <= 'z'))) &&
+            (ref->path[1] == ':')) {
+            xml_uri_free(ref);
+            return(xml_uri_resolve_path(URI, base, valPtr));
+        }
+    }
+#endif
+
+    ret = xml_uri_parse_safe((const char*)base, &bas);
+    if (ret < 0)
+        goto done;
+    if (ret != 0) {
+	if (ref) {
+            ret = 0;
+	    val = xml_uri_save(ref);
+            if (val == NULL)
+                ret = -1;
+        }
+	goto done;
+    }
+    if (ref == NULL) {
+	/*
+	 * the base fragment must be ignored
+	 */
+	if (bas->fragment != NULL) {
+	    free(bas->fragment);
+	    bas->fragment = NULL;
+	}
+	val = xml_uri_save(bas);
+        if (val == NULL)
+            ret = -1;
+	goto done;
+    }
+
+    /*
+     * 2) If the path component is empty and the scheme, authority, and
+     *    query components are undefined, then it is a reference to the
+     *    current document and we are done.  Otherwise, the reference URI's
+     *    query and fragment components are defined as found (or not found)
+     *    within the URI reference and not inherited from the base URI.
+     *
+     *    NOTE that in modern browsers, the parsing differs from the above
+     *    in the following aspect:  the query component is allowed to be
+     *    defined while still treating this as a reference to the current
+     *    document.
+     */
+    ret = -1;
+    res = xml_uri_create();
+    if (res == NULL)
+	goto done;
+    if ((ref->scheme == NULL) && (ref->path == NULL) &&
+	((ref->authority == NULL) && (ref->server == NULL) &&
+         (ref->port == PORT_EMPTY))) {
+	if (bas->scheme != NULL) {
+	    res->scheme = xml_uri_strdup(bas->scheme);
+            if (res->scheme == NULL)
+                goto done;
+        }
+	if (bas->authority != NULL) {
+	    res->authority = xml_uri_strdup(bas->authority);
+            if (res->authority == NULL)
+                goto done;
+        } else {
+	    if (bas->server != NULL) {
+		res->server = xml_uri_strdup(bas->server);
+                if (res->server == NULL)
+                    goto done;
+            }
+	    if (bas->user != NULL) {
+		res->user = xml_uri_strdup(bas->user);
+                if (res->user == NULL)
+                    goto done;
+            }
+	    res->port = bas->port;
+	}
+	if (bas->path != NULL) {
+	    res->path = xml_uri_strdup(bas->path);
+            if (res->path == NULL)
+                goto done;
+        }
+	if (ref->query_raw != NULL) {
+	    res->query_raw = xml_uri_strdup (ref->query_raw);
+            if (res->query_raw == NULL)
+                goto done;
+        } else if (ref->query != NULL) {
+	    res->query = xml_uri_strdup(ref->query);
+            if (res->query == NULL)
+                goto done;
+        } else if (bas->query_raw != NULL) {
+	    res->query_raw = xml_uri_strdup(bas->query_raw);
+            if (res->query_raw == NULL)
+                goto done;
+        } else if (bas->query != NULL) {
+	    res->query = xml_uri_strdup(bas->query);
+            if (res->query == NULL)
+                goto done;
+        }
+	if (ref->fragment != NULL) {
+	    res->fragment = xml_uri_strdup(ref->fragment);
+            if (res->fragment == NULL)
+                goto done;
+        }
+	goto step_7;
+    }
+
+    /*
+     * 3) If the scheme component is defined, indicating that the reference
+     *    starts with a scheme name, then the reference is interpreted as an
+     *    absolute URI and we are done.  Otherwise, the reference URI's
+     *    scheme is inherited from the base URI's scheme component.
+     */
+    if (ref->scheme != NULL) {
+	val = xml_uri_save(ref);
+        if (val != NULL)
+            ret = 0;
+	goto done;
+    }
+    if (bas->scheme != NULL) {
+	res->scheme = xml_uri_strdup(bas->scheme);
+        if (res->scheme == NULL)
+            goto done;
+    }
+
+    if (ref->query_raw != NULL) {
+	res->query_raw = xml_uri_strdup(ref->query_raw);
+        if (res->query_raw == NULL)
+            goto done;
+    } else if (ref->query != NULL) {
+	res->query = xml_uri_strdup(ref->query);
+        if (res->query == NULL)
+            goto done;
+    }
+    if (ref->fragment != NULL) {
+	res->fragment = xml_uri_strdup(ref->fragment);
+        if (res->fragment == NULL)
+            goto done;
+    }
+
+    /*
+     * 4) If the authority component is defined, then the reference is a
+     *    network-path and we skip to step 7.  Otherwise, the reference
+     *    URI's authority is inherited from the base URI's authority
+     *    component, which will also be undefined if the URI scheme does not
+     *    use an authority component.
+     */
+    if ((ref->authority != NULL) || (ref->server != NULL) ||
+         (ref->port != PORT_EMPTY)) {
+	if (ref->authority != NULL) {
+	    res->authority = xml_uri_strdup(ref->authority);
+            if (res->authority == NULL)
+                goto done;
+        } else {
+            if (ref->server != NULL) {
+                res->server = xml_uri_strdup(ref->server);
+                if (res->server == NULL)
+                    goto done;
+            }
+	    if (ref->user != NULL) {
+		res->user = xml_uri_strdup(ref->user);
+                if (res->user == NULL)
+                    goto done;
+            }
+            res->port = ref->port;
+	}
+	if (ref->path != NULL) {
+	    res->path = xml_uri_strdup(ref->path);
+            if (res->path == NULL)
+                goto done;
+        }
+	goto step_7;
+    }
+    if (bas->authority != NULL) {
+	res->authority = xml_uri_strdup(bas->authority);
+        if (res->authority == NULL)
+            goto done;
+    } else if ((bas->server != NULL) || (bas->port != PORT_EMPTY)) {
+	if (bas->server != NULL) {
+	    res->server = xml_uri_strdup(bas->server);
+            if (res->server == NULL)
+                goto done;
+        }
+	if (bas->user != NULL) {
+	    res->user = xml_uri_strdup(bas->user);
+            if (res->user == NULL)
+                goto done;
+        }
+	res->port = bas->port;
+    }
+
+    /*
+     * 5) If the path component begins with a slash character ("/"), then
+     *    the reference is an absolute-path and we skip to step 7.
+     */
+    if ((ref->path != NULL) && (ref->path[0] == '/')) {
+	res->path = xml_uri_strdup(ref->path);
+        if (res->path == NULL)
+            goto done;
+	goto step_7;
+    }
+
+
+    /*
+     * 6) If this step is reached, then we are resolving a relative-path
+     *    reference.  The relative path needs to be merged with the base
+     *    URI's path.  Although there are many ways to do this, we will
+     *    describe a simple method using a separate string buffer.
+     *
+     * Allocate a buffer large enough for the result string.
+     */
+    len = 2; /* extra / and 0 */
+    if (ref->path != NULL)
+	len += strlen(ref->path);
+    if (bas->path != NULL)
+	len += strlen(bas->path);
+    res->path = (char*)malloc(len);
+    if (res->path == NULL)
+	goto done;
+    res->path[0] = 0;
+
+    /*
+     * a) All but the last segment of the base URI's path component is
+     *    copied to the buffer.  In other words, any characters after the
+     *    last (right-most) slash character, if any, are excluded.
+     */
+    cur = 0;
+    out = 0;
+    if (bas->path != NULL) {
+	while (bas->path[cur] != 0) {
+	    while ((bas->path[cur] != 0) && (bas->path[cur] != '/'))
+		cur++;
+	    if (bas->path[cur] == 0)
+		break;
+
+	    cur++;
+	    while (out < cur) {
+		res->path[out] = bas->path[out];
+		out++;
+	    }
+	}
+    }
+    res->path[out] = 0;
+
+    /*
+     * b) The reference's path component is appended to the buffer
+     *    string.
+     */
+    if (ref->path != NULL && ref->path[0] != 0) {
+	indx = 0;
+	/*
+	 * Ensure the path includes a '/'
+	 */
+	if ((out == 0) && ((bas->server != NULL) || bas->port != PORT_EMPTY))
+	    res->path[out++] = '/';
+	while (ref->path[indx] != 0) {
+	    res->path[out++] = ref->path[indx++];
+	}
+    }
+    res->path[out] = 0;
+
+    /*
+     * Steps c) to h) are really path normalization steps
+     */
+    xml_uri_normalize_uri_path(res->path);
+
+step_7:
+
+    /*
+     * 7) The resulting URI components, including any inherited from the
+     *    base URI, are recombined to give the absolute form of the URI
+     *    reference.
+     */
+    val = xml_uri_save(res);
+    if (val != NULL)
+        ret = 0;
+
+done:
+    if (ref != NULL)
+	xml_uri_free(ref);
+    if (bas != NULL)
+	xml_uri_free(bas);
+    if (res != NULL)
+	xml_uri_free(res);
+    *valPtr = val;
+    return(ret);
+}
+
+/**
+ * Computes he final URI of the reference done by checking that
+ * the given URI is valid, and building the final URI using the
+ * base URI. This is processed according to section 5.2 of the
+ * RFC 2396
+ *
+ * 5.2. Resolving Relative References to Absolute Form
+ *
+ * @param URI  the URI instance found in the document
+ * @param base  the base value
+ * @returns a new URI string (to be freed by the caller) or NULL in case
+ *         of error.
+ */
+char *
+xml_uri_build(const char *URI, const char *base) {
+    char *out;
+
+    xml_uri_build_safe(URI, base, &out);
+    return(out);
+}
+
+/**
+ * Port of xmlURIEscapeStr: escape a string to hex, except unreserved characters,
+ * "@" and the characters in list.
+ */
+char *
+xml_uri_escape_str(const char *str, const char *list) {
+    if (str == NULL)
+	return(NULL);
+    if (str[0] == 0)
+	return(xml_uri_strdup(str));
+    size_t len = strlen(str) + 20;
+    size_t out = 0;
+    char *ret = (char*)malloc(len);
+    if (ret == NULL)
+	return(NULL);
+    for (const unsigned char *in = (const unsigned char*)str; *in != 0; ) {
+	if (len - out <= 3) {
+            len *= 2;
+            char *temp = (char*)realloc(ret, len);
+	    if (temp == NULL) {
+		free(ret);
+		return(NULL);
+	    }
+	    ret = temp;
+	}
+	unsigned char ch = *in;
+	if ((ch != '@') && (!IS_UNRESERVED(ch)) && (!(list && strchr(list, ch)))) {
+	    unsigned char val;
+	    ret[out++] = '%';
+	    val = ch >> 4;
+	    ret[out++] = (char)(val <= 9 ? '0' + val : 'A' + val - 0xA);
+	    val = ch & 0xF;
+	    ret[out++] = (char)(val <= 9 ? '0' + val : 'A' + val - 0xA);
+	    in++;
+	} else {
+	    ret[out++] = (char)*in++;
+	}
+    }
+    ret[out] = 0;
+    return(ret);
+}
+
+#undef MAX_URI_LENGTH
+#undef PORT_EMPTY
+#undef PORT_EMPTY_SERVER
+#undef IS_ALPHA
+#undef IS_LOWALPHA
+#undef IS_UPALPHA
+#undef IS_DIGIT
+#undef IS_ALPHANUM
+#undef IS_MARK
+#undef IS_UNWISE
+#undef IS_RESERVED
+#undef IS_UNRESERVED
+#undef NEXT
+#undef STRNDUP
+#undef ISA_DIGIT
+#undef ISA_ALPHA
+#undef ISA_HEXDIG
+#undef ISA_SUB_DELIM
+#undef ISA_GEN_DELIM
+#undef ISA_RESERVED
+#undef ISA_STRICTLY_UNRESERVED
+#undef ISA_PCT_ENCODED
+#undef ISA_PCHAR
+#undef ISA_UCSCHAR
+#undef ISA_UNRESERVED
+#undef XML_URI_ALLOW_UNWISE
+#undef XML_URI_NO_UNESCAPE
+#undef XML_URI_ALLOW_UCSCHAR
+
+#endif // XML_URI_MODULE
+
+// PART C XML_LIBXSLT1_XSLT_C ////////////////////////////////////////
+
+#ifdef XML_LIBXSLT1_XSLT_MODULE
+
+// The ext marker of the precomputed instructions (XSLT_EXT_MARKER).
+char xslt1_ext_marker_;
+
+// Errors /////////////////////////////////////////////////////////
+
+static void xslt_emit(const XmlLibxslt1Settings *s, const char *msg)
+{
+    if (s && s->message_callback) s->message_callback(s->message_user_data, msg);
+    else fputs(msg, stderr);
+}
+
+static char *xslt_vformat(const char *fmt, va_list ap)
+{
+    va_list aq;
+    va_copy(aq, ap);
+    int n = vsnprintf(NULL, 0, fmt, aq);
+    va_end(aq);
+    char *b = (char*)malloc((size_t)(n < 0 ? 0 : n) + 1);
+    vsnprintf(b, (size_t)(n < 0 ? 0 : n) + 1, fmt, ap);
+    return b;
+}
+
+static char *xslt_format(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    char *m = xslt_vformat(fmt, ap);
+    va_end(ap);
+    return m;
+}
+
+/** Like xsltGenericError, the message without context. */
+void xslt1_generic_error(const XmlLibxslt1Settings *s, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    char *m = xslt_vformat(fmt, ap);
+    va_end(ap);
+    xslt_emit(s, m);
+    free(m);
+}
+
+/** Port of xsltPrintErrorContext. */
+/** Port of xmlGetLineNo (without XML_PARSE_BIG_LINES the lines are 16 bits): attributes and
+    other nodes without lines use a neighbour or the parent. -1 if unknown. */
+static long xslt_libxml2_line_no(const XMQNode *node, int depth)
+{
+    if (depth >= 5 || !node) return -1;
+    XmlNodeKind k = xml_node_kind(node);
+    if (k == XML_DOM_ELEMENT || k == XML_DOM_TEXT || k == XML_DOM_COMMENT || k == XML_DOM_PI)
+    {
+        long line = xml_node_line(node);
+        return line > 65535 ? 65535 : line;
+    }
+    const XMQNode *prev = k == XML_DOM_ATTRIBUTE ? NULL : xml_node_prev(node);
+    if (prev)
+    {
+        XmlNodeKind pk = xml_node_kind(prev);
+        if (pk == XML_DOM_ELEMENT || pk == XML_DOM_TEXT || pk == XML_DOM_COMMENT || pk == XML_DOM_PI)
+            return xslt_libxml2_line_no(prev, depth + 1);
+    }
+    const XMQNode *parent = xml_node_parent(node);
+    if (parent && xml_node_kind(parent) == XML_DOM_ELEMENT) return xslt_libxml2_line_no(parent, depth + 1);
+    return -1;
+}
+
+/** The name libxml2 gives a node (node->name): text and comment nodes have names too. */
+const char *xslt1_libxml2_node_name(const XMQNode *node)
+{
+    const char *name = xml_node_name(node);
+    XmlNodeKind k = xml_node_kind(node);
+    if (k == XML_DOM_TEXT && !name) return "text";
+    if (k == XML_DOM_COMMENT) return "comment";
+    if (k == XML_DOM_CDATA) return NULL;
+    return name;
+}
+
+static void xslt_print_error_context(const XmlLibxslt1Settings *s, XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style, XMQNode *node)
+{
+    int line = 0;
+    const char *file = NULL;
+    const char *name = NULL;
+    const char *type = "error";
+
+    if (t && t->state == XSLT_STATE_OK) t->state = XSLT_STATE_ERROR;
+    if (!node && t) node = t->inst;
+    if (node)
+    {
+        if (xml_node_kind(node) == XML_DOM_DOCUMENT)
+        {
+            file = xml_dom_url(xml_node_dom(node));
+        }
+        else
+        {
+            line = xslt_libxml2_line_no(node, 0);
+            file = xml_dom_url(xml_node_dom(node));
+            name = xslt1_libxml2_node_name(node);
+        }
+    }
+    if (t) type = "runtime error";
+    else if (style) type = "compilation error";
+
+    if (file && line && name) xslt1_generic_error(s, "%s: file %s line %d element %s\n", type, file, line, name);
+    else if (file && name) xslt1_generic_error(s, "%s: file %s element %s\n", type, file, name);
+    else if (file && line) xslt1_generic_error(s, "%s: file %s line %d\n", type, file, line);
+    else if (file) xslt1_generic_error(s, "%s: file %s\n", type, file);
+    else if (name) xslt1_generic_error(s, "%s: element %s\n", type, name);
+    else xslt1_generic_error(s, "%s\n", type);
+}
+
+const XmlLibxslt1Settings *xslt1_settings_of(XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style)
+{
+    if (t) return &t->style->settings;
+    if (style) return &style->settings;
+    return NULL;
+}
+
+static void xslt_vtransform_error(const XmlLibxslt1Settings *s, XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style, XMQNode *node,
+                                  const char *fmt, va_list ap)
+{
+    if (t && t->state == XSLT_STATE_OK) t->state = XSLT_STATE_ERROR;
+    if (!node && t) node = t->inst;
+    xslt_print_error_context(s, t, style, node);
+    char *m = xslt_vformat(fmt, ap);
+    xslt_emit(s, m);
+    free(m);
+}
+
+/** Port of xsltTransformError: the context, then the message. */
+void xslt1_transform_error(XmlLibxslt1Transform *t, XmlLibxslt1Stylesheet *style, XMQNode *node, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    xslt_vtransform_error(xslt1_settings_of(t, style), t, style, node, fmt, ap);
+    va_end(ap);
+}
+
+/** xsltTransformError without transformation or stylesheet, like libxslt (the error context
+    is then just "error"), but reported through these settings. */
+void xslt1_settings_error(const XmlLibxslt1Settings *s, XMQNode *node, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    xslt_vtransform_error(s, NULL, NULL, node, fmt, ap);
+    va_end(ap);
+}
+
+void xml_libxslt1_settings_default(XmlLibxslt1Settings *settings)
+{
+    memset(settings, 0, sizeof(*settings));
+}
+
+// Helpers ////////////////////////////////////////////////////////
+
+char *xslt1_strdup(const char *s)
+{
+    if (!s) return NULL;
+    size_t n = strlen(s);
+    char *r = (char*)malloc(n + 1);
+    memcpy(r, s, n + 1);
+    return r;
+}
+
+char *xslt1_strndup(const char *s, size_t n)
+{
+    char *r = (char*)malloc(n + 1);
+    memcpy(r, s, n);
+    r[n] = 0;
+    return r;
+}
+
+bool xslt1_streq(const char *a, const char *b)
+{
+    if (!a || !b) return a == b;
+    return !strcmp(a, b);
+}
+
+bool xslt1_is_blank(int c)
+{
+    return c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D;
+}
+
+/** Port of xsltGetUTF8CharZ: one UTF-8 char from a nul terminated string, -1 on error. */
+int xslt1_utf8_char(const char *s, int *len)
+{
+    const unsigned char *utf = (const unsigned char*)s;
+    unsigned int c = utf[0];
+    if (c & 0x80)
+    {
+        if ((utf[1] & 0xc0) != 0x80) goto error;
+        if ((c & 0xe0) == 0xe0)
+        {
+            if ((utf[2] & 0xc0) != 0x80) goto error;
+            if ((c & 0xf0) == 0xf0)
+            {
+                if ((c & 0xf8) != 0xf0 || (utf[3] & 0xc0) != 0x80) goto error;
+                *len = 4;
+                c = (utf[0] & 0x7) << 18;
+                c |= (utf[1] & 0x3f) << 12;
+                c |= (utf[2] & 0x3f) << 6;
+                c |= utf[3] & 0x3f;
+            }
+            else
+            {
+                *len = 3;
+                c = (utf[0] & 0xf) << 12;
+                c |= (utf[1] & 0x3f) << 6;
+                c |= utf[2] & 0x3f;
+            }
+        }
+        else
+        {
+            *len = 2;
+            c = (utf[0] & 0x1f) << 6;
+            c |= utf[1] & 0x3f;
+        }
+    }
+    else
+    {
+        *len = 1;
+    }
+    return (int)c;
+error:
+    *len = 0;
+    return -1;
+}
+
+/** libxml2 xmlIsCharQ. */
+static bool xslt_is_char(int c)
+{
+    return c == 0x9 || c == 0xA || c == 0xD || (c >= 0x20 && c <= 0xD7FF) ||
+           (c >= 0xE000 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x10FFFF);
+}
+
+/** The namespaces in scope of an element, innermost first, like xmlGetNsList. */
+XmlXPathNamespace *xslt1_ns_list(XMQNode *node, size_t *num)
+{
+    *num = 0;
+    size_t cap = 0;
+    XmlXPathNamespace *list = NULL;
+    for (XMQNode *e = node; e; e = xml_node_parent(e))
+    {
+        if (xml_node_kind(e) != XML_DOM_ELEMENT) continue;
+        for (XmlNs *ns = xml_node_first_ns_decl(e); ns; ns = xml_ns_next_decl(ns))
+        {
+            const char *prefix = xml_ns_prefix(ns);
+            bool seen = false;
+            for (size_t i = 0; i < *num; ++i) if (xslt1_streq(list[i].prefix, prefix)) seen = true;
+            if (seen) continue;
+            if (*num == cap)
+            {
+                cap = cap ? cap * 2 : 8;
+                list = (XmlXPathNamespace*)realloc(list, cap * sizeof(XmlXPathNamespace));
+            }
+            list[*num].prefix = prefix;
+            list[*num].uri = xml_ns_href(ns);
+            (*num)++;
+        }
+    }
+    return list;
+}
+
+/** The namespace uri of a node (NULL if none or empty). */
+static const char *xslt_node_ns_uri(XMQNode *node)
+{
+    XmlNs *ns = xml_node_ns(node);
+    return ns ? xml_ns_href(ns) : NULL;
+}
+
+/** Port of xsltGetQNameURI: split name into its local part and return the namespace
+    uri of the prefix, NULL if unprefixed. *name is NULL after an unbound prefix. */
+const char *xslt1_get_qname_uri(const XmlLibxslt1Settings *s, XMQNode *node, char **name)
+{
+    char *qname = *name;
+    if (!qname || !*qname) return NULL;
+    if (!node)
+    {
+        xslt1_generic_error(s, "QName: no element for namespace lookup %s\n", qname);
+        free(qname);
+        *name = NULL;
+        return NULL;
+    }
+    // Nasty but valid.
+    if (qname[0] == ':') return NULL;
+    size_t len = 0;
+    while (qname[len] && qname[len] != ':') len++;
+    if (!qname[len]) return NULL;
+    if (qname[0] == 'x' && qname[1] == 'm' && qname[2] == 'l' && qname[3] == ':')
+    {
+        if (!qname[4]) return NULL;
+        *name = xslt1_strdup(&qname[4]);
+        free(qname);
+        return XML_DOM_XML_NAMESPACE;
+    }
+    qname[len] = 0;
+    XmlNs *ns = xml_ns_lookup_prefix(node, qname);
+    if (!ns)
+    {
+        xslt1_generic_error(s, "%s:%s : no namespace bound to prefix %s\n", qname, &qname[len + 1], qname);
+        *name = NULL;
+        free(qname);
+        return NULL;
+    }
+    *name = xslt1_strdup(&qname[len + 1]);
+    free(qname);
+    return xml_ns_href(ns);
+}
+
+/** Report an xpath error like libxml2 xmlXPathErr with the default handler: the message,
+    then the expression and a marker when the position is inside it. */
+void xslt1_report_xpath_error(const XmlLibxslt1Settings *s, const char *expr, const XmlXPathError *err)
+{
+    if (err->quiet) return;
+    xslt1_generic_error(s, "XPath error : %s\n", err->detail[0] ? err->detail : err->message);
+    // libxml2 reports errors of compiled expressions without the expression.
+    if (err->evaluating) return;
+    size_t len = expr ? strlen(expr) : 0;
+    if (expr && err->offset < 100 && err->offset < len)
+    {
+        char buf[150];
+        size_t i;
+        for (i = 0; i < err->offset; i++) buf[i] = ' ';
+        buf[i++] = '^';
+        buf[i] = 0;
+        xslt1_generic_error(s, "%s\n%s\n", expr, buf);
+    }
+}
+
+XmlXPathComp *xslt1_xpath_compile(const XmlLibxslt1Settings *s, XMQNode *elem, const char *str, bool no_variables)
+{
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    size_t nn = 0;
+    XmlXPathNamespace *nss = elem ? xslt1_ns_list(elem, &nn) : NULL;
+    st.namespaces = nss;
+    st.num_namespaces = nn;
+    st.no_variables = no_variables;
+    XmlXPathError err;
+    XmlXPathComp *comp = xml_xpath_compile(str, &st, &err);
+    if (!comp) xslt1_report_xpath_error(s, str, &err);
+    free(nss);
+    return comp;
+}
+
+
+static int xslt_allocate_extra(XmlLibxslt1Stylesheet *style)
+{
+    return style->extras_nr++;
+}
+
+/** Port of xsltAllocateExtraCtxt. */
+int xslt1_allocate_extra_ctxt(XmlLibxslt1Transform *t)
+{
+    if (t->extras_nr >= t->extras_max)
+    {
+        int nm = t->extras_max ? t->extras_max * 2 : 20;
+        if (nm <= t->extras_nr) nm = t->extras_nr + 1;
+        t->extras = (XsltRuntimeExtra*)realloc(t->extras, (size_t)nm * sizeof(XsltRuntimeExtra));
+        memset(t->extras + t->extras_max, 0, (size_t)(nm - t->extras_max) * sizeof(XsltRuntimeExtra));
+        t->extras_max = nm;
+    }
+    return t->extras_nr++;
+}
+
+#define XSLT_RUNTIME_EXTRA(t, nr) ((t)->extras[(nr)])
+
+// Patterns, port of libxslt pattern.c /////////////////////////////
+
+typedef enum
+{
+    XSLT_OP_END = 0,
+    XSLT_OP_ROOT,
+    XSLT_OP_ELEM,
+    XSLT_OP_ATTR,
+    XSLT_OP_PARENT,
+    XSLT_OP_ANCESTOR,
+    XSLT_OP_ID,
+    XSLT_OP_KEY,
+    XSLT_OP_NS,
+    XSLT_OP_ALL,
+    XSLT_OP_PI,
+    XSLT_OP_COMMENT,
+    XSLT_OP_TEXT,
+    XSLT_OP_NODE,
+    XSLT_OP_PREDICATE
+} XsltOp;
+
+typedef enum
+{
+    XSLT_AXIS_NONE = 0,
+    XSLT_AXIS_CHILD = 1,
+    XSLT_AXIS_ATTRIBUTE
+} XsltAxis;
+
+typedef struct
+{
+    int step;
+    XMQNode *node;
+} XsltStepState;
+
+typedef struct
+{
+    int nbstates;
+    int maxstates;
+    XsltStepState *states;
+} XsltStepStates;
+
+typedef struct
+{
+    XsltOp op;
+    char *value;
+    char *value2;
+    char *value3;
+    XmlXPathComp *comp;
+    // Optimisations for count.
+    int previous_extra;
+    int index_extra;
+    int len_extra;
+} XsltStepOp;
+
+struct XmlLibxslt1Pattern
+{
+    XmlLibxslt1Pattern *next;   // Siblings in the name hash.
+    float priority;
+    char *pattern;
+    char *mode;
+    char *mode_uri;
+    XsltTemplate *templ;
+    XMQNode *node;          // The containing element.
+
+    int direct;
+    int nb_step;
+    int max_step;
+    XmlXPathNamespace *ns_list; // The namespaces in scope.
+    size_t ns_nr;
+    XsltStepOp *steps;
+};
+
+typedef struct
+{
+    XmlLibxslt1Stylesheet *style;
+    XmlLibxslt1Transform *ctxt; // The transformation or NULL.
+    const char *cur;
+    const char *base;
+    XMQNode *elem;
+    int error;
+    XmlLibxslt1Pattern *comp;
+} XsltParserContext;
+
+static const XmlLibxslt1Settings *xslt_pctx_settings(XsltParserContext *ctxt)
+{
+    return ctxt->style ? &ctxt->style->settings : NULL;
+}
+
+static XmlLibxslt1Pattern *xslt_new_comp_match(void)
+{
+    XmlLibxslt1Pattern *cur = (XmlLibxslt1Pattern*)calloc(1, sizeof(XmlLibxslt1Pattern));
+    cur->max_step = 10;
+    cur->steps = (XsltStepOp*)calloc((size_t)cur->max_step, sizeof(XsltStepOp));
+    return cur;
+}
+
+static void xslt_free_comp_match(XmlLibxslt1Pattern *comp)
+{
+    if (!comp) return;
+    free(comp->pattern);
+    free(comp->ns_list);
+    free(comp->mode);
+    free(comp->mode_uri);
+    for (int i = 0; i < comp->nb_step; ++i)
+    {
+        XsltStepOp *op = &comp->steps[i];
+        free(op->value);
+        free(op->value2);
+        free(op->value3);
+        xml_xpath_comp_free(op->comp);
+    }
+    free(comp->steps);
+    free(comp);
+}
+
+static void xslt_free_comp_match_list(XmlLibxslt1Pattern *comp)
+{
+    while (comp)
+    {
+        XmlLibxslt1Pattern *cur = comp;
+        comp = comp->next;
+        xslt_free_comp_match(cur);
+    }
+}
+
+void xml_libxslt1_pattern_free(XmlLibxslt1Pattern *pattern)
+{
+    xslt_free_comp_match_list(pattern);
+}
+
+double xml_libxslt1_pattern_priority(const XmlLibxslt1Pattern *pattern)
+{
+    return pattern ? pattern->priority : 0;
+}
+
+/** Port of xsltCompMatchAdd. Takes ownership of value and value2. */
+static int xslt_comp_match_add(XsltParserContext *ctxt, XmlLibxslt1Pattern *comp, XsltOp op, char *value, char *value2, int novar)
+{
+    if (comp->nb_step >= comp->max_step)
+    {
+        comp->steps = (XsltStepOp*)realloc(comp->steps, (size_t)comp->max_step * 2 * sizeof(XsltStepOp));
+        comp->max_step *= 2;
+    }
+    XsltStepOp *s = &comp->steps[comp->nb_step];
+    memset(s, 0, sizeof(*s));
+    s->op = op;
+    s->value = value;
+    s->value2 = value2;
+    if (ctxt->ctxt)
+    {
+        s->previous_extra = xslt1_allocate_extra_ctxt(ctxt->ctxt);
+        s->index_extra = xslt1_allocate_extra_ctxt(ctxt->ctxt);
+        s->len_extra = xslt1_allocate_extra_ctxt(ctxt->ctxt);
+    }
+    else
+    {
+        s->previous_extra = xslt_allocate_extra(ctxt->style);
+        s->index_extra = xslt_allocate_extra(ctxt->style);
+        s->len_extra = xslt_allocate_extra(ctxt->style);
+    }
+    if (op == XSLT_OP_PREDICATE)
+    {
+        s->comp = xslt1_xpath_compile(xslt_pctx_settings(ctxt), ctxt->elem, value, novar != 0);
+        if (!s->comp)
+        {
+            xslt1_transform_error(NULL, ctxt->style, ctxt->elem, "Failed to compile predicate\n");
+            if (ctxt->style) ctxt->style->errors++;
+        }
+    }
+    comp->nb_step++;
+    return 0;
+}
+
+static void xslt_swap_steps(XsltStepOp *a, XsltStepOp *b)
+{
+    XsltStepOp t = *a;
+    *a = *b;
+    *b = t;
+}
+
+/** Port of xsltSwapTopCompMatch: reverse the two top steps. */
+static void xslt_swap_top_comp_match(XmlLibxslt1Pattern *comp)
+{
+    int j = comp->nb_step - 1;
+    if (j > 0) xslt_swap_steps(&comp->steps[j - 1], &comp->steps[j]);
+}
+
+/** Port of xsltReverseCompMatch. */
+static void xslt_reverse_comp_match(XsltParserContext *ctxt, XmlLibxslt1Pattern *comp)
+{
+    int i = 0;
+    int j = comp->nb_step - 1;
+    while (j > i)
+    {
+        xslt_swap_steps(&comp->steps[i], &comp->steps[j]);
+        j--;
+        i++;
+    }
+    xslt_comp_match_add(ctxt, comp, XSLT_OP_END, NULL, NULL, 0);
+
+    // Consecutive predicates: match by evaluating the whole pattern.
+    for (i = 0; i < comp->nb_step - 1; i++)
+    {
+        if (comp->steps[i].op == XSLT_OP_PREDICATE && comp->steps[i + 1].op == XSLT_OP_PREDICATE)
+        {
+            comp->direct = 1;
+            if (comp->pattern[0] != '/')
+            {
+                size_t n = strlen(comp->pattern);
+                char *query = (char*)malloc(n + 3);
+                memcpy(query, "//", 2);
+                memcpy(query + 2, comp->pattern, n + 1);
+                free(comp->pattern);
+                comp->pattern = query;
+            }
+            break;
+        }
+    }
+}
+
+// The interpreter for the precompiled patterns.
+
+static int xslt_pat_push_state(XmlLibxslt1Transform *t, XsltStepStates *states, int step, XMQNode *node)
+{
+    if (states->maxstates <= states->nbstates)
+    {
+        int nm = states->maxstates == 0 ? 4 : 2 * states->maxstates;
+        XsltStepState *tmp = (XsltStepState*)realloc(states->states, (size_t)nm * sizeof(XsltStepState));
+        if (!tmp)
+        {
+            xslt1_generic_error(&t->style->settings, "xsltPatPushState: memory re-allocation failure.\n");
+            t->state = XSLT_STATE_STOPPED;
+            return -1;
+        }
+        states->states = tmp;
+        states->maxstates = nm;
+    }
+    states->states[states->nbstates].step = step;
+    states->states[states->nbstates++].node = node;
+    return 0;
+}
+
+static bool xslt_is_document(XMQNode *n)
+{
+    return xml_node_kind(n) == XML_DOM_DOCUMENT;
+}
+
+/** Evaluate an expression with namespaces from a pattern, like libxml2 xmlXPathEval with the
+    namespaces of the xpath context set to nsList. */
+static XmlXPathResult *xslt_eval_with_ns(XmlLibxslt1Transform *t, const char *expr, XmlXPathNamespace *ns_list, size_t ns_nr,
+                                         XMQNode *node, long position, long size)
+{
+    XmlXPathSettings st;
+    xml_xpath_settings_default(&st);
+    st.namespaces = ns_list;
+    st.num_namespaces = ns_nr;
+    XmlXPathError err;
+    XmlXPathComp *comp = xml_xpath_compile(expr, &st, &err);
+    if (!comp) return NULL;
+    XmlXPathResult *r = xml_xpath_eval_comp(t->xpath, comp, node, position, size, &err);
+    xml_xpath_comp_free(comp);
+    return r;
+}
+
+static void xslt_free_result_wrapper(void *obj)
+{
+    xml_xpath_result_free((XmlXPathResult*)obj);
+}
+
+/** Port of xsltTestCompMatchDirect: evaluate the pattern as an expression and look for the node. */
+static int xslt_test_comp_match_direct(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *comp, XMQNode *node,
+                                       XmlXPathNamespace *ns_list, size_t ns_nr)
+{
+    XmlDom *doc = xml_node_dom(node);
+    bool is_rvt = xslt1_is_rtf(t, doc);
+    XsltStepOp *sel = &comp->steps[0]; // Store extra in first step arbitrarily.
+    bool nocache = false;
+
+    XmlDom *prevdoc = (XmlDom*)XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr;
+    XmlXPathResult *list = (XmlXPathResult*)XSLT_RUNTIME_EXTRA(t, sel->len_extra).info;
+
+    if (!list || prevdoc != doc)
+    {
+        XMQNode *parent = xml_node_parent(node);
+        XmlXPathResult *newlist = xslt_eval_with_ns(t, comp->pattern, ns_list, ns_nr, node, t->xp_position, t->xp_size);
+        if (!newlist) return -1;
+        if (xml_xpath_result_type(newlist) != XML_XPATH_NODESET)
+        {
+            xml_xpath_result_free(newlist);
+            return -1;
+        }
+        if (!parent || is_rvt) nocache = true;
+        if (!nocache)
+        {
+            if (list) xml_xpath_result_free(list);
+            list = newlist;
+            XSLT_RUNTIME_EXTRA(t, sel->len_extra).info = list;
+            XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr = doc;
+            XSLT_RUNTIME_EXTRA(t, sel->index_extra).val.ival = 0;
+            XSLT_RUNTIME_EXTRA(t, sel->len_extra).deallocate = xslt_free_result_wrapper;
+        }
+        else
+        {
+            list = newlist;
+        }
+    }
+    int found = 0;
+    for (size_t j = 0; j < xml_xpath_result_size(list); ++j)
+    {
+        if (xml_xpath_result_node(list, j) == node)
+        {
+            found = 1;
+            break;
+        }
+    }
+    if (nocache) xml_xpath_result_free(list);
+    return found;
+}
+
+/** Find the nodes of a key (keys.c, xsltGetKey), not yet ported. */
+
+/** Port of xsltTestStepMatch. Returns 1 if the node matches the step, 0 if not, -1 on an error. */
+static int xslt_test_step_match(XmlLibxslt1Transform *t, XMQNode *node, XsltStepOp *step)
+{
+    XmlNodeKind k = xml_node_kind(node);
+    switch (step->op)
+    {
+    case XSLT_OP_ROOT:
+        return xslt_is_document(node) ? 1 : 0;
+    case XSLT_OP_ELEM:
+    {
+        if (k != XML_DOM_ELEMENT) return 0;
+        if (!step->value) return 1;
+        if (strcmp(step->value, xml_node_name(node))) return 0;
+        // Namespace test.
+        XmlNs *ns = xml_node_ns(node);
+        if (!ns)
+        {
+            if (step->value2) return 0;
+        }
+        else if (xml_ns_href(ns))
+        {
+            if (!step->value2) return 0;
+            if (strcmp(step->value2, xml_ns_href(ns))) return 0;
+        }
+        return 1;
+    }
+    case XSLT_OP_ATTR:
+    {
+        if (k != XML_DOM_ATTRIBUTE) return 0;
+        if (step->value && strcmp(step->value, xml_node_name(node))) return 0;
+        XmlNs *ns = xml_node_ns(node);
+        if (!ns)
+        {
+            if (step->value2) return 0;
+        }
+        else if (step->value2)
+        {
+            if (!xslt1_streq(step->value2, xml_ns_href(ns))) return 0;
+        }
+        return 1;
+    }
+    case XSLT_OP_ID:
+    {
+        if (k != XML_DOM_ELEMENT) return 0;
+        XMQNode *e = xml_xpath_context_get_id(t->xpath, node, step->value);
+        if (e != node) return 0;
+        break;
+    }
+    case XSLT_OP_KEY:
+    {
+        XmlXPathResult *list = xslt1_get_key(t, step->value, step->value3, step->value2);
+        if (!list) return 0;
+        bool found = false;
+        for (size_t i = 0; i < xml_xpath_result_size(list); ++i)
+        {
+            if (xml_xpath_result_node(list, i) == node) found = true;
+        }
+        if (!found) return 0;
+        break;
+    }
+    case XSLT_OP_NS:
+    {
+        if (k != XML_DOM_ELEMENT) return 0;
+        XmlNs *ns = xml_node_ns(node);
+        if (!ns)
+        {
+            if (step->value) return 0;
+        }
+        else if (xml_ns_href(ns))
+        {
+            if (!step->value) return 0;
+            if (strcmp(step->value, xml_ns_href(ns))) return 0;
+        }
+        break;
+    }
+    case XSLT_OP_ALL:
+        if (k != XML_DOM_ELEMENT) return 0;
+        break;
+    case XSLT_OP_PI:
+        if (k != XML_DOM_PI) return 0;
+        if (step->value && !xslt1_streq(step->value, xml_node_name(node))) return 0;
+        break;
+    case XSLT_OP_COMMENT:
+        if (k != XML_DOM_COMMENT) return 0;
+        break;
+    case XSLT_OP_TEXT:
+        if (k != XML_DOM_TEXT && k != XML_DOM_CDATA) return 0;
+        break;
+    case XSLT_OP_NODE:
+        switch (k)
+        {
+        case XML_DOM_ELEMENT:
+        case XML_DOM_CDATA:
+        case XML_DOM_PI:
+        case XML_DOM_COMMENT:
+        case XML_DOM_TEXT:
+            break;
+        default:
+            return 0;
+        }
+        break;
+    default:
+        xslt1_transform_error(t, NULL, node, "xsltTestStepMatch: unexpected step op %d\n", step->op);
+        return -1;
+    }
+    return 1;
+}
+
+/** Port of xsltEvalXPathPredicate (templates.c): a number is compared with the context position. */
+static int xslt_eval_xpath_predicate(XmlLibxslt1Transform *t, XmlXPathComp *comp)
+{
+    if (!t->inst)
+    {
+        xslt1_transform_error(t, NULL, NULL, "xsltEvalXPathPredicate: No context or instruction\n");
+        return 0;
+    }
+    XmlXPathError err;
+    XmlXPathResult *res = xml_xpath_eval_comp(t->xpath, comp, t->node, t->xp_position, t->xp_size, &err);
+    int ret;
+    if (res)
+    {
+        // libxml2 xmlXPathEvalPredicate.
+        if (xml_xpath_result_type(res) == XML_XPATH_NUMBER) ret = xml_xpath_result_number(res) == (double)t->xp_position;
+        else ret = xml_xpath_result_to_boolean(res);
+        xml_xpath_result_free(res);
+    }
+    else
+    {
+        t->state = XSLT_STATE_STOPPED;
+        ret = 0;
+    }
+    return ret;
+}
+
+/** Port of xsltTestPredicateMatch. */
+static int xslt_test_predicate_match(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *comp, XMQNode *node, XsltStepOp *step, XsltStepOp *sel)
+{
+    (void)comp;
+    int pos = 0, len = 0;
+    if (!step->value || !step->comp || !sel) return 0;
+
+    XmlDom *doc = xml_node_dom(node);
+    bool is_rvt = xslt1_is_rtf(t, doc);
+
+    // Recompute the context size and position.
+    long old_cs = t->xp_size;
+    long old_cp = t->xp_position;
+    {
+        bool nocache = false;
+        XMQNode *previous = (XMQNode*)XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr;
+        if (previous && xml_node_parent(previous) == xml_node_parent(node))
+        {
+            // Just walk back to adjust the index.
+            int indx = 0;
+            XMQNode *sibling = node;
+            while (sibling)
+            {
+                if (sibling == previous) break;
+                if (xslt_test_step_match(t, sibling, sel)) indx++;
+                sibling = xml_node_prev(sibling);
+            }
+            if (!sibling)
+            {
+                // Going backward in document order.
+                indx = 0;
+                sibling = node;
+                while (sibling)
+                {
+                    if (sibling == previous) break;
+                    if (xslt_test_step_match(t, sibling, sel)) indx--;
+                    sibling = xml_node_next(sibling);
+                }
+            }
+            if (sibling)
+            {
+                pos = XSLT_RUNTIME_EXTRA(t, sel->index_extra).val.ival + indx;
+                // In a result tree fragment len is kept but the node cannot be cached.
+                len = XSLT_RUNTIME_EXTRA(t, sel->len_extra).val.ival;
+                if (!is_rvt)
+                {
+                    XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr = node;
+                    XSLT_RUNTIME_EXTRA(t, sel->index_extra).val.ival = pos;
+                }
+            }
+            else
+            {
+                pos = 0;
+            }
+        }
+        else
+        {
+            // Recompute the index.
+            XMQNode *parent = xml_node_parent(node);
+            // Like libxml2 parent->children: an attribute is never found among them, then
+            // the position stays 0 and the context position and size are not changed.
+            XMQNode *siblings = parent ? xml_node_first_child(parent) : NULL;
+            while (siblings)
+            {
+                if (siblings == node)
+                {
+                    len++;
+                    pos = len;
+                }
+                else if (xslt_test_step_match(t, siblings, sel))
+                {
+                    len++;
+                }
+                siblings = xml_node_next(siblings);
+            }
+            if (!parent)
+            {
+                nocache = true;
+            }
+            else
+            {
+                XMQNode *top = parent;
+                while (xml_node_parent(top)) top = xml_node_parent(top);
+                if (!xslt_is_document(top) || top != xml_dom_document(doc)) nocache = true;
+            }
+        }
+        if (pos != 0)
+        {
+            t->xp_size = len;
+            t->xp_position = pos;
+            if (!is_rvt && !nocache)
+            {
+                XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr = node;
+                XSLT_RUNTIME_EXTRA(t, sel->index_extra).val.ival = pos;
+                XSLT_RUNTIME_EXTRA(t, sel->len_extra).val.ival = len;
+            }
+        }
+    }
+
+    XMQNode *old_node = t->node;
+    t->node = node;
+    int match = xslt_eval_xpath_predicate(t, step->comp);
+    if (pos != 0)
+    {
+        t->xp_size = old_cs;
+        t->xp_position = old_cp;
+    }
+    t->node = old_node;
+    return match;
+}
+
+static bool xslt_name_and_ns_match(XsltStepOp *step, XMQNode *node)
+{
+    if (strcmp(step->value, xml_node_name(node))) return false;
+    XmlNs *ns = xml_node_ns(node);
+    if (!ns) return step->value2 == NULL;
+    if (xml_ns_href(ns))
+    {
+        if (!step->value2) return false;
+        if (strcmp(step->value2, xml_ns_href(ns))) return false;
+    }
+    return true;
+}
+
+/** Port of xsltTestCompMatch. Returns 1 if the node matches, 0 if not, -1 on an error. */
+static int xslt_test_comp_match(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *comp, XMQNode *match_node,
+                                const char *mode, const char *mode_uri)
+{
+    int i;
+    int found = 0;
+    XMQNode *node = match_node;
+    XsltStepOp *step, *sel = NULL;
+    XsltStepStates states = { 0, 0, NULL };
+
+    if (!comp || !node || !t)
+    {
+        xslt1_transform_error(t, NULL, node, "xsltTestCompMatch: null arg\n");
+        return -1;
+    }
+    if (!xslt1_streq(comp->mode, mode)) return 0;
+    if (!xslt1_streq(comp->mode_uri, mode_uri)) return 0;
+
+    // Some XPath functions rely on inst being set correctly.
+    XMQNode *old_inst = t->inst;
+    t->inst = comp->node;
+
+    i = 0;
+restart:
+    for (; i < comp->nb_step; i++)
+    {
+        step = &comp->steps[i];
+        if (step->op != XSLT_OP_PREDICATE) sel = step;
+        switch (step->op)
+        {
+        case XSLT_OP_END:
+            goto found;
+        case XSLT_OP_PARENT:
+            if (xslt_is_document(node) || xml_node_kind(node) == XML_DOM_NAMESPACE) goto rollback;
+            node = xml_node_parent(node);
+            if (!node) goto rollback;
+            if (!step->value) continue;
+            if (xml_node_kind(node) != XML_DOM_ELEMENT || !xml_node_name(node)) goto rollback;
+            if (!xslt_name_and_ns_match(step, node)) goto rollback;
+            continue;
+        case XSLT_OP_ANCESTOR:
+            // TODO: implement coalescing of ANCESTOR/NODE ops.
+            if (!step->value)
+            {
+                step = &comp->steps[i + 1];
+                if (step->op == XSLT_OP_ROOT) goto found;
+                // Added NS, ID and KEY as a result of bug 168208.
+                if (step->op != XSLT_OP_ELEM && step->op != XSLT_OP_ALL && step->op != XSLT_OP_NS &&
+                    step->op != XSLT_OP_ID && step->op != XSLT_OP_KEY)
+                {
+                    goto rollback;
+                }
+            }
+            if (!node) goto rollback;
+            if (xslt_is_document(node) || xml_node_kind(node) == XML_DOM_NAMESPACE) goto rollback;
+            node = xml_node_parent(node);
+            if (step->op != XSLT_OP_ELEM && step->op != XSLT_OP_ALL)
+            {
+                xslt_pat_push_state(t, &states, i, node);
+                continue;
+            }
+            i++;
+            sel = step;
+            if (!step->value)
+            {
+                xslt_pat_push_state(t, &states, i - 1, node);
+                continue;
+            }
+            while (node)
+            {
+                if (xml_node_kind(node) == XML_DOM_ELEMENT && !strcmp(step->value, xml_node_name(node)))
+                {
+                    XmlNs *ns = xml_node_ns(node);
+                    if (!ns)
+                    {
+                        if (!step->value2) break;
+                    }
+                    else if (xml_ns_href(ns))
+                    {
+                        if (step->value2 && !strcmp(step->value2, xml_ns_href(ns))) break;
+                    }
+                }
+                node = xml_node_parent(node);
+            }
+            if (!node) goto rollback;
+            xslt_pat_push_state(t, &states, i - 1, node);
+            continue;
+        case XSLT_OP_PREDICATE:
+            // Cascading predicates, or a predicate after an op that is not optimized yet:
+            // evaluate the whole pattern.
+            if (comp->direct)
+            {
+                found = xslt_test_comp_match_direct(t, comp, match_node, comp->ns_list, comp->ns_nr);
+                goto exit;
+            }
+            if (!xslt_test_predicate_match(t, comp, node, step, sel)) goto rollback;
+            break;
+        default:
+            if (xslt_test_step_match(t, node, step) != 1) goto rollback;
+            break;
+        }
+    }
+found:
+    found = 1;
+exit:
+    t->inst = old_inst;
+    free(states.states);
+    return found;
+rollback:
+    // Got an error, try to roll back.
+    if (!states.states || states.nbstates <= 0)
+    {
+        found = 0;
+        goto exit;
+    }
+    states.nbstates--;
+    i = states.states[states.nbstates].step;
+    node = states.states[states.nbstates].node;
+    goto restart;
+}
+
+int xml_libxslt1_pattern_match(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Pattern *comp)
+{
+    if (!t || !node) return -1;
+    while (comp)
+    {
+        int ret = xslt_test_comp_match(t, comp, node, NULL, NULL);
+        if (ret == 1) return 1;
+        comp = comp->next;
+    }
+    return 0;
+}
+
+/** Port of xsltCompMatchClearCache: drop the cached node list of a direct match. */
+void xslt1_comp_match_clear_cache(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *comp)
+{
+    if (!t || !comp || comp->nb_step == 0) return;
+    XsltStepOp *sel = &comp->steps[0];
+    XmlXPathResult *list = (XmlXPathResult*)XSLT_RUNTIME_EXTRA(t, sel->len_extra).info;
+    if (list)
+    {
+        xml_xpath_result_free(list);
+        XSLT_RUNTIME_EXTRA(t, sel->len_extra).info = NULL;
+        XSLT_RUNTIME_EXTRA(t, sel->previous_extra).val.ptr = NULL;
+        XSLT_RUNTIME_EXTRA(t, sel->index_extra).val.ival = 0;
+        XSLT_RUNTIME_EXTRA(t, sel->len_extra).deallocate = NULL;
+    }
+}
+
+// The pattern parser (xsltCompileLocationPathPattern etc).
+
+#define CUR (*ctxt->cur)
+#define NXT(val) ctxt->cur[(val)]
+#define NEXT (*ctxt->cur ? ctxt->cur++ : ctxt->cur)
+#define SKIP_BLANKS while (xslt1_is_blank((unsigned char)CUR)) NEXT
+#define PUSH(op, val, val2, novar) if (xslt_comp_match_add(ctxt, ctxt->comp, (op), (val), (val2), (novar))) goto error;
+#define SWAP() xslt_swap_top_comp_match(ctxt->comp);
+
+/** Port of xsltScanLiteral. */
+static char *xslt_scan_literal(XsltParserContext *ctxt)
+{
+    SKIP_BLANKS;
+    char q = CUR;
+    if (q != '"' && q != '\'')
+    {
+        ctxt->error = 1;
+        return NULL;
+    }
+    NEXT;
+    const char *start = ctxt->cur;
+    const char *cur = start;
+    int len;
+    int val = xslt1_utf8_char(cur, &len);
+    while (xslt_is_char(val) && val != q)
+    {
+        cur += len;
+        val = xslt1_utf8_char(cur, &len);
+    }
+    if (!xslt_is_char(val))
+    {
+        ctxt->error = 1;
+        return NULL;
+    }
+    char *ret = xslt1_strndup(start, (size_t)(cur - start));
+    cur += len;
+    ctxt->cur = cur;
+    return ret;
+}
+
+/** Port of xsltScanNCName. */
+static char *xslt_scan_ncname(XsltParserContext *ctxt)
+{
+    SKIP_BLANKS;
+    const char *q = ctxt->cur, *cur = ctxt->cur;
+    int len;
+    int val = xslt1_utf8_char(cur, &len);
+    if (val < 0 || (!xml_char_is_base_char(val) && !xml_char_is_ideographic(val) && val != '_')) return NULL;
+    while (val >= 0 && (xml_char_is_base_char(val) || xml_char_is_ideographic(val) || xml_char_is_digit(val) ||
+                        val == '.' || val == '-' || val == '_' || xml_char_is_combining(val) || xml_char_is_extender(val)))
+    {
+        cur += len;
+        val = xslt1_utf8_char(cur, &len);
+    }
+    char *ret = xslt1_strndup(q, (size_t)(cur - q));
+    ctxt->cur = cur;
+    return ret;
+}
+
+/** libxml2 xmlXPathIsNodeType. */
+static bool xslt_is_node_type(const char *name)
+{
+    return !strcmp(name, "node") || !strcmp(name, "comment") || !strcmp(name, "text") ||
+           !strcmp(name, "processing-instruction");
+}
+
+/** Port of xsltCompileIdKeyPattern. */
+static void xslt_compile_id_key_pattern(XsltParserContext *ctxt, const char *name, int aid, int novar, XsltAxis axis)
+{
+    char *lit = NULL;
+    char *lit2 = NULL;
+    if (CUR != '(')
+    {
+        xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ( expected\n");
+        ctxt->error = 1;
+        return;
+    }
+    if (aid && !strcmp(name, "id"))
+    {
+        if (axis != 0)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : NodeTest expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        SKIP_BLANKS;
+        lit = xslt_scan_literal(ctxt);
+        if (ctxt->error)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : Literal expected\n");
+            free(lit);
+            return;
+        }
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+            free(lit);
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        PUSH(XSLT_OP_ID, lit, NULL, novar);
+        lit = NULL;
+    }
+    else if (aid && !strcmp(name, "key"))
+    {
+        if (axis != 0)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : NodeTest expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        SKIP_BLANKS;
+        lit = xslt_scan_literal(ctxt);
+        if (ctxt->error)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : Literal expected\n");
+            free(lit);
+            return;
+        }
+        SKIP_BLANKS;
+        if (CUR != ',')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : , expected\n");
+            free(lit);
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        SKIP_BLANKS;
+        lit2 = xslt_scan_literal(ctxt);
+        if (ctxt->error)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : Literal expected\n");
+            free(lit);
+            return;
+        }
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+            free(lit);
+            free(lit2);
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        // URGENT TODO (libxslt): support namespace in keys.
+        PUSH(XSLT_OP_KEY, lit, lit2, novar);
+        lit = NULL;
+        lit2 = NULL;
+    }
+    else if (!strcmp(name, "processing-instruction"))
+    {
+        NEXT;
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            lit = xslt_scan_literal(ctxt);
+            if (ctxt->error)
+            {
+                xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : Literal expected\n");
+                free(lit);
+                return;
+            }
+            SKIP_BLANKS;
+            if (CUR != ')')
+            {
+                xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+                ctxt->error = 1;
+                free(lit);
+                return;
+            }
+        }
+        NEXT;
+        PUSH(XSLT_OP_PI, lit, NULL, novar);
+        lit = NULL;
+    }
+    else if (!strcmp(name, "text"))
+    {
+        NEXT;
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        PUSH(XSLT_OP_TEXT, NULL, NULL, novar);
+    }
+    else if (!strcmp(name, "comment"))
+    {
+        NEXT;
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        PUSH(XSLT_OP_COMMENT, NULL, NULL, novar);
+    }
+    else if (!strcmp(name, "node"))
+    {
+        NEXT;
+        SKIP_BLANKS;
+        if (CUR != ')')
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : ) expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        NEXT;
+        if (axis == XSLT_AXIS_ATTRIBUTE)
+        {
+            PUSH(XSLT_OP_ATTR, NULL, NULL, novar);
+        }
+        else
+        {
+            PUSH(XSLT_OP_NODE, NULL, NULL, novar);
+        }
+    }
+    else if (aid)
+    {
+        xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : expecting 'key' or 'id' or node type\n");
+        ctxt->error = 1;
+        return;
+    }
+    else
+    {
+        xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileIdKeyPattern : node type\n");
+        ctxt->error = 1;
+        return;
+    }
+error:
+    return;
+}
+
+/** Port of xsltCompileStepPattern. Takes ownership of token. */
+static void xslt_compile_step_pattern(XsltParserContext *ctxt, char *token, int novar)
+{
+    char *url = NULL;
+    char *ret = NULL;
+    int level;
+    XsltAxis axis = XSLT_AXIS_NONE;
+
+    SKIP_BLANKS;
+    if (!token && CUR == '@')
+    {
+        NEXT;
+        axis = XSLT_AXIS_ATTRIBUTE;
+    }
+parse_node_test:
+    if (!token) token = xslt_scan_ncname(ctxt);
+    if (!token)
+    {
+        if (CUR == '*')
+        {
+            NEXT;
+            if (axis == XSLT_AXIS_ATTRIBUTE)
+            {
+                PUSH(XSLT_OP_ATTR, NULL, NULL, novar);
+            }
+            else
+            {
+                PUSH(XSLT_OP_ALL, NULL, NULL, novar);
+            }
+            goto parse_predicate;
+        }
+        else
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : Name expected\n");
+            ctxt->error = 1;
+            goto error;
+        }
+    }
+
+    SKIP_BLANKS;
+    if (CUR == '(')
+    {
+        xslt_compile_id_key_pattern(ctxt, token, 0, novar, axis);
+        free(token);
+        token = NULL;
+        if (ctxt->error) goto error;
+    }
+    else if (CUR == ':')
+    {
+        NEXT;
+        if (CUR != ':')
+        {
+            char *prefix = token;
+            // This is a namespace match.
+            token = xslt_scan_ncname(ctxt);
+            XmlNs *ns = ctxt->elem ? xml_ns_lookup_prefix(ctxt->elem, prefix) : NULL;
+            if (!ns)
+            {
+                xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : no namespace bound to prefix %s\n", prefix);
+                free(prefix);
+                ctxt->error = 1;
+                goto error;
+            }
+            url = xslt1_strdup(xml_ns_href(ns));
+            free(prefix);
+            if (!token)
+            {
+                if (CUR == '*')
+                {
+                    NEXT;
+                    if (axis == XSLT_AXIS_ATTRIBUTE)
+                    {
+                        PUSH(XSLT_OP_ATTR, NULL, url, novar);
+                        url = NULL;
+                    }
+                    else
+                    {
+                        PUSH(XSLT_OP_NS, url, NULL, novar);
+                        url = NULL;
+                    }
+                }
+                else
+                {
+                    xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : Name expected\n");
+                    ctxt->error = 1;
+                    goto error;
+                }
+            }
+            else
+            {
+                if (axis == XSLT_AXIS_ATTRIBUTE)
+                {
+                    PUSH(XSLT_OP_ATTR, token, url, novar);
+                    token = NULL;
+                    url = NULL;
+                }
+                else
+                {
+                    PUSH(XSLT_OP_ELEM, token, url, novar);
+                    token = NULL;
+                    url = NULL;
+                }
+            }
+        }
+        else
+        {
+            if (axis != 0)
+            {
+                xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : NodeTest expected\n");
+                ctxt->error = 1;
+                goto error;
+            }
+            NEXT;
+            if (!strcmp(token, "child"))
+            {
+                axis = XSLT_AXIS_CHILD;
+            }
+            else if (!strcmp(token, "attribute"))
+            {
+                axis = XSLT_AXIS_ATTRIBUTE;
+            }
+            else
+            {
+                xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : 'child' or 'attribute' expected\n");
+                ctxt->error = 1;
+                goto error;
+            }
+            free(token);
+            token = NULL;
+            SKIP_BLANKS;
+            token = xslt_scan_ncname(ctxt);
+            goto parse_node_test;
+        }
+    }
+    else
+    {
+        const char *uri = xslt1_get_qname_uri(xslt_pctx_settings(ctxt), ctxt->elem, &token);
+        if (!token)
+        {
+            ctxt->error = 1;
+            goto error;
+        }
+        if (uri) url = xslt1_strdup(uri);
+        if (axis == XSLT_AXIS_ATTRIBUTE)
+        {
+            PUSH(XSLT_OP_ATTR, token, url, novar);
+            token = NULL;
+            url = NULL;
+        }
+        else
+        {
+            PUSH(XSLT_OP_ELEM, token, url, novar);
+            token = NULL;
+            url = NULL;
+        }
+    }
+parse_predicate:
+    SKIP_BLANKS;
+    level = 0;
+    while (CUR == '[')
+    {
+        level++;
+        NEXT;
+        const char *q = ctxt->cur;
+        while (CUR != 0)
+        {
+            // Skip over nested predicates.
+            if (CUR == '[')
+            {
+                level++;
+            }
+            else if (CUR == ']')
+            {
+                level--;
+                if (level == 0) break;
+            }
+            else if (CUR == '"')
+            {
+                NEXT;
+                while (CUR != 0 && CUR != '"') NEXT;
+            }
+            else if (CUR == '\'')
+            {
+                NEXT;
+                while (CUR != 0 && CUR != '\'') NEXT;
+            }
+            NEXT;
+        }
+        if (CUR == 0)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileStepPattern : ']' expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        ret = xslt1_strndup(q, (size_t)(ctxt->cur - q));
+        PUSH(XSLT_OP_PREDICATE, ret, NULL, novar);
+        ret = NULL;
+        // Push the predicate lower than the local test.
+        SWAP();
+        NEXT;
+        SKIP_BLANKS;
+    }
+    return;
+error:
+    free(token);
+    free(url);
+    free(ret);
+}
+
+/** Port of xsltCompileRelativePathPattern. */
+static void xslt_compile_relative_path_pattern(XsltParserContext *ctxt, char *token, int novar)
+{
+    xslt_compile_step_pattern(ctxt, token, novar);
+    if (ctxt->error) goto error;
+    SKIP_BLANKS;
+    while (CUR != 0 && CUR != '|')
+    {
+        if (CUR == '/' && NXT(1) == '/')
+        {
+            PUSH(XSLT_OP_ANCESTOR, NULL, NULL, novar);
+            NEXT;
+            NEXT;
+            SKIP_BLANKS;
+            xslt_compile_step_pattern(ctxt, NULL, novar);
+        }
+        else if (CUR == '/')
+        {
+            PUSH(XSLT_OP_PARENT, NULL, NULL, novar);
+            NEXT;
+            SKIP_BLANKS;
+            xslt_compile_step_pattern(ctxt, NULL, novar);
+        }
+        else
+        {
+            ctxt->error = 1;
+        }
+        if (ctxt->error) goto error;
+        SKIP_BLANKS;
+    }
+error:
+    return;
+}
+
+/** Port of xsltCompileLocationPathPattern. */
+static void xslt_compile_location_path_pattern(XsltParserContext *ctxt, int novar)
+{
+    SKIP_BLANKS;
+    if (CUR == '/' && NXT(1) == '/')
+    {
+        // Since the query is reversed a leading // can be safely ignored.
+        NEXT;
+        NEXT;
+        ctxt->comp->priority = 0.5; // '//' means not 0 priority.
+        xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+    }
+    else if (CUR == '/')
+    {
+        // We need to find root as the parent.
+        NEXT;
+        SKIP_BLANKS;
+        PUSH(XSLT_OP_ROOT, NULL, NULL, novar);
+        if (CUR != 0 && CUR != '|')
+        {
+            PUSH(XSLT_OP_PARENT, NULL, NULL, novar);
+            xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+        }
+    }
+    else if (CUR == '*')
+    {
+        xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+    }
+    else if (CUR == '@')
+    {
+        xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+    }
+    else
+    {
+        char *name = xslt_scan_ncname(ctxt);
+        if (!name)
+        {
+            xslt1_settings_error(xslt_pctx_settings(ctxt), NULL, "xsltCompileLocationPathPattern : Name expected\n");
+            ctxt->error = 1;
+            return;
+        }
+        SKIP_BLANKS;
+        if (CUR == '(' && !xslt_is_node_type(name))
+        {
+            xslt_compile_id_key_pattern(ctxt, name, 1, novar, XSLT_AXIS_NONE);
+            free(name);
+            name = NULL;
+            if (ctxt->error) return;
+            if (CUR == '/' && NXT(1) == '/')
+            {
+                PUSH(XSLT_OP_ANCESTOR, NULL, NULL, novar);
+                NEXT;
+                NEXT;
+                SKIP_BLANKS;
+                xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+            }
+            else if (CUR == '/')
+            {
+                PUSH(XSLT_OP_PARENT, NULL, NULL, novar);
+                NEXT;
+                SKIP_BLANKS;
+                xslt_compile_relative_path_pattern(ctxt, NULL, novar);
+            }
+            return;
+        }
+        xslt_compile_relative_path_pattern(ctxt, name, novar);
+    }
+error:
+    return;
+}
+
+/** Port of xsltCompilePatternInternal. */
+static XmlLibxslt1Pattern *xslt_compile_pattern_internal(const char *pattern, XMQNode *node, XmlLibxslt1Stylesheet *style,
+                                                     XmlLibxslt1Transform *runtime, int novar)
+{
+    XmlLibxslt1Pattern *element, *first = NULL, *previous = NULL;
+    int current, start, end, level;
+
+    if (!pattern)
+    {
+        xslt1_settings_error(style ? &style->settings : NULL, node, "xsltCompilePattern : NULL pattern\n");
+        return NULL;
+    }
+
+    XsltParserContext pctx;
+    memset(&pctx, 0, sizeof(pctx));
+    XsltParserContext *ctxt = &pctx;
+    ctxt->style = style;
+    ctxt->ctxt = runtime;
+    ctxt->elem = node;
+    current = end = 0;
+    while (pattern[current] != 0)
+    {
+        start = current;
+        while (xslt1_is_blank((unsigned char)pattern[current])) current++;
+        end = current;
+        level = 0;
+        while (pattern[end] != 0 && (pattern[end] != '|' || level != 0))
+        {
+            if (pattern[end] == '[')
+            {
+                level++;
+            }
+            else if (pattern[end] == ']')
+            {
+                level--;
+            }
+            else if (pattern[end] == '\'')
+            {
+                end++;
+                while (pattern[end] != 0 && pattern[end] != '\'') end++;
+            }
+            else if (pattern[end] == '"')
+            {
+                end++;
+                while (pattern[end] != 0 && pattern[end] != '"') end++;
+            }
+            if (pattern[end] == 0) break;
+            end++;
+        }
+        if (current == end)
+        {
+            xslt1_settings_error(style ? &style->settings : NULL, node, "xsltCompilePattern : NULL pattern\n");
+            goto error;
+        }
+        element = xslt_new_comp_match();
+        if (!first) first = element;
+        else if (previous) previous->next = element;
+        previous = element;
+
+        ctxt->comp = element;
+        ctxt->base = xslt1_strndup(&pattern[start], (size_t)(end - start));
+        ctxt->cur = &ctxt->base[current - start];
+        element->pattern = (char*)ctxt->base;
+        element->node = node;
+        element->ns_list = node ? xslt1_ns_list(node, &element->ns_nr) : NULL;
+
+        // Preset default priority to be zero, may be changed by the location path.
+        element->priority = 0;
+        xslt_compile_location_path_pattern(ctxt, novar);
+        if (ctxt->error)
+        {
+            xslt1_transform_error(NULL, style, node, "xsltCompilePattern : failed to compile '%s'\n", element->pattern);
+            if (style) style->errors++;
+            goto error;
+        }
+
+        // Reverse for faster interpretation.
+        xslt_reverse_comp_match(ctxt, element);
+
+        // Set-up the priority.
+        if (element->priority == 0)
+        {
+            XsltStepOp *s0 = &element->steps[0];
+            XsltStepOp *s1 = &element->steps[1];
+            if ((s0->op == XSLT_OP_ELEM || s0->op == XSLT_OP_ATTR || s0->op == XSLT_OP_PI) &&
+                s0->value && s1->op == XSLT_OP_END)
+            {
+                ; // Previously preset.
+            }
+            else if (s0->op == XSLT_OP_ATTR && s0->value2 && s1->op == XSLT_OP_END)
+            {
+                element->priority = -0.25;
+            }
+            else if (s0->op == XSLT_OP_NS && s0->value && s1->op == XSLT_OP_END)
+            {
+                element->priority = -0.25;
+            }
+            else if (s0->op == XSLT_OP_ATTR && !s0->value && !s0->value2 && s1->op == XSLT_OP_END)
+            {
+                element->priority = -0.5;
+            }
+            else if ((s0->op == XSLT_OP_PI || s0->op == XSLT_OP_TEXT || s0->op == XSLT_OP_ALL ||
+                      s0->op == XSLT_OP_NODE || s0->op == XSLT_OP_COMMENT) && s1->op == XSLT_OP_END)
+            {
+                element->priority = -0.5;
+            }
+            else
+            {
+                element->priority = 0.5;
+            }
+        }
+        if (pattern[end] == '|') end++;
+        current = end;
+    }
+    if (end == 0)
+    {
+        xslt1_transform_error(NULL, style, node, "xsltCompilePattern : NULL pattern\n");
+        if (style) style->errors++;
+        goto error;
+    }
+    return first;
+
+error:
+    xslt_free_comp_match_list(first);
+    return NULL;
+}
+
+XmlLibxslt1Pattern *xml_libxslt1_pattern_compile(XmlLibxslt1Stylesheet *style, const char *pattern, XMQNode *element, bool no_variables)
+{
+    return xslt_compile_pattern_internal(pattern, element, style, NULL, no_variables ? 1 : 0);
+}
+
+#undef CUR
+#undef NXT
+#undef NEXT
+#undef SKIP_BLANKS
+#undef PUSH
+#undef SWAP
+
+// Template registration and lookup (pattern.c xsltAddTemplate, xsltGetTemplate).
+
+/** The key of the template hash, like xmlHashAddEntry3 with name, mode and mode uri. */
+char *xslt1_hash3_key(const char *a, const char *b, const char *c)
+{
+    MemBuffer *mb = new_membuffer();
+    const char *parts[3] = { a, b, c };
+    for (int i = 0; i < 3; ++i)
+    {
+        if (i) membuffer_append_char(mb, 1);
+        if (parts[i]) membuffer_append(mb, parts[i]);
+        else membuffer_append_char(mb, 2);
+    }
+    membuffer_append_null(mb);
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+/** Insert pat into a priority ordered list (equal priorities: the later one first). */
+static void xslt_insert_by_priority(XmlLibxslt1Pattern **top, XmlLibxslt1Pattern *pat)
+{
+    XmlLibxslt1Pattern *list = *top;
+    if (!list)
+    {
+        *top = pat;
+        pat->next = NULL;
+    }
+    else if (list->priority <= pat->priority)
+    {
+        pat->next = list;
+        *top = pat;
+    }
+    else
+    {
+        while (list->next)
+        {
+            if (list->next->priority <= pat->priority) break;
+            list = list->next;
+        }
+        pat->next = list->next;
+        list->next = pat;
+    }
+}
+
+/** Port of xsltAddTemplate. */
+static int xslt_add_template(XmlLibxslt1Stylesheet *style, XsltTemplate *cur, const char *mode, const char *mode_uri)
+{
+    if (!style || !cur) return -1;
+    if (cur->next) cur->position = cur->next->position + 1;
+
+    // Register a named template.
+    if (cur->name)
+    {
+        if (!style->named_templates) style->named_templates = hashmap_create(64);
+        char *key = xslt1_hash3_key(cur->name, cur->name_uri, NULL);
+        if (hashmap_get(style->named_templates, key))
+        {
+            free(key);
+            xslt1_transform_error(NULL, style, cur->elem, "xsl:template: error duplicate name '%s'\n", cur->name);
+            style->errors++;
+            return -1;
+        }
+        hashmap_put(style->named_templates, key, cur);
+        free(key);
+    }
+
+    if (!cur->match)
+    {
+        if (!cur->name)
+        {
+            xslt1_transform_error(NULL, style, cur->elem, "xsl:template: need to specify match or name attribute\n");
+            style->errors++;
+            return -1;
+        }
+        return 0;
+    }
+
+    float priority = cur->priority;
+    XmlLibxslt1Pattern *pat = xslt_compile_pattern_internal(cur->match, cur->elem, style, NULL, 1);
+    if (!pat) return -1;
+    while (pat)
+    {
+        XmlLibxslt1Pattern *next = pat->next;
+        pat->next = NULL;
+        const char *name = NULL;
+        XmlLibxslt1Pattern **top = NULL;
+
+        pat->templ = cur;
+        if (mode) pat->mode = xslt1_strdup(mode);
+        if (mode_uri) pat->mode_uri = xslt1_strdup(mode_uri);
+        if (priority != XSLT_PAT_NO_PRIORITY) pat->priority = priority;
+
+        // Insert it in the hash table list corresponding to its lookup name.
+        switch (pat->steps[0].op)
+        {
+        case XSLT_OP_ATTR:
+            if (pat->steps[0].value) name = pat->steps[0].value;
+            else top = &style->attr_match;
+            break;
+        case XSLT_OP_PARENT:
+        case XSLT_OP_ANCESTOR:
+            top = &style->elem_match;
+            break;
+        case XSLT_OP_ROOT:
+            top = &style->root_match;
+            break;
+        case XSLT_OP_KEY:
+            top = &style->key_match;
+            break;
+        case XSLT_OP_ID:
+        case XSLT_OP_NS:
+        case XSLT_OP_ALL:
+            top = &style->elem_match;
+            break;
+        case XSLT_OP_END:
+        case XSLT_OP_PREDICATE:
+            xslt1_transform_error(NULL, style, NULL, "xsltAddTemplate: invalid compiled pattern\n");
+            xslt_free_comp_match(pat);
+            xslt_free_comp_match_list(next);
+            return -1;
+        case XSLT_OP_PI:
+            if (pat->steps[0].value) name = pat->steps[0].value;
+            else top = &style->pi_match;
+            break;
+        case XSLT_OP_COMMENT:
+            top = &style->comment_match;
+            break;
+        case XSLT_OP_TEXT:
+            top = &style->text_match;
+            break;
+        case XSLT_OP_ELEM:
+        case XSLT_OP_NODE:
+            if (pat->steps[0].value) name = pat->steps[0].value;
+            else top = &style->elem_match;
+            break;
+        }
+        if (name)
+        {
+            if (!style->templates_hash) style->templates_hash = hashmap_create(1024);
+            char *key = xslt1_hash3_key(name, mode, mode_uri);
+            XmlLibxslt1Pattern *list = (XmlLibxslt1Pattern*)hashmap_get(style->templates_hash, key);
+            if (!list)
+            {
+                hashmap_put(style->templates_hash, key, pat);
+            }
+            else
+            {
+                // Note <= since one must choose, among the matching template rules that are
+                // left, the one that occurs last in the stylesheet.
+                XmlLibxslt1Pattern *head = list;
+                xslt_insert_by_priority(&head, pat);
+                if (head != list) hashmap_put(style->templates_hash, key, head);
+            }
+            free(key);
+        }
+        else if (top)
+        {
+            xslt_insert_by_priority(top, pat);
+        }
+        pat = next;
+    }
+    return 0;
+}
+
+/** Port of xsltNextImport (imports.c). */
+XmlLibxslt1Stylesheet *xslt1_next_import(XmlLibxslt1Stylesheet *cur)
+{
+    if (!cur) return NULL;
+    if (cur->imports) return cur->imports;
+    if (cur->next) return cur->next;
+    do
+    {
+        cur = cur->parent;
+        if (!cur) break;
+        if (cur->next) return cur->next;
+    } while (cur);
+    return cur;
+}
+
+static XmlLibxslt1Pattern *xslt_first_match(XmlLibxslt1Transform *t, XmlLibxslt1Pattern *list, XMQNode *node,
+                                        XsltTemplate **ret, float *priority)
+{
+    while (list &&
+           (!*ret || list->priority > *priority ||
+            (list->priority == *priority && list->templ->position > (*ret)->position)))
+    {
+        if (xslt_test_comp_match(t, list, node, t->mode, t->mode_uri) == 1)
+        {
+            *ret = list->templ;
+            *priority = list->priority;
+            break;
+        }
+        list = list->next;
+    }
+    return list;
+}
+
+/** Port of xsltGetTemplate: the template for the node, with style the next import in scope. */
+XsltTemplate *xslt1_get_template(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Stylesheet *style)
+{
+    if (!t || !node) return NULL;
+    XmlLibxslt1Stylesheet *curstyle = style ? xslt1_next_import(style) : t->style;
+    while (curstyle && curstyle != style)
+    {
+        float priority = XSLT_PAT_NO_PRIORITY;
+        XsltTemplate *ret = NULL;
+        const char *name = NULL;
+        XmlNodeKind k = xml_node_kind(node);
+        if (curstyle->templates_hash)
+        {
+            // Use the top name as selector.
+            if (k == XML_DOM_ELEMENT || k == XML_DOM_ATTRIBUTE || k == XML_DOM_PI) name = xml_node_name(node);
+        }
+        if (name)
+        {
+            // The list of applicable expressions based on the name.
+            char *key = xslt1_hash3_key(name, t->mode, t->mode_uri);
+            XmlLibxslt1Pattern *list = (XmlLibxslt1Pattern*)hashmap_get(curstyle->templates_hash, key);
+            free(key);
+            while (list)
+            {
+                if (xslt_test_comp_match(t, list, node, t->mode, t->mode_uri) == 1)
+                {
+                    ret = list->templ;
+                    priority = list->priority;
+                    break;
+                }
+                list = list->next;
+            }
+        }
+
+        // Alternate generic matches.
+        XmlLibxslt1Pattern *list = NULL;
+        switch (k)
+        {
+        case XML_DOM_ELEMENT: list = curstyle->elem_match; break;
+        case XML_DOM_ATTRIBUTE: list = curstyle->attr_match; break;
+        case XML_DOM_PI: list = curstyle->pi_match; break;
+        case XML_DOM_DOCUMENT: list = curstyle->root_match; break;
+        case XML_DOM_TEXT:
+        case XML_DOM_CDATA: list = curstyle->text_match; break;
+        case XML_DOM_COMMENT: list = curstyle->comment_match; break;
+        default: break;
+        }
+        xslt_first_match(t, list, node, &ret, &priority);
+        // Some of the tests for elements can also apply to documents.
+        if (k == XML_DOM_DOCUMENT || k == XML_DOM_TEXT || k == XML_DOM_PI || k == XML_DOM_COMMENT)
+        {
+            xslt_first_match(t, curstyle->elem_match, node, &ret, &priority);
+        }
+    keyed_match:
+        if (xslt1_node_has_key(t, node))
+        {
+            xslt_first_match(t, curstyle->key_match, node, &ret, &priority);
+        }
+        else if (t->has_templ_key_patterns && (!t->document || t->document->nb_keys_computed < t->nb_keys))
+        {
+            // Compute all remaining keys for this document.
+            if (xslt1_compute_all_keys(t, node) == -1) return NULL;
+            if (xslt1_node_has_key(t, node)) goto keyed_match;
+        }
+        if (ret) return ret;
+        // Cycle on the next stylesheet import.
+        curstyle = xslt1_next_import(curstyle);
+    }
+    return NULL;
+}
+
+static void xslt_free_template_hashes(XmlLibxslt1Stylesheet *style)
+{
+    if (style->templates_hash)
+    {
+        HashMapIterator *i = hashmap_iterate(style->templates_hash);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(i, &key, &val)) xslt_free_comp_match_list((XmlLibxslt1Pattern*)val);
+        hashmap_free_iterator(i);
+        hashmap_free(style->templates_hash);
+    }
+    xslt_free_comp_match_list(style->root_match);
+    xslt_free_comp_match_list(style->key_match);
+    xslt_free_comp_match_list(style->elem_match);
+    xslt_free_comp_match_list(style->attr_match);
+    xslt_free_comp_match_list(style->parent_match);
+    xslt_free_comp_match_list(style->text_match);
+    xslt_free_comp_match_list(style->pi_match);
+    xslt_free_comp_match_list(style->comment_match);
+    if (style->named_templates) hashmap_free(style->named_templates);
+}
+
+// Compilation helpers ////////////////////////////////////////////
+
+bool xslt1_is_xslt_elem(const XMQNode *n)
+{
+    if (!n || xml_node_kind(n) != XML_DOM_ELEMENT) return false;
+    XmlNs *ns = xml_node_ns(n);
+    return ns && xslt1_streq(xml_ns_href(ns), XSLT_NAMESPACE);
+}
+
+bool xslt1_is_xslt_name(const XMQNode *n, const char *name)
+{
+    return xslt1_streq(xml_node_name(n), name);
+}
+
+bool xslt1_is_blank_str(const char *s)
+{
+    if (!s) return true;
+    for (; *s; s++) if (!xslt1_is_blank((unsigned char)*s)) return false;
+    return true;
+}
+
+static bool xslt_is_blank_node(const XMQNode *n)
+{
+    return xml_node_kind(n) == XML_DOM_TEXT && xslt1_is_blank_str(xml_node_content(n));
+}
+
+static char *xslt_attr_value(XMQAttr *a)
+{
+    return xml_node_string_value(xml_attr_node(a));
+}
+
+/** libxml2 xmlGetNsProp(node, name, ns): the attribute in exactly that namespace (none if ns is NULL). */
+char *xslt1_get_ns_prop_exact(XMQNode *node, const char *name, const char *ns)
+{
+    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+    {
+        if (strcmp(xml_attr_name(a), name)) continue;
+        const char *u = xslt_node_ns_uri(xml_attr_node(a));
+        if (u && !*u) u = NULL;
+        if (xslt1_streq(u, ns)) return xslt_attr_value(a);
+    }
+    return NULL;
+}
+
+/** libxml2 xmlGetProp: the first attribute with this name, in any namespace. */
+static char *xslt_get_prop(XMQNode *node, const char *name)
+{
+    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+    {
+        if (!strcmp(xml_attr_name(a), name)) return xslt_attr_value(a);
+    }
+    return NULL;
+}
+
+/** Port of xsltGetNsProp (also xsltGetCNsProp): an attribute in the namespace, or without
+    namespace when the element is in that namespace. ns NULL is xmlGetProp. */
+char *xslt1_get_ns_prop(XMQNode *node, const char *name, const char *ns)
+{
+    if (!node) return NULL;
+    if (!ns) return xslt_get_prop(node, name);
+    if (xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    const char *nuri = xslt_node_ns_uri(node);
+    for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+    {
+        if (strcmp(xml_attr_name(a), name)) continue;
+        XmlNs *an = xml_node_ns(xml_attr_node(a));
+        if ((!an && nuri && !strcmp(nuri, ns)) || (an && xslt1_streq(xml_ns_href(an), ns)))
+        {
+            char *v = xslt_attr_value(a);
+            return v ? v : xslt1_strdup("");
+        }
+    }
+    return NULL;
+}
+
+/** libxml2 xmlNodeGetSpacePreserve: 1 for preserve, 0 for default, -1 if no xml:space applies. */
+static int xslt_get_space_preserve(XMQNode *node)
+{
+    for (XMQNode *n = node; n; n = xml_node_parent(n))
+    {
+        if (xml_node_kind(n) != XML_DOM_ELEMENT) continue;
+        char *v = xslt1_get_ns_prop_exact(n, "space", XML_DOM_XML_NAMESPACE);
+        if (v)
+        {
+            int r = -1;
+            if (!strcmp(v, "preserve")) r = 1;
+            else if (!strcmp(v, "default")) r = 0;
+            free(v);
+            if (r >= 0) return r;
+        }
+    }
+    return -1;
+}
+
+static bool xslt_name_start_char(int c)
+{
+    return xml_char_is_letter(c) || c == '_';
+}
+
+static bool xslt_name_char(int c)
+{
+    return xml_char_is_letter(c) || xml_char_is_digit(c) || c == '.' || c == '-' || c == '_' ||
+           xml_char_is_combining(c) || xml_char_is_extender(c);
+}
+
+/** libxml2 xmlValidateNCName(value, 0): 0 if valid. */
+static int xslt_validate_ncname(const char *value)
+{
+    if (!value) return -1;
+    const char *cur = value;
+    int len;
+    int c = xslt1_utf8_char(cur, &len);
+    if (c < 0 || !xslt_name_start_char(c)) return 1;
+    cur += len;
+    c = xslt1_utf8_char(cur, &len);
+    while (c > 0 && xslt_name_char(c))
+    {
+        cur += len;
+        c = xslt1_utf8_char(cur, &len);
+    }
+    return c == 0 ? 0 : 1;
+}
+
+/** libxml2 xmlValidateQName(value, 0): 0 if valid. */
+int xslt1_validate_qname(const char *value)
+{
+    if (!value) return -1;
+    const char *cur = value;
+    int len;
+    int c = xslt1_utf8_char(cur, &len);
+    if (c < 0 || !xslt_name_start_char(c)) return 1;
+    cur += len;
+    c = xslt1_utf8_char(cur, &len);
+    while (c > 0 && xslt_name_char(c))
+    {
+        cur += len;
+        c = xslt1_utf8_char(cur, &len);
+    }
+    if (c == ':')
+    {
+        cur += len;
+        c = xslt1_utf8_char(cur, &len);
+        if (c < 0 || !xslt_name_start_char(c)) return 1;
+        cur += len;
+        c = xslt1_utf8_char(cur, &len);
+        while (c > 0 && xslt_name_char(c))
+        {
+            cur += len;
+            c = xslt1_utf8_char(cur, &len);
+        }
+    }
+    return c == 0 ? 0 : 1;
+}
+
+/** Port of xsltSplitQName: the local name, *prefix gets the prefix (both malloced, prefix NULL if none). */
+char *xslt1_split_qname(const char *name, char **prefix)
+{
+    *prefix = NULL;
+    if (!name) return NULL;
+    if (name[0] == ':') return xslt1_strdup(name);
+    size_t len = 0;
+    while (name[len] && name[len] != ':') len++;
+    if (!name[len]) return xslt1_strdup(name);
+    *prefix = xslt1_strndup(name, len);
+    return xslt1_strdup(name + len + 1);
+}
+
+/** Port of xsltGetQNameURI2: like xsltGetQNameURI but reported on the stylesheet. */
+static const char *xslt_get_qname_uri2(XmlLibxslt1Stylesheet *style, XMQNode *node, char **name)
+{
+    char *qname = *name;
+    if (!qname || !*qname) return NULL;
+    if (!node)
+    {
+        xslt1_generic_error(&style->settings, "QName: no element for namespace lookup %s\n", qname);
+        free(qname);
+        *name = NULL;
+        return NULL;
+    }
+    size_t len = 0;
+    while (qname[len] && qname[len] != ':') len++;
+    if (!qname[len]) return NULL;
+    if (qname[0] == 'x' && qname[1] == 'm' && qname[2] == 'l' && qname[3] == ':')
+    {
+        if (!qname[4]) return NULL;
+        *name = xslt1_strdup(&qname[4]);
+        free(qname);
+        return XML_DOM_XML_NAMESPACE;
+    }
+    char *prefix = xslt1_strndup(qname, len);
+    XmlNs *ns = xml_ns_lookup_prefix(node, prefix);
+    if (!ns)
+    {
+        if (style)
+        {
+            xslt1_transform_error(NULL, style, node, "No namespace bound to prefix '%s'.\n", prefix);
+            style->errors++;
+        }
+        else
+        {
+            xslt1_generic_error(NULL, "%s : no namespace bound to prefix %s\n", qname, prefix);
+        }
+        free(qname);
+        *name = NULL;
+        free(prefix);
+        return NULL;
+    }
+    *name = xslt1_strdup(qname + len + 1);
+    free(qname);
+    free(prefix);
+    return xml_ns_href(ns);
+}
+
+// URIs, resolved with xml_uri (libxml2 uri.c).
+
+/** Port of xmlNodeGetBase: xml:base attributes and the document url, NULL on errors. */
+char *xslt1_node_get_base(XmlDom *doc, XMQNode *cur)
+{
+    char *ret = NULL;
+    for (XMQNode *n = cur; n; n = xml_node_parent(n))
+    {
+        if (xml_node_kind(n) != XML_DOM_ELEMENT) continue;
+        char *base = xslt1_get_ns_prop_exact(n, "base", XML_DOM_XML_NAMESPACE);
+        if (!base) continue;
+        if (ret)
+        {
+            char *newbase = NULL;
+            int res = xml_uri_build_safe(ret, base, &newbase);
+            free(ret);
+            free(base);
+            if (res != 0) return NULL;
+            ret = newbase;
+        }
+        else
+        {
+            ret = base;
+        }
+        if (!strncmp(ret, "http://", 7) || !strncmp(ret, "ftp://", 6) || !strncmp(ret, "urn:", 4)) return ret;
+    }
+    const char *url = doc ? xml_dom_url(doc) : NULL;
+    if (url)
+    {
+        if (!ret) return xslt1_strdup(url);
+        char *newbase = NULL;
+        int res = xml_uri_build_safe(ret, url, &newbase);
+        free(ret);
+        if (res != 0) return NULL;
+        ret = newbase;
+    }
+    return ret;
+}
+
+// The default loader.
+
+/** Read a whole file, NULL with errno set on failure, *read_failed if it was opened but
+    could not be read (a directory gives EISDIR when read). */
+static char *xslt_read_file(const char *path, size_t *len, bool *read_failed)
+{
+    *read_failed = false;
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+    size_t cap = 65536, n = 0;
+    char *b = (char*)malloc(cap + 1);
+    while (true)
+    {
+        size_t r = fread(b + n, 1, cap - n, f);
+        n += r;
+        if (n < cap)
+        {
+            if (ferror(f))
+            {
+                int e = errno;
+                *read_failed = true;
+                fclose(f);
+                free(b);
+                errno = e;
+                return NULL;
+            }
+            break;
+        }
+        cap *= 2;
+        b = (char*)realloc(b, cap + 1);
+    }
+    fclose(f);
+    b[n] = 0;
+    *len = n;
+    return b;
+}
+
+static void xslt_loader_message(void *user_data, const char *message)
+{
+    xslt_emit((const XmlLibxslt1Settings*)user_data, message);
+}
+
+XmlDom *xml_libxslt1_default_loader(void *user_data, const char *uri, XmlLibxslt1LoadType type)
+{
+    (void)type;
+    if (!uri) return NULL;
+    const char *path = uri;
+    if (!strncmp(path, "file://", 7))
+    {
+        path += 7;
+        if (!strncmp(path, "localhost/", 10)) path += 9;
+    }
+    size_t len = 0;
+    bool read_failed;
+    char *buf = xslt_read_file(path, &len, &read_failed);
+    if (!buf)
+    {
+        // Like the libxml2 parser: an error while reading is reported as a parse error at line 1.
+        char *m = read_failed ? xslt_format("%s:1: I/O error : %s\n\n^\n", uri, strerror(errno))
+                              : xslt_format("I/O warning : failed to load \"%s\": %s\n", uri, strerror(errno));
+        xslt_emit((const XmlLibxslt1Settings*)user_data, m);
+        free(m);
+        return NULL;
+    }
+    XmlParseSettings ps;
+    xml_parse_settings_default(&ps);
+    ps.source_name = uri;
+    ps.no_cdata = true; // XML_PARSE_NOCDATA, part of XSLT_PARSE_OPTIONS.
+    ps.dtd_attr = true; // XML_PARSE_DTDATTR, part of XSLT_PARSE_OPTIONS.
+    ps.message_callback = xslt_loader_message;
+    ps.message_user_data = user_data;
+    XmlParseError err;
+    XmlDom *dom = xml_parse_buffer(buf, buf + len, &ps, &err);
+    if (!dom && err.message) xslt_emit((const XmlLibxslt1Settings*)user_data, err.message);
+    xml_parse_error_free(&err);
+    if (dom)
+    {
+        // XML_PARSE_NOENT: entities are substituted.
+        if (!xml_expand_entities(dom, NULL, NULL, len, &ps, &err))
+        {
+            if (err.message) xslt_emit((const XmlLibxslt1Settings*)user_data, err.message);
+            xml_dom_free(dom);
+            dom = NULL;
+        }
+        xml_parse_error_free(&err);
+    }
+    if (dom) xml_dom_set_url(dom, uri);
+    free(buf);
+    return dom;
+}
+
+XmlDom *xslt1_load(XmlLibxslt1Stylesheet *style, const char *uri, XmlLibxslt1LoadType type)
+{
+    if (style->settings.loader) return style->settings.loader(style->settings.loader_user_data, uri, type);
+    return xml_libxslt1_default_loader((void*)&style->settings, uri, type);
+}
+
+// Precomputation of instructions, port of libxslt preproc.c ///////
+
+static void xslt_parse_template_content(XmlLibxslt1Stylesheet *style, XMQNode *templ);
+static int xslt_check_ext_prefix(XmlLibxslt1Stylesheet *style, const char *uri);
+
+/** Port of xsltCheckTopLevelElement. */
+static int xslt_check_top_level_element(XmlLibxslt1Stylesheet *style, XMQNode *inst, int err)
+{
+    if (!style || !inst || !xml_node_ns(inst)) return -1;
+    XMQNode *parent = xml_node_parent(inst);
+    if (!parent)
+    {
+        if (err)
+        {
+            xslt1_transform_error(NULL, style, inst, "internal problem: element has no parent\n");
+            style->errors++;
+        }
+        return 0;
+    }
+    if (xml_node_kind(parent) != XML_DOM_ELEMENT || !xml_node_ns(parent) ||
+        (xml_node_ns(parent) != xml_node_ns(inst) && !xslt1_streq(xslt_node_ns_uri(parent), xslt_node_ns_uri(inst))) ||
+        (!xslt1_streq(xml_node_name(parent), "stylesheet") && !xslt1_streq(xml_node_name(parent), "transform")))
+    {
+        if (err)
+        {
+            xslt1_transform_error(NULL, style, inst, "element %s only allowed as child of stylesheet\n", xml_node_name(inst));
+            style->errors++;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+static bool xslt_same_ns(XMQNode *a, XMQNode *b)
+{
+    XmlNs *na = xml_node_ns(a), *nb = xml_node_ns(b);
+    return na == nb || (na && nb && xslt1_streq(xml_ns_href(na), xml_ns_href(nb)));
+}
+
+/** Port of xsltCheckInstructionElement. */
+static void xslt_check_instruction_element(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    if (!style || !inst || !xml_node_ns(inst) || style->literal_result) return;
+    XMQNode *parent = xml_node_parent(inst);
+    if (!parent)
+    {
+        xslt1_transform_error(NULL, style, inst, "internal problem: element has no parent\n");
+        style->errors++;
+        return;
+    }
+    while (parent && xml_node_kind(parent) != XML_DOM_DOCUMENT)
+    {
+        if (xml_node_kind(parent) == XML_DOM_ELEMENT && xml_node_ns(parent) && xslt_same_ns(parent, inst) &&
+            (xslt1_streq(xml_node_name(parent), "template") || xslt1_streq(xml_node_name(parent), "param") ||
+             xslt1_streq(xml_node_name(parent), "attribute") || xslt1_streq(xml_node_name(parent), "variable")))
+        {
+            return;
+        }
+        // No extension module has stylesheet data (extInfos), so there are no extension elements to skip.
+        parent = xml_node_parent(parent);
+    }
+    xslt1_transform_error(NULL, style, inst, "element %s only allowed within a template, variable or param\n", xml_node_name(inst));
+    style->errors++;
+}
+
+/** Port of xsltCheckParentElement. */
+static void xslt_check_parent_element(XmlLibxslt1Stylesheet *style, XMQNode *inst, const char *allow1, const char *allow2)
+{
+    if (!style || !inst || !xml_node_ns(inst) || style->literal_result) return;
+    XMQNode *parent = xml_node_parent(inst);
+    if (!parent)
+    {
+        xslt1_transform_error(NULL, style, inst, "internal problem: element has no parent\n");
+        style->errors++;
+        return;
+    }
+    if (xml_node_kind(parent) == XML_DOM_ELEMENT && xslt_same_ns(parent, inst) &&
+        (xslt1_streq(xml_node_name(parent), allow1) || xslt1_streq(xml_node_name(parent), allow2)))
+    {
+        return;
+    }
+    xslt1_transform_error(NULL, style, inst, "element %s is not allowed within that context\n", xml_node_name(inst));
+    style->errors++;
+}
+
+/** Port of xsltNewStylePreComp. */
+static XsltStylePreComp *xslt_new_style_pre_comp(XmlLibxslt1Stylesheet *style, XsltStyleType type)
+{
+    if (!style) return NULL;
+    XsltStylePreComp *cur = (XsltStylePreComp*)calloc(1, sizeof(XsltStylePreComp));
+    cur->type = type;
+    cur->next = style->pre_comps;
+    style->pre_comps = cur;
+    return cur;
+}
+
+static void xslt_free_style_pre_comp(XsltStylePreComp *comp)
+{
+    if (!comp) return;
+    xml_xpath_comp_free(comp->comp);
+    xslt_free_comp_match_list(comp->numdata.count_pat);
+    xslt_free_comp_match_list(comp->numdata.from_pat);
+    free(comp->ns_list);
+    free(comp->stype);
+    free(comp->order);
+    free(comp->lang);
+    free(comp->case_order);
+    free(comp->use);
+    free(comp->name);
+    free(comp->ns);
+    free(comp->mode);
+    free(comp->mode_uri);
+    free(comp->test);
+    free(comp->select);
+    free(comp->filename);
+    for (int i = 0; i < 5; ++i) free(comp->num_strings[i]);
+    free(comp);
+}
+
+static void xslt_free_style_pre_comps(XmlLibxslt1Stylesheet *style)
+{
+    XsltStylePreComp *cur = style->pre_comps;
+    while (cur)
+    {
+        XsltStylePreComp *next = cur->next;
+        xslt_free_style_pre_comp(cur);
+        cur = next;
+    }
+    style->pre_comps = NULL;
+}
+
+/** Port of xsltEvalStaticAttrValueTemplate: the value, unless it is an AVT (then NULL with found set). */
+static char *xslt_eval_static_avt(XmlLibxslt1Stylesheet *style, XMQNode *inst, const char *name, const char *ns, int *found)
+{
+    if (!style || !inst || !name || xml_node_kind(inst) != XML_DOM_ELEMENT) return NULL;
+    char *expr = xslt1_get_ns_prop(inst, name, ns);
+    if (!expr)
+    {
+        *found = 0;
+        return NULL;
+    }
+    *found = 1;
+    if (strchr(expr, '{'))
+    {
+        free(expr);
+        return NULL;
+    }
+    return expr;
+}
+
+static XmlXPathComp *xslt_xpath_compile_inst(XmlLibxslt1Stylesheet *style, XMQNode *inst, const char *str, bool novar)
+{
+    return xslt1_xpath_compile(&style->settings, inst, str, novar);
+}
+
+/** Port of xsltDocumentComp, for xsl:document (XSLT 1.1 draft), saxon:output, xalan:write and xt:document. */
+static XsltStylePreComp *xslt_document_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_DOCUMENT);
+    if (!comp) return NULL;
+    comp->ext = XSLT_EXT_DOCUMENT;
+    comp->inst = inst;
+    comp->ver11 = 0;
+    char *filename = NULL;
+    const char *name = xml_node_name(inst);
+    if (xslt1_streq(name, "output"))
+    {
+        filename = xslt_eval_static_avt(style, inst, "file", NULL, &comp->has_filename);
+    }
+    else if (xslt1_streq(name, "write"))
+    {
+        // The filename needs to be interpreted.
+    }
+    else if (xslt1_streq(name, "document"))
+    {
+        if (xml_node_ns(inst) && xslt1_streq(xslt_node_ns_uri(inst), XSLT_NAMESPACE)) comp->ver11 = 1;
+        filename = xslt_eval_static_avt(style, inst, "href", NULL, &comp->has_filename);
+    }
+    if (!comp->has_filename)
+    {
+        free(filename);
+        return comp;
+    }
+    comp->filename = filename;
+    return comp;
+}
+
+/** Port of xsltSortComp. */
+static void xslt_sort_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_SORT);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+
+    comp->stype = xslt_eval_static_avt(style, inst, "data-type", NULL, &comp->has_stype);
+    if (comp->stype)
+    {
+        if (!strcmp(comp->stype, "text")) comp->number = 0;
+        else if (!strcmp(comp->stype, "number")) comp->number = 1;
+        else
+        {
+            xslt1_transform_error(NULL, style, inst, "xsltSortComp: no support for data-type = %s\n", comp->stype);
+            comp->number = 0;
+            style->warnings++;
+        }
+    }
+    comp->order = xslt_eval_static_avt(style, inst, "order", NULL, &comp->has_order);
+    if (comp->order)
+    {
+        if (!strcmp(comp->order, "ascending")) comp->descending = 0;
+        else if (!strcmp(comp->order, "descending")) comp->descending = 1;
+        else
+        {
+            xslt1_transform_error(NULL, style, inst, "xsltSortComp: invalid value %s for order\n", comp->order);
+            comp->descending = 0;
+            style->warnings++;
+        }
+    }
+    comp->case_order = xslt_eval_static_avt(style, inst, "case-order", NULL, &comp->has_use);
+    if (comp->case_order)
+    {
+        if (!strcmp(comp->case_order, "upper-first")) comp->lower_first = 0;
+        else if (!strcmp(comp->case_order, "lower-first")) comp->lower_first = 1;
+        else
+        {
+            // Like libxslt, the message shows the order.
+            xslt1_transform_error(NULL, style, inst, "xsltSortComp: invalid value %s for order\n", comp->order ? comp->order : "(null)");
+            comp->lower_first = 0;
+            style->warnings++;
+        }
+    }
+    comp->lang = xslt_eval_static_avt(style, inst, "lang", NULL, &comp->has_lang);
+
+    comp->select = xslt1_get_ns_prop(inst, "select", XSLT_NAMESPACE);
+    // The default is ., the string-value of the current node is the sort key.
+    if (!comp->select) comp->select = xslt1_strdup(".");
+    comp->comp = xslt_xpath_compile_inst(style, inst, comp->select, false);
+    if (!comp->comp)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsltSortComp: could not compile select expression '%s'\n", comp->select);
+        style->errors++;
+    }
+    if (xml_node_first_child(inst))
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:sort : is not empty\n");
+        style->errors++;
+    }
+}
+
+/** Port of xsltCopyComp. */
+static void xslt_copy_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_COPY);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    comp->use = xslt1_get_ns_prop(inst, "use-attribute-sets", XSLT_NAMESPACE);
+    comp->has_use = comp->use != NULL;
+}
+
+/** Port of xsltTextComp. */
+static void xslt_text_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_TEXT);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    comp->noescape = 0;
+    char *prop = xslt1_get_ns_prop(inst, "disable-output-escaping", XSLT_NAMESPACE);
+    if (prop)
+    {
+        if (!strcmp(prop, "yes")) comp->noescape = 1;
+        else if (strcmp(prop, "no"))
+        {
+            xslt1_transform_error(NULL, style, inst, "xsl:text: disable-output-escaping allows only yes or no\n");
+            style->warnings++;
+        }
+        free(prop);
+    }
+}
+
+/** Port of xsltElementComp. */
+static void xslt_element_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_ELEMENT);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+
+    comp->name = xslt_eval_static_avt(style, inst, "name", NULL, &comp->has_name);
+    if (!comp->has_name)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:element: The attribute 'name' is missing.\n");
+        style->errors++;
+        return;
+    }
+    comp->ns = xslt_eval_static_avt(style, inst, "namespace", NULL, &comp->has_ns);
+    if (comp->name)
+    {
+        if (xslt1_validate_qname(comp->name))
+        {
+            xslt1_transform_error(NULL, style, inst, "xsl:element: The value '%s' of the attribute 'name' is not a valid QName.\n", comp->name);
+            style->errors++;
+        }
+        else
+        {
+            char *prefix = NULL;
+            char *name = xslt1_split_qname(comp->name, &prefix);
+            if (comp->has_ns == 0)
+            {
+                // The QName is expanded with the namespace declarations in effect, including the default one.
+                XmlNs *ns = xml_ns_lookup_prefix(inst, prefix);
+                if (ns)
+                {
+                    free(comp->ns);
+                    comp->ns = xslt1_strdup(xml_ns_href(ns));
+                    comp->has_ns = 1;
+                }
+                else if (prefix)
+                {
+                    xslt1_transform_error(NULL, style, inst,
+                        "xsl:element: The prefixed QName '%s' has no namespace binding in scope in the stylesheet; "
+                        "this is an error, since the namespace was not specified by the instruction itself.\n", comp->name);
+                    style->errors++;
+                }
+            }
+            if (prefix && !strncasecmp(prefix, "xml", 3))
+            {
+                // Mark it to be skipped.
+                comp->has_name = 0;
+            }
+            free(prefix);
+            free(name);
+        }
+    }
+    comp->use = xslt_eval_static_avt(style, inst, "use-attribute-sets", NULL, &comp->has_use);
+}
+
+/** Port of xsltAttributeComp. */
+static void xslt_attribute_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_ATTRIBUTE);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+
+    comp->name = xslt_eval_static_avt(style, inst, "name", NULL, &comp->has_name);
+    if (!comp->has_name)
+    {
+        xslt1_transform_error(NULL, style, inst, "XSLT-attribute: The attribute 'name' is missing.\n");
+        style->errors++;
+        return;
+    }
+    comp->ns = xslt_eval_static_avt(style, inst, "namespace", NULL, &comp->has_ns);
+    if (comp->name)
+    {
+        if (xslt1_validate_qname(comp->name))
+        {
+            xslt1_transform_error(NULL, style, inst, "xsl:attribute: The value '%s' of the attribute 'name' is not a valid QName.\n", comp->name);
+            style->errors++;
+        }
+        else if (!strcmp(comp->name, "xmlns"))
+        {
+            xslt1_transform_error(NULL, style, inst, "xsl:attribute: The attribute name 'xmlns' is not allowed.\n");
+            style->errors++;
+        }
+        else
+        {
+            char *prefix = NULL;
+            char *name = xslt1_split_qname(comp->name, &prefix);
+            if (prefix && comp->has_ns == 0)
+            {
+                XmlNs *ns = xml_ns_lookup_prefix(inst, prefix);
+                if (ns)
+                {
+                    free(comp->ns);
+                    comp->ns = xslt1_strdup(xml_ns_href(ns));
+                    comp->has_ns = 1;
+                }
+                else
+                {
+                    xslt1_transform_error(NULL, style, inst,
+                        "xsl:attribute: The prefixed QName '%s' has no namespace binding in scope in the stylesheet; "
+                        "this is an error, since the namespace was not specified by the instruction itself.\n", comp->name);
+                    style->errors++;
+                }
+            }
+            free(prefix);
+            free(name);
+        }
+    }
+}
+
+static void xslt_simple_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst, XsltStyleType type)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, type);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+}
+
+/** Port of xsltProcessingInstructionComp. */
+static void xslt_pi_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_PI);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    comp->name = xslt_eval_static_avt(style, inst, "name", XSLT_NAMESPACE, &comp->has_name);
+}
+
+/** Port of xsltCopyOfComp and xsltValueOfComp. */
+static void xslt_select_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst, XsltStyleType type)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, type);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    const char *what = type == XSLT_FUNC_COPYOF ? "xsl:copy-of" : "xsl:value-of";
+    if (type == XSLT_FUNC_VALUEOF)
+    {
+        char *prop = xslt1_get_ns_prop(inst, "disable-output-escaping", XSLT_NAMESPACE);
+        if (prop)
+        {
+            if (!strcmp(prop, "yes")) comp->noescape = 1;
+            else if (strcmp(prop, "no"))
+            {
+                xslt1_transform_error(NULL, style, inst, "xsl:value-of : disable-output-escaping allows only yes or no\n");
+                style->warnings++;
+            }
+            free(prop);
+        }
+    }
+    comp->select = xslt1_get_ns_prop(inst, "select", XSLT_NAMESPACE);
+    if (!comp->select)
+    {
+        xslt1_transform_error(NULL, style, inst, "%s : select is missing\n", what);
+        style->errors++;
+        return;
+    }
+    comp->comp = xslt_xpath_compile_inst(style, inst, comp->select, false);
+    if (!comp->comp)
+    {
+        xslt1_transform_error(NULL, style, inst, "%s : could not compile select expression '%s'\n", what, comp->select);
+        style->errors++;
+    }
+}
+
+/** Port of xsltGetQNameProperty. */
+static void xslt_get_qname_property(XmlLibxslt1Stylesheet *style, XMQNode *inst, const char *prop_name, int mandatory,
+                                    int *has_prop, char **ns_name, char **local_name)
+{
+    if (ns_name) *ns_name = NULL;
+    if (local_name) *local_name = NULL;
+    if (has_prop) *has_prop = 0;
+    char *prop = xslt1_get_ns_prop(inst, prop_name, XSLT_NAMESPACE);
+    if (!prop)
+    {
+        if (mandatory)
+        {
+            xslt1_transform_error(NULL, style, inst, "The attribute '%s' is missing.\n", prop_name);
+            style->errors++;
+        }
+        return;
+    }
+    if (xslt1_validate_qname(prop))
+    {
+        xslt1_transform_error(NULL, style, inst, "The value '%s' of the attribute '%s' is not a valid QName.\n", prop, prop_name);
+        style->errors++;
+        free(prop);
+        return;
+    }
+    const char *uri = xslt_get_qname_uri2(style, inst, &prop);
+    if (!prop)
+    {
+        style->errors++;
+        return;
+    }
+    if (local_name) *local_name = prop;
+    else free(prop);
+    if (has_prop) *has_prop = 1;
+    if (uri && ns_name) *ns_name = xslt1_strdup(uri);
+}
+
+/** Port of xsltWithParamComp, xsltVariableComp and xsltParamComp. */
+static void xslt_variable_like_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst, XsltStyleType type)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, type);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    xslt_get_qname_property(style, inst, "name", 1, &comp->has_name, &comp->ns, &comp->name);
+    if (comp->ns) comp->has_ns = 1;
+    comp->select = xslt1_get_ns_prop(inst, "select", XSLT_NAMESPACE);
+    if (!comp->select) return;
+    comp->comp = xslt_xpath_compile_inst(style, inst, comp->select, false);
+    if (type == XSLT_FUNC_WITHPARAM)
+    {
+        if (!comp->comp)
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-with-param: Failed to compile select expression '%s'\n", comp->select);
+            style->errors++;
+        }
+        if (xml_node_first_child(inst))
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-with-param: The content should be empty since the attribute select is present.\n");
+            style->warnings++;
+        }
+    }
+    else if (type == XSLT_FUNC_VARIABLE)
+    {
+        if (!comp->comp)
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-variable: Failed to compile the XPath expression '%s'.\n", comp->select);
+            style->errors++;
+        }
+        for (XMQNode *cur = xml_node_first_child(inst); cur; cur = xml_node_next(cur))
+        {
+            XmlNodeKind k = xml_node_kind(cur);
+            if (k != XML_DOM_COMMENT && (k != XML_DOM_TEXT || !xslt1_is_blank_str(xml_node_content(cur))))
+            {
+                xslt1_transform_error(NULL, style, inst, "XSLT-variable: There must be no child nodes, since the attribute 'select' was specified.\n");
+                style->errors++;
+            }
+        }
+    }
+    else
+    {
+        if (!comp->comp)
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-param: could not compile select expression '%s'.\n", comp->select);
+            style->errors++;
+        }
+        if (xml_node_first_child(inst))
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-param: The content should be empty since the attribute 'select' is present.\n");
+            style->warnings++;
+        }
+    }
+}
+
+/** Port of xsltNumberComp. */
+static void xslt_number_comp(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_NUMBER);
+    xml_node_set_user_data(cur, comp);
+
+    comp->numdata.doc = xml_node_dom(cur);
+    comp->numdata.node = cur;
+    comp->num_strings[0] = xslt1_get_ns_prop(cur, "value", XSLT_NAMESPACE);
+    comp->numdata.value = comp->num_strings[0];
+
+    char *prop = xslt_eval_static_avt(style, cur, "format", XSLT_NAMESPACE, &comp->numdata.has_format);
+    if (comp->numdata.has_format == 0)
+    {
+        free(prop);
+        comp->num_strings[1] = xslt1_strdup("");
+    }
+    else
+    {
+        comp->num_strings[1] = prop;
+    }
+    comp->numdata.format = comp->num_strings[1];
+
+    comp->num_strings[2] = xslt1_get_ns_prop(cur, "count", XSLT_NAMESPACE);
+    comp->numdata.count = comp->num_strings[2];
+    comp->num_strings[3] = xslt1_get_ns_prop(cur, "from", XSLT_NAMESPACE);
+    comp->numdata.from = comp->num_strings[3];
+
+    if (comp->numdata.count) comp->numdata.count_pat = xslt_compile_pattern_internal(comp->numdata.count, cur, style, NULL, 0);
+    if (comp->numdata.from) comp->numdata.from_pat = xslt_compile_pattern_internal(comp->numdata.from, cur, style, NULL, 0);
+
+    prop = xslt1_get_ns_prop(cur, "level", XSLT_NAMESPACE);
+    if (prop)
+    {
+        if (!strcmp(prop, "single") || !strcmp(prop, "multiple") || !strcmp(prop, "any"))
+        {
+            comp->num_strings[4] = prop;
+            comp->numdata.level = prop;
+            prop = NULL;
+        }
+        else
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:number : invalid value %s for level\n", prop);
+            style->warnings++;
+        }
+        free(prop);
+    }
+
+    prop = xslt1_get_ns_prop(cur, "lang", XSLT_NAMESPACE);
+    if (prop)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:number : lang attribute not implemented\n");
+        // XSLT_TODO, reported with the position in libxslt.
+        xslt1_generic_error(&style->settings, "Unimplemented block at preproc.c:1459\n");
+        free(prop);
+    }
+
+    prop = xslt1_get_ns_prop(cur, "letter-value", XSLT_NAMESPACE);
+    if (prop)
+    {
+        if (!strcmp(prop, "alphabetic"))
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:number : letter-value 'alphabetic' not implemented\n");
+            style->warnings++;
+            xslt1_generic_error(&style->settings, "Unimplemented block at preproc.c:1468\n");
+        }
+        else if (!strcmp(prop, "traditional"))
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:number : letter-value 'traditional' not implemented\n");
+            style->warnings++;
+            xslt1_generic_error(&style->settings, "Unimplemented block at preproc.c:1473\n");
+        }
+        else
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:number : invalid value %s for letter-value\n", prop);
+            style->warnings++;
+        }
+        free(prop);
+    }
+
+    prop = xslt1_get_ns_prop(cur, "grouping-separator", XSLT_NAMESPACE);
+    if (prop)
+    {
+        int len = (int)strlen(prop);
+        int c = xslt1_utf8_char(prop, &len);
+        comp->numdata.grouping_character_len = len;
+        comp->numdata.grouping_character = c < 0 ? 0 : c;
+        free(prop);
+    }
+
+    prop = xslt1_get_ns_prop(cur, "grouping-size", XSLT_NAMESPACE);
+    if (prop)
+    {
+        sscanf(prop, "%d", &comp->numdata.digits_per_group);
+        free(prop);
+    }
+    else
+    {
+        comp->numdata.grouping_character = 0;
+    }
+
+    // Default values.
+    if (!comp->numdata.value && !comp->numdata.level)
+    {
+        comp->num_strings[4] = xslt1_strdup("single");
+        comp->numdata.level = comp->num_strings[4];
+    }
+}
+
+/** Port of xsltApplyTemplatesComp. */
+static void xslt_apply_templates_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_APPLYTEMPLATES);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    xslt_get_qname_property(style, inst, "mode", 0, NULL, &comp->mode_uri, &comp->mode);
+    comp->select = xslt1_get_ns_prop(inst, "select", XSLT_NAMESPACE);
+    if (comp->select)
+    {
+        comp->comp = xslt_xpath_compile_inst(style, inst, comp->select, false);
+        if (!comp->comp)
+        {
+            xslt1_transform_error(NULL, style, inst, "XSLT-apply-templates: could not compile select expression '%s'\n", comp->select);
+            style->errors++;
+        }
+    }
+}
+
+/** Port of xsltCallTemplateComp. */
+static void xslt_call_template_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_CALLTEMPLATE);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    xslt_get_qname_property(style, inst, "name", 1, &comp->has_name, &comp->ns, &comp->name);
+    if (comp->ns) comp->has_ns = 1;
+}
+
+/** Port of xsltIfComp and xsltWhenComp. */
+static void xslt_test_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst, XsltStyleType type)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, type);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    const char *what = type == XSLT_FUNC_IF ? "xsl:if" : "xsl:when";
+    comp->test = xslt1_get_ns_prop(inst, "test", XSLT_NAMESPACE);
+    if (!comp->test)
+    {
+        xslt1_transform_error(NULL, style, inst, "%s : test is not defined\n", what);
+        style->errors++;
+        return;
+    }
+    comp->comp = xslt_xpath_compile_inst(style, inst, comp->test, false);
+    if (!comp->comp)
+    {
+        xslt1_transform_error(NULL, style, inst, "%s : could not compile test expression '%s'\n", what, comp->test);
+        style->errors++;
+    }
+}
+
+/** Port of xsltForEachComp. */
+static void xslt_for_each_comp(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_FOREACH);
+    xml_node_set_user_data(inst, comp);
+    comp->inst = inst;
+    comp->select = xslt1_get_ns_prop(inst, "select", XSLT_NAMESPACE);
+    if (!comp->select)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:for-each : select is missing\n");
+        style->errors++;
+        return;
+    }
+    comp->comp = xslt_xpath_compile_inst(style, inst, comp->select, false);
+    if (!comp->comp)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:for-each : could not compile select expression '%s'\n", comp->select);
+        style->errors++;
+    }
+}
+
+/** The built in extension elements of libxslt (extra.c xsltRegisterAllExtras). */
+static XsltExtElement xslt_lookup_ext_element(const char *name, const char *uri)
+{
+    if (!name || !uri) return XSLT_EXT_NONE;
+    if (!strcmp(uri, XSLT_LIBXSLT_NAMESPACE) && !strcmp(name, "debug")) return XSLT_EXT_DEBUG;
+    if (!strcmp(uri, XSLT_SAXON_NAMESPACE) && !strcmp(name, "output")) return XSLT_EXT_DOCUMENT;
+    if (!strcmp(uri, XSLT_XALAN_NAMESPACE) && !strcmp(name, "write")) return XSLT_EXT_DOCUMENT;
+    if (!strcmp(uri, XSLT_XT_NAMESPACE) && !strcmp(name, "document")) return XSLT_EXT_DOCUMENT;
+    if (!strcmp(uri, XSLT_NAMESPACE) && !strcmp(name, "document")) return XSLT_EXT_DOCUMENT;
+    return XSLT_EXT_NONE;
+}
+
+/** Port of xsltPreComputeExtModuleElement. */
+static void *xslt_pre_compute_ext_module_element(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    if (!style || !inst || xml_node_kind(inst) != XML_DOM_ELEMENT || !xml_node_ns(inst)) return NULL;
+    XsltExtElement ext = xslt_lookup_ext_element(xml_node_name(inst), xslt_node_ns_uri(inst));
+    if (ext == XSLT_EXT_NONE) return NULL;
+    if (ext == XSLT_EXT_DOCUMENT) return xslt_document_comp(style, inst);
+    // Default creation (xsltNewElemPreComp).
+    XsltStylePreComp *comp = xslt_new_style_pre_comp(style, XSLT_FUNC_EXTENSION);
+    comp->ext = ext;
+    comp->inst = inst;
+    return comp;
+}
+
+/** Port of xsltStylePreCompute. */
+static void xslt_style_pre_compute(XmlLibxslt1Stylesheet *style, XMQNode *inst)
+{
+    if (!inst || xml_node_kind(inst) != XML_DOM_ELEMENT || xml_node_user_data(inst)) return;
+
+    if (xslt1_is_xslt_elem(inst))
+    {
+        if (xslt1_is_xslt_name(inst, "apply-templates"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_apply_templates_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "with-param"))
+        {
+            xslt_check_parent_element(style, inst, "apply-templates", "call-template");
+            xslt_variable_like_comp(style, inst, XSLT_FUNC_WITHPARAM);
+        }
+        else if (xslt1_is_xslt_name(inst, "value-of"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_select_comp(style, inst, XSLT_FUNC_VALUEOF);
+        }
+        else if (xslt1_is_xslt_name(inst, "copy"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_copy_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "copy-of"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_select_comp(style, inst, XSLT_FUNC_COPYOF);
+        }
+        else if (xslt1_is_xslt_name(inst, "if"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_test_comp(style, inst, XSLT_FUNC_IF);
+        }
+        else if (xslt1_is_xslt_name(inst, "when"))
+        {
+            xslt_check_parent_element(style, inst, "choose", NULL);
+            xslt_test_comp(style, inst, XSLT_FUNC_WHEN);
+        }
+        else if (xslt1_is_xslt_name(inst, "choose"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_simple_comp(style, inst, XSLT_FUNC_CHOOSE);
+        }
+        else if (xslt1_is_xslt_name(inst, "for-each"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_for_each_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "apply-imports"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_simple_comp(style, inst, XSLT_FUNC_APPLYIMPORTS);
+        }
+        else if (xslt1_is_xslt_name(inst, "attribute"))
+        {
+            XMQNode *parent = xml_node_parent(inst);
+            if (!parent || xml_node_kind(parent) != XML_DOM_ELEMENT || !xml_node_ns(parent) ||
+                !xslt_same_ns(parent, inst) || !xslt1_streq(xml_node_name(parent), "attribute-set"))
+            {
+                xslt_check_instruction_element(style, inst);
+            }
+            xslt_attribute_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "element"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_element_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "text"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_text_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "sort"))
+        {
+            xslt_check_parent_element(style, inst, "apply-templates", "for-each");
+            xslt_sort_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "comment"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_simple_comp(style, inst, XSLT_FUNC_COMMENT);
+        }
+        else if (xslt1_is_xslt_name(inst, "number"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_number_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "processing-instruction"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_pi_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "call-template"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xslt_call_template_comp(style, inst);
+        }
+        else if (xslt1_is_xslt_name(inst, "param"))
+        {
+            if (xslt_check_top_level_element(style, inst, 0) == 0) xslt_check_instruction_element(style, inst);
+            xslt_variable_like_comp(style, inst, XSLT_FUNC_PARAM);
+        }
+        else if (xslt1_is_xslt_name(inst, "variable"))
+        {
+            if (xslt_check_top_level_element(style, inst, 0) == 0) xslt_check_instruction_element(style, inst);
+            xslt_variable_like_comp(style, inst, XSLT_FUNC_VARIABLE);
+        }
+        else if (xslt1_is_xslt_name(inst, "otherwise"))
+        {
+            xslt_check_parent_element(style, inst, "choose", NULL);
+            xslt_check_instruction_element(style, inst);
+            return;
+        }
+        else if (xslt1_is_xslt_name(inst, "template") || xslt1_is_xslt_name(inst, "output") ||
+                 xslt1_is_xslt_name(inst, "preserve-space") || xslt1_is_xslt_name(inst, "strip-space"))
+        {
+            xslt_check_top_level_element(style, inst, 1);
+            return;
+        }
+        else if (xslt1_is_xslt_name(inst, "stylesheet") || xslt1_is_xslt_name(inst, "transform"))
+        {
+            XMQNode *parent = xml_node_parent(inst);
+            if (!parent || xml_node_kind(parent) != XML_DOM_DOCUMENT)
+            {
+                xslt1_transform_error(NULL, style, inst, "element %s only allowed only as root element\n", xml_node_name(inst));
+                style->errors++;
+            }
+            return;
+        }
+        else if (xslt1_is_xslt_name(inst, "key") || xslt1_is_xslt_name(inst, "attribute-set") ||
+                 xslt1_is_xslt_name(inst, "namespace-alias") || xslt1_is_xslt_name(inst, "include") ||
+                 xslt1_is_xslt_name(inst, "import") || xslt1_is_xslt_name(inst, "decimal-format"))
+        {
+            xslt_check_top_level_element(style, inst, 1);
+            return;
+        }
+        else if (xslt1_is_xslt_name(inst, "message") || xslt1_is_xslt_name(inst, "fallback"))
+        {
+            xslt_check_instruction_element(style, inst);
+            return;
+        }
+        else if (xslt1_is_xslt_name(inst, "document"))
+        {
+            xslt_check_instruction_element(style, inst);
+            xml_node_set_user_data(inst, xslt_document_comp(style, inst));
+        }
+        else if (!style || style->forwards_compatible == 0)
+        {
+            xslt1_transform_error(NULL, style, inst, "xsltStylePreCompute: unknown xsl:%s\n", xml_node_name(inst));
+            if (style) style->warnings++;
+        }
+
+        // A namespace list is built for every xslt instruction, for its xpath expressions.
+        XsltStylePreComp *cur = (XsltStylePreComp*)xml_node_user_data(inst);
+        if (cur && cur != XSLT_EXT_MARKER) cur->ns_list = xslt1_ns_list(inst, &cur->ns_nr);
+    }
+    else
+    {
+        void *comp = xslt_pre_compute_ext_module_element(style, inst);
+        // An unknown element, maybe registered at the context level: mark it for later recognition.
+        xml_node_set_user_data(inst, comp ? comp : XSLT_EXT_MARKER);
+    }
+}
+
+// Attribute value templates, port of libxslt attrvt.c (the compilation).
+
+static XsltAttrVT *xslt_new_attr_vt(XmlLibxslt1Stylesheet *style)
+{
+    XsltAttrVT *cur = (XsltAttrVT*)calloc(1, sizeof(XsltAttrVT));
+    cur->max_seg = 10;
+    cur->segments = (void**)calloc((size_t)cur->max_seg, sizeof(void*));
+    cur->next = style->att_vts;
+    style->att_vts = cur;
+    return cur;
+}
+
+static void xslt_free_attr_vt(XsltAttrVT *avt)
+{
+    if (!avt) return;
+    for (int i = 0; i < avt->nb_seg; ++i)
+    {
+        bool is_str = (avt->strstart == 1) == (i % 2 == 0);
+        if (is_str) free(avt->segments[i]);
+        else xml_xpath_comp_free((XmlXPathComp*)avt->segments[i]);
+    }
+    free(avt->segments);
+    free(avt->ns_list);
+    free(avt);
+}
+
+static void xslt_free_avt_list(XsltAttrVT *avt)
+{
+    while (avt)
+    {
+        XsltAttrVT *next = avt->next;
+        xslt_free_attr_vt(avt);
+        avt = next;
+    }
+}
+
+static void xslt_set_attr_vt_segment(XsltAttrVT *avt, void *val)
+{
+    if (avt->nb_seg >= avt->max_seg)
+    {
+        avt->max_seg += 10;
+        avt->segments = (void**)realloc(avt->segments, (size_t)avt->max_seg * sizeof(void*));
+    }
+    avt->segments[avt->nb_seg++] = val;
+}
+
+/** Like xmlStrncat: a is returned unchanged (even NULL) when there is nothing to add. */
+char *xslt1_strncat(char *a, const char *b, size_t n)
+{
+    if (!b || n == 0) return a;
+    size_t la = a ? strlen(a) : 0;
+    char *r = (char*)realloc(a, la + n + 1);
+    memcpy(r + la, b, n);
+    r[la + n] = 0;
+    return r;
+}
+
+/** Like xmlStrcat: NULL a gives a copy of b (also of ""). */
+char *xslt1_strcat(char *a, const char *b)
+{
+    if (!b) return a;
+    if (!a) return xslt1_strdup(b);
+    return xslt1_strncat(a, b, strlen(b));
+}
+
+/** Port of xsltCompileAttr: compile the attribute value template of a literal result element attribute. */
+static void xslt_compile_attr(XmlLibxslt1Stylesheet *style, XMQAttr *attr)
+{
+    XMQNode *an = xml_attr_node(attr);
+    XMQNode *first = xml_node_first_child(an);
+    if (!style || !first) return;
+    if (xml_node_kind(first) != XML_DOM_TEXT || xml_node_next(first))
+    {
+        xslt1_transform_error(NULL, style, xml_attr_owner(attr),
+            "Attribute '%s': The content is expected to be a single text node when compiling an AVT.\n", xml_attr_name(attr));
+        style->errors++;
+        return;
+    }
+    const char *str = xml_node_content(first);
+    if (!str || (!strchr(str, '{') && !strchr(str, '}'))) return;
+    if (xml_node_user_data(an)) return;
+
+    XsltAttrVT *avt = xslt_new_attr_vt(style);
+    xml_node_set_user_data(an, avt);
+    avt->ns_list = xslt1_ns_list(xml_attr_owner(attr), &avt->ns_nr);
+
+    char *ret = NULL;
+    char *expr = NULL;
+    int lastavt = 0;
+    const char *cur = str;
+    while (*cur)
+    {
+        if (*cur == '{')
+        {
+            if (cur[1] == '{')
+            {
+                // An escaped {.
+                cur++;
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                cur++;
+                str = cur;
+                continue;
+            }
+            if (cur[1] == '}')
+            {
+                // Skip an empty AVT.
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                cur += 2;
+                str = cur;
+                continue;
+            }
+            if (ret || cur - str > 0)
+            {
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                str = cur;
+                if (avt->nb_seg == 0) avt->strstart = 1;
+                xslt_set_attr_vt_segment(avt, ret);
+                ret = NULL;
+                lastavt = 0;
+            }
+            cur++;
+            while (*cur && *cur != '}')
+            {
+                // Need to check for literals (bug539741).
+                if (*cur == '\'' || *cur == '"')
+                {
+                    char delim = *cur++;
+                    while (*cur && *cur != delim) cur++;
+                    if (*cur) cur++;
+                }
+                else
+                {
+                    cur++;
+                }
+            }
+            if (!*cur)
+            {
+                xslt1_transform_error(NULL, style, xml_attr_owner(attr), "Attribute '%s': The AVT has an unmatched '{'.\n", xml_attr_name(attr));
+                style->errors++;
+                goto error;
+            }
+            str++;
+            expr = xslt1_strndup(str, (size_t)(cur - str));
+            XmlXPathComp *comp = xslt1_xpath_compile(&style->settings, xml_attr_owner(attr), expr, false);
+            if (!comp)
+            {
+                xslt1_transform_error(NULL, style, xml_attr_owner(attr), "Attribute '%s': Failed to compile the expression '%s' in the AVT.\n",
+                                     xml_attr_name(attr), expr);
+                style->errors++;
+                goto error;
+            }
+            if (avt->nb_seg == 0) avt->strstart = 0;
+            if (lastavt == 1) xslt_set_attr_vt_segment(avt, NULL);
+            xslt_set_attr_vt_segment(avt, comp);
+            lastavt = 1;
+            free(expr);
+            expr = NULL;
+            cur++;
+            str = cur;
+        }
+        else if (*cur == '}')
+        {
+            cur++;
+            if (*cur == '}')
+            {
+                // An escaped }.
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                cur++;
+                str = cur;
+                continue;
+            }
+            xslt1_transform_error(NULL, style, xml_attr_owner(attr), "Attribute '%s': The AVT has an unmatched '}'.\n", xml_attr_name(attr));
+            goto error;
+        }
+        else
+        {
+            cur++;
+        }
+    }
+    if (ret || cur - str > 0)
+    {
+        ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+        if (avt->nb_seg == 0) avt->strstart = 1;
+        xslt_set_attr_vt_segment(avt, ret);
+        ret = NULL;
+    }
+error:
+    free(ret);
+    free(expr);
+}
+
+// Stylesheets, port of libxslt xslt.c ///////////////////////////
+
+/** Port of xsltParseContentError. */
+static void xslt_parse_content_error(XmlLibxslt1Stylesheet *style, XMQNode *node)
+{
+    if (!style || !node) return;
+    if (xslt1_is_xslt_elem(node))
+        xslt1_transform_error(NULL, style, node, "The XSLT-element '%s' is not allowed at this position.\n", xml_node_name(node));
+    else
+        xslt1_transform_error(NULL, style, node, "The element '%s' is not allowed at this position.\n",
+                             xslt1_libxml2_node_name(node) ? xslt1_libxml2_node_name(node) : "(null)");
+    style->errors++;
+}
+
+/** Port of exclPrefixPush: returns the index, -1 for duplicates. */
+static int xslt_excl_prefix_push(XmlLibxslt1Stylesheet *style, const char *orig)
+{
+    for (int i = 0; i < style->excl_prefix_nr; i++)
+    {
+        if (xslt1_streq(style->excl_prefix_tab[i], orig)) return -1;
+    }
+    if (style->excl_prefix_nr >= style->excl_prefix_max)
+    {
+        int max = style->excl_prefix_max ? style->excl_prefix_max * 2 : 4;
+        style->excl_prefix_tab = (char**)realloc(style->excl_prefix_tab, (size_t)max * sizeof(char*));
+        style->excl_prefix_max = max;
+    }
+    style->excl_prefix_tab[style->excl_prefix_nr] = xslt1_strdup(orig);
+    style->excl_prefix = style->excl_prefix_tab[style->excl_prefix_nr];
+    return style->excl_prefix_nr++;
+}
+
+/** Port of exclPrefixPop. */
+static void xslt_excl_prefix_pop(XmlLibxslt1Stylesheet *style)
+{
+    if (style->excl_prefix_nr <= 0) return;
+    style->excl_prefix_nr--;
+    style->excl_prefix = style->excl_prefix_nr > 0 ? style->excl_prefix_tab[style->excl_prefix_nr - 1] : NULL;
+    free(style->excl_prefix_tab[style->excl_prefix_nr]);
+    style->excl_prefix_tab[style->excl_prefix_nr] = NULL;
+}
+
+/** Port of xsltNewDecimalFormat. */
+static XsltDecimalFormat *xslt_new_decimal_format(const char *ns_uri, char *name)
+{
+    XsltDecimalFormat *self = (XsltDecimalFormat*)calloc(1, sizeof(XsltDecimalFormat));
+    self->ns_uri = xslt1_strdup(ns_uri);
+    self->name = name;
+    self->digit = xslt1_strdup("#");
+    self->pattern_separator = xslt1_strdup(";");
+    self->decimal_point = xslt1_strdup(".");
+    self->grouping = xslt1_strdup(",");
+    self->percent = xslt1_strdup("%");
+    self->permille = xslt1_strdup("\xe2\x80\xb0");
+    self->zero_digit = xslt1_strdup("0");
+    self->minus_sign = xslt1_strdup("-");
+    self->infinity = xslt1_strdup("Infinity");
+    self->no_number = xslt1_strdup("NaN");
+    return self;
+}
+
+static void xslt_free_decimal_format_list(XsltDecimalFormat *f)
+{
+    while (f)
+    {
+        XsltDecimalFormat *next = f->next;
+        free(f->name);
+        free(f->digit);
+        free(f->pattern_separator);
+        free(f->minus_sign);
+        free(f->infinity);
+        free(f->no_number);
+        free(f->decimal_point);
+        free(f->grouping);
+        free(f->percent);
+        free(f->permille);
+        free(f->zero_digit);
+        free(f->ns_uri);
+        free(f);
+        f = next;
+    }
+}
+
+/** Port of xsltDecimalFormatGetByQName. */
+XsltDecimalFormat *xslt1_decimal_format_get_by_qname(XmlLibxslt1Stylesheet *style, const char *ns_uri, const char *name)
+{
+    if (!name) return style->decimal_format;
+    while (style)
+    {
+        for (XsltDecimalFormat *r = style->decimal_format->next; r; r = r->next)
+        {
+            if (xslt1_streq(ns_uri, r->ns_uri) && xslt1_streq(name, r->name)) return r;
+        }
+        style = xslt1_next_import(style);
+    }
+    return NULL;
+}
+
+static XsltTemplate *xslt_new_template(void)
+{
+    XsltTemplate *cur = (XsltTemplate*)calloc(1, sizeof(XsltTemplate));
+    cur->priority = XSLT_PAT_NO_PRIORITY;
+    return cur;
+}
+
+static void xslt_free_templates(XsltTemplate *t)
+{
+    while (t)
+    {
+        XsltTemplate *next = t->next;
+        free(t->match);
+        free(t->name);
+        free(t->name_uri);
+        free(t->mode);
+        free(t->mode_uri);
+        free(t->inherited_ns);
+        free(t);
+        t = next;
+    }
+}
+
+/** Port of xsltNewStylesheetInternal. */
+static XmlLibxslt1Stylesheet *xslt_new_stylesheet_internal(XmlLibxslt1Stylesheet *parent, const XmlLibxslt1Settings *settings)
+{
+    XmlLibxslt1Stylesheet *ret = (XmlLibxslt1Stylesheet*)calloc(1, sizeof(XmlLibxslt1Stylesheet));
+    if (settings) ret->settings = *settings;
+    else if (parent) ret->settings = parent->settings;
+    ret->parent = parent;
+    ret->omit_xml_declaration = -1;
+    ret->standalone = -1;
+    ret->decimal_format = xslt_new_decimal_format(NULL, NULL);
+    ret->indent = -1;
+    ret->principal = parent ? parent->principal : ret;
+    return ret;
+}
+
+XmlLibxslt1Stylesheet *xml_libxslt1_stylesheet_new_empty(XmlDom *style_dom, const XmlLibxslt1Settings *settings)
+{
+    XmlLibxslt1Stylesheet *style = xslt_new_stylesheet_internal(NULL, settings);
+    style->doc = style_dom;
+    return style;
+}
+
+static void xslt_free_stack_elem_list(XsltStackElem *e)
+{
+    while (e)
+    {
+        XsltStackElem *next = e->next;
+        free(e->name);
+        free(e->name_uri);
+        free(e->select);
+        xml_xpath_result_free(e->value);
+        free(e);
+        e = next;
+    }
+}
+
+static void xslt_free_keys(XmlLibxslt1Stylesheet *style)
+{
+    XsltKeyDef *k = style->keys;
+    while (k)
+    {
+        XsltKeyDef *next = k->next;
+        free(k->name);
+        free(k->name_uri);
+        free(k->match);
+        free(k->use);
+        xml_xpath_comp_free(k->comp);
+        xml_xpath_comp_free(k->usecomp);
+        free(k);
+        k = next;
+    }
+    style->keys = NULL;
+}
+
+static void xslt_free_attr_set(XsltAttrSet *set)
+{
+    if (!set) return;
+    XsltAttrElem *a = set->attrs;
+    while (a)
+    {
+        XsltAttrElem *next = a->next;
+        free(a);
+        a = next;
+    }
+    XsltUseAttrSet *u = set->use_attr_sets;
+    while (u)
+    {
+        XsltUseAttrSet *next = u->next;
+        free(u->ncname);
+        free(u->ns);
+        free(u);
+        u = next;
+    }
+    free(set->name);
+    free(set->ns);
+    free(set);
+}
+
+static void xslt_free_hashmap_strings(HashMap *m)
+{
+    if (!m) return;
+    HashMapIterator *i = hashmap_iterate(m);
+    const char *key;
+    void *val;
+    while (hashmap_next_key_value(i, &key, &val)) free(val);
+    hashmap_free_iterator(i);
+    hashmap_free(m);
+}
+
+static void xslt_free_stylesheet(XmlLibxslt1Stylesheet *style);
+
+static void xslt_free_stylesheet_list(XmlLibxslt1Stylesheet *style)
+{
+    while (style)
+    {
+        XmlLibxslt1Stylesheet *next = style->next;
+        xslt_free_stylesheet(style);
+        style = next;
+    }
+}
+
+static void xslt_free_style_documents(XmlLibxslt1Stylesheet *style)
+{
+    XsltDocument *cur = style->doc_list;
+    while (cur)
+    {
+        XsltDocument *d = cur;
+        cur = cur->next;
+        if (!d->main) xml_dom_free(d->doc);
+        free(d);
+    }
+    style->doc_list = NULL;
+}
+
+/** Port of xsltFreeStylesheet. */
+static void xslt_free_stylesheet(XmlLibxslt1Stylesheet *style)
+{
+    if (!style) return;
+    xslt_free_keys(style);
+    while (style->ns_defs)
+    {
+        XsltExtDef *next = style->ns_defs->next;
+        free(style->ns_defs->prefix);
+        free(style->ns_defs->uri);
+        free(style->ns_defs);
+        style->ns_defs = next;
+    }
+    xslt_free_template_hashes(style);
+    xslt_free_decimal_format_list(style->decimal_format);
+    xslt_free_templates(style->templates);
+    // Attribute sets.
+    XsltAttrSet *set = style->attribute_set_list;
+    while (set)
+    {
+        XsltAttrSet *next = set->next_in_order;
+        xslt_free_attr_set(set);
+        set = next;
+    }
+    if (style->attribute_sets) hashmap_free(style->attribute_sets);
+    xslt_free_hashmap_strings(style->ns_aliases);
+    xslt_free_style_pre_comps(style);
+    xslt_free_style_documents(style);
+    xslt_free_stack_elem_list(style->variables);
+    if (style->cdata_section) hashmap_free(style->cdata_section);
+    if (style->strip_spaces) hashmap_free(style->strip_spaces);
+    for (int i = 0; i < style->excl_prefix_nr; ++i) free(style->excl_prefix_tab[i]);
+    free(style->excl_prefix_tab);
+    free(style->method);
+    free(style->method_uri);
+    free(style->version);
+    free(style->encoding);
+    free(style->doctype_public);
+    free(style->doctype_system);
+    free(style->media_type);
+    free(style->default_alias);
+    xslt_free_avt_list(style->att_vts);
+    xslt_free_stylesheet_list(style->imports);
+    // The main document of this stylesheet level is freed last.
+    if (style->doc && style->owns_doc) xml_dom_free(style->doc);
+    free(style);
+}
+
+void xml_libxslt1_stylesheet_free(XmlLibxslt1Stylesheet *style)
+{
+    xslt_free_stylesheet(style);
+}
+
+/** Port of xsltGetInheritedNsList: the namespaces in scope of a template, for literal result elements. */
+static int xslt_get_inherited_ns_list(XmlLibxslt1Stylesheet *style, XsltTemplate *templ, XMQNode *node)
+{
+    if (!style || !templ || !node || templ->inherited_ns_nr != 0 || templ->inherited_ns) return 0;
+    XmlNs **ret = NULL;
+    int nbns = 0, maxns = 0;
+    for (; node; node = xml_node_parent(node))
+    {
+        if (xml_node_kind(node) != XML_DOM_ELEMENT) continue;
+        for (XmlNs *cur = xml_node_first_ns_decl(node); cur; cur = xml_ns_next_decl(cur))
+        {
+            if (xslt1_streq(xml_ns_href(cur), XSLT_NAMESPACE)) continue;
+            if (xml_ns_prefix(cur) && xslt_check_ext_prefix(style, xml_ns_prefix(cur))) continue;
+            // Namespaces excluded on the topmost stylesheet element.
+            bool skip = false;
+            for (int i = 0; i < style->excl_prefix_nr; i++)
+            {
+                if (xslt1_streq(xml_ns_href(cur), style->excl_prefix_tab[i])) skip = true;
+            }
+            if (skip) continue;
+            // Skip shadowed namespace bindings.
+            int i;
+            for (i = 0; i < nbns; i++)
+            {
+                if (xslt1_streq(xml_ns_prefix(cur), xml_ns_prefix(ret[i]))) break;
+            }
+            if (i >= nbns)
+            {
+                if (nbns >= maxns)
+                {
+                    maxns = maxns == 0 ? 10 : 2 * maxns;
+                    ret = (XmlNs**)realloc(ret, (size_t)(maxns + 1) * sizeof(XmlNs*));
+                }
+                ret[nbns++] = cur;
+                ret[nbns] = NULL;
+            }
+        }
+    }
+    if (nbns != 0)
+    {
+        templ->inherited_ns_nr = nbns;
+        templ->inherited_ns = ret;
+    }
+    return nbns;
+}
+
+char *xslt1_key2(const char *a, const char *b)
+{
+    return xslt1_hash3_key(a, b, NULL);
+}
+
+/** Parse a whitespace separated list of tokens, calling f for each. */
+typedef void (*XsltTokenFn)(XmlLibxslt1Stylesheet *style, XMQNode *cur, char *token, void *data);
+
+static void xslt_for_each_token(XmlLibxslt1Stylesheet *style, XMQNode *cur, const char *list, XsltTokenFn f, void *data)
+{
+    const char *element = list;
+    while (*element)
+    {
+        while (xslt1_is_blank((unsigned char)*element)) element++;
+        if (!*element) break;
+        const char *end = element;
+        while (*end && !xslt1_is_blank((unsigned char)*end)) end++;
+        f(style, cur, xslt1_strndup(element, (size_t)(end - element)), data);
+        element = end;
+    }
+}
+
+static void xslt_cdata_token(XmlLibxslt1Stylesheet *style, XMQNode *cur, char *element, void *data)
+{
+    (void)data;
+    if (xslt1_validate_qname(element) != 0)
+    {
+        xslt1_transform_error(NULL, style, cur, "Attribute 'cdata-section-elements': The value '%s' is not a valid QName.\n", element);
+        free(element);
+        style->errors++;
+        return;
+    }
+    const char *uri = xslt1_get_qname_uri(&style->settings, cur, &element);
+    if (!element)
+    {
+        xslt1_transform_error(NULL, style, cur, "Attribute 'cdata-section-elements': Not a valid QName.\n");
+        style->errors++;
+        return;
+    }
+    // Unprefixed names use the default namespace (bug #339570).
+    if (!uri)
+    {
+        XmlNs *ns = xml_ns_lookup_prefix(cur, NULL);
+        if (ns) uri = xml_ns_href(ns);
+    }
+    char *key = xslt1_key2(element, uri);
+    if (!hashmap_get(style->cdata_section, key)) hashmap_put(style->cdata_section, key, (void*)"cdata");
+    free(key);
+    free(element);
+}
+
+static void xslt_set_string(char **dst, char *value)
+{
+    free(*dst);
+    *dst = value;
+}
+
+/** Port of xsltParseStylesheetOutput. */
+static void xslt_parse_stylesheet_output(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    char *prop;
+    if ((prop = xslt1_get_ns_prop_exact(cur, "version", NULL))) xslt_set_string(&style->version, prop);
+    if ((prop = xslt1_get_ns_prop_exact(cur, "encoding", NULL))) xslt_set_string(&style->encoding, prop);
+    if ((prop = xslt1_get_ns_prop_exact(cur, "method", NULL)))
+    {
+        xslt_set_string(&style->method, NULL);
+        xslt_set_string(&style->method_uri, NULL);
+        const char *uri = xslt1_get_qname_uri(&style->settings, cur, &prop);
+        if (!prop)
+        {
+            style->errors++;
+        }
+        else if (!uri)
+        {
+            if (!strcmp(prop, "xml") || !strcmp(prop, "html") || !strcmp(prop, "text"))
+            {
+                style->method = prop;
+            }
+            else
+            {
+                xslt1_transform_error(NULL, style, cur, "invalid value for method: %s\n", prop);
+                style->warnings++;
+                free(prop);
+            }
+        }
+        else
+        {
+            style->method = prop;
+            style->method_uri = xslt1_strdup(uri);
+        }
+    }
+    if ((prop = xslt1_get_ns_prop_exact(cur, "doctype-system", NULL))) xslt_set_string(&style->doctype_system, prop);
+    if ((prop = xslt1_get_ns_prop_exact(cur, "doctype-public", NULL))) xslt_set_string(&style->doctype_public, prop);
+    const char *yesno[] = { "standalone", "indent", "omit-xml-declaration" };
+    int *targets[] = { &style->standalone, &style->indent, &style->omit_xml_declaration };
+    for (int i = 0; i < 3; ++i)
+    {
+        if ((prop = xslt1_get_ns_prop_exact(cur, yesno[i], NULL)))
+        {
+            if (!strcmp(prop, "yes")) *targets[i] = 1;
+            else if (!strcmp(prop, "no")) *targets[i] = 0;
+            else
+            {
+                xslt1_transform_error(NULL, style, cur, "invalid value for %s: %s\n", yesno[i], prop);
+                style->errors++;
+            }
+            free(prop);
+        }
+    }
+    char *elements = xslt1_get_ns_prop_exact(cur, "cdata-section-elements", NULL);
+    if (elements)
+    {
+        if (!style->cdata_section) style->cdata_section = hashmap_create(10);
+        xslt_for_each_token(style, cur, elements, xslt_cdata_token, NULL);
+        free(elements);
+    }
+    if ((prop = xslt1_get_ns_prop_exact(cur, "media-type", NULL))) xslt_set_string(&style->media_type, prop);
+    if (xml_node_first_child(cur)) xslt_parse_content_error(style, xml_node_first_child(cur));
+}
+
+/** Port of xsltParseStylesheetDecimalFormat. */
+static void xslt_parse_stylesheet_decimal_format(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    XsltDecimalFormat *format = style->decimal_format;
+    char *prop = xslt1_get_ns_prop_exact(cur, "name", NULL);
+    if (prop)
+    {
+        if (xslt1_validate_qname(prop) != 0)
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:decimal-format: Invalid QName '%s'.\n", prop);
+            style->warnings++;
+            free(prop);
+            return;
+        }
+        const char *ns_uri = xslt1_get_qname_uri(&style->settings, cur, &prop);
+        if (!prop)
+        {
+            style->warnings++;
+            return;
+        }
+        format = xslt1_decimal_format_get_by_qname(style, ns_uri, prop);
+        if (format)
+        {
+            xslt1_transform_error(NULL, style, cur, "xsltParseStylestyleDecimalFormat: %s already exists\n", prop);
+            style->warnings++;
+            free(prop);
+            return;
+        }
+        format = xslt_new_decimal_format(ns_uri, prop);
+        // Append the new decimal-format structure.
+        XsltDecimalFormat *iter = style->decimal_format;
+        while (iter->next) iter = iter->next;
+        iter->next = format;
+    }
+    struct { const char *name; char **field; } props[] = {
+        { "decimal-separator", &format->decimal_point }, { "grouping-separator", &format->grouping },
+        { "infinity", &format->infinity }, { "minus-sign", &format->minus_sign }, { "NaN", &format->no_number },
+        { "percent", &format->percent }, { "per-mille", &format->permille }, { "zero-digit", &format->zero_digit },
+        { "digit", &format->digit }, { "pattern-separator", &format->pattern_separator }
+    };
+    for (size_t i = 0; i < sizeof(props) / sizeof(props[0]); ++i)
+    {
+        if ((prop = xslt1_get_ns_prop_exact(cur, props[i].name, NULL))) xslt_set_string(props[i].field, prop);
+    }
+    if (xml_node_first_child(cur)) xslt_parse_content_error(style, xml_node_first_child(cur));
+}
+
+static void xslt_space_token(XmlLibxslt1Stylesheet *style, XMQNode *cur, char *element, void *data)
+{
+    const char *what = (const char*)data;
+    if (!strcmp(element, "*"))
+    {
+        style->strip_all = !strcmp(what, "strip") ? 1 : -1;
+    }
+    else
+    {
+        const char *uri = xslt1_get_qname_uri(&style->settings, cur, &element);
+        if (element)
+        {
+            char *key = xslt1_key2(element, uri);
+            if (!hashmap_get(style->strip_spaces, key)) hashmap_put(style->strip_spaces, key, (void*)what);
+            free(key);
+        }
+    }
+    free(element);
+}
+
+/** Port of xsltParseStylesheetPreserveSpace and xsltParseStylesheetStripSpace. */
+static void xslt_parse_stylesheet_space(XmlLibxslt1Stylesheet *style, XMQNode *cur, bool strip)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    // libxslt creates the table before checking the attribute for strip-space, after for preserve-space.
+    if (strip && !style->strip_spaces) style->strip_spaces = hashmap_create(10);
+    char *elements = xslt1_get_ns_prop_exact(cur, "elements", NULL);
+    if (!elements)
+    {
+        xslt1_transform_error(NULL, style, cur, strip ? "xsltParseStylesheetStripSpace: missing elements attribute\n"
+                                                     : "xsltParseStylesheetPreserveSpace: missing elements attribute\n");
+        style->warnings++;
+        return;
+    }
+    if (!style->strip_spaces) style->strip_spaces = hashmap_create(10);
+    xslt_for_each_token(style, cur, elements, xslt_space_token, (void*)(strip ? "strip" : "preserve"));
+    free(elements);
+    if (xml_node_first_child(cur)) xslt_parse_content_error(style, xml_node_first_child(cur));
+}
+
+/** Port of xsltRegisterExtPrefix (extensions.c). */
+static int xslt_register_ext_prefix(XmlLibxslt1Stylesheet *style, const char *prefix, const char *uri)
+{
+    if (!style || !uri) return -1;
+    for (XsltExtDef *def = style->ns_defs; def; def = def->next)
+    {
+        if (xslt1_streq(prefix, def->prefix)) return -1;
+    }
+    XsltExtDef *ret = (XsltExtDef*)calloc(1, sizeof(XsltExtDef));
+    ret->prefix = xslt1_strdup(prefix);
+    ret->uri = xslt1_strdup(uri);
+    ret->next = style->ns_defs;
+    style->ns_defs = ret;
+    // No extension module has a stylesheet initialization function.
+    return 0;
+}
+
+/** Port of xsltCheckExtPrefix (compares with the registered prefixes, see libxslt). */
+static int xslt_check_ext_prefix(XmlLibxslt1Stylesheet *style, const char *uri)
+{
+    if (!style || !style->ns_defs) return 0;
+    if (!uri) uri = "#default";
+    for (XsltExtDef *cur = style->ns_defs; cur; cur = cur->next)
+    {
+        if (xslt1_streq(uri, cur->prefix)) return 1;
+    }
+    return 0;
+}
+
+/** Port of xsltCheckExtURI. */
+static int xslt_check_ext_uri(XmlLibxslt1Stylesheet *style, const char *uri)
+{
+    if (!style || !style->ns_defs || !uri) return 0;
+    for (XsltExtDef *cur = style->ns_defs; cur; cur = cur->next)
+    {
+        if (xslt1_streq(uri, cur->uri)) return 1;
+    }
+    return 0;
+}
+
+/** Port of xsltParseStylesheetExtPrefix. */
+static void xslt_parse_stylesheet_ext_prefix(XmlLibxslt1Stylesheet *style, XMQNode *cur, int is_xslt_elem)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    char *prefixes = is_xslt_elem ? xslt1_get_ns_prop_exact(cur, "extension-element-prefixes", NULL)
+                                  : xslt1_get_ns_prop_exact(cur, "extension-element-prefixes", XSLT_NAMESPACE);
+    if (!prefixes) return;
+    const char *prefix = prefixes;
+    while (*prefix)
+    {
+        while (xslt1_is_blank((unsigned char)*prefix)) prefix++;
+        if (!*prefix) break;
+        const char *end = prefix;
+        while (*end && !xslt1_is_blank((unsigned char)*end)) end++;
+        char *p = xslt1_strndup(prefix, (size_t)(end - prefix));
+        XmlNs *ns = !strcmp(p, "#default") ? xml_ns_lookup_prefix(cur, NULL) : xml_ns_lookup_prefix(cur, p);
+        if (!ns)
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:extension-element-prefix : undefined namespace %s\n", p);
+            style->warnings++;
+        }
+        else
+        {
+            xslt_register_ext_prefix(style, p, xml_ns_href(ns));
+        }
+        free(p);
+        prefix = end;
+    }
+    free(prefixes);
+}
+
+/** Port of xsltParseStylesheetExcludePrefix: returns the number of prefixes pushed. */
+static int xslt_parse_stylesheet_exclude_prefix(XmlLibxslt1Stylesheet *style, XMQNode *cur, int is_xslt_elem)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return 0;
+    char *prefixes = is_xslt_elem ? xslt1_get_ns_prop_exact(cur, "exclude-result-prefixes", NULL)
+                                  : xslt1_get_ns_prop_exact(cur, "exclude-result-prefixes", XSLT_NAMESPACE);
+    if (!prefixes) return 0;
+    int nb = 0;
+    const char *prefix = prefixes;
+    while (*prefix)
+    {
+        while (xslt1_is_blank((unsigned char)*prefix)) prefix++;
+        if (!*prefix) break;
+        const char *end = prefix;
+        while (*end && !xslt1_is_blank((unsigned char)*end)) end++;
+        char *p = xslt1_strndup(prefix, (size_t)(end - prefix));
+        XmlNs *ns = !strcmp(p, "#default") ? xml_ns_lookup_prefix(cur, NULL) : xml_ns_lookup_prefix(cur, p);
+        if (!ns)
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:exclude-result-prefixes : undefined namespace %s\n", p);
+            style->warnings++;
+        }
+        else if (xslt_excl_prefix_push(style, xml_ns_href(ns)) >= 0)
+        {
+            nb++;
+        }
+        free(p);
+        prefix = end;
+    }
+    free(prefixes);
+    return nb;
+}
+
+static void xslt_delete_node(XMQNode *n)
+{
+    xml_node_unlink(n);
+    xml_node_free(n);
+}
+
+/** Port of xsltPreprocessStylesheet: strip whitespace and comments from the stylesheet. */
+static void xslt_preprocess_stylesheet(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    if (!style || !cur) return;
+    XMQNode *styleelem = (xslt1_is_xslt_elem(cur) && xslt1_is_xslt_name(cur, "stylesheet")) ? cur : NULL;
+    XMQNode *doc_node = xml_dom_document(style->doc);
+    XMQNode *delete_node = NULL;
+    while (cur)
+    {
+        if (delete_node)
+        {
+            xslt_delete_node(delete_node);
+            delete_node = NULL;
+        }
+        XmlNodeKind k = xml_node_kind(cur);
+        if (k == XML_DOM_ELEMENT)
+        {
+            int excl_prefixes = 0;
+            if (xslt1_is_xslt_elem(cur))
+            {
+                if (xslt1_is_xslt_name(cur, "text")) goto skip_children;
+            }
+            else
+            {
+                excl_prefixes = xslt_parse_stylesheet_exclude_prefix(style, cur, 0);
+            }
+            if (xml_node_first_ns_decl(cur) && style->excl_prefix_nr > 0)
+            {
+                XMQNode *root = xml_dom_root_element(style->doc);
+                if (root && root != cur)
+                {
+                    XmlNs *ns = xml_node_first_ns_decl(cur);
+                    while (ns)
+                    {
+                        XmlNs *next = xml_ns_next_decl(ns);
+                        for (int i = 0; i < style->excl_prefix_nr; i++)
+                        {
+                            if (xml_ns_prefix(ns) && xslt1_streq(xml_ns_href(ns), style->excl_prefix_tab[i]))
+                            {
+                                // Move the declaration to the root, to avoid duplicating it without losing it.
+                                xml_ns_move_decl_to(cur, ns, root);
+                                break;
+                            }
+                        }
+                        ns = next;
+                    }
+                }
+            }
+            // Prefixes declared locally are popped when going back.
+            if (excl_prefixes > 0)
+            {
+                xslt_preprocess_stylesheet(style, xml_node_first_child(cur));
+                for (; excl_prefixes > 0; excl_prefixes--) xslt_excl_prefix_pop(style);
+                goto skip_children;
+            }
+        }
+        else if (k == XML_DOM_TEXT)
+        {
+            if (xslt_is_blank_node(cur))
+            {
+                if (xslt_get_space_preserve(xml_node_parent(cur)) != 1) delete_node = cur;
+            }
+        }
+        else if (k != XML_DOM_CDATA)
+        {
+            delete_node = cur;
+            goto skip_children;
+        }
+
+        // A namespaced child of the stylesheet that is neither xslt nor an extension: skip its content.
+        if (k == XML_DOM_ELEMENT && xml_node_ns(cur) && styleelem && xml_node_parent(cur) == styleelem &&
+            !xslt1_streq(xslt_node_ns_uri(cur), XSLT_NAMESPACE) && !xslt_check_ext_uri(style, xslt_node_ns_uri(cur)))
+        {
+            goto skip_children;
+        }
+        else if (xml_node_first_child(cur))
+        {
+            cur = xml_node_first_child(cur);
+            continue;
+        }
+skip_children:
+        if (xml_node_next(cur))
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        do
+        {
+            cur = xml_node_parent(cur);
+            if (!cur) break;
+            if (cur == doc_node)
+            {
+                cur = NULL;
+                break;
+            }
+            if (xml_node_next(cur))
+            {
+                cur = xml_node_next(cur);
+                break;
+            }
+        } while (cur);
+    }
+    if (delete_node) xslt_delete_node(delete_node);
+}
+
+/** Port of xsltParseTemplateContent: precompute the instructions of a template body. */
+static void xslt_parse_template_content(XmlLibxslt1Stylesheet *style, XMQNode *templ)
+{
+    if (!style || !templ || xml_node_kind(templ) == XML_DOM_NAMESPACE) return;
+    XMQNode *cur = xml_node_first_child(templ);
+    XMQNode *del = NULL;
+    while (cur)
+    {
+        style->principal->op_count += 1;
+        if (del)
+        {
+            xslt_delete_node(del);
+            del = NULL;
+        }
+        if (xslt1_is_xslt_elem(cur))
+        {
+            xslt_style_pre_compute(style, cur);
+            if (xslt1_is_xslt_name(cur, "text"))
+            {
+                // TODO (libxslt): move the processing of xsl:text to xsltPreprocessStylesheet.
+                if (xml_node_first_child(cur))
+                {
+                    XMQNode *text = xml_node_first_child(cur);
+                    int noesc = 0;
+                    char *prop = xslt1_get_ns_prop_exact(cur, "disable-output-escaping", NULL);
+                    if (prop)
+                    {
+                        if (!strcmp(prop, "yes")) noesc = 1;
+                        else if (strcmp(prop, "no"))
+                        {
+                            xslt1_transform_error(NULL, style, cur, "xsl:text: disable-output-escaping allows only yes or no\n");
+                            style->warnings++;
+                        }
+                        free(prop);
+                    }
+                    while (text)
+                    {
+                        if (xml_node_kind(text) == XML_DOM_COMMENT)
+                        {
+                            text = xml_node_next(text);
+                            continue;
+                        }
+                        if (xml_node_kind(text) != XML_DOM_TEXT && xml_node_kind(text) != XML_DOM_CDATA)
+                        {
+                            xslt1_transform_error(NULL, style, cur, "xsltParseTemplateContent: xslt:text content problem\n");
+                            style->errors++;
+                            break;
+                        }
+                        // libxml2 xmlStringTextNoenc: the text is output without escaping.
+                        if (noesc && xml_node_kind(text) != XML_DOM_CDATA) xml_node_set_name(text, "textnoenc");
+                        text = xml_node_next(text);
+                    }
+                    // Replace xsl:text by its children.
+                    if (!text)
+                    {
+                        text = xml_node_first_child(cur);
+                        while (text)
+                        {
+                            XMQNode *next = xml_node_next(text);
+                            xml_node_unlink(text);
+                            xml_node_add_prev_sibling(cur, text);
+                            text = next;
+                        }
+                    }
+                }
+                del = cur;
+                goto skip_children;
+            }
+        }
+        else if (xml_node_kind(cur) == XML_DOM_ELEMENT && xml_node_ns(cur) && style->ns_defs &&
+                 xslt_check_ext_prefix(style, xml_ns_prefix(xml_node_ns(cur))))
+        {
+            // An extension element, compile it too.
+            xslt_style_pre_compute(style, cur);
+        }
+        else if (xml_node_kind(cur) == XML_DOM_ELEMENT)
+        {
+            // A literal result element, precompile its attribute value templates.
+            if (!xml_node_ns(cur) && style->default_alias)
+            {
+                xml_node_set_ns(cur, xml_ns_lookup_href(cur, style->default_alias));
+            }
+            for (XMQAttr *attr = xml_node_first_attr(cur); attr; attr = xml_attr_next(attr)) xslt_compile_attr(style, attr);
+        }
+        if (xml_node_first_child(cur))
+        {
+            cur = xml_node_first_child(cur);
+            continue;
+        }
+skip_children:
+        if (xml_node_next(cur))
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        do
+        {
+            cur = xml_node_parent(cur);
+            if (!cur) break;
+            if (cur == templ)
+            {
+                cur = NULL;
+                break;
+            }
+            if (xml_node_next(cur))
+            {
+                cur = xml_node_next(cur);
+                break;
+            }
+        } while (cur);
+    }
+    if (del) xslt_delete_node(del);
+
+    // Skip the first params, then report and remove misplaced params.
+    cur = xml_node_first_child(templ);
+    while (cur)
+    {
+        if (xslt1_is_xslt_elem(cur) && !xslt1_is_xslt_name(cur, "param")) break;
+        cur = xml_node_next(cur);
+    }
+    while (cur)
+    {
+        if (xslt1_is_xslt_elem(cur) && xslt1_is_xslt_name(cur, "param"))
+        {
+            XMQNode *param = cur;
+            xslt1_transform_error(NULL, style, cur, "xsltParseTemplateContent: ignoring misplaced param element\n");
+            style->warnings++;
+            cur = xml_node_next(cur);
+            xslt_delete_node(param);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+// Keys, port of xsltAddKey (keys.c).
+
+static int xslt_skip_string(const char *cur, int end)
+{
+    if (!cur || end < 0) return -1;
+    char limit;
+    if (cur[end] == '\'' || cur[end] == '"') limit = cur[end];
+    else return end;
+    end++;
+    while (cur[end])
+    {
+        if (cur[end] == limit) return end + 1;
+        end++;
+    }
+    return -1;
+}
+
+static int xslt_skip_predicate(const char *cur, int end)
+{
+    if (!cur || end < 0) return -1;
+    if (cur[end] != '[') return end;
+    end++;
+    int level = 0;
+    while (cur[end])
+    {
+        if (cur[end] == '\'' || cur[end] == '"')
+        {
+            end = xslt_skip_string(cur, end);
+            if (end <= 0) return -1;
+            continue;
+        }
+        else if (cur[end] == '[')
+        {
+            level += 1;
+        }
+        else if (cur[end] == ']')
+        {
+            if (level == 0) return end + 1;
+            level -= 1;
+        }
+        end++;
+    }
+    return -1;
+}
+
+static void xslt_free_key_def(XsltKeyDef *k)
+{
+    free(k->name);
+    free(k->name_uri);
+    free(k->match);
+    free(k->use);
+    xml_xpath_comp_free(k->comp);
+    xml_xpath_comp_free(k->usecomp);
+    free(k);
+}
+
+/** Port of xsltAddKey. */
+static int xslt_add_key(XmlLibxslt1Stylesheet *style, const char *name, const char *name_uri, const char *match, const char *use, XMQNode *inst)
+{
+    if (!style || !name || !match || !use) return -1;
+    XsltKeyDef *key = (XsltKeyDef*)calloc(1, sizeof(XsltKeyDef));
+    key->name = xslt1_strdup(name);
+    key->name_uri = xslt1_strdup(name_uri);
+    key->match = xslt1_strdup(match);
+    key->use = xslt1_strdup(use);
+    key->inst = inst;
+
+    // Split the | and register it as as many keys.
+    char *pattern = NULL;
+    int current = 0, end = 0, start;
+    while (match[current])
+    {
+        start = current;
+        while (xslt1_is_blank((unsigned char)match[current])) current++;
+        end = current;
+        while (match[end] && match[end] != '|')
+        {
+            if (match[end] == '[')
+            {
+                end = xslt_skip_predicate(match, end);
+                if (end <= 0)
+                {
+                    xslt1_transform_error(NULL, style, inst, "xsl:key : 'match' pattern is malformed: %s", key->match);
+                    style->errors++;
+                    goto error;
+                }
+            }
+            else
+            {
+                end++;
+            }
+        }
+        if (current == end)
+        {
+            xslt1_transform_error(NULL, style, inst, "xsl:key : 'match' pattern is empty\n");
+            style->errors++;
+            goto error;
+        }
+        if (match[start] != '/') pattern = xslt1_strncat(pattern, "//", 2);
+        pattern = xslt1_strncat(pattern, &match[start], (size_t)(end - start));
+        if (match[end] == '|')
+        {
+            pattern = xslt1_strncat(pattern, "|", 1);
+            end++;
+        }
+        current = end;
+    }
+    if (!pattern)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:key : 'match' pattern is empty\n");
+        style->errors++;
+        goto error;
+    }
+    // XSLT 1.0: it is an error for use or match to contain a variable reference.
+    key->comp = xslt1_xpath_compile(&style->settings, inst, pattern, true);
+    if (!key->comp)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:key : 'match' pattern compilation failed '%s'\n", pattern);
+        style->errors++;
+    }
+    key->usecomp = xslt1_xpath_compile(&style->settings, inst, use, true);
+    if (!key->usecomp)
+    {
+        xslt1_transform_error(NULL, style, inst, "xsl:key : 'use' expression compilation failed '%s'\n", use);
+        style->errors++;
+    }
+    // Keep the provided order, add the new one at the end.
+    if (!style->keys)
+    {
+        style->keys = key;
+    }
+    else
+    {
+        XsltKeyDef *prev = style->keys;
+        while (prev->next) prev = prev->next;
+        prev->next = key;
+    }
+    key->next = NULL;
+    key = NULL;
+error:
+    free(pattern);
+    if (key) xslt_free_key_def(key);
+    return 0;
+}
+
+/** Port of xsltParseStylesheetKey. */
+static void xslt_parse_stylesheet_key(XmlLibxslt1Stylesheet *style, XMQNode *key)
+{
+    if (!style || !key || xml_node_kind(key) != XML_DOM_ELEMENT) return;
+    char *name = NULL, *name_uri = NULL, *match = NULL, *use = NULL;
+    char *prop = xslt1_get_ns_prop_exact(key, "name", NULL);
+    if (prop)
+    {
+        const char *uri = xslt1_get_qname_uri(&style->settings, key, &prop);
+        if (!prop)
+        {
+            style->errors++;
+            goto error;
+        }
+        name = prop;
+        if (uri) name_uri = xslt1_strdup(uri);
+    }
+    else
+    {
+        xslt1_transform_error(NULL, style, key, "xsl:key : error missing name\n");
+        style->errors++;
+        goto error;
+    }
+    match = xslt1_get_ns_prop_exact(key, "match", NULL);
+    if (!match)
+    {
+        xslt1_transform_error(NULL, style, key, "xsl:key : error missing match\n");
+        style->errors++;
+        goto error;
+    }
+    use = xslt1_get_ns_prop_exact(key, "use", NULL);
+    if (!use)
+    {
+        xslt1_transform_error(NULL, style, key, "xsl:key : error missing use\n");
+        style->errors++;
+        goto error;
+    }
+    xslt_add_key(style, name, name_uri, match, use, key);
+error:
+    free(use);
+    free(match);
+    free(name);
+    free(name_uri);
+    if (xml_node_first_child(key)) xslt_parse_content_error(style, xml_node_first_child(key));
+}
+
+/** Port of xsltParseStylesheetTemplate. */
+static void xslt_parse_stylesheet_template(XmlLibxslt1Stylesheet *style, XMQNode *template_elem)
+{
+    if (!style || !template_elem || xml_node_kind(template_elem) != XML_DOM_ELEMENT) return;
+    XsltTemplate *ret = xslt_new_template();
+    ret->next = style->templates;
+    style->templates = ret;
+    ret->style = style;
+    xslt_get_inherited_ns_list(style, ret, template_elem);
+
+    char *prop = xslt1_get_ns_prop_exact(template_elem, "mode", NULL);
+    if (prop)
+    {
+        const char *uri = xslt1_get_qname_uri(&style->settings, template_elem, &prop);
+        if (!prop)
+        {
+            style->errors++;
+            return;
+        }
+        ret->mode = prop;
+        ret->mode_uri = xslt1_strdup(uri);
+    }
+    prop = xslt1_get_ns_prop_exact(template_elem, "match", NULL);
+    if (prop) xslt_set_string(&ret->match, prop);
+    prop = xslt1_get_ns_prop_exact(template_elem, "priority", NULL);
+    if (prop)
+    {
+        ret->priority = (float)xml_xpath_string_to_number(prop);
+        free(prop);
+    }
+    prop = xslt1_get_ns_prop_exact(template_elem, "name", NULL);
+    if (prop)
+    {
+        const char *uri = xslt1_get_qname_uri(&style->settings, template_elem, &prop);
+        if (!prop)
+        {
+            style->errors++;
+            return;
+        }
+        if (xslt_validate_ncname(prop))
+        {
+            xslt1_transform_error(NULL, style, template_elem, "xsl:template : error invalid name '%s'\n", prop);
+            style->errors++;
+            free(prop);
+            return;
+        }
+        ret->name = prop;
+        ret->name_uri = uri ? xslt1_strdup(uri) : NULL;
+    }
+    // Parse the content and register the pattern.
+    xslt_parse_template_content(style, template_elem);
+    ret->elem = template_elem;
+    ret->content = xml_node_first_child(template_elem);
+    xslt_add_template(style, ret, ret->mode, ret->mode_uri);
+}
+
+// Attribute sets, port of libxslt attributes.c (the compilation).
+
+static XsltAttrSet *xslt_find_attr_set(XmlLibxslt1Stylesheet *style, const char *ncname, const char *ns)
+{
+    if (!style->attribute_sets) return NULL;
+    char *key = xslt1_key2(ncname, ns);
+    XsltAttrSet *set = (XsltAttrSet*)hashmap_get(style->attribute_sets, key);
+    free(key);
+    return set;
+}
+
+static void xslt_add_attr_set(XmlLibxslt1Stylesheet *style, XsltAttrSet *set)
+{
+    if (!style->attribute_sets) style->attribute_sets = hashmap_create(10);
+    char *key = xslt1_key2(set->name, set->ns);
+    hashmap_put(style->attribute_sets, key, set);
+    free(key);
+    // Keep the declaration order.
+    set->next_in_order = NULL;
+    XsltAttrSet **pp = &style->attribute_set_list;
+    while (*pp) pp = &(*pp)->next_in_order;
+    *pp = set;
+}
+
+static void xslt_remove_attr_set(XmlLibxslt1Stylesheet *style, XsltAttrSet *set)
+{
+    char *key = xslt1_key2(set->name, set->ns);
+    hashmap_remove(style->attribute_sets, key);
+    free(key);
+    XsltAttrSet **pp = &style->attribute_set_list;
+    while (*pp && *pp != set) pp = &(*pp)->next_in_order;
+    if (*pp) *pp = set->next_in_order;
+}
+
+/** Port of xsltParseStylesheetAttributeSet. */
+static void xslt_parse_stylesheet_attribute_set(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    char *value = xslt1_get_ns_prop_exact(cur, "name", NULL);
+    if (!value || !*value)
+    {
+        xslt1_generic_error(&style->settings, "xsl:attribute-set : name is missing\n");
+        free(value);
+        return;
+    }
+    if (xslt1_validate_qname(value))
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:attribute-set : The name '%s' is not a valid QName.\n", value);
+        style->errors++;
+        free(value);
+        return;
+    }
+    char *prefix = NULL;
+    char *ncname = xslt1_split_qname(value, &prefix);
+    free(value);
+    const char *ns_uri = NULL;
+    if (prefix)
+    {
+        XmlNs *ns = xml_ns_lookup_prefix(cur, prefix);
+        if (!ns)
+        {
+            xslt1_transform_error(NULL, style, cur, "xsl:attribute-set : No namespace found for QName '%s:%s'\n", prefix, ncname);
+            style->errors++;
+            free(prefix);
+            free(ncname);
+            return;
+        }
+        ns_uri = xml_ns_href(ns);
+    }
+    XsltAttrSet *set = xslt_find_attr_set(style, ncname, ns_uri);
+    if (!set)
+    {
+        set = (XsltAttrSet*)calloc(1, sizeof(XsltAttrSet));
+        set->name = xslt1_strdup(ncname);
+        set->ns = xslt1_strdup(ns_uri);
+        xslt_add_attr_set(style, set);
+    }
+    free(prefix);
+    free(ncname);
+
+    // Only xsl:attribute elements are allowed.
+    for (XMQNode *child = xml_node_first_child(cur); child; child = xml_node_next(child))
+    {
+        if (xml_node_kind(child) != XML_DOM_ELEMENT || !xml_node_ns(child) || !xslt1_is_xslt_elem(child))
+        {
+            if (xml_node_kind(child) == XML_DOM_ELEMENT)
+                xslt1_transform_error(NULL, style, child, "xsl:attribute-set : unexpected child %s\n", xml_node_name(child));
+            else
+                xslt1_transform_error(NULL, style, child, "xsl:attribute-set : child of unexpected type\n");
+        }
+        else if (!xslt1_is_xslt_name(child, "attribute"))
+        {
+            xslt1_transform_error(NULL, style, child, "xsl:attribute-set : unexpected child xsl:%s\n", xml_node_name(child));
+        }
+        else
+        {
+            xslt_style_pre_compute(style, child);
+            if (xml_node_first_child(child)) xslt_parse_template_content(style, child);
+            if (!xml_node_user_data(child))
+            {
+                xslt1_transform_error(NULL, style, child, "xsl:attribute-set : internal error, attribute %s not compiled\n", xml_node_name(child));
+            }
+            else
+            {
+                XsltAttrElem *e = (XsltAttrElem*)calloc(1, sizeof(XsltAttrElem));
+                e->attr = child;
+                XsltAttrElem **pp = &set->attrs;
+                while (*pp) pp = &(*pp)->next;
+                *pp = e;
+            }
+        }
+    }
+
+    // The attribute use-attribute-sets.
+    value = xslt1_get_ns_prop_exact(cur, "use-attribute-sets", NULL);
+    if (value)
+    {
+        const char *curval = value;
+        while (*curval)
+        {
+            while (xslt1_is_blank((unsigned char)*curval)) curval++;
+            if (!*curval) break;
+            const char *endval = curval;
+            while (*endval && !xslt1_is_blank((unsigned char)*endval)) endval++;
+            char *qn = xslt1_strndup(curval, (size_t)(endval - curval));
+            if (xslt1_validate_qname(qn))
+            {
+                xslt1_transform_error(NULL, style, cur, "xsl:attribute-set : The name '%s' in use-attribute-sets is not a valid QName.\n", qn);
+                style->errors++;
+                free(qn);
+                free(value);
+                return;
+            }
+            char *prefix2 = NULL;
+            char *ncname2 = xslt1_split_qname(qn, &prefix2);
+            const char *ns_uri2 = NULL;
+            if (prefix2)
+            {
+                XmlNs *ns2 = xml_ns_lookup_prefix(cur, prefix2);
+                if (!ns2)
+                {
+                    xslt1_transform_error(NULL, style, cur, "xsl:attribute-set : No namespace found for QName '%s:%s' in use-attribute-sets\n",
+                                         prefix2, ncname2);
+                    style->errors++;
+                    free(prefix2);
+                    free(ncname2);
+                    free(qn);
+                    free(value);
+                    return;
+                }
+                ns_uri2 = xml_ns_href(ns2);
+            }
+            // xsltAddUseAttrSetList: no duplicates.
+            bool dup = false;
+            XsltUseAttrSet **pp = &set->use_attr_sets;
+            while (*pp)
+            {
+                if (xslt1_streq((*pp)->ncname, ncname2) && xslt1_streq((*pp)->ns, ns_uri2)) dup = true;
+                pp = &(*pp)->next;
+            }
+            if (!dup)
+            {
+                XsltUseAttrSet *u = (XsltUseAttrSet*)calloc(1, sizeof(XsltUseAttrSet));
+                u->ncname = ncname2;
+                u->ns = xslt1_strdup(ns_uri2);
+                *pp = u;
+                ncname2 = NULL;
+            }
+            free(prefix2);
+            free(ncname2);
+            free(qn);
+            curval = endval;
+        }
+        free(value);
+    }
+}
+
+/** Port of xsltMergeAttrSets. */
+static void xslt_merge_attr_sets(XsltAttrSet *set, XsltAttrSet *other)
+{
+    for (XsltAttrElem *old = other->attrs; old; old = old->next)
+    {
+        // Check that the attribute is not yet in the list.
+        XsltAttrElem *cur = set->attrs;
+        int add = 1;
+        while (cur)
+        {
+            XsltStylePreComp *cur_comp = (XsltStylePreComp*)xml_node_user_data(cur->attr);
+            XsltStylePreComp *old_comp = (XsltStylePreComp*)xml_node_user_data(old->attr);
+            if (xslt1_streq(cur_comp->name, old_comp->name) && xslt1_streq(cur_comp->ns, old_comp->ns))
+            {
+                add = 0;
+                break;
+            }
+            if (!cur->next) break;
+            cur = cur->next;
+        }
+        if (add)
+        {
+            XsltAttrElem *e = (XsltAttrElem*)calloc(1, sizeof(XsltAttrElem));
+            e->attr = old->attr;
+            if (!cur) set->attrs = e;
+            else cur->next = e;
+        }
+    }
+}
+
+static void xslt_resolve_attr_set(XsltAttrSet *set, XmlLibxslt1Stylesheet *top_style, XmlLibxslt1Stylesheet *style,
+                                  const char *name, const char *ns, int depth);
+
+/** Port of xsltResolveUseAttrSets. */
+static void xslt_resolve_use_attr_sets(XsltAttrSet *set, XmlLibxslt1Stylesheet *top_style, int depth)
+{
+    XsltUseAttrSet *use = set->use_attr_sets;
+    while (use)
+    {
+        // Iterate the top stylesheet and all imports.
+        for (XmlLibxslt1Stylesheet *cur = top_style; cur; cur = xslt1_next_import(cur))
+        {
+            XsltAttrSet *other = xslt_find_attr_set(cur, use->ncname, use->ns);
+            if (other)
+            {
+                xslt_resolve_attr_set(other, top_style, cur, use->ncname, use->ns, depth + 1);
+                xslt_merge_attr_sets(set, other);
+                break;
+            }
+        }
+        XsltUseAttrSet *next = use->next;
+        free(use->ncname);
+        free(use->ns);
+        free(use);
+        use = next;
+    }
+    set->use_attr_sets = NULL;
+}
+
+/** Port of xsltResolveAttrSet. */
+static void xslt_resolve_attr_set(XsltAttrSet *set, XmlLibxslt1Stylesheet *top_style, XmlLibxslt1Stylesheet *style,
+                                  const char *name, const char *ns, int depth)
+{
+    if (set->state == XSLT_ATTRSET_RESOLVED) return;
+    if (set->state == XSLT_ATTRSET_RESOLVING)
+    {
+        xslt1_transform_error(NULL, top_style, NULL, "xsl:attribute-set : use-attribute-sets recursion detected on %s\n", name);
+        top_style->errors++;
+        set->state = XSLT_ATTRSET_RESOLVED;
+        return;
+    }
+    if (depth > 100)
+    {
+        xslt1_transform_error(NULL, top_style, NULL, "xsl:attribute-set : use-attribute-sets maximum recursion depth exceeded on %s\n", name);
+        top_style->errors++;
+        return;
+    }
+    set->state = XSLT_ATTRSET_RESOLVING;
+    xslt_resolve_use_attr_sets(set, top_style, depth);
+    // Merge the imported sets.
+    for (XmlLibxslt1Stylesheet *cur = xslt1_next_import(style); cur; cur = xslt1_next_import(cur))
+    {
+        XsltAttrSet *other = xslt_find_attr_set(cur, name, ns);
+        if (other)
+        {
+            xslt_resolve_use_attr_sets(other, top_style, depth);
+            xslt_merge_attr_sets(set, other);
+            xslt_remove_attr_set(cur, other);
+            xslt_free_attr_set(other);
+        }
+    }
+    set->state = XSLT_ATTRSET_RESOLVED;
+}
+
+/** Port of xsltResolveStylesheetAttributeSet: resolve all sets and move them to the top stylesheet.
+    Resolving a set can free sets of later imports, so the sets are looked up by name. */
+static void xslt_resolve_stylesheet_attribute_set(XmlLibxslt1Stylesheet *style)
+{
+    int error = 0;
+    for (XmlLibxslt1Stylesheet *cur = style; cur; cur = xslt1_next_import(cur))
+    {
+        if (!cur->attribute_set_list) continue;
+        size_t n = 0;
+        for (XsltAttrSet *set = cur->attribute_set_list; set; set = set->next_in_order) n++;
+        char **names = (char**)calloc(2 * n, sizeof(char*));
+        size_t i = 0;
+        for (XsltAttrSet *set = cur->attribute_set_list; set; set = set->next_in_order, i++)
+        {
+            names[2 * i] = xslt1_strdup(set->name);
+            names[2 * i + 1] = xslt1_strdup(set->ns);
+        }
+        for (i = 0; i < n; i++)
+        {
+            const char *name = names[2 * i];
+            const char *ns = names[2 * i + 1];
+            XsltAttrSet *set = xslt_find_attr_set(cur, name, ns);
+            if (!set) continue;
+            if (error)
+            {
+                if (cur != style)
+                {
+                    xslt_remove_attr_set(cur, set);
+                    xslt_free_attr_set(set);
+                }
+                continue;
+            }
+            xslt_resolve_attr_set(set, style, cur, name, ns, 1);
+            if (cur != style)
+            {
+                // Move the attribute set to the top stylesheet.
+                xslt_remove_attr_set(cur, set);
+                if (xslt_find_attr_set(style, name, ns))
+                {
+                    xslt1_generic_error(&style->settings, "xsl:attribute-set : internal error, can't move imported  attribute set %s\n", name);
+                    error = 1;
+                    xslt_free_attr_set(set);
+                }
+                else
+                {
+                    xslt_add_attr_set(style, set);
+                }
+            }
+        }
+        for (i = 0; i < 2 * n; i++) free(names[i]);
+        free(names);
+    }
+}
+
+// Namespace aliases, port of xsltNamespaceAlias (namespaces.c).
+
+static void xslt_namespace_alias(XmlLibxslt1Stylesheet *style, XMQNode *node)
+{
+    if (!style || !node) return;
+    char *style_prefix = xslt1_get_ns_prop_exact(node, "stylesheet-prefix", NULL);
+    char *result_prefix = NULL;
+    if (!style_prefix)
+    {
+        xslt1_transform_error(NULL, style, node, "namespace-alias: stylesheet-prefix attribute missing\n");
+        return;
+    }
+    result_prefix = xslt1_get_ns_prop_exact(node, "result-prefix", NULL);
+    if (!result_prefix)
+    {
+        xslt1_transform_error(NULL, style, node, "namespace-alias: result-prefix attribute missing\n");
+        goto error;
+    }
+    const char *literal_ns_name;
+    const char *target_ns_name;
+    XmlNs *literal_ns, *target_ns;
+    if (!strcmp(style_prefix, "#default"))
+    {
+        literal_ns = xml_ns_lookup_prefix(node, NULL);
+        literal_ns_name = literal_ns ? xml_ns_href(literal_ns) : NULL;
+    }
+    else
+    {
+        literal_ns = xml_ns_lookup_prefix(node, style_prefix);
+        if (!literal_ns || !xml_ns_href(literal_ns))
+        {
+            xslt1_transform_error(NULL, style, node, "namespace-alias: prefix %s not bound to any namespace\n", style_prefix);
+            goto error;
+        }
+        literal_ns_name = xml_ns_href(literal_ns);
+    }
+    // For #default without a default namespace, UNDEFINED_DEFAULT_NS is used.
+    if (!strcmp(result_prefix, "#default"))
+    {
+        target_ns = xml_ns_lookup_prefix(node, NULL);
+        target_ns_name = target_ns ? xml_ns_href(target_ns) : XSLT_UNDEFINED_DEFAULT_NS;
+    }
+    else
+    {
+        target_ns = xml_ns_lookup_prefix(node, result_prefix);
+        if (!target_ns || !xml_ns_href(target_ns))
+        {
+            xslt1_transform_error(NULL, style, node, "namespace-alias: prefix %s not bound to any namespace\n", result_prefix);
+            goto error;
+        }
+        target_ns_name = xml_ns_href(target_ns);
+    }
+    if (!literal_ns_name)
+    {
+        // #default without a default namespace in scope.
+        if (target_ns) xslt_set_string(&style->default_alias, xslt1_strdup(xml_ns_href(target_ns)));
+    }
+    else
+    {
+        if (!style->ns_aliases) style->ns_aliases = hashmap_create(10);
+        // xmlHashAddEntry: the first alias wins.
+        if (!hashmap_get(style->ns_aliases, literal_ns_name))
+        {
+            hashmap_put(style->ns_aliases, literal_ns_name, xslt1_strdup(target_ns_name ? target_ns_name : ""));
+        }
+    }
+error:
+    free(style_prefix);
+    free(result_prefix);
+}
+
+// Global variables, port of xsltParseGlobalVariable/Param (variables.c).
+
+static int xslt_register_global_variable(XmlLibxslt1Stylesheet *style, const char *name, const char *ns_uri, const char *sel,
+                                         XMQNode *tree, XsltStylePreComp *comp, const char *value)
+{
+    if (!style || !name || !comp) return -1;
+    XsltStackElem *elem = (XsltStackElem*)calloc(1, sizeof(XsltStackElem));
+    elem->comp = comp;
+    elem->name = xslt1_strdup(name);
+    elem->select = xslt1_strdup(sel);
+    elem->name_uri = xslt1_strdup(ns_uri);
+    elem->tree = tree;
+    for (XsltStackElem *tmp = style->variables; tmp; tmp = tmp->next)
+    {
+        if (elem->comp->type == XSLT_FUNC_VARIABLE && tmp->comp->type == XSLT_FUNC_VARIABLE &&
+            xslt1_streq(elem->name, tmp->name) && xslt1_streq(elem->name_uri, tmp->name_uri))
+        {
+            xslt1_transform_error(NULL, style, comp->inst, "redefinition of global variable %s\n", elem->name);
+            style->errors++;
+        }
+    }
+    elem->next = style->variables;
+    style->variables = elem;
+    if (value)
+    {
+        elem->computed = 1;
+        elem->value = xml_xpath_result_new_string(value);
+    }
+    return 0;
+}
+
+static void xslt_parse_global_variable(XmlLibxslt1Stylesheet *style, XMQNode *cur, bool param)
+{
+    if (!cur || !style || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    const char *what = param ? "xsl:param" : "xsl:variable";
+    xslt_style_pre_compute(style, cur);
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(cur);
+    if (!comp || comp == XSLT_EXT_MARKER)
+    {
+        xslt1_transform_error(NULL, style, cur, "%s : compilation failed\n", what);
+        return;
+    }
+    if (!comp->name)
+    {
+        xslt1_transform_error(NULL, style, cur, "%s : missing name attribute\n", what);
+        return;
+    }
+    // Parse the content (a sequence constructor).
+    if (xml_node_first_child(cur)) xslt_parse_template_content(style, cur);
+    xslt_register_global_variable(style, comp->name, comp->ns, comp->select, xml_node_first_child(cur), comp, NULL);
+}
+
+// Imports and includes, port of libxslt imports.c.
+
+static int xslt_parse_stylesheet_user(XmlLibxslt1Stylesheet *style, XmlDom *doc);
+static XmlLibxslt1Stylesheet *xslt_parse_stylesheet_process(XmlLibxslt1Stylesheet *ret, XmlDom *doc);
+
+/** Port of xsltNormalizeCompSteps and xsltFixImportedCompSteps: only the first pattern of
+    each name list of the template hash is renumbered, like libxslt. */
+static void xslt_fix_imported_comp_steps(XmlLibxslt1Stylesheet *master, XmlLibxslt1Stylesheet *style)
+{
+    if (style->templates_hash)
+    {
+        HashMapIterator *i = hashmap_iterate(style->templates_hash);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(i, &key, &val))
+        {
+            XmlLibxslt1Pattern *comp = (XmlLibxslt1Pattern*)val;
+            if (!comp) continue;
+            for (int ix = 0; ix < comp->nb_step; ix++)
+            {
+                comp->steps[ix].previous_extra += master->extras_nr;
+                comp->steps[ix].index_extra += master->extras_nr;
+                comp->steps[ix].len_extra += master->extras_nr;
+            }
+        }
+        hashmap_free_iterator(i);
+    }
+    master->extras_nr += style->extras_nr;
+    for (XmlLibxslt1Stylesheet *res = style->imports; res; res = res->next) xslt_fix_imported_comp_steps(master, res);
+}
+
+/** Port of xsltCheckCycle. */
+static int xslt_check_cycle(XmlLibxslt1Stylesheet *style, XMQNode *cur, const char *uri)
+{
+    int depth = 0;
+    for (XmlLibxslt1Stylesheet *ancestor = style; ancestor; ancestor = ancestor->parent)
+    {
+        if (++depth >= XSLT_MAX_NESTING)
+        {
+            xslt1_transform_error(NULL, style, cur, "maximum nesting depth exceeded: %s\n", uri);
+            return -1;
+        }
+        if (ancestor->doc && xslt1_streq(xml_dom_url(ancestor->doc), uri))
+        {
+            xslt1_transform_error(NULL, style, cur, "recursion detected on imported URL %s\n", uri);
+            return -1;
+        }
+        for (XsltDocument *docptr = ancestor->includes; docptr; docptr = docptr->includes)
+        {
+            if (++depth >= XSLT_MAX_NESTING)
+            {
+                xslt1_transform_error(NULL, style, cur, "maximum nesting depth exceeded: %s\n", uri);
+                return -1;
+            }
+            if (xslt1_streq(xml_dom_url(docptr->doc), uri))
+            {
+                xslt1_transform_error(NULL, style, cur, "recursion detected on included URL %s\n", uri);
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+/** Port of xsltParseStylesheetImportedDoc. */
+static XmlLibxslt1Stylesheet *xslt_parse_stylesheet_imported_doc(XmlDom *doc, XmlLibxslt1Stylesheet *parent_style, const XmlLibxslt1Settings *settings)
+{
+    if (!doc) return NULL;
+    XmlLibxslt1Stylesheet *ret = xslt_new_stylesheet_internal(parent_style, settings);
+    if (xslt_parse_stylesheet_user(ret, doc) != 0)
+    {
+        xslt_free_stylesheet(ret);
+        return NULL;
+    }
+    ret->owns_doc = 1;
+    return ret;
+}
+
+/** Port of xsltParseStylesheetImport. */
+static int xslt_parse_stylesheet_import(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    int ret = -1;
+    char *base = NULL, *uri = NULL;
+    char *uri_ref = xslt1_get_ns_prop_exact(cur, "href", NULL);
+    if (!uri_ref)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:import : missing href attribute\n");
+        goto error;
+    }
+    base = xslt1_node_get_base(style->doc, cur);
+    uri = xml_uri_build(uri_ref, base);
+    if (!uri)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:import : invalid URI reference %s\n", uri_ref);
+        goto error;
+    }
+    if (xslt_check_cycle(style, cur, uri) < 0) goto error;
+    XmlDom *import;
+    import = xslt1_load(style, uri, XML_LIBXSLT1_LOAD_STYLESHEET);
+    if (!import)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:import : unable to load %s\n", uri);
+        goto error;
+    }
+    XmlLibxslt1Stylesheet *res;
+    res = xslt_parse_stylesheet_imported_doc(import, style, NULL);
+    if (res)
+    {
+        res->next = style->imports;
+        style->imports = res;
+        if (!style->parent) xslt_fix_imported_comp_steps(style, res);
+        ret = 0;
+    }
+    else
+    {
+        xml_dom_free(import);
+    }
+error:
+    free(uri_ref);
+    free(base);
+    free(uri);
+    return ret;
+}
+
+/** Port of xsltLoadStyleDocument (documents.c). */
+static XsltDocument *xslt_load_style_document(XmlLibxslt1Stylesheet *style, const char *uri)
+{
+    for (XsltDocument *ret = style->doc_list; ret; ret = ret->next)
+    {
+        if (ret->doc && xml_dom_url(ret->doc) && xslt1_streq(xml_dom_url(ret->doc), uri)) return ret;
+    }
+    XmlDom *doc = xslt1_load(style, uri, XML_LIBXSLT1_LOAD_STYLESHEET);
+    if (!doc) return NULL;
+    XsltDocument *ret = (XsltDocument*)calloc(1, sizeof(XsltDocument));
+    ret->doc = doc;
+    ret->next = style->doc_list;
+    style->doc_list = ret;
+    return ret;
+}
+
+/** Port of xsltParseStylesheetInclude. */
+static int xslt_parse_stylesheet_include(XmlLibxslt1Stylesheet *style, XMQNode *cur)
+{
+    int ret = -1;
+    char *base = NULL, *uri = NULL;
+    char *uri_ref = xslt1_get_ns_prop_exact(cur, "href", NULL);
+    if (!uri_ref)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:include : missing href attribute\n");
+        goto error;
+    }
+    base = xslt1_node_get_base(style->doc, cur);
+    uri = xml_uri_build(uri_ref, base);
+    if (!uri)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:include : invalid URI reference %s\n", uri_ref);
+        goto error;
+    }
+    if (xslt_check_cycle(style, cur, uri) < 0) goto error;
+    XsltDocument *include;
+    include = xslt_load_style_document(style, uri);
+    if (!include)
+    {
+        xslt1_transform_error(NULL, style, cur, "xsl:include : unable to load %s\n", uri);
+        goto error;
+    }
+    XmlDom *old_doc;
+    old_doc = style->doc;
+    style->doc = include->doc;
+    // Chain to the stylesheet for the recursion check.
+    include->includes = style->includes;
+    style->includes = include;
+    int old_nopreproc;
+    old_nopreproc = style->nopreproc;
+    style->nopreproc = include->preproc;
+    XmlLibxslt1Stylesheet *result;
+    result = xslt_parse_stylesheet_process(style, include->doc);
+    style->nopreproc = old_nopreproc;
+    include->preproc = 1;
+    style->includes = include->includes;
+    style->doc = old_doc;
+    ret = result ? 0 : -1;
+error:
+    free(uri_ref);
+    free(base);
+    free(uri);
+    return ret;
+}
+
+/** Port of xsltParseStylesheetTop. */
+static void xslt_parse_stylesheet_top(XmlLibxslt1Stylesheet *style, XMQNode *top)
+{
+    if (!top || xml_node_kind(top) != XML_DOM_ELEMENT) return;
+    char *prop = xslt1_get_ns_prop_exact(top, "version", NULL);
+    if (!prop)
+    {
+        xslt1_transform_error(NULL, style, top, "xsl:version is missing: document may not be a stylesheet\n");
+        style->warnings++;
+    }
+    else
+    {
+        if (strcmp(prop, "1.0") && strcmp(prop, "1.1"))
+        {
+            xslt1_transform_error(NULL, style, top, "xsl:version: only 1.1 features are supported\n");
+            style->forwards_compatible = 1;
+            style->warnings++;
+        }
+        free(prop);
+    }
+
+    // The xsl:import elements.
+    XMQNode *cur = xml_node_first_child(top);
+    while (cur)
+    {
+        style->principal->op_count += 1;
+        if (xslt_is_blank_node(cur))
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (xslt1_is_xslt_elem(cur) && xslt1_is_xslt_name(cur, "import"))
+        {
+            if (xslt_parse_stylesheet_import(style, cur) != 0) style->errors++;
+        }
+        else
+        {
+            break;
+        }
+        cur = xml_node_next(cur);
+    }
+
+    // The other top level elements.
+    while (cur)
+    {
+        style->principal->op_count += 1;
+        if (xslt_is_blank_node(cur))
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (xml_node_kind(cur) == XML_DOM_TEXT)
+        {
+            if (xml_node_content(cur)) xslt1_transform_error(NULL, style, cur, "misplaced text node: '%s'\n", xml_node_content(cur));
+            style->errors++;
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (xml_node_kind(cur) == XML_DOM_ELEMENT && !xml_node_ns(cur))
+        {
+            xslt1_generic_error(&style->settings, "Found a top-level element %s with null namespace URI\n", xml_node_name(cur));
+            style->errors++;
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (xml_node_kind(cur) == XML_DOM_ELEMENT && !xslt1_is_xslt_elem(cur))
+        {
+            // No extension module has top level elements.
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (xml_node_kind(cur) != XML_DOM_ELEMENT)
+        {
+            // libxslt compares the names of other nodes too.
+        }
+        if (xslt1_is_xslt_name(cur, "import"))
+        {
+            xslt1_transform_error(NULL, style, cur, "xsltParseStylesheetTop: ignoring misplaced import element\n");
+            style->errors++;
+        }
+        else if (xslt1_is_xslt_name(cur, "include"))
+        {
+            if (xslt_parse_stylesheet_include(style, cur) != 0) style->errors++;
+        }
+        else if (xslt1_is_xslt_name(cur, "strip-space")) xslt_parse_stylesheet_space(style, cur, true);
+        else if (xslt1_is_xslt_name(cur, "preserve-space")) xslt_parse_stylesheet_space(style, cur, false);
+        else if (xslt1_is_xslt_name(cur, "output")) xslt_parse_stylesheet_output(style, cur);
+        else if (xslt1_is_xslt_name(cur, "key")) xslt_parse_stylesheet_key(style, cur);
+        else if (xslt1_is_xslt_name(cur, "decimal-format")) xslt_parse_stylesheet_decimal_format(style, cur);
+        else if (xslt1_is_xslt_name(cur, "attribute-set")) xslt_parse_stylesheet_attribute_set(style, cur);
+        else if (xslt1_is_xslt_name(cur, "variable")) xslt_parse_global_variable(style, cur, false);
+        else if (xslt1_is_xslt_name(cur, "param")) xslt_parse_global_variable(style, cur, true);
+        else if (xslt1_is_xslt_name(cur, "template")) xslt_parse_stylesheet_template(style, cur);
+        else if (xslt1_is_xslt_name(cur, "namespace-alias")) xslt_namespace_alias(style, cur);
+        else
+        {
+            if (style->forwards_compatible == 0)
+            {
+                xslt1_transform_error(NULL, style, cur, "xsltParseStylesheetTop: unknown %s element\n",
+                                     xml_node_name(cur) ? xml_node_name(cur) : "(null)");
+                style->errors++;
+            }
+        }
+        cur = xml_node_next(cur);
+    }
+}
+
+/** Port of xsltParseStylesheetProcess. */
+static XmlLibxslt1Stylesheet *xslt_parse_stylesheet_process(XmlLibxslt1Stylesheet *ret, XmlDom *doc)
+{
+    if (!doc || !ret) return NULL;
+    XMQNode *cur = xml_dom_root_element(doc);
+    if (!cur)
+    {
+        xslt1_transform_error(NULL, ret, xml_dom_document(doc), "xsltParseStylesheetProcess : empty stylesheet\n");
+        return NULL;
+    }
+    if (xslt1_is_xslt_elem(cur) && (xslt1_is_xslt_name(cur, "stylesheet") || xslt1_is_xslt_name(cur, "transform")))
+    {
+        ret->literal_result = 0;
+        xslt_parse_stylesheet_exclude_prefix(ret, cur, 1);
+        xslt_parse_stylesheet_ext_prefix(ret, cur, 1);
+    }
+    else
+    {
+        xslt_parse_stylesheet_exclude_prefix(ret, cur, 0);
+        xslt_parse_stylesheet_ext_prefix(ret, cur, 0);
+        ret->literal_result = 1;
+    }
+    if (!ret->nopreproc) xslt_preprocess_stylesheet(ret, cur);
+    if (ret->literal_result == 0)
+    {
+        xslt_parse_stylesheet_top(ret, cur);
+    }
+    else
+    {
+        // The document itself might be the template, check xsl:version.
+        char *prop = xslt1_get_ns_prop_exact(cur, "version", XSLT_NAMESPACE);
+        if (!prop)
+        {
+            xslt1_transform_error(NULL, ret, cur, "xsltParseStylesheetProcess : document is not a stylesheet\n");
+            return NULL;
+        }
+        if (strcmp(prop, "1.0") && strcmp(prop, "1.1"))
+        {
+            xslt1_transform_error(NULL, ret, cur, "xsl:version: only 1.1 features are supported\n");
+            ret->forwards_compatible = 1;
+            ret->warnings++;
+        }
+        free(prop);
+        XsltTemplate *templ = xslt_new_template();
+        templ->next = ret->templates;
+        ret->templates = templ;
+        templ->match = xslt1_strdup("/");
+        // Parse the content and register the pattern.
+        xslt_parse_template_content(ret, xml_dom_document(doc));
+        templ->elem = xml_dom_document(doc);
+        templ->content = xml_node_first_child(xml_dom_document(doc));
+        xslt_add_template(ret, templ, NULL, NULL);
+        ret->literal_result = 1;
+    }
+    return ret;
+}
+
+/** Port of xsltParseStylesheetUser. */
+static int xslt_parse_stylesheet_user(XmlLibxslt1Stylesheet *style, XmlDom *doc)
+{
+    if (!style || !doc) return -1;
+    // libxslt calls xsltGatherNamespaces here, before style->doc is set, so it does nothing.
+    style->doc = doc;
+    if (!xslt_parse_stylesheet_process(style, doc))
+    {
+        style->doc = NULL;
+        return -1;
+    }
+    if (!style->parent) xslt_resolve_stylesheet_attribute_set(style);
+    if (style->errors != 0)
+    {
+        // Detach the doc, it is not freed with the stylesheet.
+        style->doc = NULL;
+        return -1;
+    }
+    return 0;
+}
+
+XmlLibxslt1Stylesheet *xml_libxslt1_compile(XmlDom *doc, const XmlLibxslt1Settings *settings)
+{
+    XmlLibxslt1Settings defaults;
+    if (!settings)
+    {
+        xml_libxslt1_settings_default(&defaults);
+        settings = &defaults;
+    }
+    return xslt_parse_stylesheet_imported_doc(doc, NULL, settings);
+}
+
+// Description of a compiled stylesheet, for the differential tests.
+
+static void xslt_d_str(MemBuffer *mb, const char *label, const char *s)
+{
+    membuffer_printf(mb, " %s=", label);
+    if (!s)
+    {
+        membuffer_append(mb, "(null)");
+        return;
+    }
+    membuffer_append_char(mb, '"');
+    for (const char *p = s; *p; ++p)
+    {
+        unsigned char c = (unsigned char)*p;
+        if (c == '\n') membuffer_append(mb, "\\n");
+        else if (c == '"') membuffer_append(mb, "\\\"");
+        else if (c == '\\') membuffer_append(mb, "\\\\");
+        else if (c < 32) membuffer_printf(mb, "\\x%02x", c);
+        else membuffer_append_char(mb, (char)c);
+    }
+    membuffer_append_char(mb, '"');
+}
+
+static void xslt_d_indent(MemBuffer *mb, int depth)
+{
+    for (int i = 0; i < depth; ++i) membuffer_append(mb, "  ");
+}
+
+static const char *xslt_style_type_name(int type)
+{
+    static const char *names[] = { "?", "copy", "sort", "text", "element", "attribute", "comment", "pi", "copy-of",
+        "value-of", "number", "apply-imports", "call-template", "apply-templates", "choose", "if", "for-each",
+        "document", "with-param", "param", "variable", "when", "extension" };
+    if (type < 0 || type > XSLT_FUNC_EXTENSION) return "?";
+    return names[type];
+}
+
+/** The hash keys are printed with | between the parts and (null) for missing ones. */
+static char *xslt_d_key(const char *key)
+{
+    MemBuffer *mb = new_membuffer();
+    for (const char *p = key; *p; ++p)
+    {
+        if (*p == 1) membuffer_append_char(mb, '|');
+        else if (*p == 2) membuffer_append(mb, "(null)");
+        else membuffer_append_char(mb, *p);
+    }
+    membuffer_append_null(mb);
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+static int xslt_d_cmp(const void *a, const void *b)
+{
+    return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+/** Print the lines collected, sorted. */
+static void xslt_d_sorted(MemBuffer *mb, char **lines, size_t n)
+{
+    qsort(lines, n, sizeof(char*), xslt_d_cmp);
+    for (size_t i = 0; i < n; ++i)
+    {
+        membuffer_append(mb, lines[i]);
+        free(lines[i]);
+    }
+    free(lines);
+}
+
+static char *xslt_d_take(MemBuffer *mb)
+{
+    membuffer_append_null(mb);
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+static void xslt_d_precomp(MemBuffer *mb, const XsltStylePreComp *c)
+{
+    if ((const void*)c == XSLT_EXT_MARKER)
+    {
+        membuffer_append(mb, " precomp=ext-marker");
+        return;
+    }
+    membuffer_printf(mb, " precomp=%s", xslt_style_type_name(c->type));
+    if (c->type == XSLT_FUNC_EXTENSION || c->type == XSLT_FUNC_DOCUMENT)
+    {
+        if (c->type == XSLT_FUNC_DOCUMENT)
+        {
+            membuffer_printf(mb, " ver11=%d", c->ver11);
+            xslt_d_str(mb, "filename", c->filename);
+        }
+        return;
+    }
+    if (c->stype) xslt_d_str(mb, "stype", c->stype);
+    if (c->has_stype) membuffer_printf(mb, " has_stype=%d", c->has_stype);
+    if (c->number) membuffer_printf(mb, " number=%d", c->number);
+    if (c->order) xslt_d_str(mb, "order", c->order);
+    if (c->has_order) membuffer_printf(mb, " has_order=%d", c->has_order);
+    if (c->descending) membuffer_printf(mb, " descending=%d", c->descending);
+    if (c->lang) xslt_d_str(mb, "lang", c->lang);
+    if (c->has_lang) membuffer_printf(mb, " has_lang=%d", c->has_lang);
+    if (c->case_order) xslt_d_str(mb, "case_order", c->case_order);
+    if (c->lower_first) membuffer_printf(mb, " lower_first=%d", c->lower_first);
+    if (c->use) xslt_d_str(mb, "use", c->use);
+    if (c->has_use) membuffer_printf(mb, " has_use=%d", c->has_use);
+    if (c->noescape) membuffer_printf(mb, " noescape=%d", c->noescape);
+    if (c->name) xslt_d_str(mb, "name", c->name);
+    if (c->has_name) membuffer_printf(mb, " has_name=%d", c->has_name);
+    if (c->ns) xslt_d_str(mb, "ns", c->ns);
+    if (c->has_ns) membuffer_printf(mb, " has_ns=%d", c->has_ns);
+    if (c->mode) xslt_d_str(mb, "mode", c->mode);
+    if (c->mode_uri) xslt_d_str(mb, "mode_uri", c->mode_uri);
+    if (c->test) xslt_d_str(mb, "test", c->test);
+    if (c->select) xslt_d_str(mb, "select", c->select);
+    if (c->comp) membuffer_append(mb, " comp");
+    if (c->ns_nr) membuffer_printf(mb, " ns_nr=%d", (int)c->ns_nr);
+    if (c->type == XSLT_FUNC_NUMBER)
+    {
+        const XsltNumberData *n = &c->numdata;
+        xslt_d_str(mb, "level", n->level);
+        xslt_d_str(mb, "count", n->count);
+        xslt_d_str(mb, "from", n->from);
+        xslt_d_str(mb, "value", n->value);
+        xslt_d_str(mb, "format", n->format);
+        membuffer_printf(mb, " has_format=%d digits_per_group=%d grouping_character=%d count_pat=%d from_pat=%d",
+                         n->has_format, n->digits_per_group, n->grouping_character, n->count_pat != NULL, n->from_pat != NULL);
+    }
+}
+
+static void xslt_d_avt(MemBuffer *mb, const XsltAttrVT *avt)
+{
+    membuffer_printf(mb, " avt=[strstart=%d", avt->strstart);
+    int str = avt->strstart;
+    for (int i = 0; i < avt->nb_seg; ++i)
+    {
+        if (str && avt->segments[i]) xslt_d_str(mb, "s", (const char*)avt->segments[i]);
+        else if (str) membuffer_append(mb, " s=(null)");
+        else membuffer_append(mb, avt->segments[i] ? " x" : " x=(null)");
+        str = !str;
+    }
+    membuffer_append(mb, "]");
+}
+
+static void xslt_d_tree(MemBuffer *mb, const XMQNode *node, int depth)
+{
+    for (; node; node = xml_node_next(node))
+    {
+        if (xml_node_kind(node) == XML_DOM_DTD) continue;
+        xslt_d_indent(mb, depth);
+        switch (xml_node_kind(node))
+        {
+        case XML_DOM_ELEMENT:
+            membuffer_append(mb, "element");
+            xslt_d_str(mb, "name", xml_node_name(node));
+            if (xml_node_ns(node)) xslt_d_str(mb, "ns", xml_node_ns_uri(node));
+            if (xml_node_user_data(node)) xslt_d_precomp(mb, (const XsltStylePreComp*)xml_node_user_data(node));
+            for (const XmlNs *ns = xml_node_first_ns_decl(node); ns; ns = xml_ns_next_decl(ns))
+            {
+                membuffer_append(mb, " xmlns");
+                xslt_d_str(mb, "p", xml_ns_prefix(ns));
+                xslt_d_str(mb, "h", xml_ns_href(ns));
+            }
+            membuffer_append_char(mb, '\n');
+            for (const XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+            {
+                xslt_d_indent(mb, depth + 1);
+                membuffer_append(mb, "attr");
+                xslt_d_str(mb, "name", xml_attr_name(a));
+                XMQNode *an = xml_attr_node((XMQAttr*)a);
+                if (xml_node_ns(an)) xslt_d_str(mb, "ns", xml_node_ns_uri(an));
+                if (xml_node_user_data(an)) xslt_d_avt(mb, (const XsltAttrVT*)xml_node_user_data(an));
+                membuffer_append_char(mb, '\n');
+            }
+            xslt_d_tree(mb, xml_node_first_child(node), depth + 1);
+            continue;
+        case XML_DOM_TEXT:
+            membuffer_append(mb, "text");
+            if (xml_node_name(node) && !strcmp(xml_node_name(node), "textnoenc")) membuffer_append(mb, " noenc");
+            xslt_d_str(mb, "content", xml_node_content(node));
+            break;
+        case XML_DOM_CDATA:
+            membuffer_append(mb, "cdata");
+            xslt_d_str(mb, "content", xml_node_content(node));
+            break;
+        case XML_DOM_COMMENT:
+            membuffer_append(mb, "comment");
+            break;
+        case XML_DOM_PI:
+            membuffer_append(mb, "pi");
+            break;
+        default:
+            membuffer_printf(mb, "node kind=%d", (int)xml_node_kind(node));
+            break;
+        }
+        membuffer_append_char(mb, '\n');
+    }
+}
+
+static void xslt_d_patterns(MemBuffer *mb, const char *label, const XmlLibxslt1Pattern *p, int depth)
+{
+    if (!p) return;
+    xslt_d_indent(mb, depth);
+    membuffer_append(mb, label);
+    for (; p; p = p->next)
+    {
+        membuffer_append(mb, " [");
+        xslt_d_str(mb, "p", p->pattern);
+        membuffer_printf(mb, " prio=%g", (double)p->priority);
+        if (p->mode) xslt_d_str(mb, "mode", p->mode);
+        if (p->mode_uri) xslt_d_str(mb, "mode_uri", p->mode_uri);
+        if (p->templ)
+        {
+            int ix = 0;
+            const XsltTemplate *t = p->templ->style ? p->templ->style->templates : NULL;
+            while (t && t != p->templ)
+            {
+                t = t->next;
+                ix++;
+            }
+            membuffer_printf(mb, " tmpl=%d", t ? ix : -1);
+        }
+        membuffer_append(mb, " ]");
+    }
+    membuffer_append_char(mb, '\n');
+}
+
+static void xslt_d_style(MemBuffer *mb, const XmlLibxslt1Stylesheet *style, int depth)
+{
+    xslt_d_indent(mb, depth);
+    membuffer_printf(mb, "stylesheet errors=%d warnings=%d literal_result=%d forwards_compatible=%d extras_nr=%d strip_all=%d\n",
+                     style->errors, style->warnings, style->literal_result, style->forwards_compatible, style->extras_nr, style->strip_all);
+    xslt_d_indent(mb, depth);
+    membuffer_append(mb, "output");
+    xslt_d_str(mb, "method", style->method);
+    xslt_d_str(mb, "method_uri", style->method_uri);
+    xslt_d_str(mb, "version", style->version);
+    xslt_d_str(mb, "encoding", style->encoding);
+    membuffer_printf(mb, " omit=%d standalone=%d indent=%d", style->omit_xml_declaration, style->standalone, style->indent);
+    xslt_d_str(mb, "doctype_public", style->doctype_public);
+    xslt_d_str(mb, "doctype_system", style->doctype_system);
+    xslt_d_str(mb, "media_type", style->media_type);
+    xslt_d_str(mb, "default_alias", style->default_alias);
+    membuffer_append_char(mb, '\n');
+
+    HashMap *maps[] = { style->strip_spaces, style->cdata_section, style->ns_aliases };
+    const char *labels[] = { "space", "cdata", "alias" };
+    for (int m = 0; m < 3; ++m)
+    {
+        if (!maps[m]) continue;
+        size_t n = 0, i = 0;
+        HashMapIterator *it = hashmap_iterate(maps[m]);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(it, &key, &val)) n++;
+        hashmap_free_iterator(it);
+        char **lines = (char**)calloc(n + 1, sizeof(char*));
+        it = hashmap_iterate(maps[m]);
+        while (hashmap_next_key_value(it, &key, &val))
+        {
+            MemBuffer *l = new_membuffer();
+            xslt_d_indent(l, depth);
+            membuffer_append(l, labels[m]);
+            char *k = xslt_d_key(key);
+            xslt_d_str(l, "key", k);
+            free(k);
+            xslt_d_str(l, "value", (const char*)val);
+            membuffer_append_char(l, '\n');
+            lines[i++] = xslt_d_take(l);
+        }
+        hashmap_free_iterator(it);
+        xslt_d_sorted(mb, lines, i);
+    }
+    for (int i = 0; i < style->excl_prefix_nr; ++i)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "exclude");
+        xslt_d_str(mb, "uri", style->excl_prefix_tab[i]);
+        membuffer_append_char(mb, '\n');
+    }
+    for (const XsltExtDef *d = style->ns_defs; d; d = d->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "extension");
+        xslt_d_str(mb, "prefix", d->prefix);
+        xslt_d_str(mb, "uri", d->uri);
+        membuffer_append_char(mb, '\n');
+    }
+    for (const XsltDecimalFormat *f = style->decimal_format; f; f = f->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "decimal-format");
+        xslt_d_str(mb, "name", f->name);
+        xslt_d_str(mb, "ns", f->ns_uri);
+        xslt_d_str(mb, "digit", f->digit);
+        xslt_d_str(mb, "pattern_separator", f->pattern_separator);
+        xslt_d_str(mb, "minus_sign", f->minus_sign);
+        xslt_d_str(mb, "infinity", f->infinity);
+        xslt_d_str(mb, "nan", f->no_number);
+        xslt_d_str(mb, "decimal_point", f->decimal_point);
+        xslt_d_str(mb, "grouping", f->grouping);
+        xslt_d_str(mb, "percent", f->percent);
+        xslt_d_str(mb, "permille", f->permille);
+        xslt_d_str(mb, "zero_digit", f->zero_digit);
+        membuffer_append_char(mb, '\n');
+    }
+    for (const XsltKeyDef *k = style->keys; k; k = k->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "key");
+        xslt_d_str(mb, "name", k->name);
+        xslt_d_str(mb, "name_uri", k->name_uri);
+        xslt_d_str(mb, "match", k->match);
+        xslt_d_str(mb, "use", k->use);
+        membuffer_printf(mb, " comp=%d usecomp=%d\n", k->comp != NULL, k->usecomp != NULL);
+    }
+    for (const XsltStackElem *v = style->variables; v; v = v->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_printf(mb, "global %s", xslt_style_type_name(v->comp ? v->comp->type : 0));
+        xslt_d_str(mb, "name", v->name);
+        xslt_d_str(mb, "name_uri", v->name_uri);
+        xslt_d_str(mb, "select", v->select);
+        membuffer_printf(mb, " tree=%d computed=%d\n", v->tree != NULL, v->computed);
+    }
+    if (style->attribute_sets)
+    {
+        size_t n = 0, i = 0;
+        for (const XsltAttrSet *set = style->attribute_set_list; set; set = set->next_in_order) n++;
+        char **lines = (char**)calloc(n + 1, sizeof(char*));
+        for (const XsltAttrSet *set = style->attribute_set_list; set; set = set->next_in_order)
+        {
+            MemBuffer *l = new_membuffer();
+            xslt_d_indent(l, depth);
+            membuffer_append(l, "attribute-set");
+            xslt_d_str(l, "name", set->name);
+            xslt_d_str(l, "ns", set->ns);
+            membuffer_printf(l, " state=%d", (int)set->state);
+            for (const XsltAttrElem *a = set->attrs; a; a = a->next)
+            {
+                const XsltStylePreComp *c = (const XsltStylePreComp*)xml_node_user_data(a->attr);
+                membuffer_append(l, " [");
+                xslt_d_str(l, "name", c ? c->name : NULL);
+                xslt_d_str(l, "ns", c ? c->ns : NULL);
+                membuffer_printf(l, " line=%d ]", xml_node_line(a->attr));
+            }
+            for (const XsltUseAttrSet *u = set->use_attr_sets; u; u = u->next)
+            {
+                membuffer_append(l, " use");
+                xslt_d_str(l, "ncname", u->ncname);
+                xslt_d_str(l, "ns", u->ns);
+            }
+            membuffer_append_char(l, '\n');
+            lines[i++] = xslt_d_take(l);
+        }
+        xslt_d_sorted(mb, lines, i);
+    }
+    for (const XsltTemplate *t = style->templates; t; t = t->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "template");
+        xslt_d_str(mb, "match", t->match);
+        xslt_d_str(mb, "name", t->name);
+        xslt_d_str(mb, "name_uri", t->name_uri);
+        xslt_d_str(mb, "mode", t->mode);
+        xslt_d_str(mb, "mode_uri", t->mode_uri);
+        membuffer_printf(mb, " prio=%g position=%d content=%d inherited=%d", (double)t->priority, t->position,
+                         t->content != NULL, t->inherited_ns_nr);
+        for (int i = 0; i < t->inherited_ns_nr; ++i) xslt_d_str(mb, "ns", xml_ns_prefix(t->inherited_ns[i]));
+        membuffer_append_char(mb, '\n');
+    }
+    xslt_d_patterns(mb, "root_match", style->root_match, depth);
+    xslt_d_patterns(mb, "key_match", style->key_match, depth);
+    xslt_d_patterns(mb, "elem_match", style->elem_match, depth);
+    xslt_d_patterns(mb, "attr_match", style->attr_match, depth);
+    xslt_d_patterns(mb, "parent_match", style->parent_match, depth);
+    xslt_d_patterns(mb, "text_match", style->text_match, depth);
+    xslt_d_patterns(mb, "pi_match", style->pi_match, depth);
+    xslt_d_patterns(mb, "comment_match", style->comment_match, depth);
+    if (style->templates_hash)
+    {
+        size_t n = 0, i = 0;
+        HashMapIterator *it = hashmap_iterate(style->templates_hash);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(it, &key, &val)) n++;
+        hashmap_free_iterator(it);
+        char **lines = (char**)calloc(n + 1, sizeof(char*));
+        it = hashmap_iterate(style->templates_hash);
+        while (hashmap_next_key_value(it, &key, &val))
+        {
+            if (!val) continue;
+            MemBuffer *l = new_membuffer();
+            char *k = xslt_d_key(key);
+            MemBuffer *label = new_membuffer();
+            membuffer_append(label, "hash");
+            xslt_d_str(label, "key", k);
+            char *lab = xslt_d_take(label);
+            xslt_d_patterns(l, lab, (const XmlLibxslt1Pattern*)val, depth);
+            free(lab);
+            free(k);
+            lines[i++] = xslt_d_take(l);
+        }
+        hashmap_free_iterator(it);
+        xslt_d_sorted(mb, lines, i);
+    }
+    if (style->doc)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "document");
+        XMQNode *doc_node = xml_dom_document(style->doc);
+        if (xml_node_user_data(doc_node)) xslt_d_precomp(mb, (const XsltStylePreComp*)xml_node_user_data(doc_node));
+        membuffer_append_char(mb, '\n');
+        xslt_d_tree(mb, xml_node_first_child(doc_node), depth + 1);
+    }
+    for (const XsltDocument *d = style->doc_list; d; d = d->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_printf(mb, "include preproc=%d\n", d->preproc);
+        xslt_d_tree(mb, xml_node_first_child(xml_dom_document(d->doc)), depth + 1);
+    }
+    for (const XmlLibxslt1Stylesheet *imp = style->imports; imp; imp = imp->next)
+    {
+        xslt_d_indent(mb, depth);
+        membuffer_append(mb, "import\n");
+        xslt_d_style(mb, imp, depth + 1);
+    }
+}
+
+char *xml_libxslt1_stylesheet_describe(const XmlLibxslt1Stylesheet *style)
+{
+    MemBuffer *mb = new_membuffer();
+    if (style) xslt_d_style(mb, style, 0);
+    return xslt_d_take(mb);
+}
+
+
+
+
+#endif // XML_LIBXSLT1_XSLT_MODULE
+
+// PART C XML_LIBXSLT1_TRANSFORM_C ////////////////////////////////////////
+
+#ifdef XML_LIBXSLT1_TRANSFORM_MODULE
+
+// The limits of libxslt (xsltMaxDepth, xsltMaxVars, XSLT_MAX_SORT).
+#define XSLT_MAX_DEPTH 3000
+#define XSLT_MAX_VARS 15000
+#define XSLT_MAX_SORT 15
+
+#define XSLT_VAR_GLOBAL (1 << 0)
+#define XSLT_VAR_IN_SELECT (1 << 1)
+
+// libxslt marks a global variable being computed by replacing its name (xsltComputingGlobalVarMarker).
+static const char xslt_computing_global_var_marker_[] = " var/param being computed";
+
+static void xslt_apply_sequence_constructor(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list, XsltTemplate *templ);
+static void xslt_apply_xslt_template(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list,
+                                     XsltTemplate *templ, XsltStackElem *with_params);
+static void xslt_process_one_node(XmlLibxslt1Transform *t, XMQNode *context_node, XsltStackElem *with_params);
+static void xslt_apply_one_template(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list, XsltStackElem *params);
+static void xslt_apply_attribute_set(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, const char *attr_sets);
+static void xslt_attribute(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst, XsltStylePreComp *comp);
+static void xslt_do_sort_function(XmlLibxslt1Transform *t, XMQNode **sorts, int nbsorts);
+static void xslt_message(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst);
+static void xslt_debug(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst);
+
+// libxml2 tree operations, with the semantics the libxslt code relies on ///
+
+static bool lx_is_noenc(const XMQNode *n)
+{
+    const char *name = xml_node_name(n);
+    return name && !strcmp(name, "textnoenc");
+}
+
+static bool lx_is_element(const XMQNode *n)
+{
+    return n && xml_node_kind(n) == XML_DOM_ELEMENT;
+}
+
+/** The parent, NULL for nodes whose parent is not a node of the tree (attributes have their owner). */
+static XMQNode *lx_parent(const XMQNode *n)
+{
+    return n ? xml_node_parent(n) : NULL;
+}
+
+/** Port of xmlSearchNs: the declaration of prefix in scope of node, also looking at the
+    namespaces of the ancestors (libxslt result trees can use undeclared namespaces). */
+static XmlNs *lx_search_ns(XMQNode *node, const char *prefix)
+{
+    if (!node || xml_node_kind(node) == XML_DOM_NAMESPACE) return NULL;
+    if (prefix && !strcmp(prefix, "xml")) return xml_ns_lookup_prefix(node, "xml");
+    XMQNode *orig = node;
+    while (xml_node_kind(node) != XML_DOM_ELEMENT)
+    {
+        node = xml_node_parent(node);
+        if (!node) return NULL;
+    }
+    while (node && xml_node_kind(node) == XML_DOM_ELEMENT)
+    {
+        for (XmlNs *cur = xml_node_first_ns_decl(node); cur; cur = xml_ns_next_decl(cur))
+        {
+            if (xslt1_streq(xml_ns_prefix(cur), prefix) && xml_ns_href(cur)) return cur;
+        }
+        if (orig != node)
+        {
+            XmlNs *cur = xml_node_ns(node);
+            if (cur && xslt1_streq(xml_ns_prefix(cur), prefix) && xml_ns_href(cur)) return cur;
+        }
+        node = xml_node_parent(node);
+    }
+    return NULL;
+}
+
+/** Port of xmlNsInScope. */
+static int lx_ns_in_scope(XMQNode *node, XMQNode *ancestor, const char *prefix)
+{
+    while (node && node != ancestor)
+    {
+        if (xml_node_kind(node) == XML_DOM_ELEMENT)
+        {
+            for (XmlNs *tst = xml_node_first_ns_decl(node); tst; tst = xml_ns_next_decl(tst))
+            {
+                if (!xml_ns_prefix(tst) && !prefix) return 0;
+                if (xml_ns_prefix(tst) && prefix && !strcmp(xml_ns_prefix(tst), prefix)) return 0;
+            }
+        }
+        node = xml_node_parent(node);
+    }
+    if (node != ancestor) return -1;
+    return 1;
+}
+
+/** Port of xmlSearchNsByHref (for elements). */
+static XmlNs *lx_search_ns_by_href(XMQNode *node, const char *href)
+{
+    if (!node || xml_node_kind(node) == XML_DOM_NAMESPACE) return NULL;
+    if (xslt1_streq(href, XML_DOM_XML_NAMESPACE)) return xml_ns_lookup_prefix(node, "xml");
+    bool is_attr = xml_node_kind(node) == XML_DOM_ATTRIBUTE;
+    XMQNode *orig = node;
+    while (xml_node_kind(node) != XML_DOM_ELEMENT)
+    {
+        node = xml_node_parent(node);
+        if (!node) return NULL;
+    }
+    while (node && xml_node_kind(node) == XML_DOM_ELEMENT)
+    {
+        for (XmlNs *cur = xml_node_first_ns_decl(node); cur; cur = xml_ns_next_decl(cur))
+        {
+            if (xslt1_streq(xml_ns_href(cur), href))
+            {
+                if ((!is_attr || xml_ns_prefix(cur)) && lx_ns_in_scope(orig, node, xml_ns_prefix(cur)) == 1) return cur;
+            }
+        }
+        if (orig != node)
+        {
+            XmlNs *cur = xml_node_ns(node);
+            if (cur && xslt1_streq(xml_ns_href(cur), href))
+            {
+                if ((!is_attr || xml_ns_prefix(cur)) && lx_ns_in_scope(orig, node, xml_ns_prefix(cur)) == 1) return cur;
+            }
+        }
+        node = xml_node_parent(node);
+    }
+    return NULL;
+}
+
+/** Port of xmlNewNs on an element: NULL if the prefix is already declared there. */
+static XmlNs *lx_new_ns(XMQNode *elem, const char *href, const char *prefix)
+{
+    if (!lx_is_element(elem)) return NULL;
+    return xml_ns_declare(elem, prefix, href);
+}
+
+/** Port of xmlAddChild: text is merged with a preceding text node of the same kind
+    (escaped or not), then cur is freed and the text node is returned. */
+static XMQNode *lx_add_child(XMQNode *parent, XMQNode *cur)
+{
+    if (!cur) return NULL;
+    if (!parent)
+    {
+        xml_node_free(cur);
+        return NULL;
+    }
+    if (xml_node_kind(parent) == XML_DOM_TEXT)
+    {
+        const char *c = xml_node_content(cur);
+        if (c) xml_node_append_content(parent, c, strlen(c));
+        xml_node_free(cur);
+        return parent;
+    }
+    XMQNode *prev = xml_node_last_child(parent);
+    if (cur == prev) return cur;
+    if (xml_node_kind(cur) == XML_DOM_TEXT && prev && xml_node_kind(prev) == XML_DOM_TEXT && lx_is_noenc(prev) == lx_is_noenc(cur))
+    {
+        const char *c = xml_node_content(cur);
+        if (c) xml_node_append_content(prev, c, strlen(c));
+        xml_node_free(cur);
+        return prev;
+    }
+    return xml_node_append_child(parent, cur);
+}
+
+/** libxml2 gives an attribute set to "" an empty text child (the html serializer writes it as a=""). */
+static XMQAttr *lx_attr_text_child(XMQAttr *a, const char *value)
+{
+    if (a && value && !xml_node_first_child(xml_attr_node(a)))
+    {
+        XMQNode *an = xml_attr_node(a);
+        xml_node_append_child(an, xml_node_new_text(xml_node_dom(an), ""));
+    }
+    return a;
+}
+
+/** Port of xmlSetNsProp: replace the value of an attribute with the same name and namespace or add one. */
+static XMQAttr *lx_set_ns_prop(XMQNode *elem, XmlNs *ns, const char *name, const char *value)
+{
+    if (!lx_is_element(elem) || !name) return NULL;
+    return lx_attr_text_child(xml_node_set_attr(elem, name, ns, value ? value : ""), value);
+}
+
+/** Port of xmlNewNsProp: add an attribute without looking for duplicates. */
+static XMQAttr *lx_new_ns_prop(XMQNode *elem, XmlNs *ns, const char *name, const char *value)
+{
+    if (!lx_is_element(elem) || !name) return NULL;
+    return lx_attr_text_child(xml_node_append_attr(elem, name, ns, value ? value : ""), value);
+}
+
+/** The attribute value with the entity references substituted (xmlNodeListGetString). */
+static char *lx_attr_value(XMQNode *attr)
+{
+    return xml_node_string_value(attr);
+}
+
+/** Port of xmlDocCopyNode(node, doc, 0): a copy of the node itself (no attributes, namespaces or children). */
+static XMQNode *lx_shallow_copy(XmlDom *dom, XMQNode *node)
+{
+    XMQNode *copy = NULL;
+    switch (xml_node_kind(node))
+    {
+    case XML_DOM_ELEMENT:
+        copy = xml_node_new_element(dom, xml_node_name(node), NULL);
+        break;
+    case XML_DOM_PI:
+        copy = xml_node_new_pi(dom, xml_node_name(node), xml_node_content(node));
+        break;
+    case XML_DOM_COMMENT:
+        copy = xml_node_new_comment(dom, xml_node_content(node));
+        break;
+    case XML_DOM_ENTITY_REF:
+        copy = xml_node_new_entity_ref(dom, xml_node_name(node));
+        break;
+    default:
+        return NULL;
+    }
+    if (copy) xml_node_set_line(copy, xml_node_line(node));
+    return copy;
+}
+
+static bool lx_is_real_node(const XMQNode *n)
+{
+    if (!n) return false;
+    switch (xml_node_kind(n))
+    {
+    case XML_DOM_ELEMENT:
+    case XML_DOM_TEXT:
+    case XML_DOM_CDATA:
+    case XML_DOM_ATTRIBUTE:
+    case XML_DOM_DOCUMENT:
+    case XML_DOM_COMMENT:
+    case XML_DOM_PI:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool lx_is_blank_node(const XMQNode *n)
+{
+    return xml_node_kind(n) == XML_DOM_TEXT && xslt1_is_blank_str(xml_node_content(n));
+}
+
+/** The first child, NULL for nodes without children in libxml2 (namespace nodes). */
+static XMQNode *lx_children(const XMQNode *n)
+{
+    if (!n || xml_node_kind(n) == XML_DOM_NAMESPACE || xml_node_kind(n) == XML_DOM_ATTRIBUTE) return NULL;
+    return xml_node_first_child(n);
+}
+
+static bool lx_has_children(const XMQNode *n)
+{
+    return lx_children(n) != NULL;
+}
+
+/** Port of xmlNodeGetContent for an element: the concatenated text. */
+static char *lx_node_get_content(XMQNode *n)
+{
+    return xml_node_string_value(n);
+}
+
+// Result tree fragments, port of libxslt variables.c ///////////
+
+static XsltRVT *xslt_rvt_of(XmlDom *dom)
+{
+    if (!dom) return NULL;
+    XsltRVT *rvt = (XsltRVT*)xml_node_user_data(xml_dom_document(dom));
+    if (rvt && rvt->magic == XSLT_RVT_MAGIC && rvt->dom == dom) return rvt;
+    return NULL;
+}
+
+/** Is the document a result tree fragment (libxslt XSLT_IS_RES_TREE_FRAG)? */
+bool xslt1_is_rtf(XmlLibxslt1Transform *t, XmlDom *dom)
+{
+    (void)t;
+    return xslt_rvt_of(dom) != NULL;
+}
+
+/** Port of xsltCreateRVT. */
+static XsltRVT *xslt_create_rvt(XmlLibxslt1Transform *t)
+{
+    (void)t;
+    XsltRVT *rvt = (XsltRVT*)calloc(1, sizeof(XsltRVT));
+    rvt->magic = XSLT_RVT_MAGIC;
+    rvt->dom = xml_dom_new();
+    xml_node_set_user_data(xml_dom_document(rvt->dom), rvt);
+    return rvt;
+}
+
+static void xslt_free_doc_keys(struct XsltDocInfo *info);
+
+/** Port of xsltReleaseRVT (without the cache). */
+static void xslt_release_rvt(XmlLibxslt1Transform *t, XsltRVT *rvt)
+{
+    if (!rvt) return;
+    if (rvt->keys)
+    {
+        xslt_free_doc_keys(rvt->keys);
+        free(rvt->keys);
+    }
+    xml_xpath_context_forget(t->xpath, xml_dom_document(rvt->dom));
+    xml_dom_free(rvt->dom);
+    free(rvt);
+}
+
+/** Port of xsltRegisterTmpRVT. */
+static void xslt_register_tmp_rvt(XmlLibxslt1Transform *t, XsltRVT *rvt)
+{
+    rvt->prev = NULL;
+    rvt->flag = XSLT_RVT_LOCAL;
+    if (t->context_variable)
+    {
+        rvt->next = t->context_variable->fragment;
+        t->context_variable->fragment = rvt;
+        return;
+    }
+    rvt->next = t->tmp_rvt;
+    if (t->tmp_rvt) t->tmp_rvt->prev = rvt;
+    t->tmp_rvt = rvt;
+}
+
+/** Port of xsltRegisterLocalRVT. */
+static void xslt_register_local_rvt(XmlLibxslt1Transform *t, XsltRVT *rvt)
+{
+    rvt->prev = NULL;
+    rvt->flag = XSLT_RVT_LOCAL;
+    if (t->context_variable && (t->context_variable->flags & XSLT_VAR_IN_SELECT))
+    {
+        rvt->next = t->context_variable->fragment;
+        t->context_variable->fragment = rvt;
+        return;
+    }
+    rvt->next = t->local_rvt;
+    if (t->local_rvt) t->local_rvt->prev = rvt;
+    t->local_rvt = rvt;
+}
+
+/** Port of xsltRegisterPersistRVT. */
+static void xslt_register_persist_rvt(XmlLibxslt1Transform *t, XsltRVT *rvt)
+{
+    rvt->flag = XSLT_RVT_GLOBAL;
+    rvt->prev = NULL;
+    rvt->next = t->persist_rvt;
+    if (t->persist_rvt) t->persist_rvt->prev = rvt;
+    t->persist_rvt = rvt;
+}
+
+/** Port of xsltFlagRVTs. */
+static int xslt_flag_rvts(XmlLibxslt1Transform *t, const XmlXPathResult *obj, int val)
+{
+    if (!obj || xml_xpath_result_type(obj) != XML_XPATH_NODESET) return 0;
+    size_t n = xml_xpath_result_size(obj);
+    for (size_t i = 0; i < n; i++)
+    {
+        XMQNode *cur = xml_xpath_result_node(obj, i);
+        XmlDom *doc = xml_node_dom(cur);
+        if (!doc)
+        {
+            xslt1_transform_error(t, NULL, t->inst, "Internal error in xsltFlagRVTs(): Cannot retrieve the doc of a node.\n");
+            return -1;
+        }
+        XsltRVT *rvt = xslt_rvt_of(doc);
+        if (rvt && rvt->flag != XSLT_RVT_GLOBAL)
+        {
+            if (val == XSLT_RVT_LOCAL)
+            {
+                if (rvt->flag == XSLT_RVT_FUNC_RESULT) rvt->flag = XSLT_RVT_LOCAL;
+            }
+            else if (val == XSLT_RVT_GLOBAL)
+            {
+                if (rvt->flag != XSLT_RVT_LOCAL)
+                {
+                    xslt1_generic_error(&t->style->settings, "xsltFlagRVTs: Invalid transition %d => GLOBAL\n", rvt->flag);
+                    rvt->flag = XSLT_RVT_GLOBAL;
+                    return -1;
+                }
+                // Registered as persistent in xsltReleaseLocalRVTs.
+                rvt->flag = XSLT_RVT_GLOBAL;
+            }
+            else if (val == XSLT_RVT_FUNC_RESULT)
+            {
+                rvt->flag = val;
+            }
+        }
+    }
+    return 0;
+}
+
+/** Port of xsltReleaseLocalRVTs. */
+static void xslt_release_local_rvts(XmlLibxslt1Transform *t, XsltRVT *base)
+{
+    XsltRVT *cur = t->local_rvt;
+    if (cur == base) return;
+    if (cur->prev) xslt1_transform_error(t, NULL, NULL, "localRVT not head of list\n");
+    // Reset localRVT early because some RVTs might be registered again.
+    t->local_rvt = base;
+    if (base) base->prev = NULL;
+    do
+    {
+        XsltRVT *tmp = cur;
+        cur = cur->next;
+        if (tmp->flag == XSLT_RVT_LOCAL)
+        {
+            xslt_release_rvt(t, tmp);
+        }
+        else if (tmp->flag == XSLT_RVT_GLOBAL)
+        {
+            xslt_register_persist_rvt(t, tmp);
+        }
+        else if (tmp->flag == XSLT_RVT_FUNC_RESULT)
+        {
+            xslt_register_local_rvt(t, tmp);
+            tmp->flag = XSLT_RVT_FUNC_RESULT;
+        }
+        else
+        {
+            xslt1_generic_error(&t->style->settings, "xsltReleaseLocalRVTs: Unexpected RVT flag %p\n", (void*)NULL);
+        }
+    } while (cur != base);
+}
+
+static void xslt_free_rvt_list(XmlLibxslt1Transform *t, XsltRVT *cur)
+{
+    while (cur)
+    {
+        XsltRVT *next = cur->next;
+        xslt_release_rvt(t, cur);
+        cur = next;
+    }
+}
+
+/** Port of xsltFreeRVTs. */
+static void xslt_free_rvts(XmlLibxslt1Transform *t)
+{
+    xslt_free_rvt_list(t, t->local_rvt);
+    t->local_rvt = NULL;
+    xslt_free_rvt_list(t, t->tmp_rvt);
+    t->tmp_rvt = NULL;
+    xslt_free_rvt_list(t, t->persist_rvt);
+    t->persist_rvt = NULL;
+}
+
+/** A node set holding the document node of the fragment (xmlXPathNewValueTree). */
+static XmlXPathResult *xslt_new_value_tree(XsltRVT *rvt)
+{
+    XmlXPathResult *r = xml_xpath_result_new_nodeset();
+    xml_xpath_result_add_node(r, xml_dom_document(rvt->dom));
+    xml_xpath_result_set_tree(r, true);
+    return r;
+}
+
+// XPath evaluation /////////////////////////////////////////////////
+
+/** Report an error of an evaluation like libxml2 (xmlXPathErr). */
+static void xslt_report_eval_error(XmlLibxslt1Transform *t, const XmlXPathComp *comp, const XmlXPathError *err)
+{
+    if (!err || err->code == XML_XPATH_ERR_OK) return;
+    xslt1_report_xpath_error(&t->style->settings, comp ? xml_xpath_comp_source(comp) : NULL, err);
+}
+
+/** Evaluate with the context position and size of the transformation (xmlXPathCompiledEval). */
+static XmlXPathResult *xslt_xpath_eval(XmlLibxslt1Transform *t, const XmlXPathComp *comp, XMQNode *node)
+{
+    if (!comp) return NULL;
+    XmlXPathError err;
+    XmlXPathResult *r = xml_xpath_eval_comp(t->xpath, comp, node, t->xp_position, t->xp_size, &err);
+    if (!r) xslt_report_eval_error(t, comp, &err);
+    return r;
+}
+
+/** Port of xsltPreCompEval: the context position and size are restored afterwards. */
+static XmlXPathResult *xslt_pre_comp_eval(XmlLibxslt1Transform *t, XMQNode *node, XsltStylePreComp *comp)
+{
+    long pos = t->xp_position, size = t->xp_size;
+    XmlXPathResult *res = xslt_xpath_eval(t, comp->comp, node);
+    t->xp_position = pos;
+    t->xp_size = size;
+    return res;
+}
+
+/** Port of xsltPreCompEvalToBoolean: -1 on an error. */
+static int xslt_pre_comp_eval_to_boolean(XmlLibxslt1Transform *t, XMQNode *node, XsltStylePreComp *comp)
+{
+    XmlXPathResult *res = xslt_pre_comp_eval(t, node, comp);
+    if (!res) return -1;
+    int b = xml_xpath_result_to_boolean(res) ? 1 : 0;
+    xml_xpath_result_free(res);
+    return b;
+}
+
+// Variables, port of libxslt variables.c ////////////////////////////
+
+static XsltStackElem *xslt_new_stack_elem(void)
+{
+    return (XsltStackElem*)calloc(1, sizeof(XsltStackElem));
+}
+
+/** Port of xsltCopyStackElem: a runtime copy of a global variable declaration. */
+static XsltStackElem *xslt_copy_stack_elem(XsltStackElem *elem)
+{
+    XsltStackElem *cur = xslt_new_stack_elem();
+    cur->name = elem->name;
+    cur->name_uri = elem->name_uri;
+    cur->select = elem->select;
+    cur->tree = elem->tree;
+    cur->comp = elem->comp;
+    return cur;
+}
+
+/** Port of xsltFreeStackElem (for runtime elements). */
+static void xslt_free_runtime_stack_elem(XmlLibxslt1Transform *t, XsltStackElem *elem)
+{
+    if (!elem) return;
+    xml_xpath_result_free(elem->value);
+    while (elem->fragment)
+    {
+        XsltRVT *cur = elem->fragment;
+        elem->fragment = cur->next;
+        if (cur->flag == XSLT_RVT_LOCAL)
+        {
+            xslt_release_rvt(t, cur);
+        }
+        else if (cur->flag == XSLT_RVT_FUNC_RESULT)
+        {
+            xslt_register_local_rvt(t, cur);
+            cur->flag = XSLT_RVT_FUNC_RESULT;
+        }
+        else
+        {
+            xslt1_generic_error(&t->style->settings, "xsltFreeStackElem: Unexpected RVT flag %d\n", cur->flag);
+        }
+    }
+    if (elem->owns_strings)
+    {
+        free(elem->name);
+        free(elem->name_uri);
+        free(elem->select);
+    }
+    free(elem);
+}
+
+static void xslt_free_runtime_stack_elem_list(XmlLibxslt1Transform *t, XsltStackElem *elem)
+{
+    while (elem)
+    {
+        XsltStackElem *next = elem->next;
+        xslt_free_runtime_stack_elem(t, elem);
+        elem = next;
+    }
+}
+
+/** Port of xsltStackLookup. */
+static XsltStackElem *xslt_stack_lookup(XmlLibxslt1Transform *t, const char *name, const char *name_uri)
+{
+    if (!name || t->vars_nr == 0) return NULL;
+    for (int i = t->vars_nr; i > t->vars_base; i--)
+    {
+        for (XsltStackElem *cur = t->vars_tab[i - 1]; cur; cur = cur->next)
+        {
+            if (xslt1_streq(cur->name, name) && xslt1_streq(cur->name_uri, name_uri)) return cur;
+        }
+    }
+    return NULL;
+}
+
+/** Port of xsltCheckStackElem: 0 not found, 1 variable, 2 param, 3 with-param. */
+static int xslt_check_stack_elem(XmlLibxslt1Transform *t, const char *name, const char *name_uri)
+{
+    if (!name) return -1;
+    XsltStackElem *cur = xslt_stack_lookup(t, name, name_uri);
+    if (!cur) return 0;
+    if (cur->comp)
+    {
+        if (cur->comp->type == XSLT_FUNC_WITHPARAM) return 3;
+        else if (cur->comp->type == XSLT_FUNC_PARAM) return 2;
+    }
+    return 1;
+}
+
+static void xslt_vars_push(XmlLibxslt1Transform *t, XsltStackElem *elem)
+{
+    if (t->vars_nr >= t->vars_max)
+    {
+        t->vars_max = t->vars_max == 0 ? 10 : 2 * t->vars_max;
+        t->vars_tab = (XsltStackElem**)realloc(t->vars_tab, (size_t)t->vars_max * sizeof(XsltStackElem*));
+    }
+    t->vars_tab[t->vars_nr++] = elem;
+    t->vars = elem;
+}
+
+/** Port of xsltAddStackElem: every element of the list is pushed. */
+static int xslt_add_stack_elem(XmlLibxslt1Transform *t, XsltStackElem *elem)
+{
+    if (!elem) return -1;
+    do
+    {
+        xslt_vars_push(t, elem);
+        elem = elem->next;
+    } while (elem);
+    return 0;
+}
+
+/** Port of xsltLocalVariablePush. */
+static int xslt_local_variable_push(XmlLibxslt1Transform *t, XsltStackElem *variable, int level)
+{
+    xslt_vars_push(t, variable);
+    variable->level = level;
+    return 0;
+}
+
+/** Port of xsltLocalVariablePop. */
+static void xslt_local_variable_pop(XmlLibxslt1Transform *t, int limit_nr, int level)
+{
+    if (t->vars_nr <= 0) return;
+    do
+    {
+        if (t->vars_nr <= limit_nr) break;
+        XsltStackElem *variable = t->vars_tab[t->vars_nr - 1];
+        if (variable->level <= level) break;
+        if (variable->level >= 0) xslt_free_runtime_stack_elem_list(t, variable);
+        t->vars_nr--;
+    } while (t->vars_nr != 0);
+    t->vars = t->vars_nr > 0 ? t->vars_tab[t->vars_nr - 1] : NULL;
+}
+
+/** Port of xsltTemplateParamsCleanup: xsl:with-param items (level -1, -2) are not freed. */
+static void xslt_template_params_cleanup(XmlLibxslt1Transform *t)
+{
+    for (; t->vars_nr > t->vars_base; t->vars_nr--)
+    {
+        XsltStackElem *param = t->vars_tab[t->vars_nr - 1];
+        if (param->level >= 0) xslt_free_runtime_stack_elem_list(t, param);
+    }
+    t->vars = t->vars_nr > 0 ? t->vars_tab[t->vars_nr - 1] : NULL;
+}
+
+/** Instantiate content into a new result tree fragment (the content part of xsltEvalVariable). */
+static XmlXPathResult *xslt_eval_content_into(XmlLibxslt1Transform *t, XsltRVT *container, XMQNode *tree)
+{
+    XmlDom *old_output = t->output;
+    XMQNode *old_insert = t->insert;
+    t->output = container->dom;
+    t->insert = xml_dom_document(container->dom);
+    xslt_apply_one_template(t, t->node, tree, NULL);
+    t->insert = old_insert;
+    t->output = old_output;
+    return xslt_new_value_tree(container);
+}
+
+/** Port of xsltEvalVariable. */
+static XmlXPathResult *xslt_eval_variable(XmlLibxslt1Transform *t, XsltStackElem *variable, XsltStylePreComp *comp)
+{
+    XmlXPathResult *result = NULL;
+    if (!variable) return NULL;
+    XMQNode *old_inst = t->inst;
+    if (variable->select)
+    {
+        XmlXPathComp *xp_expr = NULL;
+        bool own = false;
+        XsltStackElem *old_var = t->context_variable;
+        if (comp && comp->comp)
+        {
+            xp_expr = comp->comp;
+        }
+        else
+        {
+            xp_expr = xslt1_xpath_compile(&t->style->settings, NULL, variable->select, false);
+            own = true;
+        }
+        if (!xp_expr) return NULL;
+        long pos = t->xp_position, size = t->xp_size;
+        t->context_variable = variable;
+        variable->flags |= XSLT_VAR_IN_SELECT;
+        result = xslt_xpath_eval(t, xp_expr, t->node);
+        variable->flags ^= XSLT_VAR_IN_SELECT;
+        t->context_variable = old_var;
+        t->xp_position = pos;
+        t->xp_size = size;
+        if (own) xml_xpath_comp_free(xp_expr);
+        if (!result)
+        {
+            xslt1_transform_error(t, NULL, comp ? comp->inst : NULL, "Failed to evaluate the expression of variable '%s'.\n",
+                                  variable->name);
+            t->state = XSLT_STATE_STOPPED;
+        }
+    }
+    else
+    {
+        if (!variable->tree)
+        {
+            result = xml_xpath_result_new_string("");
+        }
+        else
+        {
+            XsltStackElem *old_var = t->context_variable;
+            XsltRVT *container = xslt_create_rvt(t);
+            variable->fragment = container;
+            container->flag = XSLT_RVT_LOCAL;
+            t->context_variable = variable;
+            result = xslt_eval_content_into(t, container, variable->tree);
+            t->context_variable = old_var;
+            if (!result) result = xml_xpath_result_new_string("");
+        }
+    }
+    t->inst = old_inst;
+    return result;
+}
+
+/** Port of xsltEvalGlobalVariable. */
+static XmlXPathResult *xslt_eval_global_variable(XsltStackElem *elem, XmlLibxslt1Transform *t)
+{
+    XmlXPathResult *result = NULL;
+    if (!elem) return NULL;
+    if (elem->computed) return elem->value;
+    XMQNode *old_inst = t->inst;
+    XsltStylePreComp *comp = elem->comp;
+    char *old_var_name = elem->name;
+    elem->name = (char*)xslt_computing_global_var_marker_;
+    XsltStackElem *old_ctxt_var = t->context_variable;
+    t->context_variable = NULL;
+    if (elem->select)
+    {
+        XmlXPathComp *xp_expr = NULL;
+        bool own = false;
+        if (comp && comp->comp)
+        {
+            xp_expr = comp->comp;
+        }
+        else
+        {
+            xp_expr = xslt1_xpath_compile(&t->style->settings, NULL, elem->select, false);
+            own = true;
+        }
+        if (!xp_expr) goto error;
+        t->inst = comp ? comp->inst : NULL;
+        long pos = t->xp_position, size = t->xp_size;
+        t->xp_size = 1;
+        t->xp_position = 1;
+        result = xslt_xpath_eval(t, xp_expr, t->initial_context_node);
+        t->xp_position = pos;
+        t->xp_size = size;
+        if (own) xml_xpath_comp_free(xp_expr);
+        if (!result)
+        {
+            xslt1_transform_error(t, NULL, comp ? comp->inst : NULL, "Evaluating global variable %s failed\n", elem->name);
+            t->state = XSLT_STATE_STOPPED;
+            goto error;
+        }
+        xslt_flag_rvts(t, result, XSLT_RVT_GLOBAL);
+    }
+    else
+    {
+        if (!elem->tree)
+        {
+            result = xml_xpath_result_new_string("");
+        }
+        else
+        {
+            XsltRVT *container = xslt_create_rvt(t);
+            xslt_register_persist_rvt(t, container);
+            result = xslt_eval_content_into(t, container, elem->tree);
+            if (!result) result = xml_xpath_result_new_string("");
+        }
+    }
+error:
+    t->context_variable = old_ctxt_var;
+    elem->name = old_var_name;
+    t->inst = old_inst;
+    if (result)
+    {
+        elem->value = result;
+        elem->computed = 1;
+    }
+    return result;
+}
+
+/** Port of xsltEvalGlobalVariables. */
+static int xslt_eval_global_variables(XmlLibxslt1Transform *t)
+{
+    XsltStackElem *head = NULL;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        for (XsltStackElem *elem = style->variables; elem; elem = elem->next)
+        {
+            char *key = xslt1_key2(elem->name, elem->name_uri);
+            XsltStackElem *def = (XsltStackElem*)hashmap_get(t->global_vars, key);
+            if (!def)
+            {
+                def = xslt_copy_stack_elem(elem);
+                hashmap_put(t->global_vars, key, def);
+                def->next = head;
+                head = def;
+                // Keep all of them for freeing.
+                def->fragment = NULL;
+            }
+            else if (elem->comp && elem->comp->type == XSLT_FUNC_VARIABLE)
+            {
+                if (elem->comp->inst && def->comp && def->comp->inst &&
+                    xml_node_dom(elem->comp->inst) == xml_node_dom(def->comp->inst))
+                {
+                    xslt1_transform_error(t, style, elem->comp->inst, "Global variable %s already defined\n", elem->name);
+                    style->errors++;
+                }
+            }
+            free(key);
+        }
+    }
+    // Evaluate them in declaration order (the list is reversed).
+    XsltStackElem *elem = head;
+    while (elem)
+    {
+        XsltStackElem *next = elem->next;
+        xslt_eval_global_variable(elem, t);
+        elem->next = NULL;
+        elem = next;
+    }
+    return 0;
+}
+
+/** Port of xsltBuildVariable. */
+static XsltStackElem *xslt_build_variable(XmlLibxslt1Transform *t, XsltStylePreComp *comp, XMQNode *tree)
+{
+    XsltStackElem *elem = xslt_new_stack_elem();
+    elem->comp = comp;
+    elem->name = comp->name;
+    elem->select = comp->select;
+    elem->name_uri = comp->ns;
+    elem->tree = tree;
+    elem->value = xslt_eval_variable(t, elem, comp);
+    elem->computed = 1;
+    return elem;
+}
+
+/** Port of xsltRegisterVariable. */
+static int xslt_register_variable(XmlLibxslt1Transform *t, XsltStylePreComp *comp, XMQNode *tree, int is_param)
+{
+    int present = xslt_check_stack_elem(t, comp->name, comp->ns);
+    if (is_param == 0)
+    {
+        if (present != 0 && present != 3)
+        {
+            xslt1_transform_error(t, NULL, comp->inst, "XSLT-variable: Redefinition of variable '%s'.\n", comp->name);
+            return 0;
+        }
+    }
+    else if (present != 0)
+    {
+        if (present == 1 || present == 2)
+        {
+            xslt1_transform_error(t, NULL, comp->inst, "XSLT-param: Redefinition of parameter '%s'.\n", comp->name);
+            return 0;
+        }
+        return 0;
+    }
+    XsltStackElem *variable = xslt_build_variable(t, comp, tree);
+    xslt_add_stack_elem(t, variable);
+    return 0;
+}
+
+/** Port of xsltGlobalVariableLookup (the value is borrowed). */
+static const XmlXPathResult *xslt_global_variable_lookup(XmlLibxslt1Transform *t, const char *name, const char *ns_uri)
+{
+    if (!t->global_vars) return NULL;
+    char *key = xslt1_key2(name, ns_uri);
+    XsltStackElem *elem = (XsltStackElem*)hashmap_get(t->global_vars, key);
+    free(key);
+    if (!elem) return NULL;
+    if (elem->computed == 0)
+    {
+        if (elem->name == xslt_computing_global_var_marker_)
+        {
+            xslt1_transform_error(t, NULL, elem->comp ? elem->comp->inst : NULL, "Recursive definition of %s\n", name);
+            return NULL;
+        }
+        return xslt_eval_global_variable(elem, t);
+    }
+    return elem->value;
+}
+
+/** Port of xsltParseStylesheetCallerParam (xsl:with-param). */
+static XsltStackElem *xslt_parse_stylesheet_caller_param(XmlLibxslt1Transform *t, XMQNode *inst)
+{
+    if (!inst || xml_node_kind(inst) != XML_DOM_ELEMENT) return NULL;
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(inst);
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltParseStylesheetCallerParam(): "
+                              "The XSLT 'with-param' instruction was not compiled.\n");
+        return NULL;
+    }
+    if (!comp->name)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltParseStylesheetCallerParam(): "
+                              "XSLT 'with-param': The attribute 'name' was not compiled.\n");
+        return NULL;
+    }
+    XMQNode *tree = comp->select ? inst : xml_node_first_child(inst);
+    return xslt_build_variable(t, comp, tree);
+}
+
+/** Port of xsltParseStylesheetVariable (a local xsl:variable). */
+static void xslt_parse_stylesheet_variable(XmlLibxslt1Transform *t, XMQNode *inst)
+{
+    if (!inst || xml_node_kind(inst) != XML_DOM_ELEMENT) return;
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(inst);
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltParseStylesheetVariable(): "
+                              "The XSLT 'variable' instruction was not compiled.\n");
+        return;
+    }
+    if (!comp->name)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltParseStylesheetVariable(): "
+                              "The attribute 'name' was not compiled.\n");
+        return;
+    }
+    xslt_register_variable(t, comp, xml_node_first_child(inst), 0);
+}
+
+/** Port of xsltParseStylesheetParam (a template xsl:param). */
+static void xslt_parse_stylesheet_param(XmlLibxslt1Transform *t, XMQNode *cur)
+{
+    if (!cur || xml_node_kind(cur) != XML_DOM_ELEMENT) return;
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(cur);
+    if (!comp || comp == XSLT_EXT_MARKER || !comp->name)
+    {
+        xslt1_transform_error(t, NULL, cur, "Internal error in xsltParseStylesheetParam(): "
+                              "The XSLT 'param' declaration was not compiled correctly.\n");
+        return;
+    }
+    xslt_register_variable(t, comp, xml_node_first_child(cur), 1);
+}
+
+/** Port of xsltXPathVariableLookup, the variable callback of the xpath context. Only the
+    first element of each stack entry is looked at, like libxslt. */
+static const XmlXPathResult *xslt_xpath_variable_lookup(void *user_data, const char *name, const char *ns_uri)
+{
+    XmlLibxslt1Transform *t = (XmlLibxslt1Transform*)user_data;
+    if (!name) return NULL;
+    if (t->vars_nr != 0)
+    {
+        XsltStackElem *variable = NULL;
+        for (int i = t->vars_nr; i > t->vars_base; i--)
+        {
+            XsltStackElem *cur = t->vars_tab[i - 1];
+            if (xslt1_streq(cur->name, name) && xslt1_streq(cur->name_uri, ns_uri))
+            {
+                variable = cur;
+                break;
+            }
+        }
+        if (variable)
+        {
+            if (variable->computed == 0)
+            {
+                variable->value = xslt_eval_variable(t, variable, NULL);
+                variable->computed = 1;
+            }
+            return variable->value;
+        }
+    }
+    const XmlXPathResult *value = NULL;
+    if (t->global_vars) value = xslt_global_variable_lookup(t, name, ns_uri);
+    if (!value)
+    {
+        if (ns_uri) xslt1_transform_error(t, NULL, t->inst, "Variable '{%s}%s' has not been declared.\n", ns_uri, name);
+        else xslt1_transform_error(t, NULL, t->inst, "Variable '%s' has not been declared.\n", name);
+    }
+    return value;
+}
+
+// Namespaces at runtime, port of libxslt namespaces.c //////////////
+
+/** The alias of a literal namespace over the import cascade, NULL if none (XSLT_UNDEFINED_DEFAULT_NS for #default). */
+static const char *xslt_lookup_alias(XmlLibxslt1Transform *t, const char *href)
+{
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        if (style->ns_aliases && href)
+        {
+            const char *uri = (const char*)hashmap_get(style->ns_aliases, href);
+            if (uri) return uri;
+        }
+    }
+    return NULL;
+}
+
+/** Port of xsltGetSpecialNamespace: find or declare a namespace binding for nsName and
+    nsPrefix in scope of target (an element of the result). */
+static XmlNs *xslt_get_special_namespace(XmlLibxslt1Transform *t, XMQNode *invoc_node, const char *ns_name,
+                                         const char *ns_prefix, XMQNode *target)
+{
+    if (!lx_is_element(target)) return NULL;
+    XmlNs *ns;
+    int prefix_occupied = 0;
+    if (!ns_prefix && (!ns_name || !ns_name[0]))
+    {
+        // Ensure that the default namespace is not in scope (an undeclaration if needed).
+        for (ns = xml_node_first_ns_decl(target); ns; ns = xml_ns_next_decl(ns))
+        {
+            if (!xml_ns_prefix(ns))
+            {
+                if (xml_ns_href(ns) && xml_ns_href(ns)[0])
+                {
+                    xslt1_transform_error(t, NULL, invoc_node, "Namespace normalization error: Cannot undeclare "
+                                          "the default namespace, since the default namespace '%s' is already declared on the result element "
+                                          "'%s'.\n", xml_ns_href(ns), xml_node_name(target));
+                }
+                return NULL;
+            }
+        }
+        XMQNode *parent = lx_parent(target);
+        if (lx_is_element(parent))
+        {
+            if (!xml_node_ns(parent)) return NULL;
+            ns = lx_search_ns(parent, NULL);
+            if (!ns || !xml_ns_href(ns) || !xml_ns_href(ns)[0]) return NULL;
+            lx_new_ns(target, "", NULL);
+            return NULL;
+        }
+        return NULL;
+    }
+    if (ns_prefix && !strcmp(ns_prefix, "xml")) return lx_search_ns(target, ns_prefix);
+    for (ns = xml_node_first_ns_decl(target); ns; ns = xml_ns_next_decl(ns))
+    {
+        if ((xml_ns_prefix(ns) == NULL) == (ns_prefix == NULL))
+        {
+            if (xslt1_streq(xml_ns_prefix(ns), ns_prefix))
+            {
+                if (xslt1_streq(xml_ns_href(ns), ns_name)) return ns;
+                prefix_occupied = 1;
+                break;
+            }
+        }
+    }
+    XMQNode *parent = lx_parent(target);
+    if (prefix_occupied)
+    {
+        ns = lx_search_ns_by_href(target, ns_name);
+        if (ns) return ns;
+    }
+    else if (lx_is_element(parent))
+    {
+        XmlNs *pns = xml_node_ns(parent);
+        if (pns && ((xml_ns_prefix(pns) != NULL) == (ns_prefix != NULL)))
+        {
+            if (!ns_prefix)
+            {
+                if (xslt1_streq(xml_ns_href(pns), ns_name)) return pns;
+            }
+            else if (xslt1_streq(xml_ns_prefix(pns), ns_prefix) && xslt1_streq(xml_ns_href(pns), ns_name))
+            {
+                return pns;
+            }
+        }
+        ns = lx_search_ns(parent, ns_prefix);
+        if (ns)
+        {
+            if (xslt1_streq(xml_ns_href(ns), ns_name)) return ns;
+            // The prefix is bound to another namespace, check that no attribute of the target uses it.
+            for (XMQAttr *attr = xml_node_first_attr(target); attr; attr = xml_attr_next(attr))
+            {
+                XmlNs *ans = xml_node_ns(xml_attr_node(attr));
+                if (ans && xslt1_streq(xml_ns_prefix(ans), ns_prefix))
+                {
+                    ns = lx_search_ns_by_href(target, ns_name);
+                    if (ns) return ns;
+                    goto declare_new_prefix;
+                }
+            }
+        }
+        return lx_new_ns(target, ns_name, ns_prefix);
+    }
+    else
+    {
+        return lx_new_ns(target, ns_name, ns_prefix);
+    }
+declare_new_prefix:
+    {
+        char pref[30];
+        int counter = 1;
+        if (!ns_prefix) ns_prefix = "ns";
+        do
+        {
+            snprintf(pref, 30, "%s_%d", ns_prefix, counter++);
+            ns = lx_search_ns(target, pref);
+            if (counter > 1000)
+            {
+                xslt1_transform_error(t, NULL, invoc_node, "Internal error in xsltAcquireResultInScopeNs(): "
+                                      "Failed to compute a unique ns-prefix for the generated element");
+                return NULL;
+            }
+        } while (ns);
+        return lx_new_ns(target, ns_name, pref);
+    }
+}
+
+/** Port of xsltGetNamespace: the namespace of a literal result element or attribute, with aliases applied. */
+static XmlNs *xslt_get_namespace(XmlLibxslt1Transform *t, XMQNode *cur, XmlNs *ns, XMQNode *out)
+{
+    if (!ns || !cur || !out) return NULL;
+    const char *uri = xslt_lookup_alias(t, xml_ns_href(ns));
+    if (uri && !strcmp(uri, XSLT_UNDEFINED_DEFAULT_NS)) return xslt_get_special_namespace(t, cur, NULL, NULL, out);
+    if (!uri) uri = xml_ns_href(ns);
+    return xslt_get_special_namespace(t, cur, uri, xml_ns_prefix(ns), out);
+}
+
+/** Port of xsltCopyNamespaceList: copy the declarations of a literal result element (not the
+    xslt namespace, with aliases applied, only those not in scope). */
+static void xslt_copy_namespace_list(XmlLibxslt1Transform *t, XMQNode *node, XmlNs *cur)
+{
+    if (!lx_is_element(node)) node = NULL;
+    for (; cur; cur = xml_ns_next_decl(cur))
+    {
+        if (node)
+        {
+            XmlNs *nns = xml_node_ns(node);
+            if (nns && xslt1_streq(xml_ns_prefix(nns), xml_ns_prefix(cur)) && xslt1_streq(xml_ns_href(nns), xml_ns_href(cur))) continue;
+            XmlNs *tmp = lx_search_ns(node, xml_ns_prefix(cur));
+            if (tmp && xslt1_streq(xml_ns_href(tmp), xml_ns_href(cur))) continue;
+        }
+        if (!xslt1_streq(xml_ns_href(cur), XSLT_NAMESPACE))
+        {
+            // Only the aliases of the top stylesheet (TODO in libxslt: apply cascading).
+            const char *uri = (t->style->ns_aliases && xml_ns_href(cur)) ? (const char*)hashmap_get(t->style->ns_aliases, xml_ns_href(cur)) : NULL;
+            if (uri && !strcmp(uri, XSLT_UNDEFINED_DEFAULT_NS)) continue;
+            if (node) lx_new_ns(node, uri ? uri : xml_ns_href(cur), xml_ns_prefix(cur));
+        }
+    }
+}
+
+/** Port of xsltCopyNamespaceListInternal: copy declarations that are not in scope. */
+static void xslt_copy_namespace_list_internal(XMQNode *elem, XmlNs *ns)
+{
+    if (!lx_is_element(elem)) elem = NULL;
+    for (; ns; ns = xml_ns_next_decl(ns))
+    {
+        if (elem)
+        {
+            XmlNs *ens = xml_node_ns(elem);
+            if (ens && xslt1_streq(xml_ns_prefix(ens), xml_ns_prefix(ns)) && xslt1_streq(xml_ns_href(ens), xml_ns_href(ns))) continue;
+            XmlNs *lu = lx_search_ns(elem, xml_ns_prefix(ns));
+            if (lu && xslt1_streq(xml_ns_href(lu), xml_ns_href(ns))) continue;
+            lx_new_ns(elem, xml_ns_href(ns), xml_ns_prefix(ns));
+        }
+    }
+}
+
+// Copying, port of libxslt transform.c //////////////////////////////
+
+/** Is target an element whose text goes into cdata sections (xsl:output cdata-section-elements)? */
+static bool xslt_is_cdata_target(XmlLibxslt1Transform *t, XMQNode *target)
+{
+    if (t->type != XSLT_OUTPUT_XML || !t->style->cdata_section || !lx_is_element(target)) return false;
+    XmlNs *ns = xml_node_ns(target);
+    char *key = xslt1_key2(xml_node_name(target), ns ? xml_ns_href(ns) : NULL);
+    bool r = hashmap_get(t->style->cdata_section, key) != NULL;
+    free(key);
+    return r;
+}
+
+/** Port of xsltAddTextString: append the string to the text (or cdata) node target. */
+static XMQNode *xslt_add_text_string(XMQNode *target, const char *string, size_t len)
+{
+    if (len == 0 || !string || !target) return target;
+    xml_node_append_content(target, string, len);
+    return target;
+}
+
+/** Port of xsltCopyTextString. */
+static XMQNode *xslt_copy_text_string(XmlLibxslt1Transform *t, XMQNode *target, const char *string, int noescape)
+{
+    if (!string) return NULL;
+    size_t len = strlen(string);
+    XMQNode *copy;
+    XMQNode *last = target ? xml_node_last_child(target) : NULL;
+    if (xslt_is_cdata_target(t, target))
+    {
+        // Coalesce with a preceding cdata section.
+        if (last && xml_node_kind(last) == XML_DOM_CDATA) return xslt_add_text_string(last, string, len);
+        copy = xml_node_new_cdata(t->output, string, len);
+    }
+    else if (noescape)
+    {
+        if (last && xml_node_kind(last) == XML_DOM_TEXT && lx_is_noenc(last)) return xslt_add_text_string(last, string, len);
+        copy = xml_node_new_text_len(t->output, string, len);
+        if (copy) xml_node_set_name(copy, "textnoenc");
+    }
+    else
+    {
+        if (last && xml_node_kind(last) == XML_DOM_TEXT && !lx_is_noenc(last)) return xslt_add_text_string(last, string, len);
+        copy = xml_node_new_text_len(t->output, string, len);
+    }
+    if (copy && target) copy = lx_add_child(target, copy);
+    if (!copy) xslt1_transform_error(t, NULL, target, "xsltCopyTextString: text copy failed\n");
+    return copy;
+}
+
+/** Port of xsltCopyText: copy a text or cdata node. */
+static XMQNode *xslt_copy_text(XmlLibxslt1Transform *t, XMQNode *target, XMQNode *cur)
+{
+    XmlNodeKind k = xml_node_kind(cur);
+    if (k != XML_DOM_TEXT && k != XML_DOM_CDATA) return NULL;
+    const char *content = xml_node_content(cur);
+    if (!content) return NULL;
+    XMQNode *copy = NULL;
+    XMQNode *last = target ? xml_node_last_child(target) : NULL;
+    size_t len = strlen(content);
+    if (xslt_is_cdata_target(t, target))
+    {
+        if (last && xml_node_kind(last) == XML_DOM_CDATA)
+        {
+            copy = xslt_add_text_string(last, content, len);
+            goto exit;
+        }
+        copy = xml_node_new_cdata(t->output, content, len);
+    }
+    else if (last &&
+             ((xml_node_kind(last) == XML_DOM_TEXT && k == XML_DOM_TEXT && lx_is_noenc(last) == lx_is_noenc(cur)) ||
+              // non-escaped text nodes and cdata sections
+              (xml_node_kind(last) == XML_DOM_CDATA && k == XML_DOM_TEXT && lx_is_noenc(cur))))
+    {
+        copy = xslt_add_text_string(last, content, len);
+        goto exit;
+    }
+    else
+    {
+        copy = xml_node_new_text_len(t->output, content, len);
+        if (copy && k == XML_DOM_TEXT && lx_is_noenc(cur)) xml_node_set_name(copy, "textnoenc");
+    }
+    if (copy)
+    {
+        if (target) copy = lx_add_child(target, copy);
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, target, "xsltCopyText: text copy failed\n");
+    }
+exit:
+    if (!copy)
+    {
+        xslt1_transform_error(t, NULL, target, "Internal error in xsltCopyText(): Failed to copy the string.\n");
+        t->state = XSLT_STATE_STOPPED;
+    }
+    return copy;
+}
+
+/** Port of xsltShallowCopyAttr. */
+static XMQAttr *xslt_shallow_copy_attr(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *target, XMQNode *attr)
+{
+    if (!attr) return NULL;
+    if (!lx_is_element(target))
+    {
+        xslt1_transform_error(t, NULL, invoc_node, "Cannot add an attribute node to a non-element node.\n");
+        return NULL;
+    }
+    if (xml_node_first_child(target))
+    {
+        xslt1_transform_error(t, NULL, invoc_node, "Attribute nodes must be added before any child nodes to an element.\n");
+        return NULL;
+    }
+    char *value = lx_attr_value(attr);
+    XMQAttr *copy;
+    XmlNs *ans = xml_node_ns(attr);
+    if (ans)
+    {
+        XmlNs *ns = xslt_get_special_namespace(t, invoc_node, xml_ns_href(ans), xml_ns_prefix(ans), target);
+        if (!ns)
+        {
+            xslt1_transform_error(t, NULL, invoc_node, "Namespace fixup error: Failed to acquire an in-scope "
+                                  "namespace binding of the copied attribute '{%s}%s'.\n", xml_ns_href(ans), xml_node_name(attr));
+        }
+        copy = lx_set_ns_prop(target, ns, xml_node_name(attr), value);
+    }
+    else
+    {
+        copy = lx_set_ns_prop(target, NULL, xml_node_name(attr), value);
+    }
+    free(value);
+    return copy;
+}
+
+/** Port of xsltCopyAttrListNoOverwrite. */
+static int xslt_copy_attr_list_no_overwrite(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *target, XMQAttr *attr)
+{
+    XmlNs *orig_ns = NULL, *copy_ns = NULL;
+    for (; attr; attr = xml_attr_next(attr))
+    {
+        XMQNode *an = xml_attr_node(attr);
+        XmlNs *ans = xml_node_ns(an);
+        if (ans != orig_ns)
+        {
+            orig_ns = ans;
+            if (ans)
+            {
+                copy_ns = xslt_get_special_namespace(t, invoc_node, xml_ns_href(ans), xml_ns_prefix(ans), target);
+                if (!copy_ns) return -1;
+            }
+            else
+            {
+                copy_ns = NULL;
+            }
+        }
+        char *value = lx_attr_value(an);
+        lx_new_ns_prop(target, copy_ns, xml_attr_name(attr), value);
+        free(value);
+    }
+    return 0;
+}
+
+/** Port of xsltShallowCopyElem. */
+static XMQNode *xslt_shallow_copy_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *insert, int is_lre)
+{
+    XmlNodeKind k = xml_node_kind(node);
+    if (k == XML_DOM_DTD || !insert) return NULL;
+    if (k == XML_DOM_TEXT || k == XML_DOM_CDATA) return xslt_copy_text(t, insert, node);
+    XMQNode *copy = lx_shallow_copy(t->output, node);
+    if (copy)
+    {
+        copy = lx_add_child(insert, copy);
+        if (!copy)
+        {
+            xslt1_transform_error(t, NULL, node, "xsltShallowCopyElem: copy failed\n");
+            return copy;
+        }
+        if (k == XML_DOM_ELEMENT)
+        {
+            XmlNs *defs = xml_node_first_ns_decl(node);
+            if (defs)
+            {
+                if (is_lre) xslt_copy_namespace_list(t, copy, defs);
+                else xslt_copy_namespace_list_internal(copy, defs);
+            }
+            XmlNs *nns = xml_node_ns(node);
+            if (nns)
+            {
+                if (is_lre) xml_node_set_ns(copy, xslt_get_namespace(t, node, nns, copy));
+                else xml_node_set_ns(copy, xslt_get_special_namespace(t, node, xml_ns_href(nns), xml_ns_prefix(nns), copy));
+            }
+            else if (lx_is_element(insert) && xml_node_ns(insert))
+            {
+                xslt_get_special_namespace(t, node, NULL, NULL, copy);
+            }
+        }
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, node, "xsltShallowCopyElem: copy %s failed\n", xml_node_name(node));
+    }
+    return copy;
+}
+
+static XMQNode *xslt_copy_tree(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *node, XMQNode *insert,
+                               int is_lre, int top_elem_visited);
+
+/** Port of xsltCopyTreeList. */
+static XMQNode *xslt_copy_tree_list(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *list, XMQNode *insert,
+                                    int is_lre, int top_elem_visited)
+{
+    XMQNode *ret = NULL;
+    while (list)
+    {
+        XMQNode *next = xml_node_next(list);
+        XMQNode *copy = xslt_copy_tree(t, invoc_node, list, insert, is_lre, top_elem_visited);
+        if (copy && !ret) ret = copy;
+        list = next;
+    }
+    return ret;
+}
+
+/** Port of xsltShallowCopyNsNode: copy a namespace node as a declaration on insert. */
+static XmlNs *xslt_shallow_copy_ns_node(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *insert, XMQNode *ns)
+{
+    if (!lx_is_element(insert)) return NULL;
+    if (xml_node_first_child(insert))
+    {
+        xslt1_transform_error(t, NULL, invoc_node, "Namespace nodes must be added before any child nodes are added to an element.\n");
+        return NULL;
+    }
+    // A namespace node has the prefix as name and the uri as content.
+    const char *prefix = xml_node_name(ns);
+    const char *href = xml_node_content(ns);
+    if (!prefix)
+    {
+        if (!xml_node_ns(insert)) return NULL;
+    }
+    else if (!strcmp(prefix, "xml"))
+    {
+        return NULL;
+    }
+    for (XmlNs *tmp = xml_node_first_ns_decl(insert); tmp; tmp = xml_ns_next_decl(tmp))
+    {
+        if ((xml_ns_prefix(tmp) == NULL) == (prefix == NULL))
+        {
+            if (xslt1_streq(xml_ns_prefix(tmp), prefix))
+            {
+                if (xslt1_streq(xml_ns_href(tmp), href)) return NULL;
+                return NULL; // occupied
+            }
+        }
+    }
+    XmlNs *tmp = lx_search_ns(insert, prefix);
+    if (tmp && xslt1_streq(xml_ns_href(tmp), href)) return NULL;
+    return lx_new_ns(insert, href, prefix);
+}
+
+/** Collect the namespaces in scope of node like xmlGetNsList: innermost first, unique prefixes. */
+static XmlNs **lx_get_ns_list(XMQNode *node, int *num)
+{
+    XmlNs **list = NULL;
+    int n = 0, max = 0;
+    for (; node; node = xml_node_parent(node))
+    {
+        if (xml_node_kind(node) != XML_DOM_ELEMENT) continue;
+        for (XmlNs *cur = xml_node_first_ns_decl(node); cur; cur = xml_ns_next_decl(cur))
+        {
+            int i;
+            for (i = 0; i < n; i++)
+            {
+                if (xslt1_streq(xml_ns_prefix(cur), xml_ns_prefix(list[i]))) break;
+            }
+            if (i >= n)
+            {
+                if (n >= max)
+                {
+                    max = max ? 2 * max : 10;
+                    list = (XmlNs**)realloc(list, (size_t)(max + 1) * sizeof(XmlNs*));
+                }
+                list[n++] = cur;
+                list[n] = NULL;
+            }
+        }
+    }
+    *num = n;
+    return list;
+}
+
+/** Port of xsltCopyTree: a deep copy of node into insert. */
+static XMQNode *xslt_copy_tree(XmlLibxslt1Transform *t, XMQNode *invoc_node, XMQNode *node, XMQNode *insert,
+                               int is_lre, int top_elem_visited)
+{
+    if (!node) return NULL;
+    switch (xml_node_kind(node))
+    {
+    case XML_DOM_ELEMENT:
+    case XML_DOM_ENTITY_REF:
+    case XML_DOM_PI:
+    case XML_DOM_COMMENT:
+    case XML_DOM_DOCUMENT:
+        break;
+    case XML_DOM_TEXT:
+        return xslt_copy_text_string(t, insert, xml_node_content(node), lx_is_noenc(node));
+    case XML_DOM_CDATA:
+        return xslt_copy_text_string(t, insert, xml_node_content(node), 0);
+    case XML_DOM_ATTRIBUTE:
+        return xslt_shallow_copy_attr(t, invoc_node, insert, node) ? insert : NULL;
+    case XML_DOM_NAMESPACE:
+        return xslt_shallow_copy_ns_node(t, invoc_node, insert, node) ? insert : NULL;
+    default:
+        return NULL;
+    }
+    if (xml_node_kind(node) == XML_DOM_DOCUMENT)
+    {
+        // libxslt only copies the children of result tree fragments, xmlDocCopyNode of a document fails.
+        if (xslt1_is_rtf(t, xml_node_dom(node)))
+        {
+            XMQNode *c = xml_node_first_child(node);
+            return c ? xslt_copy_tree_list(t, invoc_node, c, insert, 0, 0) : NULL;
+        }
+        xslt1_transform_error(t, NULL, invoc_node, "xsltCopyTree: Copying of '%s' failed.\n", "(null)");
+        return NULL;
+    }
+    XMQNode *copy = lx_shallow_copy(t->output, node);
+    if (copy)
+    {
+        copy = lx_add_child(insert, copy);
+        if (!copy)
+        {
+            xslt1_transform_error(t, NULL, invoc_node, "xsltCopyTree: Copying of '%s' failed.\n", xml_node_name(node));
+            return copy;
+        }
+        if (xml_node_last_child(insert) != copy) return xml_node_last_child(insert);
+        if (xml_node_kind(node) == XML_DOM_ELEMENT)
+        {
+            XMQNode *parent = xml_node_parent(node);
+            XmlNs *nns = xml_node_ns(node);
+            if (top_elem_visited == 0 && parent && xml_node_kind(parent) != XML_DOM_DOCUMENT)
+            {
+                // The top element of a copied subtree gets all namespaces in scope.
+                int num = 0;
+                XmlNs **ns_list = lx_get_ns_list(node, &num);
+                for (int i = 0; i < num; i++)
+                {
+                    XmlNs *ns = lx_search_ns(insert, xml_ns_prefix(ns_list[i]));
+                    if (!ns || !xslt1_streq(xml_ns_href(ns), xml_ns_href(ns_list[i]))) ns = NULL;
+                    if (!ns) ns = lx_new_ns(copy, xml_ns_href(ns_list[i]), xml_ns_prefix(ns_list[i]));
+                    if (nns == ns_list[i]) xml_node_set_ns(copy, ns);
+                }
+                free(ns_list);
+            }
+            else if (xml_node_first_ns_decl(node))
+            {
+                if (is_lre) xslt_copy_namespace_list(t, copy, xml_node_first_ns_decl(node));
+                else xslt_copy_namespace_list_internal(copy, xml_node_first_ns_decl(node));
+            }
+            if (nns)
+            {
+                if (!xml_node_ns(copy))
+                {
+                    xml_node_set_ns(copy, xslt_get_special_namespace(t, invoc_node, xml_ns_href(nns), xml_ns_prefix(nns), copy));
+                }
+            }
+            else if (lx_is_element(insert) && xml_node_ns(insert))
+            {
+                xslt_get_special_namespace(t, invoc_node, NULL, NULL, copy);
+            }
+            if (xml_node_first_attr(node)) xslt_copy_attr_list_no_overwrite(t, invoc_node, copy, xml_node_first_attr(node));
+            if (top_elem_visited == 0) top_elem_visited = 1;
+        }
+        if (lx_children(node)) xslt_copy_tree_list(t, invoc_node, lx_children(node), copy, is_lre, top_elem_visited);
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, invoc_node, "xsltCopyTree: Copying of '%s' failed.\n", xml_node_name(node));
+    }
+    return copy;
+}
+
+// Templates and attribute value templates, port of libxslt templates.c and attrvt.c
+
+/** Port of xsltEvalXPathStringNs, with the namespaces compiled into the expression. */
+static char *xslt_eval_xpath_string(XmlLibxslt1Transform *t, const XmlXPathComp *comp)
+{
+    if (!t->inst)
+    {
+        xslt1_transform_error(t, NULL, NULL, "xsltEvalXPathStringNs: No context or instruction\n");
+        return NULL;
+    }
+    XMQNode *old_inst = t->inst;
+    long pos = t->xp_position, size = t->xp_size;
+    char *ret = NULL;
+    XmlXPathResult *res = xslt_xpath_eval(t, comp, t->node);
+    if (res)
+    {
+        ret = xml_xpath_result_to_string(res);
+        xml_xpath_result_free(res);
+    }
+    else
+    {
+        t->state = XSLT_STATE_STOPPED;
+    }
+    t->inst = old_inst;
+    t->xp_position = pos;
+    t->xp_size = size;
+    return ret;
+}
+
+/** Port of xsltEvalTemplateString: instantiate the content of inst and return its text. */
+static char *xslt_eval_template_string(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst)
+{
+    if (!context_node || !inst || xml_node_kind(inst) != XML_DOM_ELEMENT) return NULL;
+    if (!xml_node_first_child(inst)) return NULL;
+    // A temporary element to add the resulting text content to.
+    XMQNode *insert = xml_node_new_element(t->output, "fake", NULL);
+    XMQNode *old_insert = t->insert;
+    t->insert = insert;
+    xslt_apply_one_template(t, context_node, xml_node_first_child(inst), NULL);
+    t->insert = old_insert;
+    char *ret = lx_node_get_content(insert);
+    xml_node_free(insert);
+    return ret;
+}
+
+/** Port of xsltAttrTemplateValueProcessNode: evaluate the attribute value template str at runtime. */
+static char *xslt_attr_template_value_process_node(XmlLibxslt1Transform *t, const char *str, XMQNode *inst)
+{
+    char *ret = NULL;
+    if (!str) return NULL;
+    if (!*str) return xslt1_strdup("");
+    const char *cur = str;
+    while (*cur)
+    {
+        if (*cur == '{')
+        {
+            if (cur[1] == '{')
+            {
+                // An escaped {.
+                cur++;
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                cur++;
+                str = cur;
+                continue;
+            }
+            ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+            str = cur;
+            cur++;
+            while (*cur && *cur != '}')
+            {
+                // Need to check for literals (bug539741).
+                if (*cur == '\'' || *cur == '"')
+                {
+                    char delim = *cur++;
+                    while (*cur && *cur != delim) cur++;
+                    if (*cur) cur++;
+                }
+                else
+                {
+                    cur++;
+                }
+            }
+            if (!*cur)
+            {
+                xslt1_transform_error(t, NULL, inst, "xsltAttrTemplateValueProcessNode: unmatched '{'\n");
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                goto exit;
+            }
+            str++;
+            char *expr = xslt1_strndup(str, (size_t)(cur - str));
+            if (*expr == '{')
+            {
+                ret = xslt1_strcat(ret, expr);
+                free(expr);
+            }
+            else
+            {
+                XmlXPathComp *comp = xslt1_xpath_compile(&t->style->settings, inst, expr, false);
+                char *val = comp ? xslt_eval_xpath_string(t, comp) : NULL;
+                if (!comp) t->state = XSLT_STATE_STOPPED;
+                xml_xpath_comp_free(comp);
+                free(expr);
+                if (val)
+                {
+                    ret = xslt1_strcat(ret, val);
+                    free(val);
+                }
+            }
+            cur++;
+            str = cur;
+        }
+        else if (*cur == '}')
+        {
+            cur++;
+            if (*cur == '}')
+            {
+                // An escaped }.
+                ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+                cur++;
+                str = cur;
+                continue;
+            }
+            else
+            {
+                xslt1_transform_error(t, NULL, inst, "xsltAttrTemplateValueProcessNode: unmatched '}'\n");
+            }
+        }
+        else
+        {
+            cur++;
+        }
+    }
+    if (cur != str) ret = xslt1_strncat(ret, str, (size_t)(cur - str));
+exit:
+    return ret;
+}
+
+/** Port of xsltEvalAttrValueTemplate: the attribute name (in namespace ns) of inst as an AVT. */
+static char *xslt_eval_attr_value_template(XmlLibxslt1Transform *t, XMQNode *inst, const char *name, const char *ns)
+{
+    if (!inst || !name || xml_node_kind(inst) != XML_DOM_ELEMENT) return NULL;
+    char *expr = xslt1_get_ns_prop(inst, name, ns);
+    if (!expr) return NULL;
+    char *ret = xslt_attr_template_value_process_node(t, expr, inst);
+    free(expr);
+    return ret;
+}
+
+/** Port of xsltEvalAVT: evaluate a precompiled attribute value template. */
+static char *xslt_eval_avt(XmlLibxslt1Transform *t, XsltAttrVT *avt, XMQNode *node)
+{
+    if (!avt || !node) return NULL;
+    char *ret = NULL;
+    int str = avt->strstart;
+    for (int i = 0; i < avt->nb_seg; i++)
+    {
+        if (str)
+        {
+            ret = xslt1_strcat(ret, (const char*)avt->segments[i]);
+        }
+        else
+        {
+            XmlXPathComp *comp = (XmlXPathComp*)avt->segments[i];
+            char *tmp = NULL;
+            if (comp) tmp = xslt_eval_xpath_string(t, comp);
+            else t->state = XSLT_STATE_STOPPED;
+            if (tmp)
+            {
+                if (ret)
+                {
+                    ret = xslt1_strcat(ret, tmp);
+                    free(tmp);
+                }
+                else
+                {
+                    ret = tmp;
+                }
+            }
+        }
+        str = !str;
+    }
+    return ret;
+}
+
+/** Port of xsltAttrListTemplateProcess: the attributes of a literal result element. */
+static void xslt_attr_list_template_process(XmlLibxslt1Transform *t, XMQNode *target, XMQAttr *attrs)
+{
+    if (!lx_is_element(target) || !attrs) return;
+    XMQNode *old_insert = t->insert;
+    t->insert = target;
+    // Apply attribute sets.
+    for (XMQAttr *attr = attrs; attr; attr = xml_attr_next(attr))
+    {
+        XmlNs *ans = xml_node_ns(xml_attr_node(attr));
+        if (ans && !strcmp(xml_attr_name(attr), "use-attribute-sets") && xslt1_streq(xml_ns_href(ans), XSLT_NAMESPACE))
+        {
+            xslt_apply_attribute_set(t, t->node, xml_attr_node(attr), NULL);
+        }
+    }
+    bool has_attr = xml_node_first_attr(target) != NULL;
+    // Instantiate the literal result element attributes.
+    XmlNs *orig_ns = NULL, *copy_ns = NULL;
+    for (XMQAttr *attr = attrs; attr; attr = xml_attr_next(attr))
+    {
+        XMQNode *an = xml_attr_node(attr);
+        XmlNs *ans = xml_node_ns(an);
+        if (ans && xslt1_streq(xml_ns_href(ans), XSLT_NAMESPACE)) continue;
+        XMQNode *first = xml_node_first_child(an);
+        const char *value = "";
+        if (first)
+        {
+            if (xml_node_kind(first) != XML_DOM_TEXT || xml_node_next(first))
+            {
+                xslt1_transform_error(t, NULL, xml_attr_owner(attr), "Internal error: The children of an attribute node of a "
+                                      "literal result element are not in the expected form.\n");
+                goto error;
+            }
+            value = xml_node_content(first) ? xml_node_content(first) : "";
+        }
+        // Get the namespace, avoid lookups of the same namespaces.
+        if (ans != orig_ns)
+        {
+            orig_ns = ans;
+            if (ans)
+            {
+                copy_ns = xslt_get_namespace(t, xml_attr_owner(attr), ans, target);
+                if (!copy_ns) goto error;
+            }
+            else
+            {
+                copy_ns = NULL;
+            }
+        }
+        char *val;
+        XsltAttrVT *avt = (XsltAttrVT*)xml_node_user_data(an);
+        if (avt)
+        {
+            val = xslt_eval_avt(t, avt, xml_attr_owner(attr));
+            if (!val)
+            {
+                if (ans) xslt1_transform_error(t, NULL, xml_attr_owner(attr), "Internal error: Failed to evaluate the AVT "
+                                               "of attribute '{%s}%s'.\n", xml_ns_href(ans), xml_attr_name(attr));
+                else xslt1_transform_error(t, NULL, xml_attr_owner(attr), "Internal error: Failed to evaluate the AVT "
+                                           "of attribute '%s'.\n", xml_attr_name(attr));
+                // libxslt has created the attribute with an empty value before failing.
+                if (has_attr) lx_set_ns_prop(target, copy_ns, xml_attr_name(attr), "");
+                else lx_new_ns_prop(target, copy_ns, xml_attr_name(attr), "");
+                goto error;
+            }
+        }
+        else
+        {
+            val = xslt1_strdup(value);
+        }
+        if (has_attr) lx_set_ns_prop(target, copy_ns, xml_attr_name(attr), val);
+        else lx_new_ns_prop(target, copy_ns, xml_attr_name(attr), val);
+        free(val);
+    }
+error:
+    t->insert = old_insert;
+}
+
+// Attributes, port of libxslt attributes.c (xsltAttribute, xsltApplyAttributeSet).
+
+/** Port of xsltAttribute (xsl:attribute). */
+static void xslt_attribute(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!context_node || !inst || xml_node_kind(inst) != XML_DOM_ELEMENT) return;
+    if (!comp || comp == XSLT_EXT_MARKER)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltAttribute(): The XSLT 'attribute' instruction was not compiled.\n");
+        return;
+    }
+    if (!comp->has_name) return;
+    if (!t->insert) return;
+    XMQNode *target_elem = t->insert;
+    if (xml_node_kind(target_elem) != XML_DOM_ELEMENT) return;
+    if (xml_node_first_child(target_elem))
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:attribute: Cannot add attributes to an element if children have been already added "
+                              "to the element.\n");
+        return;
+    }
+    char *name = NULL, *prefix = NULL;
+    const char *ns_name = NULL;
+    char *ns_name_owned = NULL;
+    if (!comp->name)
+    {
+        char *prop = xslt_eval_attr_value_template(t, inst, "name", XSLT_NAMESPACE);
+        if (!prop)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: The attribute 'name' is missing.\n");
+            goto error;
+        }
+        if (xslt1_validate_qname(prop))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: The effective name '%s' is not a valid QName.\n", prop);
+            // Fall through to catch any further errors, if possible.
+        }
+        if (!strcmp(prop, "xmlns"))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: The effective name 'xmlns' is not allowed.\n");
+            free(prop);
+            goto error;
+        }
+        name = xslt1_split_qname(prop, &prefix);
+        free(prop);
+    }
+    else
+    {
+        name = xslt1_split_qname(comp->name, &prefix);
+    }
+    if (comp->has_ns)
+    {
+        if (comp->ns)
+        {
+            if (comp->ns[0]) ns_name = comp->ns;
+        }
+        else
+        {
+            char *tmp = xslt_eval_attr_value_template(t, inst, "namespace", XSLT_NAMESPACE);
+            if (tmp && tmp[0]) ns_name = ns_name_owned = tmp;
+            else free(tmp);
+        }
+        if (xslt1_streq(ns_name, "http://www.w3.org/2000/xmlns/"))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: Namespace http://www.w3.org/2000/xmlns/ forbidden.\n");
+            goto error;
+        }
+        if (xslt1_streq(ns_name, XML_DOM_XML_NAMESPACE))
+        {
+            free(prefix);
+            prefix = xslt1_strdup("xml");
+        }
+        else if (xslt1_streq(prefix, "xml"))
+        {
+            free(prefix);
+            prefix = NULL;
+        }
+    }
+    else if (prefix)
+    {
+        XmlNs *ns = lx_search_ns(inst, prefix);
+        if (!ns)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: The QName '%s:%s' has no namespace binding in scope in the stylesheet; "
+                                  "this is an error, since the namespace was not specified by the instruction itself.\n", prefix, name);
+        }
+        else
+        {
+            ns_name = xml_ns_href(ns);
+        }
+    }
+    XmlNs *ns;
+    ns = NULL;
+    if (ns_name)
+    {
+        if (!prefix || !strcmp(prefix, "xmlns")) ns = xslt_get_special_namespace(t, inst, ns_name, "ns_1", target_elem);
+        else ns = xslt_get_special_namespace(t, inst, ns_name, prefix, target_elem);
+        if (!ns)
+        {
+            xslt1_transform_error(t, NULL, inst, "Namespace fixup error: Failed to acquire an in-scope "
+                                  "namespace binding for the generated attribute '{%s}%s'.\n", ns_name, name);
+            goto error;
+        }
+    }
+    XMQNode *first;
+    first = xml_node_first_child(inst);
+    if (!first)
+    {
+        lx_set_ns_prop(t->insert, ns, name, "");
+    }
+    else if (!xml_node_next(first) && (xml_node_kind(first) == XML_DOM_TEXT || xml_node_kind(first) == XML_DOM_CDATA))
+    {
+        lx_set_ns_prop(t->insert, ns, name, xml_node_content(first));
+    }
+    else
+    {
+        char *value = xslt_eval_template_string(t, context_node, inst);
+        lx_set_ns_prop(t->insert, ns, name, value ? value : "");
+        free(value);
+    }
+error:
+    free(name);
+    free(prefix);
+    free(ns_name_owned);
+}
+
+/** Port of xsltApplyAttributeSet: the attribute sets named in attr_sets (or in the
+    xsl:use-attribute-sets attribute inst). */
+static void xslt_apply_attribute_set(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, const char *attr_sets)
+{
+    char *owned = NULL;
+    if (!attr_sets)
+    {
+        if (!inst) return;
+        if (xml_node_kind(inst) == XML_DOM_ATTRIBUTE)
+        {
+            XMQNode *first = xml_node_first_child(inst);
+            if (first) attr_sets = xml_node_content(first);
+        }
+        if (!attr_sets) return;
+    }
+    // xmlSearchNs from an attribute starts at its element (and looks at the element's namespace).
+    XMQNode *ns_node = inst;
+    const char *curstr = attr_sets;
+    while (*curstr)
+    {
+        while (xslt1_is_blank((unsigned char)*curstr)) curstr++;
+        if (!*curstr) break;
+        const char *endstr = curstr;
+        while (*endstr && !xslt1_is_blank((unsigned char)*endstr)) endstr++;
+        char *qname = xslt1_strndup(curstr, (size_t)(endstr - curstr));
+        const char *ns_uri = NULL;
+        if (xslt1_validate_qname(qname))
+        {
+            xslt1_transform_error(t, NULL, inst, "The name '%s' in use-attribute-sets is not a valid QName.\n", qname);
+            free(qname);
+            free(owned);
+            return;
+        }
+        char *prefix = NULL;
+        char *ncname = xslt1_split_qname(qname, &prefix);
+        if (prefix)
+        {
+            XmlNs *ns = lx_search_ns(ns_node, prefix);
+            if (!ns)
+            {
+                xslt1_transform_error(t, NULL, inst, "use-attribute-set : No namespace found for QName '%s:%s'\n", prefix, ncname);
+                free(prefix);
+                free(ncname);
+                free(qname);
+                free(owned);
+                return;
+            }
+            ns_uri = xml_ns_href(ns);
+        }
+        XsltAttrSet *set = NULL;
+        if (t->style->attribute_sets)
+        {
+            char *key = xslt1_key2(ncname, ns_uri);
+            set = (XsltAttrSet*)hashmap_get(t->style->attribute_sets, key);
+            free(key);
+        }
+        if (set)
+        {
+            for (XsltAttrElem *cur = set->attrs; cur; cur = cur->next)
+            {
+                if (cur->attr) xslt_attribute(t, node, cur->attr, (XsltStylePreComp*)xml_node_user_data(cur->attr));
+            }
+        }
+        free(prefix);
+        free(ncname);
+        free(qname);
+        curstr = endstr;
+    }
+    free(owned);
+}
+
+// Template application, port of libxslt transform.c ////////////////
+
+static void templ_push(XmlLibxslt1Transform *t, XsltTemplate *value)
+{
+    if (t->templ_nr >= t->templ_max)
+    {
+        t->templ_max = t->templ_max == 0 ? 4 : t->templ_max * 2;
+        t->templ_tab = (XsltTemplate**)realloc(t->templ_tab, (size_t)t->templ_max * sizeof(XsltTemplate*));
+    }
+    t->templ_tab[t->templ_nr++] = value;
+    t->templ = value;
+}
+
+static void templ_pop(XmlLibxslt1Transform *t)
+{
+    if (t->templ_nr <= 0) return;
+    t->templ_nr--;
+    t->templ = t->templ_nr > 0 ? t->templ_tab[t->templ_nr - 1] : NULL;
+    t->templ_tab[t->templ_nr] = NULL;
+}
+
+/** Port of xsltApplyFallbacks. */
+static int xslt_apply_fallbacks(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst)
+{
+    int ret = 0;
+    if (!node || !inst || !xml_node_first_child(inst)) return 0;
+    for (XMQNode *child = xml_node_first_child(inst); child; child = xml_node_next(child))
+    {
+        if (xslt1_is_xslt_elem(child) && xslt1_is_xslt_name(child, "fallback"))
+        {
+            ret++;
+            xslt_apply_sequence_constructor(t, node, xml_node_first_child(child), NULL);
+        }
+    }
+    return ret;
+}
+
+/** Count the children libxslt counts as real nodes. */
+static int xslt_count_real_children(XMQNode *node)
+{
+    int n = 0;
+    for (XMQNode *cur = lx_children(node); cur; cur = xml_node_next(cur))
+    {
+        if (lx_is_real_node(cur)) n++;
+    }
+    return n;
+}
+
+/** Port of xsltDefaultProcessOneNode: the built in template rules. */
+static void xslt_default_process_one_node(XmlLibxslt1Transform *t, XMQNode *node, XsltStackElem *params)
+{
+    if (t->state == XSLT_STATE_STOPPED) return;
+    switch (xml_node_kind(node))
+    {
+    case XML_DOM_DOCUMENT:
+    case XML_DOM_ELEMENT:
+        break;
+    case XML_DOM_CDATA:
+        if (!xslt_copy_text(t, t->insert, node)) xslt1_transform_error(t, NULL, node, "xsltDefaultProcessOneNode: cdata copy failed\n");
+        return;
+    case XML_DOM_TEXT:
+        if (!xslt_copy_text(t, t->insert, node)) xslt1_transform_error(t, NULL, node, "xsltDefaultProcessOneNode: text copy failed\n");
+        return;
+    case XML_DOM_ATTRIBUTE:
+    {
+        XMQNode *cur = xml_node_first_child(node);
+        while (cur && xml_node_kind(cur) != XML_DOM_TEXT) cur = xml_node_next(cur);
+        if (!cur)
+        {
+            xslt1_transform_error(t, NULL, node, "xsltDefaultProcessOneNode: no text for attribute\n");
+        }
+        else if (!xslt_copy_text(t, t->insert, cur))
+        {
+            xslt1_transform_error(t, NULL, node, "xsltDefaultProcessOneNode: text copy failed\n");
+        }
+        return;
+    }
+    default:
+        return;
+    }
+    int nbchild = xslt_count_real_children(node);
+    long old_size = t->xp_size, old_pos = t->xp_position;
+    int childno = 0;
+    for (XMQNode *cur = lx_children(node); cur; cur = xml_node_next(cur))
+    {
+        childno++;
+        XsltTemplate *templ;
+        switch (xml_node_kind(cur))
+        {
+        case XML_DOM_DOCUMENT:
+        case XML_DOM_ELEMENT:
+            t->xp_size = nbchild;
+            t->xp_position = childno;
+            if (t->depth >= t->max_template_depth)
+            {
+                xslt1_transform_error(t, NULL, cur, "xsltDefaultProcessOneNode: Maximum template depth exceeded.\n"
+                                      "You can adjust xsltMaxDepth (--maxdepth) in order to raise the maximum number of nested template calls and "
+                                      "variables/params (currently set to %d).\n", t->max_template_depth);
+                t->state = XSLT_STATE_STOPPED;
+                return;
+            }
+            t->depth++;
+            xslt_process_one_node(t, cur, params);
+            t->depth--;
+            break;
+        case XML_DOM_CDATA:
+            templ = xslt1_get_template(t, cur, NULL);
+            if (templ)
+            {
+                xslt_apply_xslt_template(t, cur, templ->content, templ, params);
+            }
+            else if (!xslt_copy_text(t, t->insert, cur))
+            {
+                xslt1_transform_error(t, NULL, cur, "xsltDefaultProcessOneNode: cdata copy failed\n");
+            }
+            break;
+        case XML_DOM_TEXT:
+            templ = xslt1_get_template(t, cur, NULL);
+            if (templ)
+            {
+                t->xp_size = nbchild;
+                t->xp_position = childno;
+                xslt_apply_xslt_template(t, cur, templ->content, templ, params);
+            }
+            else if (!xslt_copy_text(t, t->insert, cur))
+            {
+                xslt1_transform_error(t, NULL, cur, "xsltDefaultProcessOneNode: text copy failed\n");
+            }
+            break;
+        case XML_DOM_PI:
+        case XML_DOM_COMMENT:
+            templ = xslt1_get_template(t, cur, NULL);
+            if (templ)
+            {
+                t->xp_size = nbchild;
+                t->xp_position = childno;
+                xslt_apply_xslt_template(t, cur, templ->content, templ, params);
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    t->xp_size = old_size;
+    t->xp_position = old_pos;
+}
+
+/** Port of xsltProcessOneNode. */
+static void xslt_process_one_node(XmlLibxslt1Transform *t, XMQNode *context_node, XsltStackElem *with_params)
+{
+    XsltTemplate *templ = xslt1_get_template(t, context_node, NULL);
+    if (!templ)
+    {
+        XMQNode *old_node = t->node;
+        t->node = context_node;
+        xslt_default_process_one_node(t, context_node, with_params);
+        t->node = old_node;
+        return;
+    }
+    XsltTemplate *old_rule = t->current_template_rule;
+    t->current_template_rule = templ;
+    xslt_apply_xslt_template(t, context_node, templ->content, templ, with_params);
+    t->current_template_rule = old_rule;
+}
+
+/** Port of xsltApplyXSLTTemplate. */
+static void xslt_apply_xslt_template(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list,
+                                     XsltTemplate *templ, XsltStackElem *with_params)
+{
+    if (!templ)
+    {
+        xslt1_transform_error(t, NULL, list, "xsltApplyXSLTTemplate: Bad arguments; @templ is mandatory.\n");
+        return;
+    }
+    if (!list) return;
+    if (t->state == XSLT_STATE_STOPPED) return;
+    if (t->vars_nr >= t->max_template_vars)
+    {
+        xslt1_transform_error(t, NULL, list, "xsltApplyXSLTTemplate: A potential infinite template recursion was detected.\n"
+                              "You can adjust maxTemplateVars (--maxvars) in order to raise the maximum number of variables/params (currently set to %d).\n",
+                              t->max_template_vars);
+        xslt_debug(t, context_node, list);
+        t->state = XSLT_STATE_STOPPED;
+        return;
+    }
+    XsltRVT *old_user_fragment_top = t->tmp_rvt;
+    t->tmp_rvt = NULL;
+    int old_vars_base = t->vars_base;
+    t->vars_base = t->vars_nr;
+    t->node = context_node;
+    templ_push(t, templ);
+    // The template parameters.
+    XMQNode *cur = list;
+    do
+    {
+        if (xml_node_kind(cur) == XML_DOM_TEXT)
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        XsltStylePreComp *iparam = (XsltStylePreComp*)xml_node_user_data(cur);
+        if (xml_node_kind(cur) != XML_DOM_ELEMENT || !iparam || !xslt1_streq(xml_node_name(cur), "param") || !xslt1_is_xslt_elem(cur))
+        {
+            break;
+        }
+        list = xml_node_next(cur);
+        XsltStackElem *tmp_param = NULL;
+        if (with_params && iparam != XSLT_EXT_MARKER)
+        {
+            for (tmp_param = with_params; tmp_param; tmp_param = tmp_param->next)
+            {
+                if (xslt1_streq(tmp_param->name, iparam->name) && xslt1_streq(tmp_param->name_uri, iparam->ns))
+                {
+                    xslt_local_variable_push(t, tmp_param, -1);
+                    break;
+                }
+            }
+        }
+        if (!tmp_param) xslt_parse_stylesheet_param(t, cur);
+        cur = xml_node_next(cur);
+    } while (cur);
+    xslt_apply_sequence_constructor(t, context_node, list, templ);
+    if (t->vars_nr > t->vars_base) xslt_template_params_cleanup(t);
+    t->vars_base = old_vars_base;
+    // Fragments created by extension functions in the template.
+    while (t->tmp_rvt)
+    {
+        XsltRVT *tmp = t->tmp_rvt;
+        t->tmp_rvt = tmp->next;
+        xslt_release_rvt(t, tmp);
+    }
+    t->tmp_rvt = old_user_fragment_top;
+    templ_pop(t);
+}
+
+/** Port of xsltApplyOneTemplate. */
+static void xslt_apply_one_template(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list, XsltStackElem *params)
+{
+    if (!list) return;
+    if (t->state == XSLT_STATE_STOPPED) return;
+    if (params)
+    {
+        int old_vars_nr = t->vars_nr;
+        for (; params; params = params->next) xslt_local_variable_push(t, params, -1);
+        xslt_apply_sequence_constructor(t, context_node, list, NULL);
+        xslt_local_variable_pop(t, old_vars_nr, -2);
+    }
+    else
+    {
+        xslt_apply_sequence_constructor(t, context_node, list, NULL);
+    }
+}
+
+// The instructions.
+
+/** Port of xsltSort: xsl:sort outside apply-templates and for-each. */
+static void xslt_sort(XmlLibxslt1Transform *t, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:sort : compilation failed\n");
+        return;
+    }
+    xslt1_transform_error(t, NULL, inst, "xsl:sort : improper use this should not be reached\n");
+}
+
+/** Port of xsltCopy (xsl:copy). */
+static void xslt_copy(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    XMQNode *old_insert = t->insert;
+    if (t->insert)
+    {
+        switch (xml_node_kind(node))
+        {
+        case XML_DOM_TEXT:
+        case XML_DOM_CDATA:
+            xslt_copy_text(t, t->insert, node);
+            break;
+        case XML_DOM_DOCUMENT:
+            break;
+        case XML_DOM_ELEMENT:
+        {
+            XMQNode *copy = xslt_shallow_copy_elem(t, node, t->insert, 0);
+            t->insert = copy;
+            if (comp->use) xslt_apply_attribute_set(t, node, inst, comp->use);
+            break;
+        }
+        case XML_DOM_ATTRIBUTE:
+            xslt_shallow_copy_attr(t, inst, t->insert, node);
+            break;
+        case XML_DOM_PI:
+            lx_add_child(t->insert, xml_node_new_pi(t->output, xml_node_name(node), xml_node_content(node)));
+            break;
+        case XML_DOM_COMMENT:
+            lx_add_child(t->insert, xml_node_new_comment(t->output, xml_node_content(node)));
+            break;
+        case XML_DOM_NAMESPACE:
+            xslt_shallow_copy_ns_node(t, inst, t->insert, node);
+            break;
+        default:
+            break;
+        }
+    }
+    switch (xml_node_kind(node))
+    {
+    case XML_DOM_DOCUMENT:
+    case XML_DOM_ELEMENT:
+        xslt_apply_sequence_constructor(t, t->node, xml_node_first_child(inst), NULL);
+        break;
+    default:
+        break;
+    }
+    t->insert = old_insert;
+}
+
+/** Port of xsltText (xsl:text, only reached when it could not be replaced by its content). */
+static void xslt_text(XmlLibxslt1Transform *t, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!xml_node_first_child(inst) || !comp) return;
+    for (XMQNode *text = xml_node_first_child(inst); text; text = xml_node_next(text))
+    {
+        if (xml_node_kind(text) != XML_DOM_TEXT && xml_node_kind(text) != XML_DOM_CDATA)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:text content problem\n");
+            break;
+        }
+        XMQNode *copy = xml_node_new_text(t->output, xml_node_content(text));
+        if (xml_node_kind(text) != XML_DOM_CDATA) xml_node_set_name(copy, "textnoenc");
+        lx_add_child(t->insert, copy);
+    }
+}
+
+/** Port of xsltElement (xsl:element). */
+static void xslt_element(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!t->insert) return;
+    if (!comp->has_name) return;
+    XMQNode *old_insert = t->insert;
+    char *name = NULL, *prefix = NULL;
+    const char *ns_name = NULL;
+    char *ns_name_owned = NULL;
+    if (!comp->name)
+    {
+        char *prop = xslt_eval_attr_value_template(t, inst, "name", XSLT_NAMESPACE);
+        if (!prop)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:element: The attribute 'name' is missing.\n");
+            goto error;
+        }
+        if (xslt1_validate_qname(prop))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:element: The effective name '%s' is not a valid QName.\n", prop);
+            // Fall through to catch any further errors, if possible.
+        }
+        name = xslt1_split_qname(prop, &prefix);
+        free(prop);
+    }
+    else
+    {
+        name = xslt1_split_qname(comp->name, &prefix);
+    }
+    XMQNode *copy;
+    copy = xml_node_new_element(t->output, name, NULL);
+    if (!copy)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:element : creation of %s failed\n", name);
+        goto error;
+    }
+    copy = lx_add_child(t->insert, copy);
+    if (!copy)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:element : xsltAddChild failed\n");
+        goto error;
+    }
+    if (comp->has_ns)
+    {
+        if (comp->ns)
+        {
+            if (comp->ns[0]) ns_name = comp->ns;
+        }
+        else
+        {
+            char *tmp = xslt_eval_attr_value_template(t, inst, "namespace", XSLT_NAMESPACE);
+            if (tmp && tmp[0]) ns_name = ns_name_owned = tmp;
+            else free(tmp);
+        }
+        if (xslt1_streq(ns_name, "http://www.w3.org/2000/xmlns/"))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:attribute: Namespace http://www.w3.org/2000/xmlns/ forbidden.\n");
+            goto error;
+        }
+        if (xslt1_streq(ns_name, XML_DOM_XML_NAMESPACE))
+        {
+            free(prefix);
+            prefix = xslt1_strdup("xml");
+        }
+        else if (xslt1_streq(prefix, "xml"))
+        {
+            free(prefix);
+            prefix = NULL;
+        }
+    }
+    else
+    {
+        XmlNs *ns = lx_search_ns(inst, prefix);
+        if (!ns)
+        {
+            if (prefix)
+            {
+                xslt1_transform_error(t, NULL, inst, "xsl:element: The QName '%s:%s' has no namespace binding in scope in the stylesheet; "
+                                      "this is an error, since the namespace was not specified by the instruction itself.\n", prefix, name);
+            }
+        }
+        else
+        {
+            ns_name = xml_ns_href(ns);
+        }
+    }
+    if (ns_name)
+    {
+        // Do not use a prefix of "xmlns".
+        if (xslt1_streq(prefix, "xmlns")) xml_node_set_ns(copy, xslt_get_special_namespace(t, inst, ns_name, "ns_1", copy));
+        else xml_node_set_ns(copy, xslt_get_special_namespace(t, inst, ns_name, prefix, copy));
+    }
+    else if (lx_is_element(xml_node_parent(copy)) && xml_node_ns(xml_node_parent(copy)))
+    {
+        xslt_get_special_namespace(t, inst, NULL, NULL, copy);
+    }
+    t->insert = copy;
+    if (comp->has_use)
+    {
+        if (comp->use)
+        {
+            xslt_apply_attribute_set(t, node, inst, comp->use);
+        }
+        else
+        {
+            char *attr_sets = xslt_eval_attr_value_template(t, inst, "use-attribute-sets", NULL);
+            if (attr_sets)
+            {
+                xslt_apply_attribute_set(t, node, inst, attr_sets);
+                free(attr_sets);
+            }
+        }
+    }
+    if (xml_node_first_child(inst)) xslt_apply_sequence_constructor(t, t->node, xml_node_first_child(inst), NULL);
+error:
+    t->insert = old_insert;
+    free(name);
+    free(prefix);
+    free(ns_name_owned);
+}
+
+/** Port of xsltComment (xsl:comment). */
+static void xslt_comment(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst)
+{
+    char *value = xslt_eval_template_string(t, node, inst);
+    size_t len = value ? strlen(value) : 0;
+    if (len > 0)
+    {
+        if (value[len - 1] == '-' || strstr(value, "--"))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:comment : '--' or ending '-' not allowed in comment\n");
+            // Fall through to try to catch further errors.
+        }
+    }
+    lx_add_child(t->insert, xml_node_new_comment(t->output, value));
+    free(value);
+}
+
+/** Port of xsltProcessingInstruction (xsl:processing-instruction). */
+static void xslt_processing_instruction(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!t->insert) return;
+    if (comp->has_name == 0) return;
+    char *name_owned = NULL;
+    const char *name;
+    char *value = NULL;
+    if (!comp->name)
+    {
+        name = name_owned = xslt_eval_attr_value_template(t, inst, "name", NULL);
+        if (!name)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:processing-instruction : name is missing\n");
+            goto error;
+        }
+    }
+    else
+    {
+        name = comp->name;
+    }
+    value = xslt_eval_template_string(t, node, inst);
+    if (value && strstr(value, "?>"))
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:processing-instruction: '?>' not allowed within PI content\n");
+        goto error;
+    }
+    lx_add_child(t->insert, xml_node_new_pi(t->output, name, value));
+error:
+    free(name_owned);
+    free(value);
+}
+
+/** Port of xsltCopyOf (xsl:copy-of). */
+static void xslt_copy_of(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!node || !inst) return;
+    if (!comp || !comp->select || !comp->comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:copy-of : compilation failed\n");
+        return;
+    }
+    XmlXPathResult *res = xslt_pre_comp_eval(t, node, comp);
+    if (res)
+    {
+        if (xml_xpath_result_type(res) == XML_XPATH_NODESET && !xml_xpath_result_is_tree(res))
+        {
+            size_t n = xml_xpath_result_size(res);
+            for (size_t i = 0; i < n; i++)
+            {
+                XMQNode *cur = xml_xpath_result_node(res, i);
+                if (!cur) continue;
+                if (xml_node_kind(cur) == XML_DOM_DOCUMENT)
+                {
+                    xslt_copy_tree_list(t, inst, xml_node_first_child(cur), t->insert, 0, 0);
+                }
+                else if (xml_node_kind(cur) == XML_DOM_ATTRIBUTE)
+                {
+                    xslt_shallow_copy_attr(t, inst, t->insert, cur);
+                }
+                else
+                {
+                    xslt_copy_tree(t, inst, cur, t->insert, 0, 0);
+                }
+            }
+        }
+        else if (xml_xpath_result_is_tree(res))
+        {
+            XMQNode *first = xml_xpath_result_size(res) ? xml_xpath_result_node(res, 0) : NULL;
+            if (first && lx_is_real_node(first)) xslt_copy_tree_list(t, inst, lx_children(first), t->insert, 0, 0);
+        }
+        else
+        {
+            char *value = xml_xpath_result_to_string(res);
+            if (!value)
+            {
+                xslt1_transform_error(t, NULL, inst, "Internal error in xsltCopyOf(): failed to cast an XPath object to string.\n");
+                t->state = XSLT_STATE_STOPPED;
+            }
+            else
+            {
+                if (value[0]) xslt_copy_text_string(t, t->insert, value, 0);
+                free(value);
+            }
+        }
+    }
+    else
+    {
+        t->state = XSLT_STATE_STOPPED;
+    }
+    xml_xpath_result_free(res);
+}
+
+/** Port of xsltValueOf (xsl:value-of). */
+static void xslt_value_of(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!node || !inst) return;
+    if (!comp || !comp->select || !comp->comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltValueOf(): The XSLT 'value-of' instruction was not compiled.\n");
+        return;
+    }
+    char *value = NULL;
+    XmlXPathResult *res = xslt_pre_comp_eval(t, node, comp);
+    if (res)
+    {
+        value = xml_xpath_result_to_string(res);
+        if (!value)
+        {
+            xslt1_transform_error(t, NULL, inst, "Internal error in xsltValueOf(): failed to cast an XPath object to string.\n");
+            t->state = XSLT_STATE_STOPPED;
+            goto error;
+        }
+        if (value[0]) xslt_copy_text_string(t, t->insert, value, comp->noescape);
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, inst, "XPath evaluation returned no result.\n");
+        t->state = XSLT_STATE_STOPPED;
+    }
+error:
+    free(value);
+    xml_xpath_result_free(res);
+}
+
+static void xslt_number_format(XmlLibxslt1Transform *t, XsltNumberData *data, XMQNode *node);
+
+/** Port of xsltNumber (xsl:number). */
+static void xslt_number(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:number : compilation failed\n");
+        return;
+    }
+    if (!node || !inst) return;
+    comp->numdata.doc = xml_node_dom(inst);
+    comp->numdata.node = inst;
+    xslt_number_format(t, &comp->numdata, node);
+}
+
+/** Port of xsltApplyImports (xsl:apply-imports). */
+static void xslt_apply_imports(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!inst) return;
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltApplyImports(): The XSLT 'apply-imports' instruction was not compiled.\n");
+        return;
+    }
+    if (!t->current_template_rule)
+    {
+        xslt1_transform_error(t, NULL, inst, "It is an error to call 'apply-imports' when there's no current template rule.\n");
+        return;
+    }
+    XsltTemplate *templ = xslt1_get_template(t, context_node, t->current_template_rule->style);
+    if (templ)
+    {
+        XsltTemplate *old_rule = t->current_template_rule;
+        t->current_template_rule = templ;
+        xslt_apply_xslt_template(t, context_node, templ->content, templ, NULL);
+        t->current_template_rule = old_rule;
+    }
+    else
+    {
+        // Use the built in templates.
+        xslt_default_process_one_node(t, context_node, NULL);
+    }
+}
+
+/** Port of xsltFindTemplate: a named template over the import cascade. */
+static XsltTemplate *xslt_find_template(XmlLibxslt1Transform *t, const char *name, const char *name_uri)
+{
+    if (!name) return NULL;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        if (style->named_templates)
+        {
+            char *key = xslt1_hash3_key(name, name_uri, NULL);
+            XsltTemplate *cur = (XsltTemplate*)hashmap_get(style->named_templates, key);
+            free(key);
+            if (cur) return cur;
+        }
+    }
+    return NULL;
+}
+
+/** Port of xsltCallTemplate (xsl:call-template). */
+static void xslt_call_template(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    XsltStackElem *with_params = NULL;
+    if (!t->insert) return;
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "The XSLT 'call-template' instruction was not compiled.\n");
+        return;
+    }
+    if (!comp->templ)
+    {
+        comp->templ = xslt_find_template(t, comp->name, comp->ns);
+        if (!comp->templ)
+        {
+            if (comp->ns) xslt1_transform_error(t, NULL, inst, "The called template '{%s}%s' was not found.\n", comp->ns, comp->name);
+            else xslt1_transform_error(t, NULL, inst, "The called template '%s' was not found.\n", comp->name);
+            return;
+        }
+    }
+    for (XMQNode *cur = xml_node_first_child(inst); cur; cur = xml_node_next(cur))
+    {
+        if (t->state == XSLT_STATE_STOPPED) break;
+        if (xslt1_is_xslt_elem(cur))
+        {
+            if (xslt1_is_xslt_name(cur, "with-param"))
+            {
+                XsltStackElem *param = xslt_parse_stylesheet_caller_param(t, cur);
+                if (param)
+                {
+                    param->next = with_params;
+                    with_params = param;
+                }
+            }
+            else
+            {
+                xslt1_generic_error(&t->style->settings, "xsl:call-template: misplaced xsl:%s\n", xml_node_name(cur));
+            }
+        }
+        else
+        {
+            xslt1_generic_error(&t->style->settings, "xsl:call-template: misplaced %s element\n",
+                                xslt1_libxml2_node_name(cur) ? xslt1_libxml2_node_name(cur) : "(null)");
+        }
+    }
+    xslt_apply_xslt_template(t, node, comp->templ->content, comp->templ, with_params);
+    if (with_params) xslt_free_runtime_stack_elem_list(t, with_params);
+}
+
+static XsltNodeList *xslt_node_list_from(const XmlXPathResult *res)
+{
+    XsltNodeList *list = (XsltNodeList*)calloc(1, sizeof(XsltNodeList));
+    size_t n = res ? xml_xpath_result_size(res) : 0;
+    if (n)
+    {
+        list->nodes = (XMQNode**)malloc(n * sizeof(XMQNode*));
+        for (size_t i = 0; i < n; ++i) list->nodes[i] = xml_xpath_result_node(res, i);
+    }
+    list->nr = (int)n;
+    return list;
+}
+
+static void xslt_node_list_free(XsltNodeList *list)
+{
+    if (!list) return;
+    free(list->nodes);
+    free(list);
+}
+
+/** Port of xsltApplyTemplates (xsl:apply-templates). */
+static void xslt_apply_templates(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:apply-templates : compilation failed\n");
+        return;
+    }
+    if (!node || !inst) return;
+    XsltNodeList *list = NULL;
+    XsltStackElem *with_params = NULL;
+    XMQNode *old_context_node = t->node;
+    const char *old_mode = t->mode, *old_mode_uri = t->mode_uri;
+    XsltDocInfo *old_doc_info = t->document;
+    XsltNodeList *old_list = t->node_list;
+    long old_size = t->xp_size, old_pos = t->xp_position;
+    t->mode = comp->mode;
+    t->mode_uri = comp->mode_uri;
+    if (comp->select)
+    {
+        if (!comp->comp)
+        {
+            xslt1_transform_error(t, NULL, inst, "xsl:apply-templates : compilation failed\n");
+            goto error;
+        }
+        XmlXPathResult *res = xslt_pre_comp_eval(t, node, comp);
+        if (res)
+        {
+            if (xml_xpath_result_type(res) == XML_XPATH_NODESET && !xml_xpath_result_is_tree(res))
+            {
+                list = xslt_node_list_from(res);
+            }
+            else
+            {
+                xslt1_transform_error(t, NULL, inst, "The 'select' expression did not evaluate to a node set.\n");
+                t->state = XSLT_STATE_STOPPED;
+                xml_xpath_result_free(res);
+                goto error;
+            }
+            xml_xpath_result_free(res);
+        }
+        else
+        {
+            xslt1_transform_error(t, NULL, inst, "Failed to evaluate the 'select' expression.\n");
+            t->state = XSLT_STATE_STOPPED;
+            goto error;
+        }
+    }
+    else
+    {
+        list = (XsltNodeList*)calloc(1, sizeof(XsltNodeList));
+        int n = 0;
+        for (XMQNode *cur = lx_children(node); cur; cur = xml_node_next(cur)) if (lx_is_real_node(cur)) n++;
+        if (n) list->nodes = (XMQNode**)malloc((size_t)n * sizeof(XMQNode*));
+        for (XMQNode *cur = lx_children(node); cur; cur = xml_node_next(cur)) if (lx_is_real_node(cur)) list->nodes[list->nr++] = cur;
+    }
+    if (!list || list->nr == 0) goto exit;
+    t->node_list = list;
+    // Parameters and sorts.
+    for (XMQNode *cur = xml_node_first_child(inst); cur; )
+    {
+        if (t->state == XSLT_STATE_STOPPED) break;
+        if (xml_node_kind(cur) == XML_DOM_TEXT)
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        if (!xslt1_is_xslt_elem(cur)) break;
+        if (xslt1_is_xslt_name(cur, "with-param"))
+        {
+            XsltStackElem *param = xslt_parse_stylesheet_caller_param(t, cur);
+            if (param)
+            {
+                param->next = with_params;
+                with_params = param;
+            }
+        }
+        if (xslt1_is_xslt_name(cur, "sort"))
+        {
+            XsltTemplate *old_rule = t->current_template_rule;
+            int nbsorts = 0;
+            XMQNode *sorts[XSLT_MAX_SORT];
+            sorts[nbsorts++] = cur;
+            cur = xml_node_next(cur);
+            while (cur)
+            {
+                if (t->state == XSLT_STATE_STOPPED) break;
+                if (xml_node_kind(cur) == XML_DOM_TEXT)
+                {
+                    cur = xml_node_next(cur);
+                    continue;
+                }
+                if (!xslt1_is_xslt_elem(cur)) break;
+                if (xslt1_is_xslt_name(cur, "with-param"))
+                {
+                    XsltStackElem *param = xslt_parse_stylesheet_caller_param(t, cur);
+                    if (param)
+                    {
+                        param->next = with_params;
+                        with_params = param;
+                    }
+                }
+                if (xslt1_is_xslt_name(cur, "sort"))
+                {
+                    if (nbsorts >= XSLT_MAX_SORT)
+                    {
+                        xslt1_transform_error(t, NULL, cur, "The number (%d) of xsl:sort instructions exceeds the "
+                                              "maximum allowed by this processor's settings.\n", nbsorts);
+                        t->state = XSLT_STATE_STOPPED;
+                        break;
+                    }
+                    sorts[nbsorts++] = cur;
+                }
+                cur = xml_node_next(cur);
+            }
+            t->current_template_rule = NULL;
+            xslt_do_sort_function(t, sorts, nbsorts);
+            t->current_template_rule = old_rule;
+            break;
+        }
+        cur = xml_node_next(cur);
+    }
+    t->xp_size = list->nr;
+    for (int i = 0; i < list->nr; i++)
+    {
+        XMQNode *cur = list->nodes[i];
+        t->node = cur;
+        t->xp_position = i + 1;
+        xslt_process_one_node(t, cur, with_params);
+    }
+exit:
+error:
+    if (with_params) xslt_free_runtime_stack_elem_list(t, with_params);
+    xslt_node_list_free(list);
+    t->xp_size = old_size;
+    t->xp_position = old_pos;
+    t->document = old_doc_info;
+    t->node_list = old_list;
+    t->node = old_context_node;
+    t->mode = old_mode;
+    t->mode_uri = old_mode_uri;
+}
+
+/** Port of xsltChoose (xsl:choose). */
+static void xslt_choose(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst)
+{
+    if (!context_node || !inst) return;
+    XMQNode *cur = xml_node_first_child(inst);
+    if (!cur)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:choose: The instruction has no content.\n");
+        return;
+    }
+    if (!xslt1_is_xslt_elem(cur) || !xslt1_is_xslt_name(cur, "when"))
+    {
+        xslt1_transform_error(t, NULL, inst, "xsl:choose: xsl:when expected first\n");
+        return;
+    }
+    while (cur && xslt1_is_xslt_elem(cur) && xslt1_is_xslt_name(cur, "when"))
+    {
+        XsltStylePreComp *wcomp = (XsltStylePreComp*)xml_node_user_data(cur);
+        if (!wcomp || wcomp == XSLT_EXT_MARKER || !wcomp->test || !wcomp->comp)
+        {
+            xslt1_transform_error(t, NULL, cur, "Internal error in xsltChoose(): The XSLT 'when' instruction was not compiled.\n");
+            return;
+        }
+        int res = xslt_pre_comp_eval_to_boolean(t, context_node, wcomp);
+        if (res == -1)
+        {
+            t->state = XSLT_STATE_STOPPED;
+            return;
+        }
+        if (res == 1) goto process_sequence;
+        cur = xml_node_next(cur);
+    }
+    if (cur && xslt1_is_xslt_elem(cur) && xslt1_is_xslt_name(cur, "otherwise")) goto process_sequence;
+    return;
+process_sequence:
+    xslt_apply_sequence_constructor(t, t->node, xml_node_first_child(cur), NULL);
+}
+
+/** Port of xsltIf (xsl:if). */
+static void xslt_if(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!context_node || !inst) return;
+    if (!comp || !comp->test || !comp->comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltIf(): The XSLT 'if' instruction was not compiled.\n");
+        return;
+    }
+    XsltRVT *old_local_fragment_top = t->local_rvt;
+    int res = xslt_pre_comp_eval_to_boolean(t, context_node, comp);
+    if (old_local_fragment_top != t->local_rvt) xslt_release_local_rvts(t, old_local_fragment_top);
+    if (res == -1)
+    {
+        t->state = XSLT_STATE_STOPPED;
+        return;
+    }
+    if (res == 1) xslt_apply_sequence_constructor(t, context_node, xml_node_first_child(inst), NULL);
+}
+
+/** Port of xsltForEach (xsl:for-each). */
+static void xslt_for_each(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!context_node || !inst)
+    {
+        xslt1_generic_error(&t->style->settings, "xsltForEach(): Bad arguments.\n");
+        return;
+    }
+    if (!comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltForEach(): The XSLT 'for-each' instruction was not compiled.\n");
+        return;
+    }
+    if (!comp->select || !comp->comp)
+    {
+        xslt1_transform_error(t, NULL, inst, "Internal error in xsltForEach(): The selecting expression of the XSLT 'for-each' "
+                              "instruction was not compiled correctly.\n");
+        return;
+    }
+    XsltDocInfo *old_doc_info = t->document;
+    XsltNodeList *old_list = t->node_list;
+    XMQNode *old_context_node = t->node;
+    XsltTemplate *old_rule = t->current_template_rule;
+    t->current_template_rule = NULL;
+    long old_size = t->xp_size, old_pos = t->xp_position;
+    XsltNodeList *list = NULL;
+    XmlXPathResult *res = xslt_pre_comp_eval(t, context_node, comp);
+    if (res)
+    {
+        if (xml_xpath_result_type(res) == XML_XPATH_NODESET && !xml_xpath_result_is_tree(res))
+        {
+            list = xslt_node_list_from(res);
+        }
+        else
+        {
+            xslt1_transform_error(t, NULL, inst, "The 'select' expression does not evaluate to a node set.\n");
+            goto error;
+        }
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, inst, "Failed to evaluate the 'select' expression.\n");
+        t->state = XSLT_STATE_STOPPED;
+        goto error;
+    }
+    if (!list || list->nr <= 0) goto exit;
+    t->node_list = list;
+    XMQNode *cur_inst;
+    cur_inst = xml_node_first_child(inst);
+    if (cur_inst && xslt1_is_xslt_elem(cur_inst) && xslt1_is_xslt_name(cur_inst, "sort"))
+    {
+        int nbsorts = 0;
+        XMQNode *sorts[XSLT_MAX_SORT];
+        sorts[nbsorts++] = cur_inst;
+        cur_inst = xml_node_next(cur_inst);
+        while (cur_inst && xslt1_is_xslt_elem(cur_inst) && xslt1_is_xslt_name(cur_inst, "sort"))
+        {
+            if (nbsorts >= XSLT_MAX_SORT)
+            {
+                xslt1_transform_error(t, NULL, cur_inst, "The number of xsl:sort instructions exceeds the "
+                                      "maximum (%d) allowed by this processor.\n", XSLT_MAX_SORT);
+                goto error;
+            }
+            sorts[nbsorts++] = cur_inst;
+            cur_inst = xml_node_next(cur_inst);
+        }
+        xslt_do_sort_function(t, sorts, nbsorts);
+    }
+    t->xp_size = list->nr;
+    for (int i = 0; i < list->nr; i++)
+    {
+        XMQNode *cur = list->nodes[i];
+        t->node = cur;
+        t->xp_position = i + 1;
+        xslt_apply_sequence_constructor(t, cur, cur_inst, NULL);
+    }
+exit:
+error:
+    xml_xpath_result_free(res);
+    xslt_node_list_free(list);
+    t->document = old_doc_info;
+    t->node_list = old_list;
+    t->node = old_context_node;
+    t->current_template_rule = old_rule;
+    t->xp_size = old_size;
+    t->xp_position = old_pos;
+}
+
+static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp);
+
+/** Run the function of a precomputed instruction (comp->func in libxslt). Returns false if there is none. */
+static bool xslt_call_func(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    switch (comp->type)
+    {
+    case XSLT_FUNC_COPY: xslt_copy(t, node, inst, comp); return true;
+    case XSLT_FUNC_SORT: xslt_sort(t, inst, comp); return true;
+    case XSLT_FUNC_TEXT: xslt_text(t, inst, comp); return true;
+    case XSLT_FUNC_ELEMENT: xslt_element(t, node, inst, comp); return true;
+    case XSLT_FUNC_ATTRIBUTE: xslt_attribute(t, node, inst, comp); return true;
+    case XSLT_FUNC_COMMENT: xslt_comment(t, node, inst); return true;
+    case XSLT_FUNC_PI: xslt_processing_instruction(t, node, inst, comp); return true;
+    case XSLT_FUNC_COPYOF: xslt_copy_of(t, node, inst, comp); return true;
+    case XSLT_FUNC_VALUEOF: xslt_value_of(t, node, inst, comp); return true;
+    case XSLT_FUNC_NUMBER: xslt_number(t, node, inst, comp); return true;
+    case XSLT_FUNC_APPLYIMPORTS: xslt_apply_imports(t, node, inst, comp); return true;
+    case XSLT_FUNC_CALLTEMPLATE: xslt_call_template(t, node, inst, comp); return true;
+    case XSLT_FUNC_APPLYTEMPLATES: xslt_apply_templates(t, node, inst, comp); return true;
+    case XSLT_FUNC_CHOOSE: xslt_choose(t, node, inst); return true;
+    case XSLT_FUNC_IF: xslt_if(t, node, inst, comp); return true;
+    case XSLT_FUNC_FOREACH: xslt_for_each(t, node, inst, comp); return true;
+    case XSLT_FUNC_DOCUMENT: xslt_document_elem(t, node, inst, comp); return true;
+    case XSLT_FUNC_EXTENSION:
+        if (comp->ext == XSLT_EXT_DEBUG)
+        {
+            xslt_debug(t, node, inst);
+            return true;
+        }
+        if (comp->ext == XSLT_EXT_DOCUMENT)
+        {
+            xslt_document_elem(t, node, inst, comp);
+            return true;
+        }
+        return false;
+    default:
+        return false;
+    }
+}
+
+/** Port of xsltApplySequenceConstructor: instantiate the nodes of list. */
+static void xslt_apply_sequence_constructor(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNode *list, XsltTemplate *templ)
+{
+    if (!list) return;
+    if (t->state == XSLT_STATE_STOPPED) return;
+    if (t->depth >= t->max_template_depth)
+    {
+        xslt1_transform_error(t, NULL, list, "xsltApplySequenceConstructor: A potential infinite template recursion was detected.\n"
+                              "You can adjust xsltMaxDepth (--maxdepth) in order to raise the maximum number of nested template calls and "
+                              "variables/params (currently set to %d).\n", t->max_template_depth);
+        xslt_debug(t, context_node, list);
+        t->state = XSLT_STATE_STOPPED;
+        return;
+    }
+    t->depth++;
+    XsltRVT *old_local_fragment_top = t->local_rvt;
+    XMQNode *old_insert = t->insert, *insert = t->insert;
+    XMQNode *old_inst = t->inst, *old_cur_inst;
+    XMQNode *old_context_node = t->node;
+    int old_vars_nr = t->vars_nr;
+    int level = 0;
+    XMQNode *list_parent = xml_node_parent(list);
+    XMQNode *cur = list;
+    XMQNode *copy = NULL;
+    while (cur)
+    {
+        if (t->op_limit != 0)
+        {
+            if (t->op_count >= t->op_limit)
+            {
+                xslt1_transform_error(t, NULL, cur, "xsltApplySequenceConstructor: Operation limit exceeded\n");
+                t->state = XSLT_STATE_STOPPED;
+                goto error;
+            }
+            t->op_count += 1;
+        }
+        t->inst = cur;
+        if (!insert) goto error;
+        copy = NULL;
+        if (xslt1_is_xslt_elem(cur))
+        {
+            XsltStylePreComp *info = (XsltStylePreComp*)xml_node_user_data(cur);
+            if (!info)
+            {
+                if (xslt1_is_xslt_name(cur, "message"))
+                {
+                    xslt_message(t, context_node, cur);
+                }
+                else
+                {
+                    // Something really went wrong, try the fallbacks.
+                    t->insert = insert;
+                    if (!xslt_apply_fallbacks(t, context_node, cur))
+                    {
+                        xslt1_generic_error(&t->style->settings, "xsltApplySequenceConstructor: %s was not compiled\n", xml_node_name(cur));
+                    }
+                    t->insert = old_insert;
+                }
+                goto skip_children;
+            }
+            if (info != XSLT_EXT_MARKER)
+            {
+                old_cur_inst = t->inst;
+                t->inst = cur;
+                t->insert = insert;
+                bool done = xslt_call_func(t, context_node, cur, info);
+                if (done)
+                {
+                    if (old_local_fragment_top != t->local_rvt) xslt_release_local_rvts(t, old_local_fragment_top);
+                    t->insert = old_insert;
+                    t->inst = old_cur_inst;
+                    goto skip_children;
+                }
+                t->insert = old_insert;
+                t->inst = old_cur_inst;
+            }
+            if (xslt1_is_xslt_name(cur, "variable"))
+            {
+                XsltStackElem *tmpvar = t->vars;
+                old_cur_inst = t->inst;
+                t->inst = cur;
+                xslt_parse_stylesheet_variable(t, cur);
+                t->inst = old_cur_inst;
+                if (tmpvar != t->vars)
+                {
+                    // The variable was registered, it lives until the end of its parent.
+                    t->vars->level = level;
+                }
+            }
+            else if (xslt1_is_xslt_name(cur, "message"))
+            {
+                xslt_message(t, context_node, cur);
+            }
+            else
+            {
+                xslt1_transform_error(t, NULL, cur, "Unexpected XSLT element '%s'.\n", xml_node_name(cur));
+            }
+            goto skip_children;
+        }
+        else if (xml_node_kind(cur) == XML_DOM_TEXT || xml_node_kind(cur) == XML_DOM_CDATA)
+        {
+            if (!xslt_copy_text(t, insert, cur)) goto error;
+        }
+        else if (xml_node_kind(cur) == XML_DOM_ELEMENT && xml_node_ns(cur) && xml_node_user_data(cur))
+        {
+            // An extension element.
+            old_cur_inst = t->inst;
+            t->inst = cur;
+            XsltStylePreComp *info = (XsltStylePreComp*)xml_node_user_data(cur);
+            bool done = false;
+            if (info != XSLT_EXT_MARKER)
+            {
+                t->insert = insert;
+                done = xslt_call_func(t, context_node, cur, info);
+                if (done && old_local_fragment_top != t->local_rvt) xslt_release_local_rvts(t, old_local_fragment_top);
+                t->insert = old_insert;
+            }
+            if (!done)
+            {
+                int found = 0;
+                t->insert = insert;
+                for (XMQNode *child = xml_node_first_child(cur); child; child = xml_node_next(child))
+                {
+                    if (xslt1_is_xslt_elem(child) && xslt1_is_xslt_name(child, "fallback"))
+                    {
+                        found = 1;
+                        xslt_apply_sequence_constructor(t, context_node, xml_node_first_child(child), NULL);
+                    }
+                }
+                t->insert = old_insert;
+                if (!found)
+                {
+                    xslt1_transform_error(t, NULL, cur, "xsltApplySequenceConstructor: failed to find extension %s\n", xml_node_name(cur));
+                }
+            }
+            t->inst = old_cur_inst;
+            goto skip_children;
+        }
+        else if (xml_node_kind(cur) == XML_DOM_ELEMENT)
+        {
+            // A literal result element.
+            old_cur_inst = t->inst;
+            t->inst = cur;
+            copy = xslt_shallow_copy_elem(t, cur, insert, 1);
+            if (!copy) goto error;
+            // Add the namespaces in scope of the template (only for its top level elements).
+            if (templ && old_insert == insert && t->templ && t->templ->inherited_ns)
+            {
+                for (int i = 0; i < t->templ->inherited_ns_nr; i++)
+                {
+                    XmlNs *ns = t->templ->inherited_ns[i];
+                    const char *uri = xslt_lookup_alias(t, xml_ns_href(ns));
+                    if (uri && !strcmp(uri, XSLT_UNDEFINED_DEFAULT_NS)) continue;
+                    if (!uri) uri = xml_ns_href(ns);
+                    XmlNs *ret = lx_search_ns(copy, xml_ns_prefix(ns));
+                    if (!ret || !xslt1_streq(xml_ns_href(ret), uri)) lx_new_ns(copy, uri, xml_ns_prefix(ns));
+                }
+                if (xml_node_ns(copy)) xml_node_set_ns(copy, xslt_get_namespace(t, cur, xml_node_ns(copy), copy));
+            }
+            if (xml_node_first_attr(cur)) xslt_attr_list_template_process(t, copy, xml_node_first_attr(cur));
+            t->inst = old_cur_inst;
+        }
+        // Descend into the content.
+        if (xml_node_first_child(cur) && xml_node_kind(xml_node_first_child(cur)) != XML_DOM_ENTITY_DECL)
+        {
+            cur = xml_node_first_child(cur);
+            level++;
+            if (copy) insert = copy;
+            continue;
+        }
+skip_children:
+        if (t->state == XSLT_STATE_STOPPED) break;
+        if (xml_node_next(cur))
+        {
+            cur = xml_node_next(cur);
+            continue;
+        }
+        do
+        {
+            cur = xml_node_parent(cur);
+            level--;
+            // Pop the variables of the leaving level.
+            if (t->vars_nr > old_vars_nr && t->vars->level > level) xslt_local_variable_pop(t, old_vars_nr, level);
+            insert = xml_node_parent(insert);
+            if (!cur) break;
+            if (cur == list_parent)
+            {
+                cur = NULL;
+                break;
+            }
+            if (xml_node_next(cur))
+            {
+                cur = xml_node_next(cur);
+                break;
+            }
+        } while (cur);
+    }
+error:
+    if (t->vars_nr > old_vars_nr) xslt_local_variable_pop(t, old_vars_nr, -1);
+    t->node = old_context_node;
+    t->inst = old_inst;
+    t->insert = old_insert;
+    t->depth--;
+}
+
+// Sorting, port of libxslt xsltutils.c xsltDefaultSortFunction ////
+
+typedef struct
+{
+    bool valid;
+    double num;
+    char *str;
+    int index;              // The original position, for duplicates.
+} XsltSortKey;
+
+static void xslt_free_sort_keys(XsltSortKey *keys, int len)
+{
+    if (!keys) return;
+    for (int i = 0; i < len; i++) free(keys[i].str);
+    free(keys);
+}
+
+/** Port of xsltComputeSortResultInternal: the sort keys of the current node list. */
+static XsltSortKey *xslt_compute_sort_result(XmlLibxslt1Transform *t, XMQNode *sort, int number)
+{
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(sort);
+    if (!comp || comp == XSLT_EXT_MARKER)
+    {
+        xslt1_generic_error(&t->style->settings, "xsl:sort : compilation failed\n");
+        return NULL;
+    }
+    if (!comp->select || !comp->comp) return NULL;
+    XsltNodeList *list = t->node_list;
+    if (!list || list->nr <= 1) return NULL;
+    int len = list->nr;
+    XsltSortKey *results = (XsltSortKey*)calloc((size_t)len, sizeof(XsltSortKey));
+    XMQNode *old_inst = t->inst;
+    XMQNode *old_node = t->node;
+    long old_pos = t->xp_position, old_size = t->xp_size;
+    for (int i = 0; i < len; i++)
+    {
+        t->inst = sort;
+        t->xp_size = len;
+        t->xp_position = i + 1;
+        t->node = list->nodes[i];
+        XmlXPathResult *res = xslt_xpath_eval(t, comp->comp, t->node);
+        if (res)
+        {
+            results[i].index = i;
+            results[i].valid = true;
+            char *s = xml_xpath_result_to_string(res);
+            if (number)
+            {
+                results[i].num = xml_xpath_string_to_number(s);
+                free(s);
+            }
+            else
+            {
+                results[i].str = s;
+            }
+            xml_xpath_result_free(res);
+        }
+        else
+        {
+            t->state = XSLT_STATE_STOPPED;
+            results[i].valid = false;
+        }
+    }
+    t->inst = old_inst;
+    t->node = old_node;
+    t->xp_size = old_size;
+    t->xp_position = old_pos;
+    return results;
+}
+
+static int xslt_sort_compare(XsltSortKey *a, XsltSortKey *b, int number)
+{
+    if (number)
+    {
+        // NaN is smaller than numbers, like the XSLT spec says.
+        if (isnan(a->num)) return isnan(b->num) ? 0 : -1;
+        if (isnan(b->num)) return 1;
+        if (a->num == b->num) return 0;
+        return a->num > b->num ? 1 : -1;
+    }
+    return strcmp(a->str ? a->str : "", b->str ? b->str : "");
+}
+
+/** Port of xsltDefaultSortFunction: a shell sort of the node list by the sort keys. */
+static void xslt_do_sort_function(XmlLibxslt1Transform *t, XMQNode **sorts, int nbsorts)
+{
+    XsltSortKey *results_tab[XSLT_MAX_SORT];
+    int number[XSLT_MAX_SORT], desc[XSLT_MAX_SORT];
+    if (!sorts || nbsorts <= 0 || nbsorts >= XSLT_MAX_SORT) return;
+    if (!sorts[0]) return;
+    XsltStylePreComp *comp = (XsltStylePreComp*)xml_node_user_data(sorts[0]);
+    if (!comp) return;
+    XsltNodeList *list = t->node_list;
+    if (!list || list->nr <= 1) return;
+    for (int j = 0; j < nbsorts; j++)
+    {
+        comp = (XsltStylePreComp*)xml_node_user_data(sorts[j]);
+        if (!comp->stype && comp->has_stype != 0)
+        {
+            char *stype = xslt_eval_attr_value_template(t, sorts[j], "data-type", NULL);
+            number[j] = 0;
+            if (stype)
+            {
+                if (!strcmp(stype, "text")) {}
+                else if (!strcmp(stype, "number")) number[j] = 1;
+                else xslt1_transform_error(t, NULL, sorts[j], "xsltDoSortFunction: no support for data-type = %s\n", stype);
+                free(stype);
+            }
+        }
+        else
+        {
+            number[j] = comp->number;
+        }
+        if (!comp->order && comp->has_order != 0)
+        {
+            char *order = xslt_eval_attr_value_template(t, sorts[j], "order", NULL);
+            desc[j] = 0;
+            if (order)
+            {
+                if (!strcmp(order, "ascending")) {}
+                else if (!strcmp(order, "descending")) desc[j] = 1;
+                else xslt1_transform_error(t, NULL, sorts[j], "xsltDoSortFunction: invalid value %s for order\n", order);
+                free(order);
+            }
+        }
+        else
+        {
+            desc[j] = comp->descending;
+        }
+        if (!comp->lang && comp->has_lang != 0)
+        {
+            char *lang = xslt_eval_attr_value_template(t, sorts[j], "lang", NULL);
+            // TODO: locale specific collation (xsltNewLocale, xsltStrxfrm).
+            free(lang);
+        }
+    }
+    int len = list->nr;
+    results_tab[0] = xslt_compute_sort_result(t, sorts[0], number[0]);
+    for (int i = 1; i < XSLT_MAX_SORT; i++) results_tab[i] = NULL;
+    XsltSortKey *results = results_tab[0];
+    if (!results) goto cleanup;
+    // Shell's sort of the node set.
+    for (int incr = len / 2; incr > 0; incr /= 2)
+    {
+        for (int i = incr; i < len; i++)
+        {
+            int j = i - incr;
+            if (!results[i].valid) continue;
+            while (j >= 0)
+            {
+                int tst;
+                if (!results[j].valid)
+                {
+                    tst = 1;
+                }
+                else
+                {
+                    tst = xslt_sort_compare(&results[j], &results[j + incr], number[0]);
+                    if (desc[0]) tst = -tst;
+                }
+                if (tst == 0)
+                {
+                    // Multi level sorts.
+                    int depth = 1;
+                    while (depth < nbsorts)
+                    {
+                        if (!sorts[depth]) break;
+                        comp = (XsltStylePreComp*)xml_node_user_data(sorts[depth]);
+                        if (!comp) break;
+                        if (!results_tab[depth]) results_tab[depth] = xslt_compute_sort_result(t, sorts[depth], number[depth]);
+                        XsltSortKey *res = results_tab[depth];
+                        if (!res) break;
+                        if (!res[j].valid)
+                        {
+                            if (res[j + incr].valid) tst = 1;
+                        }
+                        else if (!res[j + incr].valid)
+                        {
+                            tst = -1;
+                        }
+                        else
+                        {
+                            tst = xslt_sort_compare(&res[j], &res[j + incr], number[depth]);
+                            if (desc[depth]) tst = -tst;
+                        }
+                        if (tst != 0) break;
+                        depth++;
+                    }
+                }
+                if (tst == 0) tst = results[j].index > results[j + incr].index;
+                if (tst > 0)
+                {
+                    XsltSortKey tmp = results[j];
+                    results[j] = results[j + incr];
+                    results[j + incr] = tmp;
+                    XMQNode *node = list->nodes[j];
+                    list->nodes[j] = list->nodes[j + incr];
+                    list->nodes[j + incr] = node;
+                    for (int depth = 1; depth < nbsorts; depth++)
+                    {
+                        if (!sorts[depth] || !results_tab[depth]) break;
+                        XsltSortKey *res = results_tab[depth];
+                        XsltSortKey tmp2 = res[j];
+                        res[j] = res[j + incr];
+                        res[j + incr] = tmp2;
+                    }
+                    j -= incr;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+cleanup:
+    for (int j = 0; j < nbsorts; j++) xslt_free_sort_keys(results_tab[j], len);
+}
+
+/** Port of xsltMessage (xsl:message). */
+static void xslt_message(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst)
+{
+    if (!inst) return;
+    int terminate = 0;
+    char *prop = xslt1_get_ns_prop_exact(inst, "terminate", NULL);
+    if (prop)
+    {
+        if (!strcmp(prop, "yes")) terminate = 1;
+        else if (!strcmp(prop, "no")) terminate = 0;
+        else xslt1_transform_error(t, NULL, inst, "xsl:message : terminate expecting 'yes' or 'no'\n");
+        free(prop);
+    }
+    char *message = xslt_eval_template_string(t, node, inst);
+    if (message)
+    {
+        size_t len = strlen(message);
+        xslt1_generic_error(&t->style->settings, "%s", message);
+        if (len > 0 && message[len - 1] != '\n') xslt1_generic_error(&t->style->settings, "\n");
+        free(message);
+    }
+    if (terminate) t->state = XSLT_STATE_STOPPED;
+}
+
+/** Port of xsltDebug (libxslt:debug and potential infinite recursions): dump the template and variable stacks. */
+static void xslt_debug(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst)
+{
+    (void)node;
+    (void)inst;
+    const XmlLibxslt1Settings *s = &t->style->settings;
+    xslt1_generic_error(s, "Templates:\n");
+    for (int i = 0, j = t->templ_nr - 1; i < 15 && j >= 0; i++, j--)
+    {
+        xslt1_generic_error(s, "#%d ", i);
+        if (t->templ_tab[j]->name) xslt1_generic_error(s, "name %s ", t->templ_tab[j]->name);
+        if (t->templ_tab[j]->match) xslt1_generic_error(s, "name %s ", t->templ_tab[j]->match);
+        if (t->templ_tab[j]->mode) xslt1_generic_error(s, "name %s ", t->templ_tab[j]->mode);
+        xslt1_generic_error(s, "\n");
+    }
+    xslt1_generic_error(s, "Variables:\n");
+    for (int i = 0, j = t->vars_nr - 1; i < 15 && j >= 0; i++, j--)
+    {
+        if (!t->vars_tab[j]) continue;
+        xslt1_generic_error(s, "#%d\n", i);
+        for (XsltStackElem *cur = t->vars_tab[j]; cur; cur = cur->next)
+        {
+            if (!cur->comp) xslt1_generic_error(s, "corrupted !!!\n");
+            else if (cur->comp->type == XSLT_FUNC_PARAM) xslt1_generic_error(s, "param ");
+            else if (cur->comp->type == XSLT_FUNC_VARIABLE) xslt1_generic_error(s, "var ");
+            if (cur->name) xslt1_generic_error(s, "%s ", cur->name);
+            else xslt1_generic_error(s, "noname !!!!");
+            // The value is only dumped when the debug output is stdout or stderr (not by default).
+            if (!cur->value) xslt1_generic_error(s, "NULL !!!!");
+            xslt1_generic_error(s, "\n");
+        }
+    }
+}
+
+static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Stylesheet *style, int type);
+
+/** Port of xsltSaveResultToFilename: save a result document (xsl:document), -1 on failure. */
+static int xslt_save_result_to_filename(XmlLibxslt1Transform *t, const char *filename, XmlDom *res, XmlLibxslt1Stylesheet *style, bool append)
+{
+    (void)t;
+    if (!filename || !res || !style) return -1;
+    if (!xml_node_first_child(xml_dom_document(res))) return 0;
+    size_t len = 0;
+    char *out = xml_libxslt1_save_result_to_string(res, style, t->type, &len);
+    const char *path = filename;
+    if (!strncmp(path, "file://", 7))
+    {
+        path += 7;
+        if (!strncmp(path, "localhost/", 10)) path += 9;
+    }
+    FILE *f = fopen(path, append ? "ab" : "wb");
+    int ret = -1;
+    if (f)
+    {
+        ret = fwrite(out, 1, len, f) == len ? (int)len : -1;
+        if (fclose(f) != 0) ret = -1;
+    }
+    free(out);
+    return ret;
+}
+
+static XmlDom *xslt_html_new_doc(const char *system_id, const char *public_id);
+static int xslt_get_html_ids(const char *version, const char **public_id, const char **system_id);
+static const char *xslt_import_method(XmlLibxslt1Stylesheet *s);
+static const char *xslt_import_doctype_public(XmlLibxslt1Stylesheet *s);
+static const char *xslt_import_doctype_system(XmlLibxslt1Stylesheet *s);
+static const char *xslt_import_version(XmlLibxslt1Stylesheet *s);
+static const char *xslt_import_encoding(XmlLibxslt1Stylesheet *s);
+static bool xslt_is_blank_text_node(XMQNode *n);
+
+/** Port of xsltDocumentElem: xsl:document (XSLT 1.1 draft), saxon:output, xalan:write and xt:document. */
+static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, XsltStylePreComp *comp)
+{
+    if (!node || !inst || !comp) return;
+    char *url = NULL, *filename = NULL;
+    XmlDom *res = NULL;
+    XmlLibxslt1Stylesheet *style = NULL;
+    const char *name = xml_node_name(inst);
+    if (!comp->filename)
+    {
+        if (!strcmp(name, "output"))
+        {
+            // saxon:output, the file attribute is in no namespace.
+            url = xslt_eval_attr_value_template(t, inst, "file", XSLT_SAXON_NAMESPACE);
+            if (!url) url = xslt_eval_attr_value_template(t, inst, "href", XSLT_SAXON_NAMESPACE);
+        }
+        else if (!strcmp(name, "write"))
+        {
+            url = xslt_eval_attr_value_template(t, inst, "select", XSLT_XALAN_NAMESPACE);
+            if (url)
+            {
+                // The value of the select attribute is an XPath expression (bug #59212).
+                XmlXPathComp *cmp = xslt1_xpath_compile(&t->style->settings, NULL, url, false);
+                char *val = cmp ? xslt_eval_xpath_string(t, cmp) : NULL;
+                if (!cmp) t->state = XSLT_STATE_STOPPED;
+                xml_xpath_comp_free(cmp);
+                free(url);
+                url = val;
+            }
+            if (!url) url = xslt_eval_attr_value_template(t, inst, "file", XSLT_XALAN_NAMESPACE);
+            if (!url) url = xslt_eval_attr_value_template(t, inst, "href", XSLT_XALAN_NAMESPACE);
+        }
+        else if (!strcmp(name, "document"))
+        {
+            url = xslt_eval_attr_value_template(t, inst, "href", NULL);
+        }
+    }
+    else
+    {
+        url = xslt1_strdup(comp->filename);
+    }
+    if (!url)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsltDocumentElem: href/URI-Reference not found\n");
+        return;
+    }
+    // If the computation failed, the url was probably not escaped.
+    filename = xml_uri_build(url, t->output_file);
+    if (!filename)
+    {
+        char *esc = xml_uri_escape_str(url, ":/.?,");
+        if (esc)
+        {
+            filename = xml_uri_build(esc, t->output_file);
+            free(esc);
+        }
+    }
+    if (!filename)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsltDocumentElem: URL computation failed for %s\n", url);
+        free(url);
+        return;
+    }
+    const char *old_output_file = t->output_file;
+    XmlDom *old_output = t->output;
+    XMQNode *old_insert = t->insert;
+    int old_type = t->type;
+    t->output_file = filename;
+    style = xml_libxslt1_stylesheet_new_empty(NULL, &t->style->settings);
+    // The 1.1 draft allows full parameterization of the output.
+    char *prop;
+    if ((prop = xslt_eval_attr_value_template(t, inst, "version", NULL)))
+    {
+        free(style->version);
+        style->version = prop;
+    }
+    if ((prop = xslt_eval_attr_value_template(t, inst, "encoding", NULL)))
+    {
+        free(style->encoding);
+        style->encoding = prop;
+    }
+    if ((prop = xslt_eval_attr_value_template(t, inst, "method", NULL)))
+    {
+        free(style->method);
+        style->method = NULL;
+        free(style->method_uri);
+        style->method_uri = NULL;
+        const char *uri = xslt1_get_qname_uri(&t->style->settings, inst, &prop);
+        if (!prop)
+        {
+            style->errors++;
+        }
+        else if (!uri)
+        {
+            if (!strcmp(prop, "xml") || !strcmp(prop, "html") || !strcmp(prop, "text"))
+            {
+                style->method = prop;
+            }
+            else
+            {
+                xslt1_transform_error(t, NULL, inst, "invalid value for method: %s\n", prop);
+                style->warnings++;
+                free(prop);
+            }
+        }
+        else
+        {
+            style->method = prop;
+            style->method_uri = xslt1_strdup(uri);
+        }
+    }
+    if ((prop = xslt_eval_attr_value_template(t, inst, "doctype-system", NULL)))
+    {
+        free(style->doctype_system);
+        style->doctype_system = prop;
+    }
+    if ((prop = xslt_eval_attr_value_template(t, inst, "doctype-public", NULL)))
+    {
+        free(style->doctype_public);
+        style->doctype_public = prop;
+    }
+    const char *yesno[] = { "standalone", "indent", "omit-xml-declaration" };
+    int *targets[] = { &style->standalone, &style->indent, &style->omit_xml_declaration };
+    for (int i = 0; i < 3; i++)
+    {
+        if ((prop = xslt_eval_attr_value_template(t, inst, yesno[i], NULL)))
+        {
+            if (!strcmp(prop, "yes")) *targets[i] = 1;
+            else if (!strcmp(prop, "no")) *targets[i] = 0;
+            else
+            {
+                xslt1_transform_error(t, NULL, inst, "invalid value for %s: %s\n", yesno[i], prop);
+                style->warnings++;
+            }
+            free(prop);
+        }
+    }
+    char *elements = xslt_eval_attr_value_template(t, inst, "cdata-section-elements", NULL);
+    if (elements)
+    {
+        // Like libxslt they go into the strip-space table.
+        if (!style->strip_spaces) style->strip_spaces = hashmap_create(10);
+        const char *element = elements;
+        while (*element)
+        {
+            while (xslt1_is_blank((unsigned char)*element)) element++;
+            if (!*element) break;
+            const char *end = element;
+            while (*end && !xslt1_is_blank((unsigned char)*end)) end++;
+            char *e = xslt1_strndup(element, (size_t)(end - element));
+            const char *uri = xslt1_get_qname_uri(&t->style->settings, inst, &e);
+            if (e)
+            {
+                char *key = xslt1_key2(e, uri);
+                if (!hashmap_get(style->strip_spaces, key)) hashmap_put(style->strip_spaces, key, (void*)"cdata");
+                free(key);
+                free(e);
+            }
+            element = end;
+        }
+        free(elements);
+    }
+    // Create a new document tree and process the element template.
+    const char *method = xslt_import_method(style);
+    const char *doctype_public = xslt_import_doctype_public(style);
+    const char *doctype_system = xslt_import_doctype_system(style);
+    const char *version = xslt_import_version(style);
+    const char *encoding = xslt_import_encoding(style);
+    if (method && strcmp(method, "xml"))
+    {
+        if (!strcmp(method, "html"))
+        {
+            t->type = XSLT_OUTPUT_HTML;
+            if (doctype_public || doctype_system)
+            {
+                res = xslt_html_new_doc(doctype_system, doctype_public);
+            }
+            else
+            {
+                if (version) xslt_get_html_ids(version, &doctype_public, &doctype_system);
+                // htmlNewDocNoDtD.
+                res = xml_dom_new();
+                if (doctype_public || doctype_system) xml_dom_set_dtd(res, "html", doctype_public, doctype_system);
+            }
+        }
+        else if (!strcmp(method, "xhtml"))
+        {
+            xslt1_transform_error(t, NULL, inst, "xsltDocumentElem: unsupported method xhtml\n");
+            t->type = XSLT_OUTPUT_HTML;
+            res = xml_dom_new();
+            if (doctype_public || doctype_system) xml_dom_set_dtd(res, "html", doctype_public, doctype_system);
+        }
+        else if (!strcmp(method, "text"))
+        {
+            t->type = XSLT_OUTPUT_TEXT;
+            res = xml_dom_new();
+            xml_dom_set_version(res, style->version ? style->version : "1.0");
+        }
+        else
+        {
+            xslt1_transform_error(t, NULL, inst, "xsltDocumentElem: unsupported method (%s)\n", method);
+            goto error;
+        }
+    }
+    else
+    {
+        t->type = XSLT_OUTPUT_XML;
+        res = xml_dom_new();
+        xml_dom_set_version(res, style->version ? style->version : "1.0");
+    }
+    if (encoding) xml_dom_set_encoding(res, encoding);
+    t->output = res;
+    t->insert = xml_dom_document(res);
+    xslt_apply_sequence_constructor(t, node, xml_node_first_child(inst), NULL);
+    // Post processing depending on the generated output.
+    XMQNode *root;
+    root = xml_dom_root_element(res);
+    if (root)
+    {
+        char *doctype;
+        XmlNs *rns = xml_node_ns(root);
+        if (rns && xml_ns_prefix(rns))
+        {
+            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
+            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+        }
+        else
+        {
+            doctype = xslt1_strdup(xml_node_name(root));
+        }
+        if (!method && !rns && !strcasecmp(xml_node_name(root), "html"))
+        {
+            XMQNode *tmp = xml_node_first_child(xml_dom_document(res));
+            while (tmp && tmp != root)
+            {
+                if (xml_node_kind(tmp) == XML_DOM_ELEMENT) break;
+                if (xml_node_kind(tmp) == XML_DOM_TEXT && !xslt_is_blank_text_node(tmp)) break;
+                tmp = xml_node_next(tmp);
+            }
+            if (tmp == root)
+            {
+                t->type = XSLT_OUTPUT_HTML;
+                if (doctype_public || doctype_system)
+                {
+                    xml_dom_set_dtd(res, doctype, doctype_public, doctype_system);
+                }
+                else if (version)
+                {
+                    xslt_get_html_ids(version, &doctype_public, &doctype_system);
+                    if (doctype_public || doctype_system) xml_dom_set_dtd(res, doctype, doctype_public, doctype_system);
+                }
+            }
+        }
+        if (t->type == XSLT_OUTPUT_XML)
+        {
+            doctype_public = xslt_import_doctype_public(style);
+            doctype_system = xslt_import_doctype_system(style);
+            if (doctype_public || doctype_system) xml_dom_set_dtd(res, doctype, doctype_public, doctype_system);
+        }
+        free(doctype);
+    }
+    // redirect:write can append to the file (append="true|yes").
+    bool append;
+    append = false;
+    if ((prop = xslt_eval_attr_value_template(t, inst, "append", NULL)))
+    {
+        if (!strcmp(prop, "true") || !strcmp(prop, "yes"))
+        {
+            style->omit_xml_declaration = 1;
+            append = true;
+        }
+        else
+        {
+            style->omit_xml_declaration = 0;
+        }
+        free(prop);
+    }
+    if (xslt_save_result_to_filename(t, filename, res, style, append) < 0)
+    {
+        xslt1_transform_error(t, NULL, inst, "xsltDocumentElem: unable to save to %s\n", filename);
+    }
+error:
+    t->output = old_output;
+    t->insert = old_insert;
+    t->type = old_type;
+    t->output_file = old_output_file;
+    free(url);
+    free(filename);
+    if (style) xml_libxslt1_stylesheet_free(style);
+    if (res) xml_dom_free(res);
+}
+
+// Numbers, port of libxslt numbers.c ////////////////////////////
+
+#define XSLT_NUM_MAX_TOKENS 1024
+
+typedef struct
+{
+    char *separator;
+    int token;
+    int width;
+} XsltFormatToken;
+
+typedef struct
+{
+    char *start;
+    XsltFormatToken tokens[XSLT_NUM_MAX_TOKENS];
+    int n_tokens;
+    char *end;
+} XsltFormat;
+
+static const char xslt_alpha_upper_list_[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char xslt_alpha_lower_list_[] = "abcdefghijklmnopqrstuvwxyz";
+
+/** xmlUTF8Strsize(utf, 1): the bytes of the first character. */
+static int xslt_utf8_size1(const char *utf)
+{
+    if (!utf) return 0;
+    const unsigned char *ptr = (const unsigned char*)utf;
+    if (!*ptr) return 0;
+    int ch = *ptr++;
+    if (ch & 0x80)
+    {
+        while ((ch <<= 1) & 0x80)
+        {
+            if (*ptr == 0) break;
+            ptr++;
+        }
+    }
+    return (int)(ptr - (const unsigned char*)utf);
+}
+
+/** Port of xsltUTF8Charcmp: compare the first character of utf1 with utf2. */
+static int xslt_utf8_charcmp(const char *utf1, const char *utf2)
+{
+    int len = xslt_utf8_size1(utf1);
+    if (len < 1) return -1;
+    if (!utf2) return 1;
+    return strncmp(utf1, utf2, (size_t)len);
+}
+
+/** xmlUTF8Strloc: the index (in characters) of utfchar in utf, -1 if not found. */
+static int xslt_utf8_strloc(const char *utf, const char *utfchar)
+{
+    if (!utf || !utfchar) return -1;
+    int size = xslt_utf8_size1(utfchar);
+    for (int i = 0; *utf; i++)
+    {
+        if (!strncmp(utf, utfchar, (size_t)size)) return i;
+        int ch = (unsigned char)*utf++;
+        if (ch & 0x80)
+        {
+            if ((ch & 0xc0) != 0xc0) return -1;
+            while ((ch <<= 1) & 0x80)
+            {
+                if ((*utf++ & 0xc0) != 0x80) return -1;
+            }
+        }
+    }
+    return -1;
+}
+
+/** xmlUTF8Strpos: the pos-th character. */
+static const char *xslt_utf8_strpos(const char *utf, int pos)
+{
+    if (!utf || pos < 0) return NULL;
+    while (pos--)
+    {
+        int ch = (unsigned char)*utf++;
+        if (ch == 0) return NULL;
+        if (ch & 0x80)
+        {
+            if ((ch & 0xc0) != 0xc0) return NULL;
+            while ((ch <<= 1) & 0x80)
+            {
+                if ((*utf++ & 0xc0) != 0x80) return NULL;
+            }
+        }
+    }
+    return utf;
+}
+
+/** Port of xsltCopyCharMultiByte. */
+static int xslt_copy_char_multi_byte(char *out, int val)
+{
+    if (!out || val < 0) return 0;
+    if (val >= 0x80)
+    {
+        char *savedout = out;
+        int bits;
+        if (val < 0x800) { *out++ = (char)((val >> 6) | 0xC0); bits = 0; }
+        else if (val < 0x10000) { *out++ = (char)((val >> 12) | 0xE0); bits = 6; }
+        else if (val < 0x110000) { *out++ = (char)((val >> 18) | 0xF0); bits = 12; }
+        else return 0;
+        for (; bits >= 0; bits -= 6) *out++ = (char)(((val >> bits) & 0x3F) | 0x80);
+        return (int)(out - savedout);
+    }
+    *out = (char)val;
+    return 1;
+}
+
+static bool xslt_is_letter_digit(int val)
+{
+    return xml_char_is_base_char(val) || xml_char_is_ideographic(val) || xml_char_is_digit(val);
+}
+
+static bool xslt_is_digit_zero(int ch)
+{
+    switch (ch)
+    {
+    case 0x0030: case 0x0660: case 0x06F0: case 0x0966:
+    case 0x09E6: case 0x0A66: case 0x0AE6: case 0x0B66:
+    case 0x0C66: case 0x0CE6: case 0x0D66: case 0x0E50:
+    case 0x0ED0: case 0x0F20:
+        return true;
+    default:
+        return false;
+    }
+}
+
+#define XSLT_IS_DIGIT_ZERO(x) xslt_is_digit_zero(x)
+#define XSLT_IS_DIGIT_ONE(x) xslt_is_digit_zero((x) - 1)
+
+/** Port of xsltNumberFormatDecimal. */
+static void xslt_number_format_decimal(MemBuffer *buffer, double number, int digit_zero, int width, int digits_per_group,
+                                       int grouping_character, int grouping_character_len, const XmlLibxslt1Settings *settings)
+{
+    char temp_string[500];
+    char temp_char[6];
+    // Build the buffer from the back.
+    char *pointer = &temp_string[sizeof(temp_string)] - 1;
+    *pointer = 0;
+    int i = 0;
+    while (pointer > temp_string)
+    {
+        if (i >= width && fabs(number) < 1.0) break;
+        if (i > 0 && grouping_character != 0 && digits_per_group > 0 && (i % digits_per_group) == 0)
+        {
+            if (pointer - grouping_character_len < temp_string)
+            {
+                i = -1;
+                break;
+            }
+            pointer -= grouping_character_len;
+            xslt_copy_char_multi_byte(pointer, grouping_character);
+        }
+        int val = digit_zero + (int)fmod(number, 10.0);
+        if (val < 0x80)
+        {
+            if (pointer <= temp_string)
+            {
+                i = -1;
+                break;
+            }
+            *(--pointer) = (char)val;
+        }
+        else
+        {
+            int len = xslt_copy_char_multi_byte(temp_char, val);
+            if (pointer - len < temp_string)
+            {
+                i = -1;
+                break;
+            }
+            pointer -= len;
+            memcpy(pointer, temp_char, (size_t)len);
+        }
+        number /= 10.0;
+        ++i;
+    }
+    if (i < 0) xslt1_generic_error(settings, "xsltNumberFormatDecimal: Internal buffer size exceeded\n");
+    membuffer_append(buffer, pointer);
+}
+
+/** Port of xsltNumberFormatAlpha. */
+static void xslt_number_format_alpha(XsltNumberData *data, MemBuffer *buffer, double number, int is_upper,
+                                     const XmlLibxslt1Settings *settings)
+{
+    char temp_string[sizeof(double) * 8 + 1];
+    double alpha_size = (double)(sizeof(xslt_alpha_upper_list_) - 1);
+    // The "a" token has an intrinsic lower limit of 1.
+    if (number < 1.0)
+    {
+        xslt_number_format_decimal(buffer, number, '0', 1, data->digits_per_group, data->grouping_character,
+                                   data->grouping_character_len, settings);
+        return;
+    }
+    char *pointer = &temp_string[sizeof(temp_string)];
+    *(--pointer) = 0;
+    const char *alpha_list = is_upper ? xslt_alpha_upper_list_ : xslt_alpha_lower_list_;
+    for (int i = 1; i < (int)sizeof(temp_string); i++)
+    {
+        number--;
+        *(--pointer) = alpha_list[((int)fmod(number, alpha_size))];
+        number /= alpha_size;
+        if (number < 1.0) break;
+    }
+    membuffer_append(buffer, pointer);
+}
+
+/** Port of xsltNumberFormatRoman. */
+static void xslt_number_format_roman(XsltNumberData *data, MemBuffer *buffer, double number, int is_upper,
+                                     const XmlLibxslt1Settings *settings)
+{
+    // A reasonable upper bound to avoid denial of service.
+    if (number < 1.0 || number > 5000.0)
+    {
+        xslt_number_format_decimal(buffer, number, '0', 1, data->digits_per_group, data->grouping_character,
+                                   data->grouping_character_len, settings);
+        return;
+    }
+    static const struct { double v; const char *u; const char *l; bool repeat; } steps[] = {
+        { 1000.0, "M", "m", true }, { 900.0, "CM", "cm", false }, { 500.0, "D", "d", true }, { 400.0, "CD", "cd", false },
+        { 100.0, "C", "c", true }, { 90.0, "XC", "xc", false }, { 50.0, "L", "l", true }, { 40.0, "XL", "xl", false },
+        { 10.0, "X", "x", true }, { 9.0, "IX", "ix", false }, { 5.0, "V", "v", true }, { 4.0, "IV", "iv", false },
+        { 1.0, "I", "i", true } };
+    for (size_t k = 0; k < sizeof(steps) / sizeof(steps[0]); k++)
+    {
+        if (steps[k].repeat)
+        {
+            while (number >= steps[k].v)
+            {
+                membuffer_append(buffer, is_upper ? steps[k].u : steps[k].l);
+                number -= steps[k].v;
+            }
+        }
+        else if (number >= steps[k].v)
+        {
+            membuffer_append(buffer, is_upper ? steps[k].u : steps[k].l);
+            number -= steps[k].v;
+        }
+    }
+}
+
+/** Port of xsltNumberFormatTokenize. */
+static void xslt_number_format_tokenize(const char *format, XsltFormat *tokens)
+{
+    int ix = 0;
+    int val, len;
+    tokens->start = NULL;
+    tokens->tokens[0].separator = NULL;
+    tokens->end = NULL;
+    // The initial non-alphanumeric token (always there, even if NULL).
+    while (!xslt_is_letter_digit(val = xslt1_utf8_char(format + ix, &len)))
+    {
+        if (format[ix] == 0) break;
+        ix += len;
+    }
+    if (ix > 0) tokens->start = xslt1_strndup(format, (size_t)ix);
+    for (tokens->n_tokens = 0; tokens->n_tokens < XSLT_NUM_MAX_TOKENS; tokens->n_tokens++)
+    {
+        if (format[ix] == 0) break;
+        // The separator has already been parsed (except for the first number) in tokens->end.
+        if (tokens->n_tokens > 0)
+        {
+            tokens->tokens[tokens->n_tokens].separator = tokens->end;
+            tokens->end = NULL;
+        }
+        val = xslt1_utf8_char(format + ix, &len);
+        if (XSLT_IS_DIGIT_ONE(val) || XSLT_IS_DIGIT_ZERO(val))
+        {
+            tokens->tokens[tokens->n_tokens].width = 1;
+            while (XSLT_IS_DIGIT_ZERO(val))
+            {
+                tokens->tokens[tokens->n_tokens].width++;
+                ix += len;
+                val = xslt1_utf8_char(format + ix, &len);
+            }
+            if (XSLT_IS_DIGIT_ONE(val))
+            {
+                tokens->tokens[tokens->n_tokens].token = val - 1;
+                ix += len;
+                val = xslt1_utf8_char(format + ix, &len);
+            }
+            else
+            {
+                tokens->tokens[tokens->n_tokens].token = '0';
+                tokens->tokens[tokens->n_tokens].width = 1;
+            }
+        }
+        else if (val == 'A' || val == 'a' || val == 'I' || val == 'i')
+        {
+            tokens->tokens[tokens->n_tokens].token = val;
+            ix += len;
+            val = xslt1_utf8_char(format + ix, &len);
+        }
+        else
+        {
+            // Any other format token: a format token of 1 (XSLT 7.7).
+            tokens->tokens[tokens->n_tokens].token = '0';
+            tokens->tokens[tokens->n_tokens].width = 1;
+        }
+        // Skip the remaining alphanumeric characters.
+        while (xslt_is_letter_digit(val))
+        {
+            ix += len;
+            val = xslt1_utf8_char(format + ix, &len);
+        }
+        // The temporary non-alphanumeric final token.
+        int j = ix;
+        while (!xslt_is_letter_digit(val))
+        {
+            if (val == 0) break;
+            ix += len;
+            val = xslt1_utf8_char(format + ix, &len);
+        }
+        if (ix > j) tokens->end = xslt1_strndup(&format[j], (size_t)(ix - j));
+    }
+}
+
+/** Port of xsltNumberFormatInsertNumbers. */
+static void xslt_number_format_insert_numbers(XmlLibxslt1Transform *t, XsltNumberData *data, double *numbers, int numbers_max,
+                                              XsltFormat *tokens, MemBuffer *buffer)
+{
+    static const XsltFormatToken default_token = { (char*)".", '0', 1 };
+    const XmlLibxslt1Settings *settings = &t->style->settings;
+    if (tokens->start) membuffer_append(buffer, tokens->start);
+    for (int i = 0; i < numbers_max; i++)
+    {
+        double number = numbers[(numbers_max - 1) - i];
+        // Round to nearest like XSLT 2.0.
+        number = floor(number + 0.5);
+        if (number < 0.0)
+        {
+            xslt1_settings_error(settings, NULL, "xsl-number : negative value\n");
+            // Recover by treating negative values as zero.
+            number = 0.0;
+        }
+        const XsltFormatToken *token;
+        if (i < tokens->n_tokens) token = &tokens->tokens[i];
+        else if (tokens->n_tokens > 0) token = &tokens->tokens[tokens->n_tokens - 1];
+        else token = &default_token;
+        // The separator, except for the first number.
+        if (i > 0) membuffer_append(buffer, token->separator ? token->separator : ".");
+        if (isinf(number))
+        {
+            membuffer_append(buffer, number < 0 ? "-Infinity" : "Infinity");
+        }
+        else if (isnan(number))
+        {
+            membuffer_append(buffer, "NaN");
+        }
+        else
+        {
+            switch (token->token)
+            {
+            case 'A': xslt_number_format_alpha(data, buffer, number, 1, settings); break;
+            case 'a': xslt_number_format_alpha(data, buffer, number, 0, settings); break;
+            case 'I': xslt_number_format_roman(data, buffer, number, 1, settings); break;
+            case 'i': xslt_number_format_roman(data, buffer, number, 0, settings); break;
+            default:
+                if (XSLT_IS_DIGIT_ZERO(token->token))
+                {
+                    xslt_number_format_decimal(buffer, number, token->token, token->width, data->digits_per_group,
+                                               data->grouping_character, data->grouping_character_len, settings);
+                }
+                break;
+            }
+        }
+    }
+    if (tokens->end) membuffer_append(buffer, tokens->end);
+}
+
+/** Port of xsltTestCompMatchCount. */
+static int xslt_test_comp_match_count(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Pattern *count_pat, XMQNode *cur)
+{
+    if (count_pat) return xml_libxslt1_pattern_match(t, node, count_pat);
+    // The default: the same node type and expanded name as the current node.
+    if (xml_node_kind(node) != xml_node_kind(cur)) return 0;
+    if (xml_node_kind(node) == XML_DOM_NAMESPACE) return 1;
+    if (!xslt1_streq(xml_node_name(node), xml_node_name(cur))) return 0;
+    XmlNs *a = xml_node_ns(node), *b = xml_node_ns(cur);
+    if (a == b) return 1;
+    if (!a || !b) return 0;
+    return xslt1_streq(xml_ns_href(a), xml_ns_href(b));
+}
+
+/** The previous sibling as libxslt sees it (skipping nothing). */
+static XMQNode *xslt_prev(XMQNode *n)
+{
+    if (xml_node_kind(n) == XML_DOM_NAMESPACE || xml_node_kind(n) == XML_DOM_ATTRIBUTE) return NULL;
+    return xml_node_prev(n);
+}
+
+/** Port of xsltNumberFormatGetAnyLevel. */
+static int xslt_number_format_get_any_level(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Pattern *count_pat,
+                                            XmlLibxslt1Pattern *from_pat, double *array)
+{
+    int amount = 0, cnt = 0;
+    XMQNode *cur = node;
+    while (cur)
+    {
+        if (xslt_test_comp_match_count(t, cur, count_pat, node)) cnt++;
+        if (from_pat && xml_libxslt1_pattern_match(t, cur, from_pat) == 1) break;
+        // Skip to the next preceding or ancestor.
+        if (xml_node_kind(cur) == XML_DOM_DOCUMENT) break;
+        if (xml_node_kind(cur) == XML_DOM_NAMESPACE || xml_node_kind(cur) == XML_DOM_ATTRIBUTE)
+        {
+            cur = xml_node_parent(cur);
+        }
+        else
+        {
+            while (xslt_prev(cur) && xml_node_kind(xslt_prev(cur)) == XML_DOM_DTD) cur = xslt_prev(cur);
+            if (xslt_prev(cur))
+            {
+                for (cur = xslt_prev(cur); lx_children(cur) && xml_node_last_child(cur); cur = xml_node_last_child(cur)) {}
+            }
+            else
+            {
+                cur = xml_node_parent(cur);
+            }
+        }
+    }
+    array[amount++] = (double)cnt;
+    return amount;
+}
+
+/** Port of xsltNumberFormatGetMultipleLevel. */
+static int xslt_number_format_get_multiple_level(XmlLibxslt1Transform *t, XMQNode *node, XmlLibxslt1Pattern *count_pat,
+                                                 XmlLibxslt1Pattern *from_pat, double *array, int max)
+{
+    int amount = 0;
+    // ancestor-or-self::*[count]
+    XMQNode *ancestor = node;
+    while (ancestor && xml_node_kind(ancestor) != XML_DOM_DOCUMENT)
+    {
+        if (from_pat && xml_libxslt1_pattern_match(t, ancestor, from_pat) == 1) break;
+        if (xslt_test_comp_match_count(t, ancestor, count_pat, node))
+        {
+            // count(preceding-sibling::*)
+            int cnt = 1;
+            XMQNode *preceding = xml_node_kind(ancestor) != XML_DOM_NAMESPACE ? xslt_prev(ancestor) : NULL;
+            while (preceding)
+            {
+                if (xslt_test_comp_match_count(t, preceding, count_pat, node)) cnt++;
+                preceding = xslt_prev(preceding);
+            }
+            array[amount++] = (double)cnt;
+            if (amount >= max) break;
+        }
+        ancestor = xml_node_parent(ancestor);
+    }
+    return amount;
+}
+
+/** Port of xsltNumberFormatGetValue: number(value) evaluated with node as the context node. */
+static int xslt_number_format_get_value(XmlLibxslt1Transform *t, XMQNode *node, const char *value, XMQNode *inst, double *number)
+{
+    int amount = 0;
+    size_t n = strlen(value);
+    char *expr = (char*)malloc(n + 9);
+    snprintf(expr, n + 9, "number(%s)", value);
+    XmlXPathComp *comp = xslt1_xpath_compile(&t->style->settings, inst, expr, false);
+    if (comp)
+    {
+        XmlXPathResult *obj = xslt_xpath_eval(t, comp, node);
+        if (obj)
+        {
+            *number = xml_xpath_result_to_number(obj);
+            amount++;
+            xml_xpath_result_free(obj);
+        }
+        xml_xpath_comp_free(comp);
+    }
+    free(expr);
+    return amount;
+}
+
+/** Port of xsltNumberFormat (xsl:number). */
+static void xslt_number_format(XmlLibxslt1Transform *t, XsltNumberData *data, XMQNode *node)
+{
+    XsltFormat tokens;
+    if (data->format)
+    {
+        xslt_number_format_tokenize(data->format, &tokens);
+    }
+    else
+    {
+        // The format needs to be recomputed each time.
+        if (data->has_format == 0) return;
+        char *format = xslt_eval_attr_value_template(t, data->node, "format", XSLT_NAMESPACE);
+        if (!format) return;
+        xslt_number_format_tokenize(format, &tokens);
+        free(format);
+    }
+    MemBuffer *output = new_membuffer();
+    double number;
+    int amount;
+    if (data->value)
+    {
+        amount = xslt_number_format_get_value(t, node, data->value, data->node, &number);
+        if (amount == 1) xslt_number_format_insert_numbers(t, data, &number, 1, &tokens, output);
+    }
+    else if (data->level)
+    {
+        if (!strcmp(data->level, "single"))
+        {
+            amount = xslt_number_format_get_multiple_level(t, node, data->count_pat, data->from_pat, &number, 1);
+            if (amount == 1) xslt_number_format_insert_numbers(t, data, &number, 1, &tokens, output);
+        }
+        else if (!strcmp(data->level, "multiple"))
+        {
+            double numarray[1024];
+            int max = (int)(sizeof(numarray) / sizeof(numarray[0]));
+            amount = xslt_number_format_get_multiple_level(t, node, data->count_pat, data->from_pat, numarray, max);
+            if (amount > 0) xslt_number_format_insert_numbers(t, data, numarray, amount, &tokens, output);
+        }
+        else if (!strcmp(data->level, "any"))
+        {
+            amount = xslt_number_format_get_any_level(t, node, data->count_pat, data->from_pat, &number);
+            if (amount > 0) xslt_number_format_insert_numbers(t, data, &number, 1, &tokens, output);
+        }
+        // count and from patterns can contain variable references, clear the cache of direct matches.
+        if (data->count_pat) xslt1_comp_match_clear_cache(t, data->count_pat);
+        if (data->from_pat) xslt1_comp_match_clear_cache(t, data->from_pat);
+    }
+    // Insert the number as a text node.
+    membuffer_append_null(output);
+    char *text = free_membuffer_but_return_trimmed_content(output);
+    xslt_copy_text_string(t, t->insert, text, 0);
+    free(text);
+    free(tokens.start);
+    free(tokens.end);
+    for (int i = 0; i < tokens.n_tokens; i++) free(tokens.tokens[i].separator);
+}
+
+typedef struct
+{
+    int integer_hash;
+    int integer_digits;
+    int frac_digits;
+    int frac_hash;
+    int group;
+    int multiplier;
+    char add_decimal;
+    char is_multiplier_set;
+    char is_negative_pattern;
+} XsltFormatNumberInfo;
+
+#define XSLT_IS_SPECIAL(self, letter) \
+    ((xslt_utf8_charcmp((letter), (self)->zero_digit) == 0) || \
+     (xslt_utf8_charcmp((letter), (self)->digit) == 0) || \
+     (xslt_utf8_charcmp((letter), (self)->decimal_point) == 0) || \
+     (xslt_utf8_charcmp((letter), (self)->grouping) == 0) || \
+     (xslt_utf8_charcmp((letter), (self)->pattern_separator) == 0))
+
+/** Port of xsltFormatNumberPreSuffix. */
+static int xslt_format_number_pre_suffix(XsltDecimalFormat *self, const char **format, XsltFormatNumberInfo *info)
+{
+    int count = 0;
+    int len;
+    while (1)
+    {
+        if (**format == 0) return count;
+        if (**format == '\'')
+        {
+            // An escaped character, just count it.
+            if (*++(*format) == 0) return -1;
+        }
+        else if (XSLT_IS_SPECIAL(self, *format))
+        {
+            return count;
+        }
+        else
+        {
+            // Percent and per-mille, only one of them.
+            if (xslt_utf8_charcmp(*format, self->percent) == 0)
+            {
+                if (info->is_multiplier_set) return -1;
+                info->multiplier = 100;
+                info->is_multiplier_set = 1;
+            }
+            else if (xslt_utf8_charcmp(*format, self->permille) == 0)
+            {
+                if (info->is_multiplier_set) return -1;
+                info->multiplier = 1000;
+                info->is_multiplier_set = 1;
+            }
+        }
+        if ((len = xslt_utf8_size1(*format)) < 1) return -1;
+        count += len;
+        *format += len;
+    }
+}
+
+/** Port of xsltFormatNumberConversion: format-number(). Returns the malloced result. */
+static char *xslt_format_number_conversion(XsltDecimalFormat *self, const char *format, double number, const XmlLibxslt1Settings *settings)
+{
+    const char *the_format, *prefix = NULL, *suffix = NULL;
+    const char *nprefix, *nsuffix = NULL;
+    int prefix_length, suffix_length = 0, nprefix_length, nsuffix_length;
+    int j, len = 0;
+    XsltFormatNumberInfo format_info;
+    int delayed_multiplier = 0;
+    char default_sign = 0;
+    char found_error = 0;
+    if (strlen(format) == 0)
+    {
+        xslt1_settings_error(settings, NULL, "xsltFormatNumberConversion : Invalid format (0-length)\n");
+    }
+    if (isnan(number))
+    {
+        return xslt1_strdup((!self || !self->no_number) ? "NaN" : self->no_number);
+    }
+    format_info.integer_hash = 0;
+    format_info.integer_digits = 0;
+    format_info.frac_digits = 0;
+    format_info.frac_hash = 0;
+    format_info.group = -1;
+    format_info.multiplier = 1;
+    format_info.add_decimal = 0;
+    format_info.is_multiplier_set = 0;
+    format_info.is_negative_pattern = 0;
+    the_format = format;
+    // First the positive pattern, for percent and per-mille and the main format.
+    prefix = the_format;
+    prefix_length = xslt_format_number_pre_suffix(self, &the_format, &format_info);
+    if (prefix_length < 0)
+    {
+        found_error = 1;
+        goto OUTPUT_NUMBER;
+    }
+    // The number part, a trailing percent or per-mille may be part of the suffix.
+    int self_grouping_len;
+    self_grouping_len = self->grouping ? (int)strlen(self->grouping) : 0;
+    while (*the_format != 0 && xslt_utf8_charcmp(the_format, self->decimal_point) != 0 &&
+           xslt_utf8_charcmp(the_format, self->pattern_separator) != 0)
+    {
+        if (delayed_multiplier != 0)
+        {
+            format_info.multiplier = delayed_multiplier;
+            format_info.is_multiplier_set = 1;
+            delayed_multiplier = 0;
+        }
+        if (xslt_utf8_charcmp(the_format, self->digit) == 0)
+        {
+            if (format_info.integer_digits > 0)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            format_info.integer_hash++;
+            if (format_info.group >= 0) format_info.group++;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->zero_digit) == 0)
+        {
+            format_info.integer_digits++;
+            if (format_info.group >= 0) format_info.group++;
+        }
+        else if (self_grouping_len > 0 && !strncmp(the_format, self->grouping, (size_t)self_grouping_len))
+        {
+            // Reset the group count.
+            format_info.group = 0;
+            the_format += self_grouping_len;
+            continue;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->percent) == 0)
+        {
+            if (format_info.is_multiplier_set)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            delayed_multiplier = 100;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->permille) == 0)
+        {
+            if (format_info.is_multiplier_set)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            delayed_multiplier = 1000;
+        }
+        else
+        {
+            break;
+        }
+        if ((len = xslt_utf8_size1(the_format)) < 1)
+        {
+            found_error = 1;
+            goto OUTPUT_NUMBER;
+        }
+        the_format += len;
+    }
+    // The fraction.
+    if (*the_format != 0 && xslt_utf8_charcmp(the_format, self->decimal_point) == 0)
+    {
+        format_info.add_decimal = 1;
+        if ((len = xslt_utf8_size1(the_format)) < 1)
+        {
+            found_error = 1;
+            goto OUTPUT_NUMBER;
+        }
+        the_format += len;
+    }
+    while (*the_format != 0)
+    {
+        if (xslt_utf8_charcmp(the_format, self->zero_digit) == 0)
+        {
+            if (format_info.frac_hash != 0)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            format_info.frac_digits++;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->digit) == 0)
+        {
+            format_info.frac_hash++;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->percent) == 0)
+        {
+            if (format_info.is_multiplier_set)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            delayed_multiplier = 100;
+            if ((len = xslt_utf8_size1(the_format)) < 1)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            the_format += len;
+            continue;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->permille) == 0)
+        {
+            if (format_info.is_multiplier_set)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            delayed_multiplier = 1000;
+            if ((len = xslt_utf8_size1(the_format)) < 1)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            the_format += len;
+            continue;
+        }
+        else if (xslt_utf8_charcmp(the_format, self->grouping) != 0)
+        {
+            break;
+        }
+        if ((len = xslt_utf8_size1(the_format)) < 1)
+        {
+            found_error = 1;
+            goto OUTPUT_NUMBER;
+        }
+        the_format += len;
+        if (delayed_multiplier != 0)
+        {
+            format_info.multiplier = delayed_multiplier;
+            delayed_multiplier = 0;
+            format_info.is_multiplier_set = 1;
+        }
+    }
+    // A delayed multiplier after the number part belongs to the suffix.
+    if (delayed_multiplier != 0)
+    {
+        the_format -= len;
+        delayed_multiplier = 0;
+    }
+    suffix = the_format;
+    suffix_length = xslt_format_number_pre_suffix(self, &the_format, &format_info);
+    if (suffix_length < 0 || (*the_format != 0 && xslt_utf8_charcmp(the_format, self->pattern_separator) != 0))
+    {
+        found_error = 1;
+        goto OUTPUT_NUMBER;
+    }
+    // A negative number uses the negative prefix and suffix.
+    if (number < 0)
+    {
+        // j is the number of utf-8 characters before the separator (bug 151975).
+        j = xslt_utf8_strloc(format, self->pattern_separator);
+        if (j < 0)
+        {
+            // No negative pattern, use the default sign.
+            default_sign = 1;
+        }
+        else
+        {
+            the_format = xslt_utf8_strpos(format, j + 1);
+            format_info.is_negative_pattern = 1;
+            format_info.is_multiplier_set = 0;
+            // The negative prefix.
+            nprefix = the_format;
+            nprefix_length = xslt_format_number_pre_suffix(self, &the_format, &format_info);
+            if (nprefix_length < 0)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            while (*the_format != 0)
+            {
+                if (xslt_utf8_charcmp(the_format, self->percent) == 0 || xslt_utf8_charcmp(the_format, self->permille) == 0)
+                {
+                    if (format_info.is_multiplier_set)
+                    {
+                        found_error = 1;
+                        goto OUTPUT_NUMBER;
+                    }
+                    format_info.is_multiplier_set = 1;
+                    delayed_multiplier = 1;
+                }
+                else if (XSLT_IS_SPECIAL(self, the_format))
+                {
+                    delayed_multiplier = 0;
+                }
+                else
+                {
+                    break;
+                }
+                if ((len = xslt_utf8_size1(the_format)) < 1)
+                {
+                    found_error = 1;
+                    goto OUTPUT_NUMBER;
+                }
+                the_format += len;
+            }
+            if (delayed_multiplier != 0)
+            {
+                format_info.is_multiplier_set = 0;
+                the_format -= len;
+            }
+            // The negative suffix.
+            if (*the_format != 0)
+            {
+                nsuffix = the_format;
+                nsuffix_length = xslt_format_number_pre_suffix(self, &the_format, &format_info);
+                if (nsuffix_length < 0)
+                {
+                    found_error = 1;
+                    goto OUTPUT_NUMBER;
+                }
+            }
+            else
+            {
+                nsuffix_length = 0;
+            }
+            if (*the_format != 0)
+            {
+                found_error = 1;
+                goto OUTPUT_NUMBER;
+            }
+            // A Java peculiarity: if the negative prefix and suffix are the positive ones, use the default.
+            if (nprefix_length != prefix_length || nsuffix_length != suffix_length ||
+                (nprefix_length > 0 && strncmp(nprefix, prefix, (size_t)prefix_length) != 0) ||
+                (nsuffix_length > 0 && strncmp(nsuffix, suffix, (size_t)suffix_length) != 0))
+            {
+                prefix = nprefix;
+                prefix_length = nprefix_length;
+                suffix = nsuffix;
+                suffix_length = nsuffix_length;
+            }
+        }
+    }
+OUTPUT_NUMBER:
+    if (found_error != 0)
+    {
+        xslt1_settings_error(settings, NULL, "xsltFormatNumberConversion : error in format string '%s', using default\n", format);
+        default_sign = (number < 0.0) ? 1 : 0;
+        prefix_length = suffix_length = 0;
+        format_info.integer_hash = 0;
+        format_info.integer_digits = 1;
+        format_info.frac_digits = 1;
+        format_info.frac_hash = 4;
+        format_info.group = -1;
+        format_info.multiplier = 1;
+        format_info.add_decimal = 1;
+    }
+    // Apply the multiplier.
+    number *= (double)format_info.multiplier;
+    if (isinf(number))
+    {
+        MemBuffer *mb = new_membuffer();
+        if (number < 0) membuffer_append(mb, self->minus_sign ? self->minus_sign : "-");
+        membuffer_append(mb, (!self || !self->infinity) ? "Infinity" : self->infinity);
+        membuffer_append_null(mb);
+        return free_membuffer_but_return_trimmed_content(mb);
+    }
+    MemBuffer *buffer = new_membuffer();
+    // The default sign.
+    if (default_sign != 0) membuffer_append_region(buffer, self->minus_sign, self->minus_sign + xslt_utf8_size1(self->minus_sign));
+    // The prefix.
+    for (j = 0; j < prefix_length;)
+    {
+        if (*prefix == '\'') prefix++;
+        len = xslt_utf8_size1(prefix);
+        membuffer_append_region(buffer, prefix, prefix + len);
+        prefix += len;
+        j += len;
+    }
+    // Round to n digits.
+    number = fabs(number);
+    int exp10 = format_info.frac_digits + format_info.frac_hash;
+    if (exp10 > DBL_MAX_10_EXP)
+    {
+        if (format_info.frac_digits > DBL_MAX_10_EXP)
+        {
+            format_info.frac_digits = DBL_MAX_10_EXP;
+            format_info.frac_hash = 0;
+        }
+        else
+        {
+            format_info.frac_hash = DBL_MAX_10_EXP - format_info.frac_digits;
+        }
+        exp10 = DBL_MAX_10_EXP;
+    }
+    double scale = pow(10.0, (double)exp10);
+    number += .5 / scale;
+    number -= fmod(number, 1 / scale);
+    // The integer part.
+    if (self->grouping && self->grouping[0] != 0)
+    {
+        int glen;
+        int gchar = xslt1_utf8_char(self->grouping, &glen);
+        len = (int)strlen(self->grouping);
+        if (glen > 0) len = glen;
+        xslt_number_format_decimal(buffer, floor(number), (unsigned char)self->zero_digit[0], format_info.integer_digits,
+                                   format_info.group, gchar, len, settings);
+    }
+    else
+    {
+        xslt_number_format_decimal(buffer, floor(number), (unsigned char)self->zero_digit[0], format_info.integer_digits,
+                                   format_info.group, ',', 1, settings);
+    }
+    // Special case: java treats '.#' like '.0', '.##' like '.0#', etc.
+    if (format_info.integer_digits + format_info.integer_hash + format_info.frac_digits == 0 && format_info.frac_hash > 0)
+    {
+        ++format_info.frac_digits;
+        --format_info.frac_hash;
+    }
+    // A leading zero, if required.
+    if (floor(number) == 0 && format_info.integer_digits + format_info.frac_digits == 0)
+    {
+        membuffer_append_region(buffer, self->zero_digit, self->zero_digit + xslt_utf8_size1(self->zero_digit));
+    }
+    // The fractional part, if required.
+    if (format_info.frac_digits + format_info.frac_hash == 0)
+    {
+        if (format_info.add_decimal)
+            membuffer_append_region(buffer, self->decimal_point, self->decimal_point + xslt_utf8_size1(self->decimal_point));
+    }
+    else
+    {
+        number -= floor(number);
+        if (number != 0 || format_info.frac_digits != 0)
+        {
+            membuffer_append_region(buffer, self->decimal_point, self->decimal_point + xslt_utf8_size1(self->decimal_point));
+            number = floor(scale * number + 0.5);
+            for (j = format_info.frac_hash; j > 0; j--)
+            {
+                if (fmod(number, 10.0) >= 1.0) break;
+                number /= 10.0;
+            }
+            xslt_number_format_decimal(buffer, floor(number), (unsigned char)self->zero_digit[0], format_info.frac_digits + j, 0, 0, 0, settings);
+        }
+    }
+    // The suffix.
+    for (j = 0; j < suffix_length;)
+    {
+        if (*suffix == '\'') suffix++;
+        len = xslt_utf8_size1(suffix);
+        membuffer_append_region(buffer, suffix, suffix + len);
+        suffix += len;
+        j += len;
+    }
+    membuffer_append_null(buffer);
+    return free_membuffer_but_return_trimmed_content(buffer);
+}
+
+/** Port of xsltFormatNumberFunction: format-number(). */
+static XmlXPathResult *xslt_format_number_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = (XmlLibxslt1Transform*)func_data;
+    // Without an instruction libxslt returns without a value, which is a stack error.
+    if (!t->inst)
+    {
+        xml_xpath_context_set_error(ctx, (XmlXPathErrorCode)23);
+        return NULL;
+    }
+    XmlLibxslt1Stylesheet *sheet = t->style;
+    XsltDecimalFormat *format_values = sheet->decimal_format;
+    if (nargs != 2 && nargs != 3)
+    {
+        xml_xpath_context_set_error(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    if (nargs == 3)
+    {
+        char *qname = xml_xpath_result_to_string(args[2]);
+        char *prefix = NULL;
+        char *ncname = xslt1_split_qname(qname, &prefix);
+        const char *ns_uri = NULL;
+        if (prefix)
+        {
+            XmlNs *ns = lx_search_ns(t->inst, prefix);
+            if (!ns)
+            {
+                xslt1_transform_error(t, NULL, NULL, "format-number : No namespace found for QName '%s:%s'\n", prefix, ncname);
+                sheet->errors++;
+                free(ncname);
+                ncname = NULL;
+            }
+            else
+            {
+                ns_uri = xml_ns_href(ns);
+            }
+        }
+        if (ncname) format_values = xslt1_decimal_format_get_by_qname(sheet, ns_uri, ncname);
+        if (!format_values) xslt1_transform_error(t, NULL, NULL, "format-number() : undeclared decimal format '%s'\n", qname);
+        free(ncname);
+        free(prefix);
+        free(qname);
+    }
+    if (!format_values)
+    {
+        // Nothing is pushed, a stack error in libxml2.
+        xml_xpath_context_set_error(ctx, (XmlXPathErrorCode)23);
+        return NULL;
+    }
+    char *format = xml_xpath_result_to_string(args[1]);
+    double number = xml_xpath_result_to_number(args[0]);
+    char *result = xslt_format_number_conversion(format_values, format, number, &sheet->settings);
+    free(format);
+    XmlXPathResult *r = xml_xpath_result_new_string(result ? result : "");
+    free(result);
+    return r;
+}
+
+// Keys, port of libxslt keys.c //////////////////////////////////
+
+/** A key table of a document (libxslt xsltKeyTable): value -> node set. */
+typedef struct XsltKeyTable XsltKeyTable;
+struct XsltKeyTable
+{
+    XsltKeyTable *next;
+    char *name;
+    char *name_uri;
+    HashMap *keys;
+};
+
+/** A set of nodes (the source nodes having keys, libxslt XSLT_SOURCE_NODE_HAS_KEY). */
+typedef struct XsltNodeFlags
+{
+    const void **slots;
+    size_t cap;
+    size_t n;
+} XsltNodeFlags;
+
+static size_t xslt_ptr_hash(const void *p)
+{
+    size_t x = (size_t)p;
+    x ^= x >> 17;
+    x *= 0xed5ad4bbu;
+    x ^= x >> 11;
+    return x;
+}
+
+static bool xslt_flags_has(XsltNodeFlags *f, const void *p)
+{
+    if (!f || !f->cap) return false;
+    for (size_t i = xslt_ptr_hash(p) & (f->cap - 1); f->slots[i]; i = (i + 1) & (f->cap - 1))
+    {
+        if (f->slots[i] == p) return true;
+    }
+    return false;
+}
+
+static void xslt_flags_add(XsltNodeFlags *f, const void *p)
+{
+    if (xslt_flags_has(f, p)) return;
+    if ((f->n + 1) * 2 > f->cap)
+    {
+        size_t ncap = f->cap ? f->cap * 2 : 64;
+        const void **ns = (const void**)calloc(ncap, sizeof(void*));
+        for (size_t i = 0; i < f->cap; i++)
+        {
+            if (!f->slots[i]) continue;
+            size_t j = xslt_ptr_hash(f->slots[i]) & (ncap - 1);
+            while (ns[j]) j = (j + 1) & (ncap - 1);
+            ns[j] = f->slots[i];
+        }
+        free(f->slots);
+        f->slots = ns;
+        f->cap = ncap;
+    }
+    size_t j = xslt_ptr_hash(p) & (f->cap - 1);
+    while (f->slots[j]) j = (j + 1) & (f->cap - 1);
+    f->slots[j] = p;
+    f->n++;
+}
+
+static void xslt_free_key_table_list(XsltKeyTable *table)
+{
+    while (table)
+    {
+        XsltKeyTable *next = table->next;
+        if (table->keys)
+        {
+            HashMapIterator *it = hashmap_iterate(table->keys);
+            const char *key;
+            void *val;
+            while (hashmap_next_key_value(it, &key, &val)) xml_xpath_result_free((XmlXPathResult*)val);
+            hashmap_free_iterator(it);
+            hashmap_free(table->keys);
+        }
+        free(table->name);
+        free(table->name_uri);
+        free(table);
+        table = next;
+    }
+}
+
+/** Port of xsltFreeDocumentKeys. */
+static void xslt_free_doc_keys(struct XsltDocInfo *info)
+{
+    if (!info) return;
+    xslt_free_key_table_list(info->keys);
+    info->keys = NULL;
+}
+
+/** Port of xsltInitCtxtKey: compute the key table of keyDef for the document idoc. */
+static int xslt_init_ctxt_key(XmlLibxslt1Transform *t, XsltDocInfo *idoc, XsltKeyDef *key_def)
+{
+    if (!key_def->comp || !key_def->usecomp) return -1;
+    // Detect recursive keys.
+    if (t->key_init_level > t->nb_keys)
+    {
+        xslt1_transform_error(t, NULL, key_def->inst, "Key definition for %s is recursive\n", key_def->name);
+        t->state = XSLT_STATE_STOPPED;
+        return -1;
+    }
+    t->key_init_level++;
+    idoc->nb_keys_computed++;
+    XMQNode *old_inst = t->inst;
+    XsltDocInfo *old_doc_info = t->document;
+    XMQNode *old_context_node = t->node;
+    long old_pos = t->xp_position, old_size = t->xp_size;
+    XmlXPathResult *use_res = NULL;
+    t->document = idoc;
+    t->node = xml_dom_document(idoc->doc);
+    t->inst = key_def->inst;
+    // Evaluate the match expression of the xsl:key (with the context size and position as they are).
+    XmlXPathResult *match_res = xslt_xpath_eval(t, key_def->comp, xml_dom_document(idoc->doc));
+    if (!match_res)
+    {
+        xslt1_transform_error(t, NULL, key_def->inst, "Failed to evaluate the 'match' expression.\n");
+        t->state = XSLT_STATE_STOPPED;
+        goto error;
+    }
+    if (xml_xpath_result_type(match_res) != XML_XPATH_NODESET || xml_xpath_result_is_tree(match_res))
+    {
+        xslt1_transform_error(t, NULL, key_def->inst, "The 'match' expression did not evaluate to a node set.\n");
+        t->state = XSLT_STATE_STOPPED;
+        goto error;
+    }
+    size_t nmatch;
+    nmatch = xml_xpath_result_size(match_res);
+    if (nmatch == 0) goto error;
+    // Multiple key definitions for the same name are allowed.
+    XsltKeyTable *table;
+    table = idoc->keys;
+    while (table)
+    {
+        if (xslt1_streq(table->name, key_def->name) && xslt1_streq(table->name_uri, key_def->name_uri)) break;
+        table = table->next;
+    }
+    if (!table)
+    {
+        table = (XsltKeyTable*)calloc(1, sizeof(XsltKeyTable));
+        table->name = xslt1_strdup(key_def->name);
+        table->name_uri = xslt1_strdup(key_def->name_uri);
+        table->keys = hashmap_create(1024);
+        table->next = idoc->keys;
+        idoc->keys = table;
+    }
+    // The use expression is evaluated with a node list containing just the node.
+    t->xp_size = 1;
+    t->xp_position = 1;
+    for (size_t i = 0; i < nmatch; i++)
+    {
+        XMQNode *cur = xml_xpath_result_node(match_res, i);
+        if (!lx_is_real_node(cur)) continue;
+        t->node = cur;
+        xml_xpath_result_free(use_res);
+        use_res = xslt_xpath_eval(t, key_def->usecomp, cur);
+        if (!use_res)
+        {
+            xslt1_transform_error(t, NULL, key_def->inst, "Failed to evaluate the 'use' expression.\n");
+            t->state = XSLT_STATE_STOPPED;
+            break;
+        }
+        size_t len;
+        bool nodes = xml_xpath_result_type(use_res) == XML_XPATH_NODESET;
+        if (nodes)
+        {
+            len = xml_xpath_result_size(use_res);
+            if (len == 0) continue;
+        }
+        else
+        {
+            len = 1;
+        }
+        for (size_t k = 0; k < len; k++)
+        {
+            char *str = nodes ? xml_node_string_value(xml_xpath_result_node(use_res, k)) : xml_xpath_result_to_string(use_res);
+            if (!str) continue;
+            XmlXPathResult *keylist = (XmlXPathResult*)hashmap_get(table->keys, str);
+            if (!keylist)
+            {
+                keylist = xml_xpath_result_new_nodeset();
+                xml_xpath_result_add_node(keylist, cur);
+                hashmap_put(table->keys, str, keylist);
+            }
+            else
+            {
+                // xmlXPathNodeSetAdd checks for duplicates.
+                size_t n = xml_xpath_result_size(keylist);
+                bool dup = false;
+                for (size_t j = 0; j < n && !dup; j++) dup = xml_xpath_result_node(keylist, j) == cur;
+                if (!dup) xml_xpath_result_add_node(keylist, cur);
+            }
+            if (!t->keyed_nodes) t->keyed_nodes = calloc(1, sizeof(XsltNodeFlags));
+            xslt_flags_add((XsltNodeFlags*)t->keyed_nodes, cur);
+            free(str);
+        }
+    }
+error:
+    t->key_init_level--;
+    t->xp_position = old_pos;
+    t->xp_size = old_size;
+    t->node = old_context_node;
+    t->document = old_doc_info;
+    t->inst = old_inst;
+    xml_xpath_result_free(use_res);
+    xml_xpath_result_free(match_res);
+    return 0;
+}
+
+/** Port of xsltInitDocKeyTable. */
+static int xslt_init_doc_key_table(XmlLibxslt1Transform *t, const char *name, const char *name_uri)
+{
+    XsltKeyDef *keyd = NULL;
+    int found = 0;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        for (keyd = style->keys; keyd; keyd = keyd->next)
+        {
+            if (xslt1_streq(keyd->name, name) && xslt1_streq(keyd->name_uri, name_uri))
+            {
+                xslt_init_ctxt_key(t, t->document, keyd);
+                if (t->document->nb_keys_computed == t->nb_keys) return 0;
+                found = 1;
+            }
+        }
+    }
+    if (found == 0)
+    {
+        xslt1_transform_error(t, NULL, keyd ? keyd->inst : NULL, "Failed to find key definition for %s\n", name);
+        t->state = XSLT_STATE_STOPPED;
+        return -1;
+    }
+    return 0;
+}
+
+/** Port of xsltInitAllDocKeys. */
+static int xslt_init_all_doc_keys(XmlLibxslt1Transform *t)
+{
+    if (t->document->nb_keys_computed == t->nb_keys) return 0;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        for (XsltKeyDef *keyd = style->keys; keyd; keyd = keyd->next)
+        {
+            // Check if keys with this QName have been already computed.
+            XsltKeyTable *table = t->document->keys;
+            while (table)
+            {
+                if (xslt1_streq(keyd->name, table->name) && xslt1_streq(keyd->name_uri, table->name_uri)) break;
+                table = table->next;
+            }
+            if (!table) xslt_init_doc_key_table(t, keyd->name, keyd->name_uri);
+        }
+    }
+    return 0;
+}
+
+/** Port of xsltGetKey: the nodes of the current document with the key value (borrowed). */
+XmlXPathResult *xslt1_get_key(XmlLibxslt1Transform *t, const char *name, const char *name_uri, const char *value)
+{
+    int init_table = 0;
+    if (!name || !value || !t->document) return NULL;
+    // Keys are computed on demand, on the first key access for a document.
+    if (t->document->nb_keys_computed < t->nb_keys && t->key_init_level == 0)
+    {
+        if (xslt_init_all_doc_keys(t)) return NULL;
+    }
+retry:
+    for (XsltKeyTable *table = t->document->keys; table; table = table->next)
+    {
+        if (xslt1_streq(table->name, name) && xslt1_streq(table->name_uri, name_uri))
+        {
+            return (XmlXPathResult*)hashmap_get(table->keys, value);
+        }
+    }
+    if (t->key_init_level != 0 && init_table == 0)
+    {
+        // A recursive key, initialize just this one and retry.
+        xslt_init_doc_key_table(t, name, name_uri);
+        init_table = 1;
+        goto retry;
+    }
+    return NULL;
+}
+
+/** Does the node have a key (libxslt XSLT_SOURCE_NODE_HAS_KEY)? */
+bool xslt1_node_has_key(XmlLibxslt1Transform *t, XMQNode *node)
+{
+    return xslt_flags_has((XsltNodeFlags*)t->keyed_nodes, node);
+}
+
+/** Port of xsltComputeAllKeys (for the keyed template patterns). */
+int xslt1_compute_all_keys(XmlLibxslt1Transform *t, XMQNode *context_node)
+{
+    if (!context_node)
+    {
+        xslt1_transform_error(t, NULL, t->inst, "Internal error in xsltComputeAllKeys(): Bad arguments.\n");
+        return -1;
+    }
+    if (!t->document) return -1;
+    return xslt_init_all_doc_keys(t);
+}
+
+/** Port of xsltFindDocument. */
+static XsltDocInfo *xslt_find_document(XmlLibxslt1Transform *t, XmlDom *doc)
+{
+    for (XsltDocInfo *ret = t->doc_list; ret; ret = ret->next)
+    {
+        if (ret->doc == doc) return ret;
+    }
+    if (doc == t->style->doc) return t->document;
+    return NULL;
+}
+
+// Documents, port of libxslt documents.c (xsltLoadDocument) /////
+
+static XsltDocInfo *xslt_new_document(XmlLibxslt1Transform *t, XmlDom *doc, int owned)
+{
+    XsltDocInfo *cur = (XsltDocInfo*)calloc(1, sizeof(XsltDocInfo));
+    cur->doc = doc;
+    cur->owned = owned;
+    if (!xslt1_is_rtf(t, doc))
+    {
+        cur->next = t->doc_list;
+        t->doc_list = cur;
+    }
+    return cur;
+}
+
+static int xslt_find_elem_space_handling(XmlLibxslt1Transform *t, XMQNode *node);
+static int xslt_need_elem_space_handling(XmlLibxslt1Transform *t);
+static void xslt_apply_strip_spaces(XmlLibxslt1Transform *t, XMQNode *node);
+
+/** Port of xsltLoadDocument. */
+static XsltDocInfo *xslt_load_document(XmlLibxslt1Transform *t, const char *uri)
+{
+    if (!uri) return NULL;
+    for (XsltDocInfo *ret = t->doc_list; ret; ret = ret->next)
+    {
+        if (ret->doc && xml_dom_url(ret->doc) && !strcmp(xml_dom_url(ret->doc), uri)) return ret;
+    }
+    XmlDom *doc = xslt1_load(t->style, uri, XML_LIBXSLT1_LOAD_DOCUMENT);
+    if (!doc) return NULL;
+    // Apply white-space stripping if asked for.
+    if (xslt_need_elem_space_handling(t)) xslt_apply_strip_spaces(t, xml_dom_root_element(doc));
+    return xslt_new_document(t, doc, 1);
+}
+
+/** A copy of the stylesheet document (xmlCopyDoc), for document(''). */
+static XmlDom *xslt_copy_doc(XmlDom *src)
+{
+    XmlDom *doc = xml_dom_new();
+    xml_dom_set_url(doc, xml_dom_url(src));
+    if (xml_dom_version(src)) xml_dom_set_version(doc, xml_dom_version(src));
+    if (xml_dom_encoding(src)) xml_dom_set_encoding(doc, xml_dom_encoding(src));
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(src)); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_DTD)
+        {
+            xml_dom_set_dtd(doc, xml_node_name(c), xml_dtd_public_id(c), xml_dtd_system_id(c));
+            continue;
+        }
+        XMQNode *copy = xml_node_copy(doc, c, true);
+        if (copy) xml_node_append_child(xml_dom_document(doc), copy);
+    }
+    // The copied namespaces are references, make every subtree self contained.
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(doc)); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ELEMENT) xml_node_reconcile_ns(c);
+    }
+    return doc;
+}
+
+XmlDom *xml_libxslt1_copy_stylesheet_doc(const XmlLibxslt1Stylesheet *style)
+{
+    return (style && style->doc) ? xslt_copy_doc(style->doc) : NULL;
+}
+
+// Functions, port of libxslt functions.c and extra.c ////////////
+
+static XmlLibxslt1Transform *xslt_tctxt(void *func_data)
+{
+    return (XmlLibxslt1Transform*)func_data;
+}
+
+static void xslt_nodeset_merge(XmlXPathResult *to, const XmlXPathResult *from);
+
+// XPointer, port of the parts of libxml2 xpointer.c used by document() /////
+
+typedef struct
+{
+    XmlDom *doc;
+    const char *cur;
+    bool error;
+    XmlXPathNamespace *ns;  // From xmlns() parts.
+    size_t num_ns;
+} XsltXPtr;
+
+static bool xslt_xptr_is_name_start(int c)
+{
+    return xml_char_is_letter(c) || c == '_' || c == ':';
+}
+
+static bool xslt_xptr_is_name_char(int c)
+{
+    return xml_char_is_letter(c) || xml_char_is_digit(c) || c == '.' || c == '-' || c == '_' || c == ':' ||
+           xml_char_is_combining(c) || xml_char_is_extender(c);
+}
+
+/** xmlXPathParseName: a QName at cur, NULL if there is none. */
+static char *xslt_xptr_parse_name(XsltXPtr *x)
+{
+    int len;
+    const char *start = x->cur;
+    int c = xslt1_utf8_char(x->cur, &len);
+    if (c <= 0 || !xslt_xptr_is_name_start(c)) return NULL;
+    while (c > 0 && xslt_xptr_is_name_char(c))
+    {
+        x->cur += len;
+        c = xslt1_utf8_char(x->cur, &len);
+    }
+    return xslt1_strndup(start, (size_t)(x->cur - start));
+}
+
+static void xslt_xptr_skip_blanks(XsltXPtr *x)
+{
+    while (xslt1_is_blank((unsigned char)*x->cur)) x->cur++;
+}
+
+/** xmlXPtrGetNthChild: the no-th element child (counting from 1). */
+static XMQNode *xslt_xptr_nth_child(XMQNode *cur, int no)
+{
+    if (!cur || xml_node_kind(cur) == XML_DOM_NAMESPACE) return cur;
+    int i = 0;
+    for (cur = xml_node_first_child(cur); i <= no; cur = xml_node_next(cur))
+    {
+        if (!cur) return cur;
+        if (xml_node_kind(cur) == XML_DOM_ELEMENT || xml_node_kind(cur) == XML_DOM_DOCUMENT)
+        {
+            i++;
+            if (i == no) break;
+        }
+    }
+    return cur;
+}
+
+/** xmlXPtrEvalChildSeq: a bare name (an id) and/or /n/m child steps, from the node set. */
+static XmlXPathResult *xslt_xptr_child_seq(XsltXPtr *x, XmlXPathContext *ctx, char *name, XmlXPathResult *set)
+{
+    if (name)
+    {
+        xml_xpath_result_free(set);
+        set = xml_xpath_result_new_nodeset();
+        XMQNode *e = xml_xpath_context_get_id(ctx, xml_dom_document(x->doc), name);
+        if (e) xml_xpath_result_add_node(set, e);
+        free(name);
+    }
+    while (*x->cur == '/')
+    {
+        int child = 0;
+        bool overflow = false;
+        x->cur++;
+        while (*x->cur >= '0' && *x->cur <= '9')
+        {
+            int d = *x->cur - '0';
+            if (child > INT_MAX / 10) overflow = true;
+            else child *= 10;
+            if (child > INT_MAX - d) overflow = true;
+            else child += d;
+            x->cur++;
+        }
+        if (overflow) child = 0;
+        // xmlXPtrGetChildNo.
+        XMQNode *cur = NULL;
+        if (child > 0 && set && xml_xpath_result_size(set) == 1) cur = xslt_xptr_nth_child(xml_xpath_result_node(set, 0), child);
+        xml_xpath_result_free(set);
+        set = xml_xpath_result_new_nodeset();
+        if (cur) xml_xpath_result_add_node(set, cur);
+    }
+    return set;
+}
+
+/** xmlXPtrEvalXPtrPart: one scheme(...) part, NULL if it gives nothing. */
+static XmlXPathResult *xslt_xptr_part(XsltXPtr *x, XmlXPathContext *ctx, char *name)
+{
+    if (*x->cur != '(')
+    {
+        free(name);
+        x->error = true;
+        return NULL;
+    }
+    x->cur++;
+    int level = 1;
+    MemBuffer *mb = new_membuffer();
+    while (*x->cur)
+    {
+        if (*x->cur == ')')
+        {
+            level--;
+            if (level == 0)
+            {
+                x->cur++;
+                break;
+            }
+        }
+        else if (*x->cur == '(')
+        {
+            level++;
+        }
+        else if (*x->cur == '^')
+        {
+            if (x->cur[1] == ')' || x->cur[1] == '(' || x->cur[1] == '^') x->cur++;
+        }
+        membuffer_append_char(mb, *x->cur);
+        x->cur++;
+    }
+    membuffer_append_null(mb);
+    char *buffer = free_membuffer_but_return_trimmed_content(mb);
+    if (level != 0 && *x->cur == 0)
+    {
+        free(name);
+        free(buffer);
+        x->error = true;
+        return NULL;
+    }
+    XmlXPathResult *res = NULL;
+    if (!strcmp(name, "xpointer") || !strcmp(name, "xpath1"))
+    {
+        // Evaluated with the document as context node, position and size 1.
+        XmlXPathSettings st;
+        xml_xpath_settings_default(&st);
+        st.namespaces = x->ns;
+        st.num_namespaces = x->num_ns;
+        XmlXPathError err;
+        XmlXPathComp *comp = xml_xpath_compile(buffer, &st, &err);
+        if (comp)
+        {
+            res = xml_xpath_eval_comp(ctx, comp, xml_dom_document(x->doc), 1, 1, &err);
+            xml_xpath_comp_free(comp);
+        }
+        if (!res) x->error = true;
+    }
+    else if (!strcmp(name, "element"))
+    {
+        XsltXPtr sub = *x;
+        sub.cur = buffer;
+        if (buffer[0] == '/')
+        {
+            XmlXPathResult *root = xml_xpath_result_new_nodeset();
+            xml_xpath_result_add_node(root, xml_dom_document(x->doc));
+            res = xslt_xptr_child_seq(&sub, ctx, NULL, root);
+        }
+        else
+        {
+            char *name2 = xslt_xptr_parse_name(&sub);
+            if (!name2) x->error = true;
+            else res = xslt_xptr_child_seq(&sub, ctx, name2, NULL);
+        }
+    }
+    else if (!strcmp(name, "xmlns"))
+    {
+        XsltXPtr sub = *x;
+        sub.cur = buffer;
+        char *prefix = xslt_xptr_parse_name(&sub);
+        if (prefix && !strchr(prefix, ':'))
+        {
+            xslt_xptr_skip_blanks(&sub);
+            if (*sub.cur == '=')
+            {
+                sub.cur++;
+                xslt_xptr_skip_blanks(&sub);
+                x->ns = (XmlXPathNamespace*)realloc(x->ns, (x->num_ns + 1) * sizeof(XmlXPathNamespace));
+                x->ns[x->num_ns].prefix = prefix;
+                x->ns[x->num_ns].uri = xslt1_strdup(sub.cur);
+                x->num_ns++;
+                prefix = NULL;
+            }
+            else
+            {
+                x->error = true;
+            }
+        }
+        else
+        {
+            x->error = true;
+        }
+        free(prefix);
+    }
+    // Unknown schemes are skipped (XML_XPTR_UNKNOWN_SCHEME).
+    free(buffer);
+    free(name);
+    return res;
+}
+
+/** Port of xmlXPtrEval: the nodes the fragment identifier selects in doc, NULL on errors. */
+static XmlXPathResult *xslt_xptr_eval(XmlDom *doc, const char *str)
+{
+    XsltXPtr x = { doc, str, false, NULL, 0 };
+    XmlXPathContext *ctx = xml_xpath_context_new();
+    XmlXPathResult *res = NULL;
+    xslt_xptr_skip_blanks(&x);
+    if (*x.cur == '/')
+    {
+        XmlXPathResult *root = xml_xpath_result_new_nodeset();
+        xml_xpath_result_add_node(root, xml_dom_document(doc));
+        res = xslt_xptr_child_seq(&x, ctx, NULL, root);
+    }
+    else
+    {
+        char *name = xslt_xptr_parse_name(&x);
+        if (!name)
+        {
+            x.error = true;
+        }
+        else if (*x.cur == '(')
+        {
+            // xmlXPtrEvalFullXPtr: the parts until one gives a non empty node set.
+            while (name)
+            {
+                xml_xpath_result_free(res);
+                res = xslt_xptr_part(&x, ctx, name);
+                if (x.error) break;
+                if (res && xml_xpath_result_type(res) == XML_XPATH_NODESET && xml_xpath_result_size(res) > 0) break;
+                xml_xpath_result_free(res);
+                res = NULL;
+                xslt_xptr_skip_blanks(&x);
+                name = xslt_xptr_parse_name(&x);
+            }
+            goto done;
+        }
+        else
+        {
+            // Bare names and child sequences.
+            res = xslt_xptr_child_seq(&x, ctx, name, NULL);
+        }
+    }
+    xslt_xptr_skip_blanks(&x);
+    if (*x.cur != 0) x.error = true;
+done:
+    if (x.error || (res && xml_xpath_result_type(res) != XML_XPATH_NODESET))
+    {
+        xml_xpath_result_free(res);
+        res = NULL;
+    }
+    for (size_t i = 0; i < x.num_ns; i++)
+    {
+        free((char*)x.ns[i].prefix);
+        free((char*)x.ns[i].uri);
+    }
+    free(x.ns);
+    xml_xpath_context_free(ctx);
+    return res;
+}
+
+/** Port of xsltDocumentFunctionLoadDocument: add the nodes of document uri (with fragment) to ret. */
+static void xslt_document_function_load_document(XmlLibxslt1Transform *t, XmlXPathResult *ret, const char *uri, const char *fragment)
+{
+    XsltDocInfo *idoc = xslt_load_document(t, uri);
+    XmlDom *doc;
+    if (!idoc)
+    {
+        if (!uri || uri[0] == '#' || (t->style->doc && xslt1_streq(xml_dom_url(t->style->doc), uri)))
+        {
+            // This selects the stylesheet's document itself (a copy without the precomputed data).
+            doc = xslt_copy_doc(t->style->doc);
+            idoc = xslt_new_document(t, doc, 1);
+        }
+        else
+        {
+            return;
+        }
+    }
+    else
+    {
+        doc = idoc->doc;
+    }
+    if (!fragment)
+    {
+        xml_xpath_result_add_node(ret, xml_dom_document(doc));
+        return;
+    }
+    // The fragment identifier is an XPointer.
+    XmlXPathResult *res_obj = xslt_xptr_eval(doc, fragment);
+    if (res_obj)
+    {
+        xslt_nodeset_merge(ret, res_obj);
+        xml_xpath_result_free(res_obj);
+    }
+}
+
+/** xmlXPathNodeSetMerge: add the nodes of from that are not in to. */
+static void xslt_nodeset_merge(XmlXPathResult *to, const XmlXPathResult *from)
+{
+    size_t nf = from ? xml_xpath_result_size(from) : 0;
+    for (size_t i = 0; i < nf; i++)
+    {
+        XMQNode *n = xml_xpath_result_node(from, i);
+        size_t nt = xml_xpath_result_size(to);
+        bool dup = false;
+        for (size_t j = 0; j < nt && !dup; j++) dup = xml_xpath_result_node(to, j) == n;
+        if (!dup) xml_xpath_result_add_node(to, n);
+    }
+}
+
+static bool xslt_is_strict_nodeset(const XmlXPathResult *r)
+{
+    return r && xml_xpath_result_type(r) == XML_XPATH_NODESET && !xml_xpath_result_is_tree(r);
+}
+
+/** document() for one uri string with an optional base node set (obj2). */
+static XmlXPathResult *xslt_document_string(XmlLibxslt1Transform *t, const char *url_in, const XmlXPathResult *obj2)
+{
+    XmlXPathResult *ret = xml_xpath_result_new_nodeset();
+    XmlURI *uri = xml_uri_parse(url_in);
+    if (!uri)
+    {
+        xslt1_transform_error(t, NULL, NULL, "document() : failed to parse URI '%s'\n", url_in);
+        return ret;
+    }
+    // Check for and remove the fragment identifier.
+    char *fragment = uri->fragment;
+    char *new_uri = NULL;
+    const char *url = url_in;
+    if (fragment)
+    {
+        uri->fragment = NULL;
+        new_uri = xml_uri_save(uri);
+        url = new_uri;
+    }
+    xml_uri_free(uri);
+    char *base = NULL;
+    if (obj2 && xml_xpath_result_size(obj2) > 0 && lx_is_real_node(xml_xpath_result_node(obj2, 0)))
+    {
+        XMQNode *target = xml_xpath_result_node(obj2, 0);
+        if (xml_node_kind(target) == XML_DOM_ATTRIBUTE || xml_node_kind(target) == XML_DOM_PI) target = xml_node_parent(target);
+        base = xslt1_node_get_base(xml_node_dom(target), target);
+    }
+    else if (t->inst)
+    {
+        base = xslt1_node_get_base(xml_node_dom(t->inst), t->inst);
+    }
+    else if (t->style->doc)
+    {
+        base = xslt1_node_get_base(t->style->doc, xml_dom_document(t->style->doc));
+    }
+    char *full = xml_uri_build(url, base);
+    free(base);
+    if (full)
+    {
+        xslt_document_function_load_document(t, ret, full, fragment);
+        free(full);
+    }
+    free(new_uri);
+    free(fragment);
+    return ret;
+}
+
+/** Port of xsltDocumentFunction: document(). */
+static XmlXPathResult *xslt_document_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs < 1 || nargs > 2)
+    {
+        xslt1_transform_error(t, NULL, NULL, "document() : invalid number of args %d\n", (int)nargs);
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    const XmlXPathResult *obj2 = NULL;
+    if (nargs == 2)
+    {
+        if (!xslt_is_strict_nodeset(args[1]))
+        {
+            xslt1_transform_error(t, NULL, NULL, "document() : invalid arg expecting a nodeset\n");
+            xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_TYPE);
+            return NULL;
+        }
+        obj2 = args[1];
+    }
+    if (xslt_is_strict_nodeset(args[0]))
+    {
+        XmlXPathResult *ret = xml_xpath_result_new_nodeset();
+        size_t n = xml_xpath_result_size(args[0]);
+        for (size_t i = 0; i < n; i++)
+        {
+            XMQNode *node = xml_xpath_result_node(args[0], i);
+            char *s = xml_node_string_value(node);
+            XmlXPathResult *base = xml_xpath_result_new_nodeset();
+            if (nargs == 2)
+            {
+                for (size_t j = 0; j < xml_xpath_result_size(obj2); j++) xml_xpath_result_add_node(base, xml_xpath_result_node(obj2, j));
+            }
+            else
+            {
+                xml_xpath_result_add_node(base, node);
+            }
+            XmlXPathResult *newobj = xslt_document_string(t, s, base);
+            xslt_nodeset_merge(ret, newobj);
+            xml_xpath_result_free(newobj);
+            xml_xpath_result_free(base);
+            free(s);
+        }
+        return ret;
+    }
+    char *s = xml_xpath_result_to_string(args[0]);
+    XmlXPathResult *ret = xslt_document_string(t, s, obj2);
+    free(s);
+    return ret;
+}
+
+/** Port of xsltKeyFunction: key(). */
+static XmlXPathResult *xslt_key_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 2)
+    {
+        xslt1_transform_error(t, NULL, NULL, "key() : expects two arguments\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    char *qname = xml_xpath_result_to_string(args[0]);
+    XmlXPathResult *ret = xml_xpath_result_new_nodeset();
+    const XmlXPathResult *obj2 = args[1];
+    char **values = NULL;
+    size_t nvalues = 0;
+    if (xml_xpath_result_type(obj2) == XML_XPATH_NODESET)
+    {
+        nvalues = xml_xpath_result_size(obj2);
+        values = (char**)calloc(nvalues ? nvalues : 1, sizeof(char*));
+        for (size_t i = 0; i < nvalues; i++) values[i] = xml_node_string_value(xml_xpath_result_node(obj2, i));
+    }
+    else
+    {
+        nvalues = 1;
+        values = (char**)calloc(1, sizeof(char*));
+        values[0] = xml_xpath_result_to_string(obj2);
+    }
+    for (size_t vi = 0; vi < nvalues; vi++)
+    {
+        XsltDocInfo *old_doc_info = t->document;
+        XMQNode *node = xml_xpath_context_node(ctx);
+        if (!node)
+        {
+            xslt1_transform_error(t, NULL, t->inst, "Internal error in xsltKeyFunction(): The context node is not set on the XPath context.\n");
+            t->state = XSLT_STATE_STOPPED;
+            t->document = old_doc_info;
+            continue;
+        }
+        // The name, with the namespace of a prefix.
+        char *prefix = NULL;
+        char *key = NULL;
+        const char *key_uri = NULL;
+        const char *colon = strchr(qname, ':');
+        if (colon && colon != qname && colon[1])
+        {
+            prefix = xslt1_strndup(qname, (size_t)(colon - qname));
+            key = xslt1_strdup(colon + 1);
+            key_uri = xml_xpath_context_lookup_namespace(ctx, prefix);
+            if (!key_uri) xslt1_transform_error(t, NULL, t->inst, "key() : prefix %s is not bound\n", prefix);
+        }
+        else
+        {
+            key = xslt1_strdup(qname);
+        }
+        XMQNode *tmp_node = node;
+        if (xml_node_kind(node) == XML_DOM_NAMESPACE) tmp_node = xml_node_parent(node);
+        XmlXPathResult *nodelist = NULL;
+        if (!tmp_node || !xml_node_dom(tmp_node))
+        {
+            xslt1_transform_error(t, NULL, t->inst, "Internal error in xsltKeyFunction(): Couldn't get the doc of the XPath context node.\n");
+        }
+        else
+        {
+            XmlDom *doc = xml_node_dom(tmp_node);
+            bool ok = true;
+            if (!t->document || t->document->doc != doc)
+            {
+                XsltRVT *rvt = xslt_rvt_of(doc);
+                if (rvt)
+                {
+                    // A result tree fragment.
+                    if (!rvt->keys) rvt->keys = xslt_new_document(t, doc, 0);
+                    t->document = rvt->keys;
+                }
+                else
+                {
+                    // The source document or one from document().
+                    t->document = xslt_find_document(t, doc);
+                }
+                if (!t->document)
+                {
+                    xslt1_transform_error(t, NULL, t->inst, "Internal error in xsltKeyFunction(): Could not get the document info of a context doc.\n");
+                    t->state = XSLT_STATE_STOPPED;
+                    ok = false;
+                }
+            }
+            if (ok) nodelist = xslt1_get_key(t, key, key_uri, values[vi]);
+        }
+        t->document = old_doc_info;
+        if (nodelist) xslt_nodeset_merge(ret, nodelist);
+        free(prefix);
+        free(key);
+    }
+    for (size_t i = 0; i < nvalues; i++) free(values[i]);
+    free(values);
+    free(qname);
+    return ret;
+}
+
+/** Port of xsltUnparsedEntityURIFunction: unparsed-entity-uri(). */
+static XmlXPathResult *xslt_unparsed_entity_uri_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 1)
+    {
+        xslt1_generic_error(&t->style->settings, "unparsed-entity-uri() : expects one string arg\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    char *str = xml_xpath_result_to_string(args[0]);
+    XMQNode *node = xml_xpath_context_node(ctx);
+    XmlDom *doc = node ? xml_node_dom(node) : NULL;
+    XMQNode *entity = (doc && str) ? xml_dom_get_entity(doc, str) : NULL;
+    XmlXPathResult *ret;
+    if (entity && xml_entity_decl_system_id(entity))
+    {
+        // libxml2 entity->URI: the system id resolved against the document.
+        char *uri = xml_uri_build(xml_entity_decl_system_id(entity), xml_dom_url(doc));
+        ret = xml_xpath_result_new_string(uri ? uri : xml_entity_decl_system_id(entity));
+        free(uri);
+    }
+    else
+    {
+        ret = xml_xpath_result_new_string("");
+    }
+    free(str);
+    return ret;
+}
+
+/** Port of xsltGenerateIdFunction: generate-id() gives id1, id2, ... in the order of the calls. */
+static XmlXPathResult *xslt_generate_id_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    XMQNode *cur = NULL;
+    if (nargs == 0)
+    {
+        cur = xml_xpath_context_node(ctx);
+    }
+    else if (nargs == 1)
+    {
+        if (!xslt_is_strict_nodeset(args[0]))
+        {
+            xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_TYPE);
+            xslt1_transform_error(t, NULL, NULL, "generate-id() : invalid arg expecting a node-set\n");
+            return NULL;
+        }
+        size_t n = xml_xpath_result_size(args[0]);
+        if (n == 0) return xml_xpath_result_new_string("");
+        // The first node in document order.
+        cur = xml_xpath_result_node(args[0], 0);
+        for (size_t i = 1; i < n; i++)
+        {
+            XMQNode *o = xml_xpath_result_node(args[0], i);
+            if (xml_node_compare_order(o, cur) < 0) cur = o;
+        }
+    }
+    else
+    {
+        xslt1_transform_error(t, NULL, NULL, "generate-id() : invalid number of args %d\n", (int)nargs);
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    const char *ns_prefix = NULL;
+    bool is_ns = false;
+    if (xml_node_kind(cur) == XML_DOM_NAMESPACE)
+    {
+        is_ns = true;
+        ns_prefix = xml_node_name(cur) ? xml_node_name(cur) : "";
+        cur = xml_node_parent(cur);
+    }
+    if (!t->generated_ids) t->generated_ids = hashmap_create(1024);
+    char key[32];
+    snprintf(key, sizeof(key), "%p", (void*)cur);
+    unsigned long id = (unsigned long)(size_t)hashmap_get(t->generated_ids, key);
+    if (!id)
+    {
+        id = ++t->current_id;
+        hashmap_put(t->generated_ids, key, (void*)(size_t)id);
+    }
+    MemBuffer *mb = new_membuffer();
+    if (!is_ns)
+    {
+        membuffer_printf(mb, "id%lu", id);
+    }
+    else
+    {
+        // Only ascii alphanumerics are allowed, the prefix is hex encoded.
+        membuffer_printf(mb, "id%luns", id);
+        for (const unsigned char *p = (const unsigned char*)ns_prefix; *p; p++)
+        {
+            int v = *p >> 4;
+            membuffer_append_char(mb, (char)(v < 10 ? '0' + v : 'A' + (v - 10)));
+            v = *p & 15;
+            membuffer_append_char(mb, (char)(v < 10 ? '0' + v : 'A' + (v - 10)));
+        }
+    }
+    membuffer_append_null(mb);
+    char *str = free_membuffer_but_return_trimmed_content(mb);
+    XmlXPathResult *ret = xml_xpath_result_new_string(str);
+    free(str);
+    return ret;
+}
+
+/** Split a QName like xmlSplitQName2: NULL if there is no (valid) prefix. */
+static char *xslt_split_qname2(const char *qname, char **prefix)
+{
+    *prefix = NULL;
+    if (!qname || qname[0] == ':') return NULL;
+    const char *colon = strchr(qname, ':');
+    if (!colon || !colon[1]) return NULL;
+    *prefix = xslt1_strndup(qname, (size_t)(colon - qname));
+    return xslt1_strdup(colon + 1);
+}
+
+/** Port of xsltSystemPropertyFunction: system-property(). */
+static XmlXPathResult *xslt_system_property_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 1)
+    {
+        xslt1_transform_error(t, NULL, NULL, "system-property() : expects one string arg\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    if (xml_xpath_result_type(args[0]) != XML_XPATH_STRING)
+    {
+        xslt1_transform_error(t, NULL, NULL, "system-property() : invalid arg expecting a string\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_TYPE);
+        return NULL;
+    }
+    const char *s = xml_xpath_result_string(args[0]);
+    char *prefix = NULL;
+    const char *ns_uri = NULL;
+    char *name = xslt_split_qname2(s, &prefix);
+    if (!name)
+    {
+        name = xslt1_strdup(s);
+    }
+    else
+    {
+        ns_uri = xml_xpath_context_lookup_namespace(ctx, prefix);
+        if (!ns_uri) xslt1_transform_error(t, NULL, NULL, "system-property() : prefix %s is not bound\n", prefix);
+    }
+    const char *value = "";
+    if (xslt1_streq(ns_uri, XSLT_NAMESPACE))
+    {
+        if (!strcmp(name, "vendor")) value = "libxslt";
+        else if (!strcmp(name, "version")) value = "1.0";
+        else if (!strcmp(name, "vendor-url")) value = "http://xmlsoft.org/XSLT/";
+    }
+    free(name);
+    free(prefix);
+    return xml_xpath_result_new_string(value);
+}
+
+/** The extension elements libxslt knows (xsltExtElementLookup with the elements of extra.c). */
+static bool xslt_ext_element_available(const char *name, const char *uri)
+{
+    if (!name || !uri) return false;
+    // The xslt elements registered by xsltRegisterAllElement.
+    static const char *xslt_elements[] = { "apply-templates", "apply-imports", "call-template", "element", "attribute",
+        "text", "processing-instruction", "comment", "copy", "value-of", "number", "for-each", "if", "choose", "sort",
+        "copy-of", "message", "variable", "param", "with-param", "decimal-format", "when", "otherwise", "fallback", NULL };
+    if (!strcmp(uri, XSLT_NAMESPACE))
+    {
+        for (int i = 0; xslt_elements[i]; i++) if (!strcmp(name, xslt_elements[i])) return true;
+    }
+    if (!strcmp(uri, XSLT_LIBXSLT_NAMESPACE) && !strcmp(name, "debug")) return true;
+    if (!strcmp(uri, XSLT_SAXON_NAMESPACE) && !strcmp(name, "output")) return true;
+    if (!strcmp(uri, XSLT_XALAN_NAMESPACE) && !strcmp(name, "write")) return true;
+    if (!strcmp(uri, XSLT_XT_NAMESPACE) && !strcmp(name, "document")) return true;
+    if (!strcmp(uri, XSLT_NAMESPACE) && !strcmp(name, "document")) return true;
+    return false;
+}
+
+/** Port of xsltElementAvailableFunction: element-available(). */
+static XmlXPathResult *xslt_element_available_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 1)
+    {
+        xslt1_transform_error(t, NULL, NULL, "element-available() : expects one string arg\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    char *s = xml_xpath_result_to_string(args[0]);
+    if (!t->inst)
+    {
+        xslt1_transform_error(t, NULL, NULL, "element-available() : internal error tctxt == NULL\n");
+        free(s);
+        return xml_xpath_result_new_boolean(false);
+    }
+    char *prefix = NULL;
+    const char *ns_uri = NULL;
+    char *name = xslt_split_qname2(s, &prefix);
+    if (!name)
+    {
+        name = xslt1_strdup(s);
+        XmlNs *ns = lx_search_ns(t->inst, NULL);
+        if (ns) ns_uri = xml_ns_href(ns);
+    }
+    else
+    {
+        ns_uri = xml_xpath_context_lookup_namespace(ctx, prefix);
+        if (!ns_uri) xslt1_transform_error(t, NULL, NULL, "element-available() : prefix %s is not bound\n", prefix);
+    }
+    bool r = xslt_ext_element_available(name, ns_uri);
+    free(name);
+    free(prefix);
+    free(s);
+    return xml_xpath_result_new_boolean(r);
+}
+
+static XmlXPathFunction xslt_function_lookup(void *user_data, const char *name, const char *ns_uri, void **func_data);
+
+/** Is the function a core XPath 1.0 function of libxml2? */
+static bool xslt_is_core_function(const char *name, const char *ns_uri)
+{
+    static const char *core[] = { "boolean", "ceiling", "count", "concat", "contains", "id", "false", "floor", "last",
+        "lang", "local-name", "not", "name", "namespace-uri", "normalize-space", "number", "position", "round", "string",
+        "string-length", "starts-with", "substring", "substring-before", "substring-after", "sum", "true", "translate", NULL };
+    if (ns_uri) return !strcmp(ns_uri, "http://www.w3.org/2002/08/xquery-functions") && !strcmp(name, "escape-uri");
+    for (int i = 0; core[i]; i++) if (!strcmp(core[i], name)) return true;
+    return false;
+}
+
+/** Port of xsltFunctionAvailableFunction: function-available(). */
+static XmlXPathResult *xslt_function_available_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 1)
+    {
+        xslt1_transform_error(t, NULL, NULL, "function-available() : expects one string arg\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    char *s = xml_xpath_result_to_string(args[0]);
+    char *prefix = NULL;
+    const char *ns_uri = NULL;
+    char *name = xslt_split_qname2(s, &prefix);
+    if (!name)
+    {
+        name = xslt1_strdup(s);
+    }
+    else
+    {
+        ns_uri = xml_xpath_context_lookup_namespace(ctx, prefix);
+        if (!ns_uri) xslt1_transform_error(t, NULL, NULL, "function-available() : prefix %s is not bound\n", prefix);
+    }
+    void *fd;
+    bool r = xslt_is_core_function(name, ns_uri) || xslt_function_lookup(t, name, ns_uri, &fd) != NULL;
+    free(name);
+    free(prefix);
+    free(s);
+    return xml_xpath_result_new_boolean(r);
+}
+
+/** Port of xsltCurrentFunction: current(). */
+static XmlXPathResult *xslt_current_function(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    (void)args;
+    if (nargs != 0)
+    {
+        xslt1_transform_error(t, NULL, NULL, "current() : function uses no argument\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    XmlXPathResult *r = xml_xpath_result_new_nodeset();
+    if (t->node) xml_xpath_result_add_node(r, t->node);
+    return r;
+}
+
+/** Port of xsltFunctionNodeSet (extra.c): node-set() in the libxslt, saxon and xt namespaces. */
+static XmlXPathResult *xslt_function_node_set(XmlXPathContext *ctx, void *func_data, XmlXPathResult **args, size_t nargs)
+{
+    XmlLibxslt1Transform *t = xslt_tctxt(func_data);
+    if (nargs != 1)
+    {
+        xslt1_transform_error(t, NULL, NULL, "node-set() : expects one result-tree arg\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_ARITY);
+        return NULL;
+    }
+    if (xml_xpath_result_type(args[0]) != XML_XPATH_NODESET)
+    {
+        xslt1_transform_error(t, NULL, NULL, "node-set() invalid arg expecting a result tree\n");
+        xml_xpath_context_set_error_quiet(ctx, XML_XPATH_ERR_INVALID_TYPE);
+        return NULL;
+    }
+    XmlXPathResult *r = xml_xpath_result_copy(args[0]);
+    xml_xpath_result_set_tree(r, false);
+    return r;
+}
+
+
+/** The function lookup of the xpath context: the XSLT functions (xsltRegisterAllFunctions) and
+    the extension functions libxslt registers by default (extra.c). */
+static XmlXPathFunction xslt_function_lookup(void *user_data, const char *name, const char *ns_uri, void **func_data)
+{
+    *func_data = user_data;
+    if (!ns_uri)
+    {
+        if (!strcmp(name, "current")) return xslt_current_function;
+        if (!strcmp(name, "document")) return xslt_document_function;
+        if (!strcmp(name, "key")) return xslt_key_function;
+        if (!strcmp(name, "unparsed-entity-uri")) return xslt_unparsed_entity_uri_function;
+        if (!strcmp(name, "format-number")) return xslt_format_number_function;
+        if (!strcmp(name, "generate-id")) return xslt_generate_id_function;
+        if (!strcmp(name, "system-property")) return xslt_system_property_function;
+        if (!strcmp(name, "element-available")) return xslt_element_available_function;
+        if (!strcmp(name, "function-available")) return xslt_function_available_function;
+        return NULL;
+    }
+    if (!strcmp(name, "node-set") &&
+        (!strcmp(ns_uri, XSLT_LIBXSLT_NAMESPACE) || !strcmp(ns_uri, XSLT_SAXON_NAMESPACE) || !strcmp(ns_uri, XSLT_XT_NAMESPACE)))
+    {
+        return xslt_function_node_set;
+    }
+    return NULL;
+}
+
+// The transformation context ////////////////////////////////////////
+
+XmlLibxslt1Transform *xml_libxslt1_transform_new(XmlLibxslt1Stylesheet *style, XmlDom *source)
+{
+    XmlLibxslt1Transform *t = (XmlLibxslt1Transform*)calloc(1, sizeof(XmlLibxslt1Transform));
+    t->style = style;
+    t->source = source;
+    t->xpath = xml_xpath_context_new();
+    // Like a fresh libxml2 xpath context, the position and size are unknown.
+    t->xp_position = -1;
+    t->xp_size = -1;
+    t->extras_max = style->extras_nr + 20;
+    t->extras = (XsltRuntimeExtra*)calloc((size_t)t->extras_max, sizeof(XsltRuntimeExtra));
+    t->extras_nr = style->extras_nr;
+    t->max_template_depth = XSLT_MAX_DEPTH;
+    t->max_template_vars = XSLT_MAX_VARS;
+    t->op_limit = style->op_limit;
+    xml_xpath_context_set_variable_lookup(t->xpath, xslt_xpath_variable_lookup, t);
+    xml_xpath_context_set_function_lookup(t->xpath, xslt_function_lookup, t);
+    XsltDocInfo *docu = (XsltDocInfo*)calloc(1, sizeof(XsltDocInfo));
+    docu->doc = source;
+    docu->main = 1;
+    t->doc_list = docu;
+    t->document = docu;
+    return t;
+}
+
+void xml_libxslt1_transform_free(XmlLibxslt1Transform *t)
+{
+    if (!t) return;
+    for (int i = 0; i < t->extras_nr; ++i)
+    {
+        if (t->extras[i].deallocate && t->extras[i].info) t->extras[i].deallocate(t->extras[i].info);
+    }
+    free(t->extras);
+    if (t->global_vars)
+    {
+        HashMapIterator *it = hashmap_iterate(t->global_vars);
+        const char *key;
+        void *val;
+        while (hashmap_next_key_value(it, &key, &val)) xslt_free_runtime_stack_elem(t, (XsltStackElem*)val);
+        hashmap_free_iterator(it);
+        hashmap_free(t->global_vars);
+    }
+    xslt_free_rvts(t);
+    XsltDocInfo *d = t->doc_list;
+    while (d)
+    {
+        XsltDocInfo *next = d->next;
+        xslt_free_doc_keys(d);
+        if (d->owned)
+        {
+            xml_xpath_context_forget(t->xpath, xml_dom_document(d->doc));
+            xml_dom_free(d->doc);
+        }
+        free(d);
+        d = next;
+    }
+    xml_xpath_context_free(t->xpath);
+    if (t->keyed_nodes)
+    {
+        free(((XsltNodeFlags*)t->keyed_nodes)->slots);
+        free(t->keyed_nodes);
+    }
+    if (t->generated_ids) hashmap_free(t->generated_ids);
+    free(t->templ_tab);
+    free(t->vars_tab);
+    free(t);
+}
+
+/** Port of xsltFindElemSpaceHandling: are blank text children of node stripped? */
+static int xslt_find_elem_space_handling(XmlLibxslt1Transform *t, XMQNode *node)
+{
+    if (!node) return 0;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        const char *val = NULL;
+        if (style->strip_spaces && xml_node_kind(node) == XML_DOM_ELEMENT)
+        {
+            XmlNs *ns = xml_node_ns(node);
+            if (ns)
+            {
+                char *key = xslt1_key2(xml_node_name(node), xml_ns_href(ns));
+                val = (const char*)hashmap_get(style->strip_spaces, key);
+                free(key);
+                if (!val)
+                {
+                    key = xslt1_key2("*", xml_ns_href(ns));
+                    val = (const char*)hashmap_get(style->strip_spaces, key);
+                    free(key);
+                }
+            }
+            else
+            {
+                char *key = xslt1_key2(xml_node_name(node), NULL);
+                val = (const char*)hashmap_get(style->strip_spaces, key);
+                free(key);
+            }
+        }
+        if (val)
+        {
+            if (!strcmp(val, "strip")) return 1;
+            if (!strcmp(val, "preserve")) return 0;
+        }
+        if (style->strip_all == 1) return 1;
+        if (style->strip_all == -1) return 0;
+    }
+    return 0;
+}
+
+/** Port of xsltNeedElemSpaceHandling. */
+static int xslt_need_elem_space_handling(XmlLibxslt1Transform *t)
+{
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        if (style->strip_spaces) return 1;
+    }
+    return 0;
+}
+
+/** Port of xsltApplyStripSpaces: strip the blank text nodes of the source document. */
+static void xslt_apply_strip_spaces(XmlLibxslt1Transform *t, XMQNode *node)
+{
+    XMQNode *current = node;
+    while (current)
+    {
+        if (lx_is_real_node(current) && lx_has_children(current) && xslt_find_elem_space_handling(t, current))
+        {
+            XMQNode *del = NULL, *cur = lx_children(current);
+            while (cur)
+            {
+                if (lx_is_blank_node(cur)) del = cur;
+                cur = xml_node_next(cur);
+                if (del)
+                {
+                    xml_node_free(del);
+                    del = NULL;
+                }
+            }
+        }
+        if (lx_has_children(current) && xml_node_kind(current) != XML_DOM_ENTITY_REF)
+        {
+            current = lx_children(current);
+        }
+        else if (xml_node_next(current))
+        {
+            current = xml_node_next(current);
+        }
+        else
+        {
+            do
+            {
+                current = xml_node_parent(current);
+                if (!current) break;
+                if (current == node) return;
+                if (xml_node_next(current))
+                {
+                    current = xml_node_next(current);
+                    break;
+                }
+            } while (current);
+        }
+    }
+}
+
+/** Port of xsltCountKeys. */
+static int xslt_count_keys(XmlLibxslt1Transform *t)
+{
+    t->has_templ_key_patterns = 0;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        if (style->key_match)
+        {
+            t->has_templ_key_patterns = 1;
+            break;
+        }
+    }
+    t->nb_keys = 0;
+    for (XmlLibxslt1Stylesheet *style = t->style; style; style = xslt1_next_import(style))
+    {
+        for (XsltKeyDef *keyd = style->keys; keyd; keyd = keyd->next) t->nb_keys++;
+    }
+    return t->nb_keys;
+}
+
+static const char *xslt_import_method(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->method) return s->method; return NULL; }
+static const char *xslt_import_doctype_public(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->doctype_public) return s->doctype_public; return NULL; }
+static const char *xslt_import_doctype_system(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->doctype_system) return s->doctype_system; return NULL; }
+static const char *xslt_import_version(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->version) return s->version; return NULL; }
+static const char *xslt_import_encoding(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->encoding) return s->encoding; return NULL; }
+
+/** Port of xsltGetHTMLIDs. */
+static int xslt_get_html_ids(const char *version, const char **public_id, const char **system_id)
+{
+    static const struct { const char *version; const char *public_id; const char *system_id; } versions[] = {
+        { "5", NULL, "about:legacy-compat" },
+        { "4.01frame", "-//W3C//DTD HTML 4.01 Frameset//EN", "http://www.w3.org/TR/1999/REC-html401-19991224/frameset.dtd" },
+        { "4.01strict", "-//W3C//DTD HTML 4.01//EN", "http://www.w3.org/TR/1999/REC-html401-19991224/strict.dtd" },
+        { "4.01trans", "-//W3C//DTD HTML 4.01 Transitional//EN", "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd" },
+        { "4.01", "-//W3C//DTD HTML 4.01 Transitional//EN", "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd" },
+        { "4.0strict", "-//W3C//DTD HTML 4.01//EN", "http://www.w3.org/TR/html4/strict.dtd" },
+        { "4.0trans", "-//W3C//DTD HTML 4.01 Transitional//EN", "http://www.w3.org/TR/html4/loose.dtd" },
+        { "4.0frame", "-//W3C//DTD HTML 4.01 Frameset//EN", "http://www.w3.org/TR/html4/frameset.dtd" },
+        { "4.0", "-//W3C//DTD HTML 4.01 Transitional//EN", "http://www.w3.org/TR/html4/loose.dtd" },
+        { "3.2", "-//W3C//DTD HTML 3.2//EN", NULL }
+    };
+    if (!version) return -1;
+    for (size_t i = 0; i < sizeof(versions) / sizeof(versions[0]); i++)
+    {
+        if (!strcasecmp(version, versions[i].version))
+        {
+            if (public_id) *public_id = versions[i].public_id;
+            if (system_id) *system_id = versions[i].system_id;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+/** htmlNewDoc: an html document with a doctype (the html 4.0 transitional one if none is given). */
+static XmlDom *xslt_html_new_doc(const char *system_id, const char *public_id)
+{
+    XmlDom *res = xml_dom_new();
+    if (!system_id && !public_id)
+    {
+        system_id = "http://www.w3.org/TR/REC-html40/loose.dtd";
+        public_id = "-//W3C//DTD HTML 4.0 Transitional//EN";
+    }
+    xml_dom_set_dtd(res, "html", public_id, system_id);
+    return res;
+}
+
+static bool xslt_is_blank_text_node(XMQNode *n)
+{
+    return xml_node_kind(n) == XML_DOM_TEXT && xslt1_is_blank_str(xml_node_content(n));
+}
+
+/** Put the dtd first among the children of the document (libxslt's "hack" before comments). */
+static void xslt_set_dtd_first(XmlDom *res, const char *name, const char *public_id, const char *system_id)
+{
+    XMQNode *dtd = xml_dom_set_dtd(res, name, public_id, system_id);
+    XMQNode *doc = xml_dom_document(res);
+    XMQNode *first = xml_node_first_child(doc);
+    if (dtd && first && first != dtd)
+    {
+        xml_node_unlink(dtd);
+        xml_node_add_prev_sibling(first, dtd);
+    }
+}
+
+/** Port of xsltProcessUserParamInternal (with eval): a parameter given to the transformation. */
+static int xslt_process_user_param(XmlLibxslt1Transform *t, const char *qname, const char *value)
+{
+    XmlLibxslt1Stylesheet *style = t->style;
+    if (!qname || !value) return 0;
+    char *name = NULL, *href = NULL;
+    if (qname[0] == '{')
+    {
+        size_t len = 0;
+        while (qname[len] && qname[len] != '}') len++;
+        if (!qname[len])
+        {
+            xslt1_transform_error(t, style, NULL, "user param : malformed parameter name : %s\n", qname);
+            name = xslt1_strdup(qname);
+        }
+        else
+        {
+            href = xslt1_strndup(qname + 1, len - 1);
+            name = xslt1_strdup(qname + len + 1);
+        }
+    }
+    else
+    {
+        char *prefix = NULL;
+        name = xslt1_split_qname(qname, &prefix);
+        if (prefix)
+        {
+            XmlNs *ns = lx_search_ns(xml_dom_root_element(style->doc), prefix);
+            if (!ns) xslt1_transform_error(t, style, NULL, "user param : no namespace bound to prefix %s\n", prefix);
+            else href = xslt1_strdup(xml_ns_href(ns));
+            free(prefix);
+        }
+    }
+    if (!name)
+    {
+        free(href);
+        return -1;
+    }
+    char *key = xslt1_key2(name, href);
+    if (hashmap_get(t->global_vars, key)) xslt1_transform_error(t, style, NULL, "Global parameter %s already defined\n", name);
+    // Like libxslt, only the variables of the top stylesheet are looked at (for every import).
+    for (XmlLibxslt1Stylesheet *st = style; st; st = xslt1_next_import(st))
+    {
+        for (XsltStackElem *elem = t->style->variables; elem; elem = elem->next)
+        {
+            if (elem->comp && elem->comp->type == XSLT_FUNC_VARIABLE && xslt1_streq(elem->name, name) && xslt1_streq(elem->name_uri, href))
+            {
+                free(key);
+                free(name);
+                free(href);
+                return 0;
+            }
+        }
+    }
+    XmlXPathResult *result = NULL;
+    XmlXPathComp *xp_expr = xslt1_xpath_compile(&style->settings, NULL, value, false);
+    if (xp_expr)
+    {
+        long pos = t->xp_position, size = t->xp_size;
+        t->xp_size = 1;
+        t->xp_position = 1;
+        result = xslt_xpath_eval(t, xp_expr, t->initial_context_node);
+        t->xp_position = pos;
+        t->xp_size = size;
+        xml_xpath_comp_free(xp_expr);
+    }
+    if (!result)
+    {
+        xslt1_transform_error(t, style, NULL, "Evaluating user parameter %s failed\n", name);
+        t->state = XSLT_STATE_STOPPED;
+        free(key);
+        free(name);
+        free(href);
+        return -1;
+    }
+    XsltStackElem *elem = xslt_new_stack_elem();
+    elem->owns_strings = true;
+    elem->name = name;
+    elem->select = xslt1_strdup(value);
+    elem->name_uri = href;
+    elem->computed = 1;
+    elem->value = result;
+    if (hashmap_get(t->global_vars, key))
+    {
+        xslt1_transform_error(t, style, NULL, "Global parameter %s already defined\n", name);
+        xslt_free_runtime_stack_elem(t, elem);
+    }
+    else
+    {
+        hashmap_put(t->global_vars, key, elem);
+    }
+    free(key);
+    return 0;
+}
+
+/** Port of xsltEvalUserParams. */
+static int xslt_eval_user_params(XmlLibxslt1Transform *t, const char **params)
+{
+    if (!params) return 0;
+    for (size_t i = 0; params[i]; i += 2)
+    {
+        if (xslt_process_user_param(t, params[i], params[i + 1]) != 0) return -1;
+    }
+    return 0;
+}
+
+// Output, port of libxslt xsltutils.c xsltSaveResultTo ///////////////
+
+static int xslt_import_int_indent(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->indent != -1) return s->indent; return -1; }
+static int xslt_import_int_omit(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->omit_xml_declaration != -1) return s->omit_xml_declaration; return -1; }
+static int xslt_import_int_standalone(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->standalone != -1) return s->standalone; return -1; }
+
+/** Port of xsltSaveResultTo: serialize the result in UTF-8 (the encoding is applied by the caller). */
+static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Stylesheet *style, int type)
+{
+    if (!buf || !result || !style) return false;
+    XMQNode *doc_node = xml_dom_document(result);
+    XMQNode *first = xml_node_first_child(doc_node);
+    if (!first || (xml_node_kind(first) == XML_DOM_DTD && !xml_node_next(first))) return true;
+    if (style->method_uri && (!style->method || strcmp(style->method, "xhtml")))
+    {
+        xslt1_generic_error(&style->settings, "xsltSaveResultTo : unknown output method\n");
+        return false;
+    }
+    const char *method = xslt_import_method(style);
+    const char *encoding = xslt_import_encoding(style);
+    int indent = xslt_import_int_indent(style);
+    if (!method && type == XSLT_OUTPUT_HTML) method = "html";
+    if (method && !strcmp(method, "html"))
+    {
+        xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
+        if (indent == -1) indent = 1;
+        xml_html_save_doc_to(buf, result, indent != 0);
+    }
+    else if (method && !strcmp(method, "xhtml"))
+    {
+        xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
+        xml_html_save_doc_to(buf, result, true);
+    }
+    else if (method && !strcmp(method, "text"))
+    {
+        XMQNode *cur = first;
+        while (cur)
+        {
+            if (xml_node_kind(cur) == XML_DOM_TEXT && xml_node_content(cur)) membuffer_append(buf, xml_node_content(cur));
+            XMQNode *child = lx_children(cur);
+            if (child && xml_node_kind(child) != XML_DOM_ENTITY_DECL && xml_node_kind(child) != XML_DOM_ENTITY_REF)
+            {
+                cur = child;
+                continue;
+            }
+            if (xml_node_next(cur))
+            {
+                cur = xml_node_next(cur);
+                continue;
+            }
+            do
+            {
+                cur = xml_node_parent(cur);
+                if (!cur || cur == doc_node)
+                {
+                    cur = NULL;
+                    break;
+                }
+                if (xml_node_next(cur))
+                {
+                    cur = xml_node_next(cur);
+                    break;
+                }
+            } while (cur);
+        }
+    }
+    else
+    {
+        int omit_xml_decl = xslt_import_int_omit(style);
+        int standalone = xslt_import_int_standalone(style);
+        if (omit_xml_decl != 1)
+        {
+            membuffer_append(buf, "<?xml version=");
+            const char *version = xml_dom_version(result);
+            membuffer_append(buf, "\"");
+            membuffer_append(buf, version ? version : "1.0");
+            membuffer_append(buf, "\"");
+            if (!encoding) encoding = xml_dom_encoding(result);
+            if (encoding)
+            {
+                membuffer_append(buf, " encoding=\"");
+                membuffer_append(buf, encoding);
+                membuffer_append(buf, "\"");
+            }
+            if (standalone == 0) membuffer_append(buf, " standalone=\"no\"");
+            else if (standalone == 1) membuffer_append(buf, " standalone=\"yes\"");
+            membuffer_append(buf, "?>\n");
+        }
+        for (XMQNode *child = first; child; child = xml_node_next(child))
+        {
+            xml_save_node_dump_output(buf, result, child, 0, indent == 1, encoding);
+            if (indent && (xml_node_kind(child) == XML_DOM_DTD || (xml_node_kind(child) == XML_DOM_COMMENT && xml_node_next(child))))
+                membuffer_append(buf, "\n");
+        }
+        if (indent) membuffer_append(buf, "\n");
+    }
+    return true;
+}
+
+char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *style, int output_type, size_t *len)
+{
+    MemBuffer *utf8 = new_membuffer();
+    if (result && xml_node_first_child(xml_dom_document(result))) xslt_save_result_to(utf8, result, style, output_type);
+    const char *encoding = xslt_import_encoding(style);
+    size_t n = utf8->used_;
+    MemBuffer *out = utf8;
+    // Like libxslt, no encoder for UTF-8; an encoding without an encoder is written as UTF-8.
+    if (encoding && strcasecmp(encoding, "UTF-8") && strcasecmp(encoding, "UTF8") && xml_save_encoding_supported(encoding))
+    {
+        membuffer_append_null(utf8);
+        char *u = free_membuffer_but_return_trimmed_content(utf8);
+        out = new_membuffer();
+        xml_save_transcode(out, u, n, encoding);
+        free(u);
+    }
+    if (len) *len = out->used_;
+    membuffer_append_null(out);
+    return free_membuffer_but_return_trimmed_content(out);
+}
+
+/** Port of xsltApplyStylesheetInternal. */
+XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc, const char **params, int *output_type)
+{
+    if (!style || !doc) return NULL;
+    XmlDom *res = NULL;
+    XmlLibxslt1Transform *t = xml_libxslt1_transform_new(style, doc);
+    t->params = params;
+    t->initial_context_doc = doc;
+    t->initial_context_node = xml_dom_document(doc);
+    const char *method = xslt_import_method(style);
+    const char *doctype_public = xslt_import_doctype_public(style);
+    const char *doctype_system = xslt_import_doctype_system(style);
+    const char *version = xslt_import_version(style);
+    const char *encoding = xslt_import_encoding(style);
+    if (method && strcmp(method, "xml"))
+    {
+        if (!strcmp(method, "html"))
+        {
+            t->type = XSLT_OUTPUT_HTML;
+            if (doctype_public || doctype_system)
+            {
+                res = xslt_html_new_doc(doctype_system, doctype_public);
+            }
+            else if (!version)
+            {
+                // htmlNewDoc then the dtd is removed.
+                res = xml_dom_new();
+            }
+            else
+            {
+                xslt_get_html_ids(version, &doctype_public, &doctype_system);
+                res = xslt_html_new_doc(doctype_system, doctype_public);
+            }
+        }
+        else if (!strcmp(method, "xhtml"))
+        {
+            xslt1_transform_error(t, NULL, xml_dom_document(doc), "xsltApplyStylesheetInternal: unsupported method xhtml, using html\n");
+            t->type = XSLT_OUTPUT_HTML;
+            res = xslt_html_new_doc(doctype_system, doctype_public);
+        }
+        else if (!strcmp(method, "text"))
+        {
+            t->type = XSLT_OUTPUT_TEXT;
+            res = xml_dom_new();
+            xml_dom_set_version(res, style->version ? style->version : "1.0");
+        }
+        else
+        {
+            xslt1_transform_error(t, NULL, xml_dom_document(doc), "xsltApplyStylesheetInternal: unsupported method (%s)\n", method);
+            goto error;
+        }
+    }
+    else
+    {
+        t->type = XSLT_OUTPUT_XML;
+        res = xml_dom_new();
+        xml_dom_set_version(res, style->version ? style->version : "1.0");
+    }
+    if (encoding) xml_dom_set_encoding(res, encoding);
+    t->node = xml_dom_document(doc);
+    t->output = res;
+    t->xp_size = 1;
+    t->xp_position = 1;
+    if (xslt_need_elem_space_handling(t)) xslt_apply_strip_spaces(t, xml_dom_root_element(doc));
+    t->global_vars = hashmap_create(64);
+    if (params) xslt_eval_user_params(t, params);
+    xslt_count_keys(t);
+    xslt_eval_global_variables(t);
+    // Clean up any unused fragments.
+    if (t->local_rvt) xslt_release_local_rvts(t, NULL);
+    t->insert = xml_dom_document(res);
+    t->vars_base = t->vars_nr - 1;
+    xslt_process_one_node(t, t->node, NULL);
+    xslt_local_variable_pop(t, 0, -2);
+
+    XMQNode *root;
+    root = xml_dom_root_element(res);
+    if (root)
+    {
+        char *doctype = NULL;
+        XmlNs *rns = xml_node_ns(root);
+        if (rns && xml_ns_prefix(rns))
+        {
+            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
+            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+        }
+        else
+        {
+            doctype = xslt1_strdup(xml_node_name(root));
+        }
+        // Apply the default html output method when the root element is html.
+        if (!method && !rns && !strcasecmp(xml_node_name(root), "html"))
+        {
+            XMQNode *tmp = xml_node_first_child(xml_dom_document(res));
+            while (tmp && tmp != root)
+            {
+                if (xml_node_kind(tmp) == XML_DOM_ELEMENT) break;
+                if (xml_node_kind(tmp) == XML_DOM_TEXT && !xslt_is_blank_text_node(tmp)) break;
+                tmp = xml_node_next(tmp);
+            }
+            if (tmp == root)
+            {
+                t->type = XSLT_OUTPUT_HTML;
+                if (doctype_public || doctype_system)
+                {
+                    xml_dom_set_dtd(res, doctype, doctype_public, doctype_system);
+                }
+                else if (version)
+                {
+                    xslt_get_html_ids(version, &doctype_public, &doctype_system);
+                    if (doctype_public || doctype_system) xml_dom_set_dtd(res, doctype, doctype_public, doctype_system);
+                }
+            }
+        }
+        if (t->type == XSLT_OUTPUT_XML)
+        {
+            doctype_public = xslt_import_doctype_public(style);
+            doctype_system = xslt_import_doctype_system(style);
+            if (doctype_public || doctype_system) xslt_set_dtd_first(res, doctype, doctype_public, doctype_system);
+        }
+        free(doctype);
+    }
+    if (t->state != XSLT_STATE_OK)
+    {
+        xml_dom_free(res);
+        res = NULL;
+    }
+    if (output_type) *output_type = t->type;
+    xml_libxslt1_transform_free(t);
+    return res;
+error:
+    if (res) xml_dom_free(res);
+    xml_libxslt1_transform_free(t);
+    return NULL;
+}
+
+#endif // XML_LIBXSLT1_TRANSFORM_MODULE
+
 // PART C XML_C ////////////////////////////////////////
 
 #ifdef XML_MODULE
@@ -34891,6 +50747,8 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
     case XMQ_ERROR_IXML_SYNTAX_ERROR: return "ixml syntax error";
+    case XMQ_ERROR_XSLT_COMPILE: return "xslt stylesheet cannot be compiled";
+    case XMQ_ERROR_XSLT_TRANSFORM: return "xslt transformation failed";
     case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
     case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";

@@ -60,7 +60,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #define LIBXML_STATIC
-#define LIBXSLT_STATIC
 #define XMLSEC_STATIC
 
 #include<libxml/tree.h>
@@ -68,11 +67,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include<libxml/xpathInternals.h>
 #include<libxml/xmlschemas.h>
 #include<libxml/parserInternals.h>
-#include<libxslt/documents.h>
-#include<libxslt/xslt.h>
-#include<libxslt/xsltInternals.h>
-#include<libxslt/transform.h>
-#include<libxslt/xsltutils.h>
 
 typedef enum
 {
@@ -165,7 +159,7 @@ struct XMQCliCommand
     const char *content; // Content to replace something.
     const char *add_xmq; // XMQ content to add.
     XMQDoc *xslt_doq; // The xmq document loaded to generate the xslt.
-    xsltStylesheetPtr xslt; // The xslt transform to be used.
+    XMQXslt *xslt; // The xslt transform to be used (the native xslt 1.0).
     HashMap *xslt_params; // Parameters to the xslt transform.
 
     const char *xsd_name; // Name of xsd file.
@@ -426,12 +420,10 @@ const char *lookup_theme_spec();
 const char *tokenize_type_to_string(XMQCliTokenizeType type);
 void trace_(const char* fmt, ...);
 void verbose_(const char* fmt, ...);
-xmlDocPtr xmqDocDefaultLoaderFunc(const xmlChar * URI, xmlDictPtr dict, int options, void *ctxt /* ATTRIBUTE_UNUSED */, xsltLoadType type /* ATTRIBUTE_UNUSED*/);
 bool xmq_parse_cmd_line(int argc, const char **argv, XMQCliCommand *command);
 
 /////////////////////////////////////////////////////////////////////////////////////
-// Bridge to libxml2/libxslt, used only for xslt transforms and xsd validation until
-// these are implemented natively. The trees are copied node by node.
+// Bridge to libxml2, used only for xsd validation until it is implemented natively. The trees are copied node by node.
 
 static xmlNsPtr cli_lx_ns(xmlDocPtr ldoc, xmlNodePtr lnode, XmlNs *ns)
 {
@@ -565,114 +557,6 @@ static xmlDocPtr cli_to_libxml(XMQDoc *doq)
     ldoc->standalone = xml_dom_standalone(dom);
     cli_lx_copy_children(ldoc, (xmlNodePtr)ldoc, xml_dom_document(dom));
     return ldoc;
-}
-
-static XmlNs *cli_nx_ns(XMQNode *e, xmlNsPtr ns)
-{
-    if (!ns) return NULL;
-    const char *href = ns->href ? (const char*)ns->href : "";
-    XmlNs *n = xml_ns_lookup_prefix(e, (const char*)ns->prefix);
-    if (n && xml_ns_href(n) && !strcmp(xml_ns_href(n), href)) return n;
-    XmlNs *d = xml_ns_declare(e, (const char*)ns->prefix, href);
-    return d ? d : n;
-}
-
-static void cli_nx_copy_children(XmlDom *dom, XMQNode *parent, xmlNodePtr lparent);
-
-static void cli_nx_copy_node(XmlDom *dom, XMQNode *parent, xmlNodePtr l)
-{
-    XMQNode *n = NULL;
-    switch (l->type)
-    {
-    case XML_ELEMENT_NODE:
-    {
-        n = xml_node_new_element(dom, (const char*)l->name, NULL);
-        xml_node_append_child(parent, n);
-        for (xmlNsPtr d = l->nsDef; d; d = d->next)
-        {
-            xml_ns_declare(n, (const char*)d->prefix, d->href ? (const char*)d->href : "");
-        }
-        xml_node_set_ns(n, cli_nx_ns(n, l->ns));
-        for (xmlAttrPtr a = l->properties; a; a = a->next)
-        {
-            XMQAttr *na = xml_node_append_attr(n, (const char*)a->name, cli_nx_ns(n, a->ns), NULL);
-            for (xmlNodePtr c = a->children; c; c = c->next)
-            {
-                if (c->type == XML_TEXT_NODE) xml_node_append_child(xml_attr_node(na), xml_node_new_text(dom, (const char*)c->content));
-                else if (c->type == XML_ENTITY_REF_NODE) xml_node_append_child(xml_attr_node(na), xml_node_new_entity_ref(dom, (const char*)c->name));
-            }
-        }
-        cli_nx_copy_children(dom, n, l);
-        return;
-    }
-    case XML_TEXT_NODE:
-        n = xml_node_new_text(dom, l->content ? (const char*)l->content : "");
-        break;
-    case XML_CDATA_SECTION_NODE:
-    {
-        const char *c = l->content ? (const char*)l->content : "";
-        n = xml_node_new_cdata(dom, c, strlen(c));
-        break;
-    }
-    case XML_COMMENT_NODE:
-        n = xml_node_new_comment(dom, (const char*)l->content);
-        break;
-    case XML_PI_NODE:
-        n = xml_node_new_pi(dom, (const char*)l->name, (const char*)l->content);
-        break;
-    case XML_ENTITY_REF_NODE:
-        n = xml_node_new_entity_ref(dom, (const char*)l->name);
-        break;
-    case XML_DTD_NODE:
-    {
-        // Reparse the serialized doctype with the native parser.
-        xmlBufferPtr buffer = xmlBufferCreate();
-        xmlNodeDump(buffer, l->doc, l, 0, 0);
-        const char *dtd = (const char*)xmlBufferContent(buffer);
-        size_t dl = strlen(dtd);
-        char *buf = (char*)malloc(dl + 8);
-        memcpy(buf, dtd, dl);
-        memcpy(buf + dl, "\n<x/>", 6);
-        buf[dl + 5] = 0;
-        xmlBufferFree(buffer);
-        XmlParseSettings settings;
-        xml_parse_settings_default(&settings);
-        XmlParseError error;
-        XmlDom *tmp = xml_parse_buffer(buf, buf + strlen(buf), &settings, &error);
-        xml_parse_error_free(&error);
-        free(buf);
-        if (tmp && xml_dom_dtd(tmp)) n = xml_node_copy(dom, xml_dom_dtd(tmp), true);
-        if (tmp) xml_dom_free(tmp);
-        break;
-    }
-    default:
-        return;
-    }
-    if (n) xml_node_append_child(parent, n);
-}
-
-static void cli_nx_copy_children(XmlDom *dom, XMQNode *parent, xmlNodePtr lparent)
-{
-    for (xmlNodePtr c = lparent->children; c; c = c->next) cli_nx_copy_node(dom, parent, c);
-}
-
-/** A native copy of a libxml2 document. */
-static XmlDom *cli_from_libxml(xmlDocPtr ldoc)
-{
-    XmlDom *dom = xml_dom_new();
-    if (!ldoc) return dom;
-    if (ldoc->version) xml_dom_set_version(dom, (const char*)ldoc->version);
-    xml_dom_set_standalone(dom, ldoc->standalone);
-    cli_nx_copy_children(dom, xml_dom_document(dom), (xmlNodePtr)ldoc);
-    return dom;
-}
-
-/** Replace the document content of doq with a copy of the libxml2 document. */
-static void cli_set_from_libxml(XMQDoc *doq, xmlDocPtr ldoc)
-{
-    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(doq);
-    xmqSetImplementationDoc(doq, cli_from_libxml(ldoc));
-    if (old) xml_dom_free(old);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -988,8 +872,7 @@ void free_cli_command(XMQCliCommand *cmd)
     }
     if (cmd->xslt)
     {
-        // The stylesheet owns its libxml2 copy of the xslt document.
-        xsltFreeStylesheet(cmd->xslt);
+        xmqFreeXslt(cmd->xslt);
         xmqFreeDoc(cmd->xslt_doq);
         cmd->xslt = NULL;
     }
@@ -2976,43 +2859,35 @@ bool cmd_output(XMQCliCommand *command)
 
 bool cmd_transform(XMQCliCommand *command)
 {
-    xmlDocPtr doc = cli_to_libxml(command->env->doc);
     verbose_("xmq=", "transforming");
-
-    xsltSetLoaderFunc(xmqDocDefaultLoaderFunc);
-
-    const char **params = NULL;
-    HashMapIterator *i;
-    size_t j = 0;
-
     if (command->xslt_params)
     {
-        size_t n = hashmap_size(command->xslt_params);
-        params = (const char**)calloc(2*n+1, sizeof(char*));
-
-        i = hashmap_iterate(command->xslt_params);
+        HashMapIterator *i = hashmap_iterate(command->xslt_params);
         const char *key;
         void *val;
         while (hashmap_next_key_value(i, &key, &val))
         {
-            params[j++] = key;
-            params[j++] = (const char*)val;
+            // The values are xpath expressions, --stringparam values are quoted already.
+            xmqSetXsltParam(command->xslt, key, (const char*)val, true);
             verbose_("xmq=", "param %s %s", key, val);
         }
-        params[j++] = NULL;
+        hashmap_free_iterator(i);
     }
 
     verbose_("xmq=", "applying stylesheet");
-    xmlDocPtr new_doc = xsltApplyStylesheet(command->xslt, doc, params);
-
-    if (params)
+    XMQReturnDoc rd = xmqTransform(command->xslt, command->env->doc);
+    XmlDom *result = NULL;
+    if (rd.status == XMQ_OK)
     {
-        hashmap_free_iterator(i);
-        free(params);
+        // Take over the native dom of the result.
+        result = (XmlDom*)xmqGetImplementationDoc(rd.doc);
+        xmqSetImplementationDoc(rd.doc, NULL);
+        xmqFreeDoc(rd.doc);
     }
-    xmlFreeDoc(doc);
-    cli_set_from_libxml(command->env->doc, new_doc);
-    if (new_doc) xmlFreeDoc(new_doc);
+    if (!result) result = xml_dom_new();
+    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
+    xmqSetImplementationDoc(command->env->doc, result);
+    if (old) xml_dom_free(old);
     // Replace the xmq marker elements, eg xmq:entity(name=nbsp), that the
     // transform may have generated (see xmq_replace_transform_markers).
     xmq_replace_transform_markers(command->env->doc);
@@ -4897,10 +4772,9 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
         if (root) substitute_entity(xslt_dom, root, NULL, true);
     }
     command->xslt_doq = doq;
-    // The stylesheet takes over (and frees) the libxml2 copy.
-    xmlDocPtr xslt = cli_to_libxml(doq);
-    command->xslt = xsltParseStylesheetDoc(xslt);
-    if (!command->xslt) xmlFreeDoc(xslt);
+    // The messages are printed on stderr, like libxslt does.
+    XMQReturnXslt rx = xmqCompileXslt(doq, NULL);
+    command->xslt = rx.xslt;
     return true;
 }
 
@@ -5462,100 +5336,6 @@ bool has_log_xmq(int argc, const char **argv)
     return false;
 }
 
-xmlDocPtr
-xmqDocDefaultLoaderFunc(const xmlChar * URI,
-                        xmlDictPtr dict,
-                        int options,
-                        void *ctxt /* ATTRIBUTE_UNUSED */,
-                        xsltLoadType type /*ATTRIBUTE_UNUSED */)
-{
-    if (type == XSLT_LOAD_DOCUMENT && (URI == NULL || URI[0] == '\0'))
-    {
-        // This code is run when the xsl transform uses document('')
-        // ie a self reference to fetch lookup tables and other things.
-        xsltTransformContextPtr tctxt = (xsltTransformContextPtr)ctxt;
-
-        if (tctxt != NULL &&
-            tctxt->style != NULL &&
-            tctxt->style->doc != NULL)
-	{
-            return xmlCopyDoc(tctxt->style->doc, 1);
-        }
-
-        return NULL;
-    }
-
-    XMQReturnDoc rd = xmqNewDoc();
-    assert(rd.status == XMQ_OK);
-    XMQDoc *doq = rd.doc;
-
-    verbose_("xmq=", "xsl-document-load %s", URI);
-
-    bool ok = xmqParseFileWithType(doq,
-                                   (const char*)URI,
-                                   NULL,
-                                   XMQ_CONTENT_DETECT,
-                                   XMQ_FLAG_TRIM_NONE);
-    if (!ok)
-    {
-        const char *error = xmqDocError(doq);
-        if (error) {
-            fprintf(stderr, "%s\n", error);
-        }
-        xmqFreeDoc(doq);
-        return NULL;
-    }
-
-    verbose_("xmq=", "xsl-document-load %zu bytes from %s", xmqGetOriginalSize(doq), URI);
-
-    // libxslt takes over (and frees) the libxml2 copy, the xmq doc is freed here.
-    xmlDocPtr doc = cli_to_libxml(doq);
-    xmqFreeDoc(doq);
-    return doc;
-
-    /*
-    xmlParserCtxtPtr pctxt;
-    xmlParserInputPtr inputStream;
-    xmlDocPtr doc;
-
-    pctxt = xmlNewParserCtxt();
-    if (pctxt == NULL)
-        return(NULL);
-    if ((dict != NULL) && (pctxt->dict != NULL)) {
-        xmlDictFree(pctxt->dict);
-        pctxt->dict = NULL;
-    }
-    if (dict != NULL) {
-        pctxt->dict = dict;
-        xmlDictReference(pctxt->dict);
-#ifdef WITH_XSLT_DEBUG
-        xsltGenericDebug(xsltGenericDebugContext,
-                     "Reusing dictionary for document\n");
-#endif
-    }
-    xmlCtxtUseOptions(pctxt, options);
-    inputStream = xmlLoadExternalEntity((const char *) URI, NULL, pctxt);
-    if (inputStream == NULL) {
-        xmlFreeParserCtxt(pctxt);
-        return(NULL);
-    }
-    inputPush(pctxt, inputStream);
-
-    xmlParseDocument(pctxt);
-
-    if (pctxt->wellFormed) {
-        doc = pctxt->myDoc;
-    }
-    else {
-        doc = NULL;
-        xmlFreeDoc(pctxt->myDoc);
-        pctxt->myDoc = NULL;
-    }
-    xmlFreeParserCtxt(pctxt);
-
-    return(doc);
-    */
-}
 
 /** Free the command chain and the strings kept for the command line handlers. */
 static void free_all_cli_commands(XMQCliCommand *load_command)

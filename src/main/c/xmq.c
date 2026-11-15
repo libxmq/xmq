@@ -59,6 +59,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include"parts/xml_html_parser.h"
 #include"parts/xml_html_save.h"
 #include"parts/xml_xpath.h"
+#include"parts/xml_uri.h"
+#include"parts/xml_libxslt1_xslt.h"
+#include"parts/xml_libxslt1_transform.h"
 #include"parts/xml.h"
 #include"parts/xmq_parser.h"
 #include"parts/xmq_printer.h"
@@ -6281,6 +6284,229 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
     return v;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
+// XSLT 1.0, the native port of libxslt (parts/xml_libxslt1_*).
+
+struct XMQXslt
+{
+    XmlLibxslt1Stylesheet *style;
+    XMQXsltSettings settings;
+    MemBuffer *messages;      // The messages of the current compilation or transformation.
+    char **params;            // name, xpath value pairs, NULL terminated.
+    size_t num_params;
+};
+
+static void xmq_xslt_message(void *user_data, const char *message)
+{
+    XMQXslt *x = (XMQXslt*)user_data;
+    if (x->messages) membuffer_append(x->messages, message);
+    if (x->settings.message_callback) x->settings.message_callback(x->settings.message_user_data, message);
+    else fputs(message, stderr);
+}
+
+/** The native dom of an xmq document, taken over (the document is left empty). */
+static XmlDom *xmq_take_dom(XMQDoc *doq, const char *url)
+{
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(doq);
+    if (!dom) return NULL;
+    xmqSetImplementationDoc(doq, NULL);
+    if (url && !xml_dom_url(dom)) xml_dom_set_url(dom, url);
+    return dom;
+}
+
+static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1LoadType type)
+{
+    XMQXslt *x = (XMQXslt*)user_data;
+    XMQDoc *doq = NULL;
+    // document('') of a stylesheet without url: the stylesheet itself.
+    if (type == XML_LIBXSLT1_LOAD_DOCUMENT && (!uri || !*uri) && x->style) return xml_libxslt1_copy_stylesheet_doc(x->style);
+    if (x->settings.loader)
+    {
+        doq = x->settings.loader(x->settings.loader_user_data, uri);
+    }
+    else
+    {
+        const char *path = uri;
+        if (!strncmp(path, "file://", 7))
+        {
+            path += 7;
+            if (!strncmp(path, "localhost/", 10)) path += 9;
+        }
+        XMQReturnDoc rd = xmqNewDoc();
+        doq = rd.doc;
+        if (!xmqParseFileWithType(doq, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE))
+        {
+            const char *error = xmqDocError(doq);
+            if (error) xmq_xslt_message(x, error);
+            xmqFreeDoc(doq);
+            return NULL;
+        }
+    }
+    if (!doq) return NULL;
+    XmlDom *dom = xmq_take_dom(doq, uri);
+    if (x->settings.loader) xml_dom_set_url(dom, uri);
+    xmqFreeDoc(doq);
+    return dom;
+}
+
+static void xmq_set_doc_error(XMQDoc *doq, MemBuffer *mb)
+{
+    if (!doq || !mb) return;
+    membuffer_append_null(mb);
+    char *msg = free_membuffer_but_return_trimmed_content(mb);
+    if (!*msg)
+    {
+        free(msg);
+        return;
+    }
+    free((void*)doq->error_);
+    doq->error_ = msg;
+}
+
+XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings)
+{
+    XMQReturnXslt ret = { XMQ_ERROR_XSLT_COMPILE, NULL };
+    XmlDom *src = stylesheet ? (XmlDom*)xmqGetImplementationDoc(stylesheet) : NULL;
+    if (!src) return ret;
+    XMQXslt *x = (XMQXslt*)calloc(1, sizeof(XMQXslt));
+    if (settings) x->settings = *settings;
+    // A copy of the stylesheet, the compiler changes it.
+    XmlDom *dom = xml_dom_new();
+    if (xml_dom_version(src)) xml_dom_set_version(dom, xml_dom_version(src));
+    if (xml_dom_encoding(src)) xml_dom_set_encoding(dom, xml_dom_encoding(src));
+    // Relative uris in the stylesheet (import, include, document()) are resolved against the
+    // url of its dom, without one (xmq does not set it) against the current directory.
+    if (xml_dom_url(src)) xml_dom_set_url(dom, xml_dom_url(src));
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(src)); c; c = xml_node_next(c))
+    {
+        XMQNode *copy = xml_node_copy(dom, c, true);
+        if (copy) xml_node_append_child(xml_dom_document(dom), copy);
+    }
+    for (XMQNode *c = xml_node_first_child(xml_dom_document(dom)); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ELEMENT) xml_node_reconcile_ns(c);
+    }
+    XmlLibxslt1Settings xs;
+    xml_libxslt1_settings_default(&xs);
+    xs.message_callback = xmq_xslt_message;
+    xs.message_user_data = x;
+    xs.loader = xmq_xslt_loader;
+    xs.loader_user_data = x;
+    x->messages = new_membuffer();
+    x->style = xml_libxslt1_compile(dom, &xs);
+    if (!x->style)
+    {
+        xml_dom_free(dom);
+        xmq_set_doc_error(stylesheet, x->messages);
+        x->messages = NULL;
+        free(x);
+        return ret;
+    }
+    free_membuffer_and_free_content(x->messages);
+    x->messages = NULL;
+    ret.status = XMQ_OK;
+    ret.xslt = x;
+    return ret;
+}
+
+void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is_xpath)
+{
+    if (!xslt || !name || !value) return;
+    char *v;
+    if (is_xpath)
+    {
+        v = strdup(value);
+    }
+    else
+    {
+        // A string literal, like xsltQuoteUserParams (concat() when both quotes are used).
+        if (!strchr(value, '\''))
+        {
+            v = (char*)malloc(strlen(value) + 3);
+            sprintf(v, "'%s'", value);
+        }
+        else if (!strchr(value, '"'))
+        {
+            v = (char*)malloc(strlen(value) + 3);
+            sprintf(v, "\"%s\"", value);
+        }
+        else
+        {
+            MemBuffer *mb = new_membuffer();
+            membuffer_append(mb, "concat('");
+            for (const char *p = value; *p; p++)
+            {
+                if (*p == '\'') membuffer_append(mb, "', \"'\", '");
+                else membuffer_append_char(mb, *p);
+            }
+            membuffer_append(mb, "')");
+            membuffer_append_null(mb);
+            v = free_membuffer_but_return_trimmed_content(mb);
+        }
+    }
+    // Replace an earlier value of the same parameter.
+    for (size_t i = 0; i < xslt->num_params; i++)
+    {
+        if (!strcmp(xslt->params[2 * i], name))
+        {
+            free(xslt->params[2 * i + 1]);
+            xslt->params[2 * i + 1] = v;
+            return;
+        }
+    }
+    xslt->params = (char**)realloc(xslt->params, (2 * xslt->num_params + 3) * sizeof(char*));
+    xslt->params[2 * xslt->num_params] = strdup(name);
+    xslt->params[2 * xslt->num_params + 1] = v;
+    xslt->num_params++;
+    xslt->params[2 * xslt->num_params] = NULL;
+}
+
+XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
+{
+    XMQReturnDoc ret = { XMQ_ERROR_XSLT_TRANSFORM, NULL };
+    XmlDom *source = doc ? (XmlDom*)xmqGetImplementationDoc(doc) : NULL;
+    if (!xslt || !source) return ret;
+    xslt->messages = new_membuffer();
+    int type = XML_LIBXSLT1_OUTPUT_XML;
+    XmlDom *res = xml_libxslt1_apply_stylesheet(xslt->style, source, (const char**)xslt->params, &type);
+    if (!res)
+    {
+        xmq_set_doc_error(doc, xslt->messages);
+        xslt->messages = NULL;
+        return ret;
+    }
+    free_membuffer_and_free_content(xslt->messages);
+    xslt->messages = NULL;
+    XMQReturnDoc rd = xmqNewDoc();
+    XmlDom *old = (XmlDom*)xmqGetImplementationDoc(rd.doc);
+    xmqSetImplementationDoc(rd.doc, res);
+    if (old) xml_dom_free(old);
+    rd.doc->original_content_type_ = type == XML_LIBXSLT1_OUTPUT_HTML ? XMQ_CONTENT_HTML :
+                                     type == XML_LIBXSLT1_OUTPUT_TEXT ? XMQ_CONTENT_TEXT : XMQ_CONTENT_XML;
+    ret.status = XMQ_OK;
+    ret.doc = rd.doc;
+    return ret;
+}
+
+char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len)
+{
+    if (!xslt || !result) return NULL;
+    XmlDom *dom = (XmlDom*)xmqGetImplementationDoc(result);
+    XMQContentType ct = result->original_content_type_;
+    int type = ct == XMQ_CONTENT_HTML ? XML_LIBXSLT1_OUTPUT_HTML : ct == XMQ_CONTENT_TEXT ? XML_LIBXSLT1_OUTPUT_TEXT : XML_LIBXSLT1_OUTPUT_XML;
+    return xml_libxslt1_save_result_to_string(dom, xslt->style, type, len);
+}
+
+void xmqFreeXslt(XMQXslt *xslt)
+{
+    if (!xslt) return;
+    xml_libxslt1_stylesheet_free(xslt->style);
+    for (size_t i = 0; i < 2 * xslt->num_params; i++) free(xslt->params[i]);
+    free(xslt->params);
+    if (xslt->messages) free_membuffer_and_free_content(xslt->messages);
+    free(xslt);
+}
+
 #ifdef BUILDING_DIST_XMQ
 
 #include"parts/always.c"
@@ -6306,6 +6532,9 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
 #include"parts/xml_html_parser.c"
 #include"parts/xml_html_save.c"
 #include"parts/xml_xpath.c"
+#include"parts/xml_uri.c"
+#include"parts/xml_libxslt1_xslt.c"
+#include"parts/xml_libxslt1_transform.c"
 #include"parts/xml.c"
 #include"parts/xmq_internals.c"
 #include"parts/xmq_parser.c"

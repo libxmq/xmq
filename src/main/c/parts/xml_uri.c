@@ -61,6 +61,36 @@ THE SOFTWARE.
 
 #ifdef XML_URI_MODULE
 
+// The macros of libxml2 uri.c, not shared with the other parts (dist/xmq.c is one file).
+#undef MAX_URI_LENGTH
+#undef PORT_EMPTY
+#undef PORT_EMPTY_SERVER
+#undef IS_ALPHA
+#undef IS_LOWALPHA
+#undef IS_UPALPHA
+#undef IS_DIGIT
+#undef IS_ALPHANUM
+#undef IS_MARK
+#undef IS_UNWISE
+#undef IS_RESERVED
+#undef IS_UNRESERVED
+#undef NEXT
+#undef STRNDUP
+#undef ISA_DIGIT
+#undef ISA_ALPHA
+#undef ISA_HEXDIG
+#undef ISA_SUB_DELIM
+#undef ISA_GEN_DELIM
+#undef ISA_RESERVED
+#undef ISA_STRICTLY_UNRESERVED
+#undef ISA_PCT_ENCODED
+#undef ISA_PCHAR
+#undef ISA_UCSCHAR
+#undef ISA_UNRESERVED
+#undef XML_URI_ALLOW_UNWISE
+#undef XML_URI_NO_UNESCAPE
+#undef XML_URI_ALLOW_UCSCHAR
+
 #define MAX_URI_LENGTH 1024 * 1024
 
 #define PORT_EMPTY           0
@@ -1164,7 +1194,7 @@ xml_uri_save_realloc(char *ret, int *max) {
     newSize = xml_uri_grow_capacity(*max, 1, 80, MAX_URI_LENGTH);
     if (newSize < 0)
         return(NULL);
-    temp = realloc(ret, newSize + 1);
+    temp = (char*)realloc(ret, newSize + 1);
     if (temp == NULL)
         return(NULL);
     *max = newSize;
@@ -1189,7 +1219,7 @@ xml_uri_save(XmlURI *uri) {
 
 
     max = 80;
-    ret = malloc(max + 1);
+    ret = (char*)malloc(max + 1);
     if (ret == NULL)
 	return(NULL);
     len = 0;
@@ -1625,7 +1655,7 @@ xml_uri_normalize_uri_path(char *path) {
     return(xml_uri_normalize_path(path, 0));
 }
 
-static int is_hex(char c) {
+static int xml_uri_is_hex(char c) {
     if (((c >= '0') && (c <= '9')) ||
         ((c >= 'a') && (c <= 'f')) ||
         ((c >= 'A') && (c <= 'F')))
@@ -1656,7 +1686,7 @@ xml_uri_unescape_string(const char *str, int len, char *target) {
     if (len < 0) return(NULL);
 
     if (target == NULL) {
-	ret = malloc(len + 1);
+	ret = (char*)malloc(len + 1);
 	if (ret == NULL)
 	    return(NULL);
     } else
@@ -1664,7 +1694,7 @@ xml_uri_unescape_string(const char *str, int len, char *target) {
     in = str;
     out = ret;
     while(len > 0) {
-	if ((len > 2) && (*in == '%') && (is_hex(in[1])) && (is_hex(in[2]))) {
+	if ((len > 2) && (*in == '%') && (xml_uri_is_hex(in[1])) && (xml_uri_is_hex(in[2]))) {
             int c = 0;
 	    in++;
 	    if ((*in >= '0') && (*in <= '9'))
@@ -1784,7 +1814,7 @@ xml_uri_resolve_path(const char *escRef, const char *base, char **out) {
     if (i > 0) {
         int refLen = xml_uri_strlen(ref);
 
-        result = malloc(i + refLen + 1);
+        result = (char*)malloc(i + refLen + 1);
         if (result == NULL)
             goto err_memory;
 
@@ -2113,7 +2143,7 @@ xml_uri_build_safe(const char *URI, const char *base, char **valPtr) {
 	len += strlen(ref->path);
     if (bas->path != NULL)
 	len += strlen(bas->path);
-    res->path = malloc(len);
+    res->path = (char*)malloc(len);
     if (res->path == NULL)
 	goto done;
     res->path[0] = 0;
@@ -2218,13 +2248,13 @@ xml_uri_escape_str(const char *str, const char *list) {
 	return(xml_uri_strdup(str));
     size_t len = strlen(str) + 20;
     size_t out = 0;
-    char *ret = malloc(len);
+    char *ret = (char*)malloc(len);
     if (ret == NULL)
 	return(NULL);
     for (const unsigned char *in = (const unsigned char*)str; *in != 0; ) {
 	if (len - out <= 3) {
             len *= 2;
-            char *temp = realloc(ret, len);
+            char *temp = (char*)realloc(ret, len);
 	    if (temp == NULL) {
 		free(ret);
 		return(NULL);
@@ -2247,5 +2277,34 @@ xml_uri_escape_str(const char *str, const char *list) {
     ret[out] = 0;
     return(ret);
 }
+
+#undef MAX_URI_LENGTH
+#undef PORT_EMPTY
+#undef PORT_EMPTY_SERVER
+#undef IS_ALPHA
+#undef IS_LOWALPHA
+#undef IS_UPALPHA
+#undef IS_DIGIT
+#undef IS_ALPHANUM
+#undef IS_MARK
+#undef IS_UNWISE
+#undef IS_RESERVED
+#undef IS_UNRESERVED
+#undef NEXT
+#undef STRNDUP
+#undef ISA_DIGIT
+#undef ISA_ALPHA
+#undef ISA_HEXDIG
+#undef ISA_SUB_DELIM
+#undef ISA_GEN_DELIM
+#undef ISA_RESERVED
+#undef ISA_STRICTLY_UNRESERVED
+#undef ISA_PCT_ENCODED
+#undef ISA_PCHAR
+#undef ISA_UCSCHAR
+#undef ISA_UNRESERVED
+#undef XML_URI_ALLOW_UNWISE
+#undef XML_URI_NO_UNESCAPE
+#undef XML_URI_ALLOW_UCSCHAR
 
 #endif // XML_URI_MODULE

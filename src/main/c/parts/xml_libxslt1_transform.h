@@ -86,6 +86,9 @@ XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc,
 */
 char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *style, int output_type, size_t *len);
 
+/** A copy of the (compiled) stylesheet document, like the xmlCopyDoc loaders give for document(''). */
+XmlDom *xml_libxslt1_copy_stylesheet_doc(const XmlLibxslt1Stylesheet *style);
+
 #define XML_LIBXSLT1_TRANSFORM_MODULE
 
 #endif // XML_LIBXSLT1_TRANSFORM_H

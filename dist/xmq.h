@@ -400,6 +400,10 @@ typedef enum
     XMQ_ERROR_INVALID_UTF8 = 39,
     /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
+    /** The xslt stylesheet cannot be compiled. */
+    XMQ_ERROR_XSLT_COMPILE = 60,
+    /** The xslt transformation failed. */
+    XMQ_ERROR_XSLT_TRANSFORM = 61,
     /** Warning, when parse succeeds, but it seems there is a mistake. */
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
@@ -1609,6 +1613,76 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc);
 */
 char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...);
 char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap);
+
+/////////////////////////////////////////////////////////////////////////////////////
+// XSLT 1.0
+
+/** A compiled XSLT 1.0 stylesheet. */
+typedef struct XMQXslt XMQXslt;
+
+struct XMQReturnXslt
+{
+    XMQStatus status;
+    XMQXslt *xslt;
+};
+typedef struct XMQReturnXslt XMQReturnXslt;
+
+/** Load the document at uri for xsl:import, xsl:include and document(), return NULL if it
+    cannot be loaded. The returned document is owned by the caller of the loader. */
+typedef XMQDoc *(*XMQXsltLoader)(void *user_data, const char *uri);
+
+/** Receives the messages of compilation and transformation (errors, warnings, xsl:message). */
+typedef void (*XMQXsltMessageCallback)(void *user_data, const char *message);
+
+struct XMQXsltSettings
+{
+    /** NULL loads the files with xmqParseFileWithType (content detection, no trimming). */
+    XMQXsltLoader loader;
+    void *loader_user_data;
+    /** NULL prints the messages on stderr (like libxslt). */
+    XMQXsltMessageCallback message_callback;
+    void *message_user_data;
+};
+typedef struct XMQXsltSettings XMQXsltSettings;
+
+/**
+    xmqCompileXslt:
+
+    Compile the stylesheet (a copy of it, the document is not changed). settings may be NULL.
+    On failure the status is XMQ_ERROR_XSLT_COMPILE and the messages are also available
+    with xmqDocError(stylesheet).
+*/
+XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings);
+
+/**
+    xmqSetXsltParam:
+
+    Set a top level parameter of the stylesheet, value is an xpath expression if is_xpath
+    (like --param) otherwise a string (like --stringparam).
+*/
+void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is_xpath);
+
+/**
+    xmqTransform:
+
+    Apply the stylesheet to doc (whitespace may be stripped from doc by xsl:strip-space).
+    The result gets the xsl:output method as its original content type (XMQ_CONTENT_XML,
+    XMQ_CONTENT_HTML or XMQ_CONTENT_TEXT). On failure the status is XMQ_ERROR_XSLT_TRANSFORM
+    and the messages are also available with xmqDocError(doc).
+*/
+XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc);
+
+/**
+    xmqSaveXsltResult:
+
+    Serialize a result of xmqTransform as the stylesheet's xsl:output asks for (method,
+    encoding, indent, doctype, xml declaration), like libxslt xsltSaveResultToString.
+    The string is malloced, its length (it may contain zeros for UTF-16) in *len.
+*/
+char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len);
+
+/** xmqFreeXslt: free the compiled stylesheet. */
+void xmqFreeXslt(XMQXslt *xslt);
 
 #ifdef __cplusplus
 _hideRBfromEditor

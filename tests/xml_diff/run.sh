@@ -37,6 +37,7 @@ $CC $CFLAGS -o "$OUT/xml_entity_diff" "$ROOT/tests/xml_diff/xml_entity_diff.c" $
 $CC $CFLAGS -o "$OUT/xml_libxslt1_pattern_diff" "$ROOT/tests/xml_diff/xml_libxslt1_pattern_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_libxslt1_compile_diff" "$ROOT/tests/xml_diff/xml_libxslt1_compile_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
 $CC $CFLAGS -o "$OUT/xml_libxslt1_transform_diff" "$ROOT/tests/xml_diff/xml_libxslt1_transform_diff.c" $PARTS "$LIBXSLT/libxslt/.libs/libxslt.a" $LIBS || exit 1
+$CC $CFLAGS -o "$OUT/xml_libxslt1_runtest" "$ROOT/tests/xml_diff/xml_libxslt1_runtest.c" $PARTS -lm || exit 1
 
 FILES="$OUT/files.txt"
 # The entity expansion tests are only for xml_entity_diff, many are deliberately broken.
@@ -91,4 +92,12 @@ done
 mkdir -p "$OUT/xsltrun"
 (cd "$OUT/xsltrun" && ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_transform_diff" -m "${MUTANTS:-5:1}" $(cat "$XSLT_TESTS"))
 RC8=$?
-[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ] && [ $RC7 = 0 ] && [ $RC8 = 0 ]
+# The libxslt test suite against its expected .out and .err files (native only, like libxslt's runtest).
+RUNTEST_DIRS=""
+for d in REC2 REC general encoding documents numbers keys namespaces extensions reports exslt/common exslt/crypto exslt/date exslt/dynamic exslt/functions exslt/math exslt/saxon exslt/sets exslt/strings plugins
+do
+    [ -d "$ROOT/3rdparty/libxslt/tests/$d" ] && RUNTEST_DIRS="$RUNTEST_DIRS $ROOT/3rdparty/libxslt/tests/$d"
+done
+ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_runtest" -k "$ROOT/tests/xml_diff/xml_libxslt1_runtest_known_failures.txt" $RUNTEST_DIRS
+RC9=$?
+[ $RC1 = 0 ] && [ $RC2 = 0 ] && [ $RC3 = 0 ] && [ $RC4 = 0 ] && [ $RC5 = 0 ] && [ $RC6 = 0 ] && [ $RC7 = 0 ] && [ $RC8 = 0 ] && [ $RC9 = 0 ]

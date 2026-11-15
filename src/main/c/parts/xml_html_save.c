@@ -439,7 +439,7 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len)
 
 // Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
 
-static bool xml_html_is_ws(int c)
+static bool xml_html_save_is_ws(int c)
 {
     return c == 0x20 || (c >= 0x09 && c <= 0x0D && c != 0x0B);
 }
@@ -482,29 +482,29 @@ static bool xml_html_parse_content_type(const char *val, XmlHtmlMetaOffsets *off
         p += 1;
         if (strncasecmp(p, "harset", 6) != 0) continue;
         p += 6;
-        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
         if (*p != '=') continue;
         p += 1;
-        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
         if (*p == 0) return false;
         if (*p == '"' || *p == '\'')
         {
             int quote = *p;
             p += 1;
-            while (xml_html_is_ws((unsigned char)*p)) p += 1;
+            while (xml_html_save_is_ws((unsigned char)*p)) p += 1;
             start = (size_t)(p - val);
             end = start;
             while (*p != quote)
             {
                 if (*p == 0) return false;
-                if (!xml_html_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
+                if (!xml_html_save_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
                 p += 1;
             }
         }
         else
         {
             start = (size_t)(p - val);
-            while (*p != 0 && *p != ';' && !xml_html_is_ws((unsigned char)*p)) p += 1;
+            while (*p != 0 && *p != ';' && !xml_html_save_is_ws((unsigned char)*p)) p += 1;
             end = (size_t)(p - val);
         }
         off->start = start;
@@ -560,8 +560,8 @@ static XMQNode *xml_html_parse_meta_encoding(XMQNode *elem, const char **value, 
     if (!is_content_type)
     {
         size_t size = strlen(val), start = 0, end = size;
-        while (start < size && xml_html_is_ws((unsigned char)val[start])) start += 1;
-        while (end > 0 && xml_html_is_ws((unsigned char)val[end - 1])) end -= 1;
+        while (start < size && xml_html_save_is_ws((unsigned char)val[start])) start += 1;
+        while (end > 0 && xml_html_save_is_ws((unsigned char)val[end - 1])) end -= 1;
         off->start = start;
         off->end = end;
         off->size = size;

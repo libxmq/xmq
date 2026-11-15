@@ -391,6 +391,19 @@ static bool compare_written_files(const char *what)
 
 static const char *params_[] = { "test", "'passed_value'", "test2", "'passed_value2'", NULL };
 
+static long ext_ent_skipped_ = 0;
+
+static bool has_external_parsed_entity(XmlDom *doc)
+{
+    XMQNode *dtd = xml_dom_dtd(doc);
+    for (XMQNode *c = dtd ? xml_node_first_child(dtd) : NULL; c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ENTITY_DECL &&
+            xml_entity_decl_type(c) == XML_ENTITY_EXTERNAL_GENERAL_PARSED) return true;
+    }
+    return false;
+}
+
 static void test_file(const char *path, int mutant)
 {
     size_t pl = strlen(path);
@@ -423,6 +436,20 @@ static void test_file(const char *path, int mutant)
         if (lx_doc) xmlFreeDoc(lx_doc);
         if (nx_style_doc) xml_dom_free(nx_style_doc);
         if (nx_doc) xml_dom_free(nx_doc);
+        free_membuffer_and_free_content(lx_msgs_);
+        free_membuffer_and_free_content(nx_msgs_);
+        free(input);
+        return;
+    }
+    if (has_external_parsed_entity(nx_doc))
+    {
+        // The native loader does not load external parsed entities (libxml2 does with XML_PARSE_NOENT).
+        if (verbose_) printf("SKIP %s (external parsed entities)\n", path);
+        ext_ent_skipped_++;
+        xmlFreeDoc(lx_style_doc);
+        xmlFreeDoc(lx_doc);
+        xml_dom_free(nx_style_doc);
+        xml_dom_free(nx_doc);
         free_membuffer_and_free_content(lx_msgs_);
         free_membuffer_and_free_content(nx_msgs_);
         free(input);
@@ -569,9 +596,9 @@ int main(int argc, char **argv)
     {
         for (int m = 0; m <= mutants_; ++m) test_file(argv[i], m);
     }
-    printf("xml_libxslt1_transform_diff: %ld transformations (%ld mutated), %ld skipped (parse errors), %ld same (%ld both fail), %ld differ, "
+    printf("xml_libxslt1_transform_diff: %ld transformations (%ld mutated), %ld skipped (parse errors), %ld skipped (external parsed entities), %ld same (%ld both fail), %ld differ, "
            "%ld with messages, %ld message differences, outputs %ld same %ld differ, written files %ld same %ld differ\n",
-           files_, mutated_, skipped_, same_, both_fail_, diff_, with_msgs_, msg_diff_, out_same_, out_diff_,
+           files_, mutated_, skipped_, ext_ent_skipped_, same_, both_fail_, diff_, with_msgs_, msg_diff_, out_same_, out_diff_,
            files_written_same_, files_written_diff_);
     xsltCleanupGlobals();
     xmlCleanupParser();

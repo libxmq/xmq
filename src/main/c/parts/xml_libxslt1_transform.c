@@ -580,7 +580,7 @@ static XsltStackElem *xslt_copy_stack_elem(XsltStackElem *elem)
 }
 
 /** Port of xsltFreeStackElem (for runtime elements). */
-static void xslt_free_stack_elem(XmlLibxslt1Transform *t, XsltStackElem *elem)
+static void xslt_free_runtime_stack_elem(XmlLibxslt1Transform *t, XsltStackElem *elem)
 {
     if (!elem) return;
     xml_xpath_result_free(elem->value);
@@ -611,12 +611,12 @@ static void xslt_free_stack_elem(XmlLibxslt1Transform *t, XsltStackElem *elem)
     free(elem);
 }
 
-static void xslt_free_stack_elem_list(XmlLibxslt1Transform *t, XsltStackElem *elem)
+static void xslt_free_runtime_stack_elem_list(XmlLibxslt1Transform *t, XsltStackElem *elem)
 {
     while (elem)
     {
         XsltStackElem *next = elem->next;
-        xslt_free_stack_elem(t, elem);
+        xslt_free_runtime_stack_elem(t, elem);
         elem = next;
     }
 }
@@ -689,7 +689,7 @@ static void xslt_local_variable_pop(XmlLibxslt1Transform *t, int limit_nr, int l
         if (t->vars_nr <= limit_nr) break;
         XsltStackElem *variable = t->vars_tab[t->vars_nr - 1];
         if (variable->level <= level) break;
-        if (variable->level >= 0) xslt_free_stack_elem_list(t, variable);
+        if (variable->level >= 0) xslt_free_runtime_stack_elem_list(t, variable);
         t->vars_nr--;
     } while (t->vars_nr != 0);
     t->vars = t->vars_nr > 0 ? t->vars_tab[t->vars_nr - 1] : NULL;
@@ -701,7 +701,7 @@ static void xslt_template_params_cleanup(XmlLibxslt1Transform *t)
     for (; t->vars_nr > t->vars_base; t->vars_nr--)
     {
         XsltStackElem *param = t->vars_tab[t->vars_nr - 1];
-        if (param->level >= 0) xslt_free_stack_elem_list(t, param);
+        if (param->level >= 0) xslt_free_runtime_stack_elem_list(t, param);
     }
     t->vars = t->vars_nr > 0 ? t->vars_tab[t->vars_nr - 1] : NULL;
 }
@@ -1952,7 +1952,8 @@ static void xslt_attribute(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNo
             ns_name = xml_ns_href(ns);
         }
     }
-    XmlNs *ns = NULL;
+    XmlNs *ns;
+    ns = NULL;
     if (ns_name)
     {
         if (!prefix || !strcmp(prefix, "xmlns")) ns = xslt_get_special_namespace(t, inst, ns_name, "ns_1", target_elem);
@@ -1964,7 +1965,8 @@ static void xslt_attribute(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNo
             goto error;
         }
     }
-    XMQNode *first = xml_node_first_child(inst);
+    XMQNode *first;
+    first = xml_node_first_child(inst);
     if (!first)
     {
         lx_set_ns_prop(t->insert, ns, name, "");
@@ -2417,7 +2419,8 @@ static void xslt_element(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst, 
     {
         name = xslt1_split_qname(comp->name, &prefix);
     }
-    XMQNode *copy = xml_node_new_element(t->output, name, NULL);
+    XMQNode *copy;
+    copy = xml_node_new_element(t->output, name, NULL);
     if (!copy)
     {
         xslt1_transform_error(t, NULL, inst, "xsl:element : creation of %s failed\n", name);
@@ -2758,7 +2761,7 @@ static void xslt_call_template(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *
         }
     }
     xslt_apply_xslt_template(t, node, comp->templ->content, comp->templ, with_params);
-    if (with_params) xslt_free_stack_elem_list(t, with_params);
+    if (with_params) xslt_free_runtime_stack_elem_list(t, with_params);
 }
 
 static XsltNodeList *xslt_node_list_from(const XmlXPathResult *res)
@@ -2913,7 +2916,7 @@ static void xslt_apply_templates(XmlLibxslt1Transform *t, XMQNode *node, XMQNode
     }
 exit:
 error:
-    if (with_params) xslt_free_stack_elem_list(t, with_params);
+    if (with_params) xslt_free_runtime_stack_elem_list(t, with_params);
     xslt_node_list_free(list);
     t->xp_size = old_size;
     t->xp_position = old_pos;
@@ -3029,7 +3032,8 @@ static void xslt_for_each(XmlLibxslt1Transform *t, XMQNode *context_node, XMQNod
     }
     if (!list || list->nr <= 0) goto exit;
     t->node_list = list;
-    XMQNode *cur_inst = xml_node_first_child(inst);
+    XMQNode *cur_inst;
+    cur_inst = xml_node_first_child(inst);
     if (cur_inst && xslt1_is_xslt_elem(cur_inst) && xslt1_is_xslt_name(cur_inst, "sort"))
     {
         int nbsorts = 0;
@@ -3843,7 +3847,8 @@ static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *
     t->insert = xml_dom_document(res);
     xslt_apply_sequence_constructor(t, node, xml_node_first_child(inst), NULL);
     // Post processing depending on the generated output.
-    XMQNode *root = xml_dom_root_element(res);
+    XMQNode *root;
+    root = xml_dom_root_element(res);
     if (root)
     {
         char *doctype;
@@ -3889,7 +3894,8 @@ static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *
         free(doctype);
     }
     // redirect:write can append to the file (append="true|yes").
-    bool append = false;
+    bool append;
+    append = false;
     if ((prop = xslt_eval_attr_value_template(t, inst, "append", NULL)))
     {
         if (!strcmp(prop, "true") || !strcmp(prop, "yes"))
@@ -4549,7 +4555,8 @@ static char *xslt_format_number_conversion(XsltDecimalFormat *self, const char *
         goto OUTPUT_NUMBER;
     }
     // The number part, a trailing percent or per-mille may be part of the suffix.
-    int self_grouping_len = self->grouping ? (int)strlen(self->grouping) : 0;
+    int self_grouping_len;
+    self_grouping_len = self->grouping ? (int)strlen(self->grouping) : 0;
     while (*the_format != 0 && xslt_utf8_charcmp(the_format, self->decimal_point) != 0 &&
            xslt_utf8_charcmp(the_format, self->pattern_separator) != 0)
     {
@@ -5086,10 +5093,12 @@ static int xslt_init_ctxt_key(XmlLibxslt1Transform *t, XsltDocInfo *idoc, XsltKe
         t->state = XSLT_STATE_STOPPED;
         goto error;
     }
-    size_t nmatch = xml_xpath_result_size(match_res);
+    size_t nmatch;
+    nmatch = xml_xpath_result_size(match_res);
     if (nmatch == 0) goto error;
     // Multiple key definitions for the same name are allowed.
-    XsltKeyTable *table = idoc->keys;
+    XsltKeyTable *table;
+    table = idoc->keys;
     while (table)
     {
         if (xslt1_streq(table->name, key_def->name) && xslt1_streq(table->name_uri, key_def->name_uri)) break;
@@ -5328,6 +5337,11 @@ static XmlDom *xslt_copy_doc(XmlDom *src)
         if (xml_node_kind(c) == XML_DOM_ELEMENT) xml_node_reconcile_ns(c);
     }
     return doc;
+}
+
+XmlDom *xml_libxslt1_copy_stylesheet_doc(const XmlLibxslt1Stylesheet *style)
+{
+    return (style && style->doc) ? xslt_copy_doc(style->doc) : NULL;
 }
 
 // Functions, port of libxslt functions.c and extra.c ////////////
@@ -6222,7 +6236,7 @@ void xml_libxslt1_transform_free(XmlLibxslt1Transform *t)
         HashMapIterator *it = hashmap_iterate(t->global_vars);
         const char *key;
         void *val;
-        while (hashmap_next_key_value(it, &key, &val)) xslt_free_stack_elem(t, (XsltStackElem*)val);
+        while (hashmap_next_key_value(it, &key, &val)) xslt_free_runtime_stack_elem(t, (XsltStackElem*)val);
         hashmap_free_iterator(it);
         hashmap_free(t->global_vars);
     }
@@ -6517,7 +6531,7 @@ static int xslt_process_user_param(XmlLibxslt1Transform *t, const char *qname, c
     if (hashmap_get(t->global_vars, key))
     {
         xslt1_transform_error(t, style, NULL, "Global parameter %s already defined\n", name);
-        xslt_free_stack_elem(t, elem);
+        xslt_free_runtime_stack_elem(t, elem);
     }
     else
     {
@@ -6733,7 +6747,8 @@ XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc,
     xslt_process_one_node(t, t->node, NULL);
     xslt_local_variable_pop(t, 0, -2);
 
-    XMQNode *root = xml_dom_root_element(res);
+    XMQNode *root;
+    root = xml_dom_root_element(res);
     if (root)
     {
         char *doctype = NULL;

@@ -213,6 +213,8 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_PARSING_HTML: return "error parsing html";
     case XMQ_ERROR_VALUE_CANNOT_START_WITH: return "value cannot start with = /* or //";
     case XMQ_ERROR_IXML_SYNTAX_ERROR: return "ixml syntax error";
+    case XMQ_ERROR_XSLT_COMPILE: return "xslt stylesheet cannot be compiled";
+    case XMQ_ERROR_XSLT_TRANSFORM: return "xslt transformation failed";
     case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
     case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";

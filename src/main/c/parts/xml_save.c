@@ -993,8 +993,9 @@ bool xml_save_transcode(MemBuffer *out, const char *utf8, size_t len, const char
         membuffer_append_region(out, utf8, utf8 + len);
         return true;
     }
-    // The UTF-16 encoder writes a byte order mark (little endian).
-    if (enc == XML_SAVE_ENC_UTF16)
+    // The UTF-16 encoder writes a byte order mark (little endian) with the
+    // first converted bytes, nothing when there is nothing to convert.
+    if (enc == XML_SAVE_ENC_UTF16 && len > 0)
     {
         membuffer_append_char(out, (char)0xFF);
         membuffer_append_char(out, (char)0xFE);

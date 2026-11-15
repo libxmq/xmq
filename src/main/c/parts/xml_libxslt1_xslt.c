@@ -5288,13 +5288,15 @@ static int xslt_parse_stylesheet_import(XmlLibxslt1Stylesheet *style, XMQNode *c
         goto error;
     }
     if (xslt_check_cycle(style, cur, uri) < 0) goto error;
-    XmlDom *import = xslt1_load(style, uri, XML_LIBXSLT1_LOAD_STYLESHEET);
+    XmlDom *import;
+    import = xslt1_load(style, uri, XML_LIBXSLT1_LOAD_STYLESHEET);
     if (!import)
     {
         xslt1_transform_error(NULL, style, cur, "xsl:import : unable to load %s\n", uri);
         goto error;
     }
-    XmlLibxslt1Stylesheet *res = xslt_parse_stylesheet_imported_doc(import, style, NULL);
+    XmlLibxslt1Stylesheet *res;
+    res = xslt_parse_stylesheet_imported_doc(import, style, NULL);
     if (res)
     {
         res->next = style->imports;
@@ -5348,20 +5350,24 @@ static int xslt_parse_stylesheet_include(XmlLibxslt1Stylesheet *style, XMQNode *
         goto error;
     }
     if (xslt_check_cycle(style, cur, uri) < 0) goto error;
-    XsltDocument *include = xslt_load_style_document(style, uri);
+    XsltDocument *include;
+    include = xslt_load_style_document(style, uri);
     if (!include)
     {
         xslt1_transform_error(NULL, style, cur, "xsl:include : unable to load %s\n", uri);
         goto error;
     }
-    XmlDom *old_doc = style->doc;
+    XmlDom *old_doc;
+    old_doc = style->doc;
     style->doc = include->doc;
     // Chain to the stylesheet for the recursion check.
     include->includes = style->includes;
     style->includes = include;
-    int old_nopreproc = style->nopreproc;
+    int old_nopreproc;
+    old_nopreproc = style->nopreproc;
     style->nopreproc = include->preproc;
-    XmlLibxslt1Stylesheet *result = xslt_parse_stylesheet_process(style, include->doc);
+    XmlLibxslt1Stylesheet *result;
+    result = xslt_parse_stylesheet_process(style, include->doc);
     style->nopreproc = old_nopreproc;
     include->preproc = 1;
     style->includes = include->includes;

@@ -56,7 +56,7 @@ do_building_dist_xmq() {
 }
 
 do_upstream_notice() {
-    # The native xml parts (xml_*.c) are partly derived from libxml2, keep its notice.
+    # The native xml parts (xml_*.c) are partly derived from libxml2 and libxslt, keep their notices.
     cat > ${ROOT}/notice <<'NOTICE'
 
 /* The xml parts (PART C XML_*) are partly ported from libxml2 (version 2.16.0 as found
@@ -84,6 +84,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
    See CONTRIBUTORS for the libxml2 contributors.
+*/
+
+/* The xslt 1.0 parts (PART C XML_LIBXSLT1_*) are ported from libxslt (version 1.1.45
+   as found in the libxmq fork), which is covered by the following notice (from
+   libxslt/Copyright):
+
+ Copyright (C) 2001-2002 Daniel Veillard.  All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is fur-
+nished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FIT-
+NESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+DANIEL VEILLARD BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CON-
+NECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Except as contained in this notice, the name of Daniel Veillard shall not
+be used in advertising or otherwise to promote the sale, use or other deal-
+ings in this Software without prior written authorization from him.
 */
 NOTICE
     # Insert the notice after the end of the first comment (the libxmq license).
@@ -115,6 +143,9 @@ do_part xml_html
 do_part xml_html_parser
 do_part xml_html_save
 do_part xml_xpath
+do_part xml_uri
+do_part xml_libxslt1_xslt
+do_part xml_libxslt1_transform
 do_part xml
 do_part xmq_internals
 do_part xmq_parser
