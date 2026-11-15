@@ -51,6 +51,12 @@ cmp1 -i 'a=&x;' replace-entity x hello
 cmp1 "$O/a.xmq" replace-entity e hello to-xml
 cmp1 "$O/a.xmq" replace-entity --with-file e "$O/dom.xmq"
 cmp1 "$O/a.xmq" delete-entity e
+cmp1 "$O/entcycle.xml" expand-entities
+cmp1 "$O/entcycle.xml" expand-entities to-json
+cmp1 "$O/entcycle.xml" expand-entities select 'string(/goo/@x)="PRUTT©alfa"'
+cmp1 "$O/a.xmq" expand-entities to-xml
+printf '<!DOCTYPE r [<!ENTITY a "&b;"><!ENTITY b "&a;">]>\n<r>&a;</r>\n' > "$O/entloop.xml"
+cmp1 "$O/entloop.xml" expand-entities
 cmp1 "$O/a.xmq" delete //@x
 cmp1 --text "$O/t.txt" quote-c --add-nl to-text
 cmp1 --text "$O/q.txt" unquote-c to-text

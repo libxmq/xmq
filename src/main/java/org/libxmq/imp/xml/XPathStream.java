@@ -592,10 +592,10 @@ final class XPathStream
         return n.type() == XmlNodeType.ENTITY_DECL || n.type() == XmlNodeType.DTD;
     }
 
-    /** The libxml2 children pointer, an entity reference points to its declaration. */
+    /** The children, an entity reference has none (entities are not expanded). */
     private static XmlNode children(XmlNode n)
     {
-        if (n.type() == XmlNodeType.ENTITY_REF) return ((XmlEntityRef)n).entity();
+        if (n.type() == XmlNodeType.ENTITY_REF) return null;
         return n.firstChild();
     }
 

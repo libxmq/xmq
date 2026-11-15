@@ -72,6 +72,12 @@ then
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 fi
 
+if [ -z "$FILTER" ] || [[ "expand_entities" =~ $FILTER ]]
+then
+    tests/test_cmd_006_expand_entities.sh "$PROG" "$OUTPUT"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
+
 for i in tests/backforth_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

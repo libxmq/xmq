@@ -81,8 +81,6 @@ final class XPathContext
     private IdentityHashMap<XmlNode, Boolean> indexed_roots_;
     private long next_order_;
     private Map<String, XmlElement> ids_;
-    private IdentityHashMap<XmlNode, XmlText> entity_texts_;
-    private java.util.Set<String> referenced_entities_;
 
     XPathContext(String expr, XmlNode context, Map<String, String> namespaces, Map<String, Object> variables)
     {
@@ -259,11 +257,6 @@ final class XPathContext
             o = order_.get(n);
             if (o != null) return o;
         }
-        if (n.parent() != null && n.parent().type() == XmlNodeType.ENTITY_DECL)
-        {
-            // The virtual content of an entity declaration, see entityContent.
-            return ordinal(n.parent()) + 1;
-        }
         return -1;
     }
 
@@ -350,51 +343,6 @@ final class XPathContext
 
     // ----------------------------------------------------------------------
     // Entities
-
-    /**
-     * Returns the children of an entity declaration as libxml2 sees them.
-     * In libxml2 an entity reference node has the entity declaration as its
-     * children/last, and the declaration has the parsed content of the entity
-     * as children (but only if the entity was referenced from the content).
-     * This DOM stores the content as a string, so a virtual text node, whose
-     * parent is the declaration, is created on demand.
-     */
-    XmlNode entityContent(XmlNode decl)
-    {
-        if (!(decl instanceof XmlEntityDecl)) return null;
-        if (entity_texts_ == null) entity_texts_ = new IdentityHashMap<>();
-        XmlText t = entity_texts_.get(decl);
-        if (t != null) return t;
-        String c = decl.content();
-        if (c == null || c.isEmpty() || !isReferenced(decl.name())) return null;
-        t = new XmlText(c);
-        t.parent_ = decl;
-        t.doc_ = decl.doc();
-        entity_texts_.put(decl, t);
-        return t;
-    }
-
-    private boolean isReferenced(String name)
-    {
-        if (referenced_entities_ == null)
-        {
-            referenced_entities_ = new java.util.HashSet<>();
-            XmlNode n = doc;
-            while (n != null)
-            {
-                if (n.type() == XmlNodeType.ENTITY_REF) referenced_entities_.add(n.name());
-                if (n.firstChild() != null && n.type() != XmlNodeType.DTD)
-                {
-                    n = n.firstChild();
-                    continue;
-                }
-                while (n != null && n != doc && n.next() == null) n = n.parent();
-                if (n == null || n == doc) break;
-                n = n.next();
-            }
-        }
-        return referenced_entities_.contains(name);
-    }
 
     // ----------------------------------------------------------------------
     // Ids

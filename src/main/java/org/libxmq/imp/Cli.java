@@ -79,7 +79,7 @@ final class Cli
 
     static final String[] NOT_IMPLEMENTED = {
         "transform", "validate", "for-each", "statistics",
-        "substitute-entity", "substitute-char-entities", "expand-entities", "page", "pa", "browse", "br", "heu",
+        "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
 
@@ -416,6 +416,7 @@ final class Cli
             case "add-root" -> doc = addRoot(doc, c.args.get(0));
             case "add" -> add(doc, c.args.get(0));
             case "replace-entity" -> replaceEntity(doc, c);
+            case "expand-entities" -> expandEntities(doc, content);
             case "quote-c", "unquote-c" -> doc = quote(doc, c);
             case "no-output" -> { }
             case "print" -> { if (output != null) System.out.print(output); }
@@ -610,6 +611,20 @@ final class Cli
         {
             n.unlink();
             doc.appendRaw(n);
+        }
+    }
+
+    /** Expand the entities declared in the doctype, like xmqExpandEntities. */
+    void expandEntities(XmlDocument doc, String content) throws Exit
+    {
+        long size = content == null ? 0 : content.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+        try
+        {
+            org.libxmq.imp.xml.XmlEntityExpander.expand(doc, null, size, org.libxmq.imp.xml.XmlParser.NOCDATA);
+        }
+        catch (org.libxmq.imp.xml.XmlParseException e)
+        {
+            throw fail("xmq: " + e.error);
         }
     }
 

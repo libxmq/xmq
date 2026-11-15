@@ -199,7 +199,8 @@ public abstract class XmlNode
     /**
      * Returns the string value of the node, like libxml2 xmlNodeGetContent.
      * For an element this is the concatenation of all descendant text,
-     * where entity references contribute the content of the declared entity.
+     * where entity references contribute nothing (entities are never expanded
+     * implicitly) and character references kept as nodes their character.
      * @return The text content, never null.
      */
     public String textContent()

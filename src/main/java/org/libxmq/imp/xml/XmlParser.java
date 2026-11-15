@@ -516,6 +516,60 @@ public final class XmlParser
         }
     }
 
+    /**
+     * Parse content (text, references, elements, comments, pis, cdata) into
+     * parent, used for the replacement text of an entity, see XmlEntityExpander.
+     * Namespaces are resolved where parent is in the tree.
+     */
+    void parse_content_chunk(XmlDocument doc, XmlNode parent) throws XmlParseException
+    {
+        doc_ = doc;
+        node_ = parent;
+        XmlDtd dtd = doc.intSubset();
+        has_external_subset_ = dtd != null && (dtd.systemId() != null || dtd.externalId() != null);
+        has_pe_refs_ = dtd != null && dtd.has_pe_refs_;
+        List<Open> stack = new ArrayList<>();
+        while (!eof())
+        {
+            char c = cur();
+            if (c == '<')
+            {
+                char n = nxt(1);
+                if (n == '/')
+                {
+                    if (stack.isEmpty()) throw fatal("chunk is not well balanced");
+                    Open top = stack.get(stack.size() - 1);
+                    parse_end_tag(top);
+                    stack.remove(stack.size() - 1);
+                    node_ = stack.isEmpty() ? parent : stack.get(stack.size() - 1).e;
+                    if (!space_.isEmpty()) space_.remove(space_.size() - 1);
+                }
+                else if (n == '?') parse_pi();
+                else if (at("<!--")) parse_comment();
+                else if (at("<![CDATA[")) parse_cdata();
+                else if (n == '!') throw fatal("StartTag: invalid element name");
+                else
+                {
+                    Open child = parse_start_tag();
+                    if (child != null) stack.add(child);
+                }
+            }
+            else if (c == '&')
+            {
+                parse_reference();
+            }
+            else
+            {
+                parse_char_data();
+            }
+        }
+        if (!stack.isEmpty())
+        {
+            Open top = stack.get(stack.size() - 1);
+            throw fatal("Premature end of data in tag " + top.qname + " line " + top.line);
+        }
+    }
+
     static class RawAttr
     {
         String prefix;
@@ -1247,6 +1301,7 @@ public final class XmlParser
                 }
                 i++;
                 has_pe_refs_ = true;
+                dtd.has_pe_refs_ = true;
             }
             else
             {

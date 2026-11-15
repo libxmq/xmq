@@ -185,21 +185,8 @@ public final class XmlTrim
         }
         else if (node.type() == XmlNodeType.ENTITY_REF && inside_cdata_declared)
         {
-            String content = null;
-            XmlEntityDecl ent = doc.getEntity(node.name());
-            if (ent != null) content = ent.content();
-            if (content == null && node.name().startsWith("#"))
-            {
-                try
-                {
-                    content = String.valueOf((char)Integer.parseInt(node.name().substring(1)));
-                }
-                catch (NumberFormatException e)
-                {
-                    content = null;
-                }
-            }
-            node.replaceWith(new XmlText(content == null ? "" : content));
+            // A character reference becomes its character, an entity reference is dropped.
+            node.replaceWith(new XmlText(node.textContent()));
             return;
         }
 

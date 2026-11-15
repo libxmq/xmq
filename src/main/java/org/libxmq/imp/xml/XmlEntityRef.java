@@ -54,10 +54,23 @@ public class XmlEntityRef extends XmlNode
         return doc_.getEntity(name_);
     }
 
+    /**
+     * Entities are never expanded implicitly: an entity reference contributes
+     * nothing to the string value, a character reference kept as a node
+     * (#65 or #x41) contributes its character.
+     */
     @Override
     void collectText(StringBuilder sb)
     {
-        XmlEntityDecl e = entity();
-        if (e != null && e.content() != null) sb.append(e.content());
+        if (!name_.startsWith("#")) return;
+        try
+        {
+            if (name_.startsWith("#x")) sb.appendCodePoint(Integer.parseInt(name_.substring(2), 16));
+            else sb.appendCodePoint(Integer.parseInt(name_.substring(1)));
+        }
+        catch (IllegalArgumentException e)
+        {
+            // Not a valid character reference, contributes nothing.
+        }
     }
 }

@@ -68,8 +68,9 @@ public class XmlAttr extends XmlNode
     }
 
     /**
-     * Returns the value of the attribute, where entity references contribute
-     * the content of their declared entity, like libxml2 xmlGetProp.
+     * Returns the value of the attribute. Entities are never expanded
+     * implicitly: an entity reference contributes nothing, a character
+     * reference kept as a node contributes its character.
      * @return The value, never null.
      */
     public String value()

@@ -40,6 +40,9 @@ public class XmlDtd extends XmlNode
     final java.util.List<XmlDtdDecl> notations_ = new java.util.ArrayList<>();
     int num_decls_;
 
+    // True if the internal subset had parameter entity references, set by the parser.
+    boolean has_pe_refs_;
+
     /**
      * Create a dtd.
      * @param name The doctype name, eg html.

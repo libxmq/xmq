@@ -50,7 +50,6 @@ THE SOFTWARE.
 package org.libxmq.imp.xml;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
 
 /**
@@ -59,12 +58,11 @@ import java.util.List;
  * 1998-2012 Daniel Veillard, MIT license), including which node types
  * are visited, eg the dtd node is skipped by the descendant axis.
  *
- * Entity references: in libxml2 the children/last of an entity reference
- * node is the entity declaration, whose children are the parsed entity
- * content. The descendant axis never enters them, but the following and
- * preceding axes do, which makes the preceding axis wander into the dtd
- * and the following axis loop forever (libxml2 then fails with a memory
- * error, or hangs). This is emulated with {@link XPathContext#entityContent}.
+ * Entity references: entities are never expanded implicitly, an entity
+ * reference has no children and no axis enters it or the entity declaration
+ * (in libxml2 the children of an entity reference is the declaration with
+ * the parsed entity content, which its following and preceding axes walk
+ * into). Like the C version, parts/xml_xpath.c.
  */
 final class XPathAxis
 {
@@ -113,11 +111,6 @@ final class XPathAxis
             }
             seq.add(n);
             return break_on_first_hit;
-        }
-
-        boolean collectsAll()
-        {
-            return !range && !break_on_first_hit;
         }
     }
 
@@ -235,29 +228,27 @@ final class XPathAxis
         return t == XmlNodeType.DOCUMENT || t == XmlNodeType.HTML_DOCUMENT;
     }
 
-    /** The libxml2 children pointer, where entity references point to their declaration. */
+    /** First child, entity references and declarations have none (entities are not expanded). */
     private static XmlNode fc(XmlNode n, XPathContext ctx)
     {
         switch (n.type())
         {
         case ENTITY_REF:
-            return ((XmlEntityRef)n).entity();
         case ENTITY_DECL:
-            return ctx.entityContent(n);
+            return null;
         default:
             return n.firstChild();
         }
     }
 
-    /** The libxml2 last pointer, where entity references point to their declaration. */
+    /** Last child, entity references and declarations have none (entities are not expanded). */
     private static XmlNode lc(XmlNode n, XPathContext ctx)
     {
         switch (n.type())
         {
         case ENTITY_REF:
-            return ((XmlEntityRef)n).entity();
         case ENTITY_DECL:
-            return ctx.entityContent(n);
+            return null;
         default:
             return n.lastChild();
         }
@@ -344,11 +335,10 @@ final class XPathAxis
         return cur.parent();
     }
 
-    /** Like libxml2 xmlXPathNextFollowing, with detection of the endless entity loop. */
+    /** Like libxml2 xmlXPathNextFollowing. */
     private static void following(XmlNode c, XPathContext ctx, Collector col) throws XPathException
     {
         XmlNode doc = ctx.doc;
-        IdentityHashMap<XmlNode, Integer> entered = null;
         XmlNode cur = null;
         for (;;)
         {
@@ -356,18 +346,6 @@ final class XPathAxis
             XmlNode ch = (cur != null && !isAttrOrNs(cur)) ? fc(cur, ctx) : null;
             if (ch != null)
             {
-                if (cur.type() == XmlNodeType.ENTITY_REF)
-                {
-                    // Entering an entity declaration, which leads back into the dtd
-                    // and then to the same entity reference again.
-                    if (entered == null) entered = new IdentityHashMap<>();
-                    Integer m = entered.get(cur);
-                    if (m != null && (col.collectsAll() || m == col.matches))
-                    {
-                        throw ctx.error(XPathException.MEMORY_ERROR);
-                    }
-                    entered.put(cur, col.matches);
-                }
                 cur = ch;
             }
             else

@@ -18706,12 +18706,19 @@ static void yaml_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, bool
     yw(ps, "\"");
 }
 
+/** Is i an element with the same name as the element node? Text and comments have no name. */
+static bool yaml_same_element_name(XMQNode *i, XMQNode *node)
+{
+    if (xml_node_kind(i) != XML_DOM_ELEMENT || xml_node_kind(node) != XML_DOM_ELEMENT) return false;
+    return strcmp(xml_node_name(i), xml_node_name(node)) == 0;
+}
+
 static size_t yaml_dup_used(XMQNode *node)
 {
     size_t used = 0;
     for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
     {
-        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) used++;
+        if (yaml_same_element_name(i, node)) used++;
     }
     return used;
 }
@@ -18721,11 +18728,11 @@ static size_t yaml_dup_total(XMQNode *node)
     size_t total = 1;
     for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i))
     {
-        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) total++;
+        if (yaml_same_element_name(i, node)) total++;
     }
     for (XMQNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i))
     {
-        if (xml_element_name(i) && strcmp(xml_node_name(i), xml_node_name(node)) == 0) total++;
+        if (yaml_same_element_name(i, node)) total++;
     }
     return total;
 }
