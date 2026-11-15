@@ -1,0 +1,9 @@
+<!DOCTYPE r [
+<!ENTITY sp "   ">
+<!ENTITY t "  <a> x </a>  ">
+]>
+<r>
+  &sp;
+  &t;
+  <b>&sp;</b>
+</r>

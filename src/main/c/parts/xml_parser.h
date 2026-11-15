@@ -99,6 +99,24 @@ XmlDom *xml_parse_buffer(const char *start, const char *stop, const XmlParseSett
 
 void xml_parse_error_free(XmlParseError *error);
 
+/**
+    Replace every reference to a declared internal general entity below node (the whole
+    document if node is NULL), also inside attribute values, with its replacement text
+    parsed as content, like libxml2 does with XML_PARSE_NOENT. If only is not NULL, only
+    references to that entity are replaced (and everything inside its replacement text).
+    Nested references are expanded too. Character reference nodes, undeclared entities
+    and external entities (never loaded) are kept as references. Adjacent text nodes
+    are merged.
+
+    The limits of libxml2 are enforced: loops, 19 nested entities (20 inputs counting
+    the document) and the amplification factor (settings->max_amplification, input_size
+    is the size of the parsed source) once more than 1MB has been expanded. On an error
+    false is returned and error is filled in, the references expanded so far stay
+    expanded.
+*/
+bool xml_expand_entities(XmlDom *dom, XMQNode *node, const char *only, size_t input_size,
+                         const XmlParseSettings *settings, XmlParseError *error);
+
 #define XML_PARSER_MODULE
 
 #endif // XML_PARSER_H

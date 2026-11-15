@@ -1,0 +1,5 @@
+<!DOCTYPE r [
+<!ENTITY e "<p:x xmlns:p='urn:p' p:a='1'><y>t</y><!--c--><?pi d?><![CDATA[<cd>]]></p:x>after">
+<!ENTITY empty "">
+]>
+<r xmlns="urn:d">before&e;&empty;&e;end</r>

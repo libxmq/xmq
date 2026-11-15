@@ -1,0 +1,9 @@
+<!DOCTYPE r [
+<!ENTITY ws "a	b
+c&#10;d&#9;e">
+<!ENTITY lt "&#38;#60;">
+<!ENTITY amp "&#38;amp;">
+<!ENTITY nest "[&ws;]">
+<!ATTLIST r tok NMTOKENS #IMPLIED>
+]>
+<r a="&ws;" b="x&lt;y" c="&amp;" d="&nest;&nest;" tok="  &ws;  q  ">&lt;&amp;&ws;</r>

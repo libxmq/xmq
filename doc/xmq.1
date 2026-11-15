@@ -281,13 +281,22 @@ references).
 Invoked without a name it is a harmless no-op.
 
 .TP
-.BR "substitute-entity" " [ENTITY]"
-Resolve entity references in the document: a reference to ENTITY (e.g.
-\fB%name%\fP) is replaced with the content of that entity's definition,
-and character references (\fI&#65;\fP, \fI&#x41;\fP) are expanded to the character they
-denote.  If no ENTITY is given, all entity references are resolved.
+.BR "substitute-entity" " ENTITY"
+Expand the references to the entity ENTITY declared in the doctype: each
+reference is replaced with the replacement text of the entity, parsed as
+content (text, elements, comments...), also inside attribute values.
+References inside the replacement text are expanded too.
 Note that when the output format is xmq, references that survive in the
 document are still written on output as \fB%name%\fP.
+
+.TP
+.BR expand-entities
+Expand all entities declared in the doctype, like \fBsubstitute-entity\fP
+does for one entity. Entities are never expanded when the input is parsed,
+until then a reference contributes nothing to xpath string values.
+Character references, undeclared entities and external entities (which are
+never loaded) are kept. Entity loops, more than 19 nested entities and an
+expansion larger than 1MB and five times the size of the input are errors.
 
 .TP
 .BR substitute-char-entities

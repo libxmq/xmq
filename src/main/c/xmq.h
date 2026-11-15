@@ -394,6 +394,8 @@ typedef enum
     XMQ_ERROR_BAD_VALUE = 36,
     /** An embedded xml fragment inside an xmq document is not closed. */
     XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED = 37,
+    /** An entity could not be expanded: a loop, too deep nesting, too large expansion or malformed replacement text. */
+    XMQ_ERROR_ENTITY_EXPANSION = 38,
     /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
     /** Warning, when parse succeeds, but it seems there is a mistake. */
@@ -1147,10 +1149,115 @@ XMQStatus xmqDocErrno(XMQDoc *doc);
 const char *xmqGetName(XMQNode *node);
 
 /**
-    xmqGetContent: get content of element node
+    xmqGetContent: get content of a node.
     @node: Node
+
+    For an element, the content of its first child (the value of a key=value).
+    For a text, cdata, comment or processing instruction node, its own text.
+    Otherwise NULL.
 */
 const char *xmqGetContent(XMQNode *node);
+
+/** The kind of a node, see xmqGetNodeType. */
+typedef enum
+{
+    XMQ_NODE_UNKNOWN = 0,
+    XMQ_NODE_ELEMENT = 1,
+    XMQ_NODE_TEXT = 3,
+    XMQ_NODE_CDATA = 4,
+    /** An entity reference that has not been expanded. The name is the entity name,
+        a character reference has a name starting with #, e.g. #10 */
+    XMQ_NODE_ENTITY_REF = 5,
+    /** A processing instruction, the name is the target and the content the data. */
+    XMQ_NODE_PI = 7,
+    XMQ_NODE_COMMENT = 8,
+    /** The document node, the parent of the root element and of the other top level nodes. */
+    XMQ_NODE_DOCUMENT = 9,
+    /** The doctype, the name is the doctype name. */
+    XMQ_NODE_DOCTYPE = 14
+} XMQNodeType;
+
+/**
+    xmqGetNodeType: get the kind of node.
+    @node: Node
+*/
+XMQNodeType xmqGetNodeType(XMQNode *node);
+
+/**
+    xmqGetDocNode: get the document node, whose children are the top level
+    nodes (the root element, comments, processing instructions and the doctype).
+    @doq: the xmq document
+*/
+XMQNode *xmqGetDocNode(XMQDoc *doq);
+
+/** xmqGetParent: the parent node, the document node for top level nodes, NULL for the document node. */
+XMQNode *xmqGetParent(XMQNode *node);
+/** xmqFirstChild: the first child node or NULL. Attributes are not children, see xmqFirstAttr. */
+XMQNode *xmqFirstChild(XMQNode *node);
+/** xmqLastChild: the last child node or NULL. */
+XMQNode *xmqLastChild(XMQNode *node);
+/** xmqNextSibling: the next sibling node or NULL. */
+XMQNode *xmqNextSibling(XMQNode *node);
+/** xmqPrevSibling: the previous sibling node or NULL. */
+XMQNode *xmqPrevSibling(XMQNode *node);
+
+/**
+    xmqGetNamespaceUri: the namespace uri of an element, or NULL if it has no namespace.
+*/
+const char *xmqGetNamespaceUri(XMQNode *node);
+
+/**
+    xmqGetNamespacePrefix: the prefix of an element, or NULL if it has no prefix.
+*/
+const char *xmqGetNamespacePrefix(XMQNode *node);
+
+/**
+    xmqGetLine: the line number in the source where the node was found, or 0 if unknown.
+*/
+int xmqGetLine(XMQNode *node);
+
+/**
+    xmqFirstAttr: the first attribute of an element, or NULL.
+
+    @code
+    for (XMQAttr *a = xmqFirstAttr(node); a; a = xmqNextAttr(a))
+    {
+        printf("%s=%s\n", xmqGetAttrName(a), xmqGetAttrValue(a));
+    }
+    @endcode
+
+    Namespace declarations (xmlns, xmlns:prefix) are not attributes.
+*/
+XMQAttr *xmqFirstAttr(XMQNode *node);
+
+/** xmqNextAttr: the next attribute of the same element, or NULL. */
+XMQAttr *xmqNextAttr(XMQAttr *attr);
+
+/**
+    xmqGetAttr: find an attribute by its name (without prefix), regardless of namespace,
+    like xmqHasAttribute. Returns the first match or NULL.
+*/
+XMQAttr *xmqGetAttr(XMQNode *node, const char *name);
+
+/** xmqGetAttrName: the attribute name without prefix. */
+const char *xmqGetAttrName(XMQAttr *attr);
+
+/**
+    xmqGetAttrValue: the attribute value.
+
+    Returns NULL if the value contains entity references that have not been expanded
+    (only possible when xml with a DTD was parsed), use xmqExpandEntities first.
+*/
+const char *xmqGetAttrValue(XMQAttr *attr);
+
+/** xmqGetAttrNamespaceUri: the namespace uri of the attribute, or NULL if it has no namespace. */
+const char *xmqGetAttrNamespaceUri(XMQAttr *attr);
+
+/** xmqGetAttrNamespacePrefix: the prefix of the attribute, or NULL if it has no prefix. */
+const char *xmqGetAttrNamespacePrefix(XMQAttr *attr);
+
+/** xmqGetAttrOwner: the element the attribute belongs to. */
+XMQNode *xmqGetAttrOwner(XMQAttr *attr);
 
 /**
     xmqSetContent: set the raw content of element node
@@ -1271,6 +1378,24 @@ int xmqReplaceEntity(XMQDoc *doq, const char *entity, const char *content);
    Returns the number of replacements.
 */
 int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQNode *inode);
+
+/**
+   xmqExpandEntities: Expand the entities declared in the doctype.
+
+   Entities are never expanded when parsing, a reference &name; to a declared entity
+   stays as an entity node (and contributes nothing to xpath string values) until this
+   is called. Every reference to an internal entity, also inside attribute values, is
+   replaced with its replacement text parsed as content (text, elements, comments...).
+   References inside the replacement text are expanded too. Character references,
+   undeclared entities and external entities (which are never loaded) are kept.
+
+   Entity loops, more than 19 nested entities and an expansion larger than 1MB and
+   five times the size of the parsed source are errors (the limits of libxml2).
+
+   Returns XMQ_OK, or XMQ_ERROR_ENTITY_EXPANSION with the message in xmqDocError.
+   After an error the references expanded so far stay expanded.
+*/
+XMQStatus xmqExpandEntities(XMQDoc *doq);
 
 /**
     xmqVersion:

@@ -165,6 +165,16 @@ typedef struct
 
     XmlParseError *error;
     jmp_buf on_error;
+
+    // Used by xml_expand_entities.
+    bool expanding;
+    XMQNode **active;      // The entity declarations being expanded, for loop detection.
+    size_t num_active;
+    size_t active_cap;
+    size_t expanded_size;  // Total size of the replacement texts copied so far.
+    XMQNode *container;    // The outermost temporary container linked into the tree.
+    XmlPBuf attr_out;      // The expanded attribute value being built.
+    const char *only;      // Expand only references to this entity (but everything inside it).
 } XmlParser;
 
 static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...);
@@ -845,6 +855,7 @@ static int xml_parse_char_ref(XmlParser *p)
 
 static XMQNode *xml_get_entity(XmlParser *p, XmlSlice name)
 {
+    if (p->expanding) return xml_dom_get_entity(p->dom, xml_tmp_slice(p, 3, name));
     if (!p->entities) return NULL;
     return (XMQNode*)hashmap_get(p->entities, xml_tmp_slice(p, 3, name));
 }
@@ -2710,6 +2721,330 @@ XmlDom *xml_parse_buffer(const char *start, const char *stop, const XmlParseSett
     xml_parser_cleanup(p);
     free(p);
     return dom;
+}
+
+// Entity expansion /////////////////////////////////////////////////
+
+#define XML_ENTITY_MAX_NESTING 20
+#define XML_ENTITY_ALLOWED_EXPANSION 1000000
+
+/** Parse content (text, references, elements, comments, pis, cdata) appended to p->node,
+    used for entity replacement text. */
+static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
+{
+    p->buf = s;
+    p->len = len;
+    p->i = 0;
+    p->line_pos = 0;
+    p->line_no = 1;
+    p->crmark = NULL;
+    p->has_text = false;
+    XMQNode *base = p->node;
+    size_t base_depth = p->depth;
+    while (!xml_eof(p))
+    {
+        char c = xml_cur(p);
+        if (c == '<')
+        {
+            char n = xml_nxt(p, 1);
+            if (n == '/')
+            {
+                if (p->depth == base_depth) xml_parser_fatal(p, p->i, "chunk is not well balanced");
+                XmlOpen *top = xml_top(p);
+                xml_parse_end_tag(p);
+                xml_flush_text(p);
+                free(top->qname);
+                p->depth--;
+                p->node = p->depth > base_depth ? p->stack[p->depth-1].element : base;
+            }
+            else if (n == '?') xml_parse_pi(p);
+            else if (xml_at(p, "<!--")) xml_parse_comment(p);
+            else if (xml_at(p, "<![CDATA[")) xml_parse_cdata(p);
+            else if (n == '!') xml_parser_fatal(p, p->i, "StartTag: invalid element name");
+            else xml_parse_start_tag(p);
+        }
+        else if (c == '&')
+        {
+            xml_parse_reference(p);
+        }
+        else
+        {
+            xml_parse_char_data(p);
+        }
+    }
+    if (p->depth > base_depth)
+    {
+        XmlOpen *top = xml_top(p);
+        xml_parser_fatal(p, p->i, "Premature end of data in tag %s line %zu", top->qname, top->line);
+    }
+    xml_flush_text(p);
+}
+
+/** Find the internal general entity to expand for a reference, NULL if it is kept. */
+static XMQNode *xml_expandable_entity(XmlParser *p, const char *name)
+{
+    if (!name || name[0] == '#') return NULL; // Character reference node (from xmq).
+    if (p->only && p->num_active == 0 && strcmp(name, p->only)) return NULL;
+    XMQNode *decl = xml_dom_get_entity(p->dom, name);
+    if (!decl) return NULL; // Undeclared, kept.
+    if (xml_entity_decl_type(decl) != XML_ENTITY_INTERNAL_GENERAL) return NULL; // External entities are never loaded.
+    return decl;
+}
+
+static void xml_entity_enter(XmlParser *p, XMQNode *decl, const char *name, size_t value_len)
+{
+    for (size_t k = 0; k < p->num_active; ++k)
+    {
+        if (p->active[k] == decl) xml_parser_fatal(p, 0, "Detected an entity reference loop");
+    }
+    // libxml2 limits the input stack, the document is one of the inputs.
+    if (p->num_active + 1 >= XML_ENTITY_MAX_NESTING) xml_parser_fatal(p, 0, "Maximum entity nesting depth exceeded");
+    p->expanded_size += value_len;
+    if (p->expanded_size > XML_ENTITY_ALLOWED_EXPANSION &&
+        p->expanded_size / p->settings->max_amplification > p->input_len)
+    {
+        xml_parser_fatal(p, 0, "Maximum entity amplification factor exceeded, see xmlCtxtSetMaxAmplification.");
+    }
+    if (p->num_active == p->active_cap)
+    {
+        p->active_cap = p->active_cap ? p->active_cap * 2 : 8;
+        p->active = (XMQNode**)realloc(p->active, p->active_cap * sizeof(XMQNode*));
+    }
+    p->active[p->num_active++] = decl;
+    (void)name;
+}
+
+static void xml_expand_node_children(XmlParser *p, XMQNode *node);
+
+/** Append the expanded replacement text of an entity referenced from an attribute value. */
+static void xml_expand_attr_entity(XmlParser *p, XmlPBuf *out, XMQNode *decl, const char *name)
+{
+    const char *v = xml_node_content(decl);
+    if (!v) v = "";
+    size_t len = strlen(v);
+    if (strchr(v, '<')) xml_parser_fatal(p, 0, "'<' in entity '%s' is not allowed in attributes values", name);
+    xml_entity_enter(p, decl, name, len);
+    p->buf = v;
+    p->len = len;
+    p->line_pos = 0;
+    p->line_no = 1;
+    p->crmark = NULL;
+    size_t i = 0;
+    while (i < len)
+    {
+        char c = v[i];
+        if (c == '&')
+        {
+            p->i = i;
+            if (v[i+1] == '#')
+            {
+                int cp = xml_parse_char_ref(p);
+                i = p->i;
+                xml_pbuf_add_cp(out, cp);
+                continue;
+            }
+            XmlSlice ename = xml_parse_entity_ref_name(p);
+            i = p->i;
+            const char *pre = xml_predefined(ename);
+            if (pre)
+            {
+                xml_pbuf_add(out, pre, 1);
+                continue;
+            }
+            XMQNode *d = xml_dom_get_entity(p->dom, xml_tmp_slice(p, 1, ename));
+            if (!d) xml_parser_fatal(p, p->i, "Entity '%.*s' not defined", (int)ename.len, ename.s);
+            if (xml_entity_decl_type(d) != XML_ENTITY_INTERNAL_GENERAL)
+            {
+                xml_parser_fatal(p, p->i, "Attribute references external entity '%.*s'", (int)ename.len, ename.s);
+            }
+            xml_expand_attr_entity(p, out, d, xml_node_name(d));
+            // Restore the scan of this value.
+            p->buf = v;
+            p->len = len;
+            continue;
+        }
+        if (c == '\t' || c == '\n' || c == '\r') xml_pbuf_addc(out, ' ');
+        else xml_pbuf_addc(out, c);
+        i++;
+    }
+    xml_check_text_length(p, out->len, 0);
+    p->num_active--;
+}
+
+static void xml_expand_attr(XmlParser *p, XMQNode *an)
+{
+    bool any = false;
+    for (XMQNode *c = xml_node_first_child(an); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ENTITY_REF && xml_expandable_entity(p, xml_node_name(c))) any = true;
+    }
+    if (!any) return;
+    XmlPBuf *out = &p->attr_out;
+    xml_pbuf_clear(out);
+    XMQNode *c = xml_node_first_child(an);
+    while (c)
+    {
+        XMQNode *next = xml_node_next(c);
+        XMQNode *decl = NULL;
+        if (xml_node_kind(c) == XML_DOM_TEXT)
+        {
+            const char *t = xml_node_content(c);
+            if (t) xml_pbuf_add(out, t, strlen(t));
+            xml_node_free(c);
+        }
+        else if (xml_node_kind(c) == XML_DOM_ENTITY_REF && (decl = xml_expandable_entity(p, xml_node_name(c))))
+        {
+            xml_node_free(c);
+            xml_expand_attr_entity(p, out, decl, xml_node_name(decl));
+        }
+        else
+        {
+            // A kept reference: the text before it becomes a text node.
+            if (out->len)
+            {
+                xml_node_add_prev_sibling(c, xml_node_new_text_len(p->dom, out->b, out->len));
+                xml_pbuf_clear(out);
+            }
+        }
+        c = next;
+    }
+    if (out->len) xml_node_append_child(an, xml_node_new_text_len(p->dom, out->b, out->len));
+    xml_pbuf_clear(out);
+}
+
+static void xml_expand_ref(XmlParser *p, XMQNode *ref, XMQNode *decl)
+{
+    const char *v = xml_node_content(decl);
+    if (!v) v = "";
+    size_t len = strlen(v);
+    xml_entity_enter(p, decl, xml_node_name(decl), len);
+
+    // Parse into a temporary container at the position of the reference, so that
+    // the namespaces in scope there are used.
+    XMQNode *container = xml_node_new_element(p->dom, "entity", NULL);
+    xml_node_add_prev_sibling(ref, container);
+    if (!p->container) p->container = container;
+    XMQNode *save_node = p->node;
+    p->node = container;
+    xml_parse_content_chunk(p, v, len);
+    p->node = save_node;
+    xml_expand_node_children(p, container);
+    p->num_active--;
+
+    XMQNode *c = xml_node_first_child(container);
+    while (c)
+    {
+        XMQNode *next = xml_node_next(c);
+        xml_node_unlink(c);
+        xml_node_add_prev_sibling(ref, c);
+        c = next;
+    }
+    if (p->container == container) p->container = NULL;
+    xml_node_free(container);
+    xml_node_free(ref);
+}
+
+static void xml_expand_node_children(XmlParser *p, XMQNode *node)
+{
+    if (xml_node_kind(node) == XML_DOM_ELEMENT)
+    {
+        for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+        {
+            xml_expand_attr(p, xml_attr_node(a));
+        }
+    }
+    XMQNode *c = xml_node_first_child(node);
+    while (c)
+    {
+        XMQNode *next = xml_node_next(c);
+        XmlNodeKind k = xml_node_kind(c);
+        if (k == XML_DOM_ENTITY_REF)
+        {
+            XMQNode *decl = xml_expandable_entity(p, xml_node_name(c));
+            if (decl) xml_expand_ref(p, c, decl);
+        }
+        else if (k == XML_DOM_ELEMENT)
+        {
+            xml_expand_node_children(p, c);
+        }
+        c = next;
+    }
+}
+
+/** Merge adjacent text nodes, created where expanded text meets existing text. */
+static void xml_merge_text(XMQNode *node)
+{
+    XMQNode *c = xml_node_first_child(node);
+    while (c)
+    {
+        XMQNode *next = xml_node_next(c);
+        if (xml_node_kind(c) == XML_DOM_TEXT)
+        {
+            while (next && xml_node_kind(next) == XML_DOM_TEXT)
+            {
+                const char *t = xml_node_content(next);
+                xml_node_append_content(c, t ? t : "", t ? strlen(t) : 0);
+                XMQNode *nn = xml_node_next(next);
+                xml_node_free(next);
+                next = nn;
+            }
+        }
+        else if (xml_node_kind(c) == XML_DOM_ELEMENT)
+        {
+            xml_merge_text(c);
+        }
+        c = next;
+    }
+}
+
+bool xml_expand_entities(XmlDom *dom, XMQNode *node, const char *only, size_t input_size,
+                         const XmlParseSettings *settings, XmlParseError *error)
+{
+    XmlParseSettings defaults;
+    if (!settings)
+    {
+        xml_parse_settings_default(&defaults);
+        settings = &defaults;
+    }
+    if (error) memset(error, 0, sizeof(*error));
+    if (!node) node = xml_dom_document(dom);
+    if (!xml_dom_dtd(dom)) return true; // No declared entities.
+
+    XmlParser *p = (XmlParser*)calloc(1, sizeof(XmlParser));
+    p->settings = settings;
+    p->error = error;
+    p->input_len = input_size;
+    p->dom = dom;
+    p->dtd = xml_dom_dtd(dom);
+    p->expanding = true;
+    p->only = only;
+    p->has_external_subset = xml_dtd_system_id(p->dtd) || xml_dtd_public_id(p->dtd);
+    for (XMQNode *c = xml_node_first_child(p->dtd); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_PE_REF) p->has_pe_refs = true;
+    }
+    p->buf = "";
+    p->line_no = 1;
+
+    if (setjmp(p->on_error))
+    {
+        // Remove the partially parsed content, the reference being expanded stays.
+        if (p->container) xml_node_free(p->container);
+        free(p->active);
+        xml_pbuf_free(&p->attr_out);
+        xml_parser_cleanup(p);
+        free(p);
+        return false;
+    }
+
+    xml_expand_node_children(p, node);
+    xml_merge_text(node);
+
+    free(p->active);
+    xml_pbuf_free(&p->attr_out);
+    xml_parser_cleanup(p);
+    free(p);
+    return true;
 }
 
 void xml_parse_error_free(XmlParseError *error)

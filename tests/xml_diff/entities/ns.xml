@@ -1,0 +1,4 @@
+<!DOCTYPE r [
+<!ENTITY e "<q:x>in</q:x><x/>">
+]>
+<r xmlns:q="urn:q" xmlns="urn:default"><a xmlns:q="urn:other">&e;</a>&e;</r>

@@ -1,0 +1,5 @@
+<!DOCTYPE r [
+<!ENTITY bad "<x>">
+<!ENTITY ok "fine">
+]>
+<r>&ok;</r>

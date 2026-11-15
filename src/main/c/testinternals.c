@@ -66,6 +66,8 @@ void test_quote(int indent, bool compact, char *in, char *expected);
     X(test_yaep_reuse_grammar) \
     X(test_annotate_offsets) \
     X(test_move_elements) \
+    X(test_navigation) \
+    X(test_expand_entities) \
 
 #define X(name) void name();
     TESTS
@@ -822,6 +824,102 @@ void test_move_elements()
         printf("Move failed: >%s<\n", start);
     }
     free(start);
+    xmqFreeDoc(doc);
+}
+
+#define NAV_CHECK(cond) do { if (!(cond)) { all_ok_ = false; printf("Navigation failed: %s (line %d)\n", #cond, __LINE__); } } while (0)
+
+void test_navigation()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+    const char *xml =
+        "<!--c--><r xmlns='urn:a' xmlns:b='urn:b' x='1' b:y='2'>T<b:e/><![CDATA[C]]><?p d?></r>";
+    bool ok = xmqParseBufferWithType(doc, xml, NULL, NULL, XMQ_CONTENT_XML, 0);
+    if (!ok)
+    {
+        printf("Could not parse xml!\n");
+        all_ok_ = false;
+        return;
+    }
+    XMQNode *dn = xmqGetDocNode(doc);
+    NAV_CHECK(xmqGetNodeType(dn) == XMQ_NODE_DOCUMENT);
+    XMQNode *c = xmqFirstChild(dn);
+    NAV_CHECK(xmqGetNodeType(c) == XMQ_NODE_COMMENT);
+    NAV_CHECK(!strcmp(xmqGetContent(c), "c"));
+    XMQNode *r = xmqNextSibling(c);
+    NAV_CHECK(r == xmqGetRootNode(doc));
+    NAV_CHECK(xmqGetParent(r) == dn);
+    NAV_CHECK(xmqGetParent(dn) == NULL);
+    NAV_CHECK(xmqPrevSibling(r) == c);
+    NAV_CHECK(xmqGetNodeType(r) == XMQ_NODE_ELEMENT);
+    NAV_CHECK(!strcmp(xmqGetName(r), "r"));
+    NAV_CHECK(!strcmp(xmqGetNamespaceUri(r), "urn:a"));
+    NAV_CHECK(xmqGetNamespacePrefix(r) == NULL);
+    NAV_CHECK(xmqGetLine(r) == 1);
+
+    XMQAttr *a = xmqFirstAttr(r);
+    NAV_CHECK(a && !strcmp(xmqGetAttrName(a), "x") && !strcmp(xmqGetAttrValue(a), "1"));
+    NAV_CHECK(a && xmqGetAttrNamespaceUri(a) == NULL && xmqGetAttrOwner(a) == r);
+    a = xmqNextAttr(a);
+    NAV_CHECK(a && !strcmp(xmqGetAttrName(a), "y") && !strcmp(xmqGetAttrValue(a), "2"));
+    NAV_CHECK(a && !strcmp(xmqGetAttrNamespaceUri(a), "urn:b") && !strcmp(xmqGetAttrNamespacePrefix(a), "b"));
+    NAV_CHECK(xmqNextAttr(a) == NULL);
+    NAV_CHECK(xmqGetAttr(r, "y") == a);
+    NAV_CHECK(xmqGetAttr(r, "z") == NULL);
+
+    XMQNode *t = xmqFirstChild(r);
+    NAV_CHECK(xmqGetNodeType(t) == XMQ_NODE_TEXT && !strcmp(xmqGetContent(t), "T"));
+    XMQNode *e = xmqNextSibling(t);
+    NAV_CHECK(xmqGetNodeType(e) == XMQ_NODE_ELEMENT && !strcmp(xmqGetNamespacePrefix(e), "b"));
+    NAV_CHECK(xmqFirstChild(e) == NULL && xmqFirstAttr(e) == NULL);
+    XMQNode *cd = xmqNextSibling(e);
+    // Cdata is merged into text when parsing.
+    NAV_CHECK(xmqGetNodeType(cd) == XMQ_NODE_TEXT && !strcmp(xmqGetContent(cd), "C"));
+    XMQNode *pi = xmqNextSibling(cd);
+    NAV_CHECK(pi == xmqLastChild(r));
+    NAV_CHECK(xmqGetNodeType(pi) == XMQ_NODE_PI && !strcmp(xmqGetName(pi), "p") && !strcmp(xmqGetContent(pi), "d"));
+    NAV_CHECK(xmqNextSibling(pi) == NULL);
+    NAV_CHECK(xmqGetNodeType(NULL) == XMQ_NODE_UNKNOWN && xmqFirstChild(NULL) == NULL);
+    xmqFreeDoc(doc);
+}
+
+void test_expand_entities()
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    assert(rd.status == XMQ_OK);
+    XMQDoc *doc = rd.doc;
+    const char *xml =
+        "<!DOCTYPE r [<!ENTITY foo 'xyz'><!ENTITY el '<b>&foo;</b>'>]><r a='1&foo;2'>A&foo;B&el;</r>";
+    bool ok = xmqParseBufferWithType(doc, xml, NULL, NULL, XMQ_CONTENT_XML, 0);
+    if (!ok)
+    {
+        printf("Could not parse xml!\n");
+        all_ok_ = false;
+        return;
+    }
+    // Before expansion the references contribute nothing.
+    NAV_CHECK(xmqGetAttrValue(xmqFirstAttr(xmqGetRootNode(doc))) == NULL);
+    NAV_CHECK(xmqExpandEntities(doc) == XMQ_OK);
+    XMQNode *r = xmqGetRootNode(doc);
+    NAV_CHECK(!strcmp(xmqGetAttrValue(xmqFirstAttr(r)), "1xyz2"));
+    XMQNode *t = xmqFirstChild(r);
+    NAV_CHECK(xmqGetNodeType(t) == XMQ_NODE_TEXT && !strcmp(xmqGetContent(t), "AxyzB"));
+    XMQNode *b = xmqNextSibling(t);
+    NAV_CHECK(xmqGetNodeType(b) == XMQ_NODE_ELEMENT && !strcmp(xmqGetName(b), "b") && !strcmp(xmqGetContent(b), "xyz"));
+    NAV_CHECK(xmqNextSibling(b) == NULL);
+    xmqFreeDoc(doc);
+
+    rd = xmqNewDoc();
+    doc = rd.doc;
+    xml = "<!DOCTYPE r [<!ENTITY a '&b;'><!ENTITY b '&a;'>]><r>&a;</r>";
+    ok = xmqParseBufferWithType(doc, xml, NULL, NULL, XMQ_CONTENT_XML, 0);
+    NAV_CHECK(ok);
+    NAV_CHECK(xmqExpandEntities(doc) == XMQ_ERROR_ENTITY_EXPANSION);
+    NAV_CHECK(xmqDocError(doc) && strstr(xmqDocError(doc), "loop"));
+    // The reference is kept.
+    NAV_CHECK(xmqGetNodeType(xmqFirstChild(xmqGetRootNode(doc))) == XMQ_NODE_ENTITY_REF);
     xmqFreeDoc(doc);
 }
 

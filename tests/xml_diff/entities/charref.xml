@@ -1,0 +1,6 @@
+<!DOCTYPE r [
+<!ENTITY c "&#60;b&#62;bold&#60;/b&#62;">
+<!ENTITY d "&#38;#60;">
+<!ENTITY q "&quot;&apos;&gt;">
+]>
+<r>&c;|&d;|&q;</r>

@@ -4481,12 +4481,134 @@ const char *xmqGetName(XMQNode *node)
 
 const char *xmqGetContent(XMQNode *node)
 {
-    XMQNode* p = (XMQNode*)node;
-    if (p && xml_node_first_child(p))
+    if (!node) return NULL;
+    switch (xml_node_kind(node))
     {
-        return xml_node_content(xml_node_first_child(p));
+    case XML_DOM_ELEMENT:
+        if (xml_node_first_child(node)) return xml_node_content(xml_node_first_child(node));
+        return NULL;
+    case XML_DOM_TEXT:
+    case XML_DOM_CDATA:
+    case XML_DOM_COMMENT:
+    case XML_DOM_PI:
+        return xml_node_content(node);
+    default:
+        return NULL;
+    }
+}
+
+XMQNodeType xmqGetNodeType(XMQNode *node)
+{
+    if (!node) return XMQ_NODE_UNKNOWN;
+    switch (xml_node_kind(node))
+    {
+    case XML_DOM_ELEMENT: return XMQ_NODE_ELEMENT;
+    case XML_DOM_TEXT: return XMQ_NODE_TEXT;
+    case XML_DOM_CDATA: return XMQ_NODE_CDATA;
+    case XML_DOM_ENTITY_REF: return XMQ_NODE_ENTITY_REF;
+    case XML_DOM_PI: return XMQ_NODE_PI;
+    case XML_DOM_COMMENT: return XMQ_NODE_COMMENT;
+    case XML_DOM_DOCUMENT: return XMQ_NODE_DOCUMENT;
+    case XML_DOM_DTD: return XMQ_NODE_DOCTYPE;
+    default: return XMQ_NODE_UNKNOWN;
+    }
+}
+
+XMQNode *xmqGetDocNode(XMQDoc *doq)
+{
+    if (!doq || !doq->dom_) return NULL;
+    return xml_dom_document(doq->dom_);
+}
+
+XMQNode *xmqGetParent(XMQNode *node)
+{
+    return node ? xml_node_parent(node) : NULL;
+}
+
+XMQNode *xmqFirstChild(XMQNode *node)
+{
+    return node ? xml_node_first_child(node) : NULL;
+}
+
+XMQNode *xmqLastChild(XMQNode *node)
+{
+    return node ? xml_node_last_child(node) : NULL;
+}
+
+XMQNode *xmqNextSibling(XMQNode *node)
+{
+    return node ? xml_node_next(node) : NULL;
+}
+
+XMQNode *xmqPrevSibling(XMQNode *node)
+{
+    return node ? xml_node_prev(node) : NULL;
+}
+
+const char *xmqGetNamespaceUri(XMQNode *node)
+{
+    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    return xml_node_ns_uri(node);
+}
+
+const char *xmqGetNamespacePrefix(XMQNode *node)
+{
+    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    const char *p = xml_node_ns_prefix(node);
+    return (p && *p) ? p : NULL;
+}
+
+int xmqGetLine(XMQNode *node)
+{
+    return node ? xml_node_line(node) : 0;
+}
+
+XMQAttr *xmqFirstAttr(XMQNode *node)
+{
+    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    return xml_node_first_attr(node);
+}
+
+XMQAttr *xmqNextAttr(XMQAttr *attr)
+{
+    return attr ? xml_attr_next(attr) : NULL;
+}
+
+XMQAttr *xmqGetAttr(XMQNode *node, const char *name)
+{
+    if (!node || !name || xml_node_kind(node) != XML_DOM_ELEMENT) return NULL;
+    for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
+    {
+        if (!strcmp(xml_attr_name(a), name)) return a;
     }
     return NULL;
+}
+
+const char *xmqGetAttrName(XMQAttr *attr)
+{
+    return attr ? xml_attr_name(attr) : NULL;
+}
+
+const char *xmqGetAttrValue(XMQAttr *attr)
+{
+    return attr ? xml_attr_simple_value(attr) : NULL;
+}
+
+const char *xmqGetAttrNamespaceUri(XMQAttr *attr)
+{
+    return attr ? xml_node_ns_uri(xml_attr_node(attr)) : NULL;
+}
+
+const char *xmqGetAttrNamespacePrefix(XMQAttr *attr)
+{
+    if (!attr) return NULL;
+    const char *p = xml_node_ns_prefix(xml_attr_node(attr));
+    return (p && *p) ? p : NULL;
+}
+
+XMQNode *xmqGetAttrOwner(XMQAttr *attr)
+{
+    return attr ? xml_attr_owner(attr) : NULL;
 }
 
 void xmqSetContent(XMQNode *node, const char *raw_content)
@@ -4667,6 +4789,30 @@ bool xmq_parse_buffer_xml(XMQDoc *doq, const char *start, const char *stop, int 
     xmq_fixup_comments_after_readin(doq);
 
     return true;
+}
+
+XMQStatus xmqExpandEntities(XMQDoc *doq)
+{
+    if (!doq || !doq->dom_) return XMQ_OK;
+    XmlParseSettings settings;
+    xml_parse_settings_default(&settings);
+    settings.source_name = doq->source_name_;
+    settings.no_cdata = true;
+    settings.message_callback = xmq_print_parse_message;
+
+    XmlParseError error;
+    bool ok = xml_expand_entities(doq->dom_, NULL, NULL, doq->original_size_, &settings, &error);
+    if (!ok)
+    {
+        doq->errno_ = XMQ_ERROR_ENTITY_EXPANSION;
+        free((void*)doq->error_);
+        doq->error_ = build_error_message("xmq: %s\n", error.short_message ? error.short_message : "entity expansion failed");
+        xml_parse_error_free(&error);
+        return XMQ_ERROR_ENTITY_EXPANSION;
+    }
+    xml_parse_error_free(&error);
+    doq->root_ = xml_dom_root_element(doq->dom_);
+    return XMQ_OK;
 }
 
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags)

@@ -1,0 +1,9 @@
+<!DOCTYPE r [
+<!ENTITY e0 "x">
+<!ENTITY e1 "&e0;"><!ENTITY e2 "&e1;"><!ENTITY e3 "&e2;"><!ENTITY e4 "&e3;"><!ENTITY e5 "&e4;">
+<!ENTITY e6 "&e5;"><!ENTITY e7 "&e6;"><!ENTITY e8 "&e7;"><!ENTITY e9 "&e8;"><!ENTITY e10 "&e9;">
+<!ENTITY e11 "&e10;"><!ENTITY e12 "&e11;"><!ENTITY e13 "&e12;"><!ENTITY e14 "&e13;"><!ENTITY e15 "&e14;">
+<!ENTITY e16 "&e15;"><!ENTITY e17 "&e16;"><!ENTITY e18 "&e17;"><!ENTITY e19 "&e18;"><!ENTITY e20 "&e19;">
+<!ENTITY e21 "&e20;"><!ENTITY e22 "&e21;">
+]>
+<r>&e19;</r>

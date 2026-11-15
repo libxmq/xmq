@@ -113,6 +113,7 @@ typedef enum
     XMQ_CLI_CMD_REPLACE_ENTITY,
     XMQ_CLI_CMD_SUBSTITUTE_ENTITY,
     XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES,
+    XMQ_CLI_CMD_EXPAND_ENTITIES,
     XMQ_CLI_CMD_TRANSFORM,
     XMQ_CLI_CMD_VALIDATE,
     XMQ_CLI_CMD_SELECT,
@@ -775,6 +776,7 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "select")) return XMQ_CLI_CMD_SELECT;
     if (!strcmp(s, "statistics")) return XMQ_CLI_CMD_STATISTICS;
     if (!strcmp(s, "substitute-char-entities")) return XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES;
+    if (!strcmp(s, "expand-entities")) return XMQ_CLI_CMD_EXPAND_ENTITIES;
     if (!strcmp(s, "substitute-entity")) return XMQ_CLI_CMD_SUBSTITUTE_ENTITY;
     if (!strcmp(s, "to-html")) return XMQ_CLI_CMD_TO_HTML;
     if (!strcmp(s, "to-htmq")) return XMQ_CLI_CMD_TO_HTMQ;
@@ -824,6 +826,7 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_REPLACE_ENTITY: return "replace-entity";
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY: return "substitute-entity";
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES: return "substitute-char-entities";
+    case XMQ_CLI_CMD_EXPAND_ENTITIES: return "expand-entities";
     case XMQ_CLI_CMD_TRANSFORM: return "transform";
     case XMQ_CLI_CMD_VALIDATE: return "validate";
     case XMQ_CLI_CMD_SELECT: return "select";
@@ -888,6 +891,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
+    case XMQ_CLI_CMD_EXPAND_ENTITIES:
         return XMQ_CLI_CMD_GROUP_SUBSTITUTE;
 
     case XMQ_CLI_CMD_TRANSFORM:
@@ -2361,7 +2365,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  quote-c unquote-c\n"
            "  select\n"
            "  statistics\n"
-           "  substitite-char-entities substitute-entity\n"
+           "  expand-entities substitute-char-entities substitute-entity\n"
            "  to-html to-htmq to-json to-lines to-text to-xmq to-yaml\n"
            "  tokenize\n"
            "  transform\n"
@@ -3770,11 +3774,6 @@ void substitute_entity(XmlDom *doc, XMQNode *node, const char *entity, bool only
                 xml_node_replace(node, new_node);
                 xml_node_free(node);
             }
-            else if (!only_chars)
-            {
-                // Entities are not expanded, there is nothing to substitute
-                // until the entity content is expanded explicitly.
-            }
         }
         return;
     }
@@ -3791,14 +3790,33 @@ void substitute_entity(XmlDom *doc, XMQNode *node, const char *entity, bool only
 bool cmd_substitute(XMQCliCommand *command)
 {
     XmlDom* doc = (XmlDom*)xmqGetImplementationDoc(command->env->doc);
-    XMQNode* root = xml_node_first_child(xml_dom_document(doc));
-    if (root == NULL) return true;
+    if (doc == NULL) return true;
+    XMQNode* root = xml_dom_document(doc);
 
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_ENTITY)
     {
         verbose_("xmq=", "substituting entity %s", command->entity);
 
-        substitute_entity(doc, root, command->entity, false);
+        substitute_entity(doc, root, command->entity, true);
+        XmlParseSettings settings;
+        xml_parse_settings_default(&settings);
+        XmlParseError error;
+        if (!xml_expand_entities(doc, NULL, command->entity, xmqGetOriginalSize(command->env->doc), &settings, &error))
+        {
+            fprintf(stderr, "xmq: %s\n", error.short_message ? error.short_message : "entity expansion failed");
+            xml_parse_error_free(&error);
+            return false;
+        }
+        xml_parse_error_free(&error);
+    }
+    if (command->cmd == XMQ_CLI_CMD_EXPAND_ENTITIES)
+    {
+        verbose_("xmq=", "expanding all entities");
+        if (xmqExpandEntities(command->env->doc) != XMQ_OK)
+        {
+            fputs(xmqDocError(command->env->doc), stderr);
+            return false;
+        }
     }
     if (command->cmd == XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES)
     {
@@ -3887,6 +3905,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
         return;
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
+        return;
+    case XMQ_CLI_CMD_EXPAND_ENTITIES:
         return;
     case XMQ_CLI_CMD_TRANSFORM:
         return;
@@ -4736,6 +4756,7 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
         return cmd_replace(c);
     case XMQ_CLI_CMD_SUBSTITUTE_ENTITY:
     case XMQ_CLI_CMD_SUBSTITUTE_CHAR_ENTITIES:
+    case XMQ_CLI_CMD_EXPAND_ENTITIES:
         return cmd_substitute(c);
     case XMQ_CLI_CMD_TRANSFORM:
         return cmd_transform(c);

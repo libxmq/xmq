@@ -11,8 +11,11 @@
    Expressions can also be given in a file with -e file (one per line), they are then evaluated
    against every document.
 
-   Documents that declare entities are only evaluated natively: libxml2 xpath sees the parsed
-   entity content (and can loop forever on it), the native dom never expands entities.
+   Documents that declare entities are first evaluated only natively: libxml2 xpath sees the
+   parsed entity content (and can loop forever on it), the native dom does not expand entities
+   until xml_expand_entities. Then they are parsed again, by libxml2 with XML_PARSE_NOENT and
+   natively followed by xml_expand_entities, and if the two trees serialize identically
+   (external entities are loaded by libxml2 but not natively) both are compared as usual.
 
    This tool links libxml2 and is only used while libxmq moves away from libxml2.
 */
@@ -20,6 +23,7 @@
 #include"parts/xml_dom.h"
 #include"parts/xml_parser.h"
 #include"parts/xml_xpath.h"
+#include"parts/xml_save.h"
 
 #include<libxml/tree.h>
 #include<libxml/parser.h>
@@ -45,6 +49,7 @@ static int verbose_ = 0;
 static long same_ = 0, diff_ = 0, both_fail_ = 0, native_fail_ = 0, libxml_fail_ = 0, files_ = 0, skipped_ = 0;
 static int max_shown_ = 50;
 static long entity_only_native_ = 0; // Expressions on entity documents, only evaluated natively.
+static long entity_expanded_files_ = 0; // Entity documents also compared after expansion.
 static int has_entities_ = 0; // The current document declares entities: libxml2 expands their content for xpath.
 static double lx_time_ = 0, nx_time_ = 0;
 static long max_size_ = 200000;
@@ -481,6 +486,76 @@ static void test_doc_exprs(const char *file, xmlDocPtr doc, XmlDom *dom, xmlNode
     for (int i = 0; i < nt; ++i) free(tv[i]);
 }
 
+static void test_both(const char *file, xmlDocPtr doc, XmlDom *dom)
+{
+    test_doc_exprs(file, doc, dom, (xmlNodePtr)doc, xml_dom_document(dom), "doc");
+    xmlNodePtr lroot = xmlDocGetRootElement(doc);
+    XMQNode *nroot = xml_dom_root_element(dom);
+    if (lroot && nroot) test_doc_exprs(file, doc, dom, lroot, nroot, "root");
+}
+
+/** libxml2 resolves namespaces inside entity content without the namespaces in scope at the
+    reference (a namespace error), native resolves them where the reference is, as the
+    namespaces spec says, so these are not compared expanded. */
+static const char *ns_in_entity_files_[] = { "test/errors/ns-ent.xml", "entities/elements.xml", "entities/ns.xml", NULL };
+
+/** Parse with entities expanded on both sides and compare if the trees are identical. */
+static void test_expanded(const char *file, const char *buf, size_t len)
+{
+    for (const char **f = ns_in_entity_files_; *f; ++f)
+    {
+        size_t fl = strlen(file), el = strlen(*f);
+        if (fl >= el && !strcmp(file + fl - el, *f)) return;
+    }
+    xmlDocPtr doc = xmlReadMemory(buf, (int)len, file, NULL, XML_PARSE_NONET | XML_PARSE_NOENT | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+    if (doc && doc->intSubset)
+    {
+        // libxml2 keeps the parsed content of each entity as children of its declaration
+        // in the dtd, where its preceding axis and string(/) find it. Drop it.
+        for (xmlNodePtr n = doc->intSubset->children; n; n = n->next)
+        {
+            if (n->type != XML_ENTITY_DECL) continue;
+            xmlEntityPtr ent = (xmlEntityPtr)n;
+            if (ent->children) xmlFreeNodeList(ent->children);
+            ent->children = ent->last = NULL;
+        }
+    }
+    XmlParseSettings settings;
+    xml_parse_settings_default(&settings);
+    settings.source_name = file;
+    XmlParseError err;
+    XmlDom *dom = xml_parse_buffer(buf, buf + len, &settings, &err);
+    if (dom)
+    {
+        xml_parse_error_free(&err);
+        if (!xml_expand_entities(dom, NULL, NULL, len, &settings, &err))
+        {
+            xml_dom_free(dom);
+            dom = NULL;
+        }
+    }
+    if (doc && dom)
+    {
+        xmlChar *e = NULL;
+        int el = 0;
+        xmlDocDumpMemoryEnc(doc, &e, &el, "utf-8");
+        size_t gl = 0;
+        char *g = xml_save_doc(dom, "utf-8", false, &gl);
+        bool same = (size_t)el == gl && !memcmp(e, g, gl);
+        xmlFree(e);
+        free(g);
+        if (same)
+        {
+            entity_expanded_files_++;
+            has_entities_ = 0;
+            test_both(file, doc, dom);
+        }
+    }
+    if (doc) xmlFreeDoc(doc);
+    if (dom) xml_dom_free(dom);
+    xml_parse_error_free(&err);
+}
+
 static void test_file(const char *file, const char *buf, size_t len)
 {
     xmlDocPtr doc = xmlReadMemory(buf, (int)len, file, NULL, XML_PARSE_NONET | XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
@@ -489,14 +564,13 @@ static void test_file(const char *file, const char *buf, size_t len)
     settings.source_name = file;
     XmlParseError err;
     XmlDom *dom = xml_parse_buffer(buf, buf + len, &settings, &err);
+    bool expand = false;
     if (doc && dom)
     {
         files_++;
         has_entities_ = doc->intSubset && doc->intSubset->entities && xmlHashSize((xmlHashTablePtr)doc->intSubset->entities) > 0;
-        test_doc_exprs(file, doc, dom, (xmlNodePtr)doc, xml_dom_document(dom), "doc");
-        xmlNodePtr lroot = xmlDocGetRootElement(doc);
-        XMQNode *nroot = xml_dom_root_element(dom);
-        if (lroot && nroot) test_doc_exprs(file, doc, dom, lroot, nroot, "root");
+        test_both(file, doc, dom);
+        expand = has_entities_;
     }
     else
     {
@@ -505,6 +579,7 @@ static void test_file(const char *file, const char *buf, size_t len)
     if (doc) xmlFreeDoc(doc);
     if (dom) xml_dom_free(dom);
     xml_parse_error_free(&err);
+    if (expand) test_expanded(file, buf, len);
 }
 
 int main(int argc, char **argv)
@@ -536,7 +611,7 @@ int main(int argc, char **argv)
     free(extra_exprs_);
     xmlCleanupParser();
     printf("xml_xpath_diff: %ld files (%ld skipped), %ld same, %ld differ, %ld both fail, "
-           "%ld only native fails, %ld only libxml2 fails, %ld only native (entity documents) (libxml2 %.1fs native %.1fs)\n",
-           files_, skipped_, same_, diff_, both_fail_, native_fail_, libxml_fail_, entity_only_native_, lx_time_, nx_time_);
+           "%ld only native fails, %ld only libxml2 fails, %ld only native (entity documents, of which %ld also compared expanded) (libxml2 %.1fs native %.1fs)\n",
+           files_, skipped_, same_, diff_, both_fail_, native_fail_, libxml_fail_, entity_only_native_, entity_expanded_files_, lx_time_, nx_time_);
     return (diff_ || native_fail_ || libxml_fail_) ? 1 : 0;
 }

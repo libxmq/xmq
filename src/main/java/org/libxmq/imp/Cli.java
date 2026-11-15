@@ -79,7 +79,7 @@ final class Cli
 
     static final String[] NOT_IMPLEMENTED = {
         "transform", "validate", "for-each", "statistics",
-        "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
+        "substitute-entity", "substitute-char-entities", "expand-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
 

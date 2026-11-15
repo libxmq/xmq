@@ -1,0 +1,24 @@
+# Files where native xml_expand_entities is expected to differ from libxml2 XML_PARSE_NOENT.
+# External entities are never loaded (libxml2 loads local files even with XML_PARSE_NONET),
+# and parameter entity references in the DTD are kept as written, not expanded.
+scripts/libxmq-docs.xml external parameter entity kept
+test/c14n/with-comments/example-5.xml external entity kept
+test/c14n/1-1-without-comments/example-5.xml external entity kept
+test/c14n/without-comments/example-5.xml external entity kept
+test/valid/pe-latin1.xml external parameter entity kept
+test/valid/UTF16Entity.xml external entities kept
+test/valid/t9a.xml parameter entities kept
+test/valid/t9.xml parameter entities kept
+test/valid/id3.xml external entity kept
+test/valid/737840.xml external entity kept
+test/errors/759579.xml parameter entity loop not detected, parameter entities kept
+test/errors/rec_ext_ent.xml external entity loop not detected, external entities kept
+test/valid/t8a.xml parameter entities kept
+test/valid/t8.xml parameter entities kept
+test/recurse/lol_eg.xml external entities kept
+test/recurse/lol_ep.xml parameter entities kept
+test/recurse/lol_param.xml parameter entities kept
+test/entity-in-ns-uri.xml entity references in namespace uris are rejected
+test/errors/extparsedent.xml external entity kept
+test/valid/huge.xml external parameter entity kept
+test/valid/index.xml external parameter entity kept

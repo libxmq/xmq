@@ -131,7 +131,7 @@ $(OUTPUT_ROOT)/$(TYPE)/parts/%.o: $(SRC_ROOT)/src/main/c/parts/%.c
 ifneq ($(PLATFORM),WINAPI)
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(POSIX_OBJS)
 	@echo "Linking libxmq.so"
-	$(AT)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(LIBXMQ_OBJS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE))
+	$(AT)$(CC) -shared -g -o $(OUTPUT_ROOT)/$(TYPE)/libxmq.so $(LIBXMQ_OBJS) $(LDFLAGSBEGIN_$(TYPE)) $(DEBUG_LDFLAGS) $(LDFLAGSEND_$(TYPE)) -lm
 else
 $(OUTPUT_ROOT)/$(TYPE)/libxmq.so: $(WINAPI_OBJS) $(PARTS_SOURCES)
 	touch $@
@@ -171,14 +171,14 @@ $(OUTPUT_ROOT)/$(TYPE)/testinternals: $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(T
 	@echo Linking $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
 	    $(OUTPUT_ROOT)/$(TYPE)/testinternals.o $(TESTINTERNALS_OBJS) \
-	    $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+	    $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals: $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS)
 	@echo Linking parts $(TYPE) $(CONF_MNEMONIC) $@
 	$(AT)$(CC) -o $@ -g $(LDFLAGS_$(TYPE)) $(LDFLAGS) \
 	    $(OUTPUT_ROOT)/$(TYPE)/parts/testinternals.o $(TESTINTERNALS_OBJS) \
-            $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LIBXML2_LIBS) $(LIBXSLT_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
+            $(LDFLAGSBEGIN_$(TYPE)) $(ZLIB_LIBS) $(LDFLAGSEND_$(TYPE)) -lpthread -lm
 	$(AT)$(STRIP_COMMAND) $@$(SUFFIX)
 
 $(OUTPUT_ROOT)/$(TYPE)/libgcc_s_seh-1.dll:
