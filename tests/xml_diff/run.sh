@@ -81,12 +81,13 @@ ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_compile_diff" -m "${MUTANTS:-5:1}
 RC7=$?
 # The libxslt test suite: every stylesheet with an input document (name.xml), like libxslt's runtest.
 XSLT_TESTS="$OUT/xslt_tests.txt"
-: > "$XSLT_TESTS"
+# Our own tests (output methods, encodings, xsl:document) first.
+ls "$ROOT"/tests/xml_diff/xslt/*.xsl > "$XSLT_TESTS"
 for d in REC2 REC general encoding documents numbers keys namespaces extensions reports exslt/common exslt/crypto exslt/date exslt/dynamic exslt/functions exslt/math exslt/saxon exslt/sets exslt/strings plugins
 do
     [ -d "$ROOT/3rdparty/libxslt/tests/$d" ] && ls "$ROOT/3rdparty/libxslt/tests/$d"/*.xsl >> "$XSLT_TESTS"
 done
-# xsl:document writes files relative to the current directory.
+# xsl:document writes files relative to the current directory (lx/ and nx/ below it).
 mkdir -p "$OUT/xsltrun"
 (cd "$OUT/xsltrun" && ASAN_OPTIONS=detect_leaks=1 "$OUT/xml_libxslt1_transform_diff" -m "${MUTANTS:-5:1}" $(cat "$XSLT_TESTS"))
 RC8=$?

@@ -61,6 +61,7 @@ ings in this Software without prior written authorization from him.
 #ifndef BUILDING_DIST_XMQ
 #include"xml_dom.h"
 #include"xml_libxslt1_xslt.h"
+#include"membuffer.h"
 #endif
 
 /** The output method of a result (the same numbers as libxslt xsltOutputType). */
@@ -76,6 +77,14 @@ ings in this Software without prior written authorization from him.
     XML_LIBXSLT1_OUTPUT_XML, _HTML or _TEXT.
 */
 XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc, const char **params, int *output_type);
+
+/**
+    Serialize a result like libxslt xsltSaveResultToString: the output method, encoding,
+    indentation, xml declaration and doctype of the stylesheet. output_type is what
+    xml_libxslt1_apply_stylesheet gave. Returns the malloced bytes (zero terminated, len
+    in *len, the content may contain zeros for UTF-16).
+*/
+char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *style, int output_type, size_t *len);
 
 #define XML_LIBXSLT1_TRANSFORM_MODULE
 

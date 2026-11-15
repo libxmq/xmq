@@ -1110,6 +1110,16 @@ char *xml_save_doc(XmlDom *dom, const char *encoding, bool format, size_t *out_l
 void xml_save_node_to(MemBuffer *mb, const XMQNode *node, int level, bool format);
 char *xml_save_node(const XMQNode *node, int level, bool format, size_t *out_len);
 
+/** Serialize a node like libxml2 xmlNodeDumpOutput: in the XHTML mode if the dtd of doc is an
+    XHTML 1.0 dtd. Text is written in UTF-8 (transcode afterwards for other encodings);
+    encoding (NULL is UTF-8) is only used for the XHTML meta tag. */
+void xml_save_node_dump_output(MemBuffer *mb, XmlDom *doc, const XMQNode *node, int level, bool format, const char *encoding);
+/** Is the output encoding supported by xml_save_transcode (UTF-8, ISO-8859-1, ASCII, UTF-16)? */
+bool xml_save_encoding_supported(const char *encoding);
+/** Append the utf8 text converted to the encoding, characters the encoding cannot represent
+    become decimal character references (like libxml2 output encoders). Returns false (and
+    appends nothing) if the encoding is not supported. */
+bool xml_save_transcode(MemBuffer *out, const char *utf8, size_t len, const char *encoding);
 /** Append s escaped for an xml attribute value (xmlSerializeText with XML_ESCAPE_ATTR),
     non ascii characters are written as character references if escape_non_ascii. */
 void xml_save_escape_attr(MemBuffer *mb, const char *s, bool escape_non_ascii);
@@ -1250,6 +1260,10 @@ char *xml_html_save_doc(XmlDom *dom, bool format, size_t *out_len);
 /** Serialize a node and its subtree as html. */
 void xml_html_save_node_to(MemBuffer *mb, const XMQNode *node, bool format);
 char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len);
+
+/** Create or update the meta tags with the encoding in the head (libxml2 htmlSetMetaEncoding).
+    Returns 0, or 1 if there is no html/head. */
+int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding);
 
 #define XML_HTML_SAVE_MODULE
 
@@ -25860,7 +25874,9 @@ static void xml_save_node_internal(XmlSaveCtxt *ctxt, const XMQNode *cur)
             continue;
         }
         case XML_DOM_TEXT:
-            xml_save_escape(ctxt, xml_node_content(cur), XML_SAVE_ESCAPE_TEXT);
+            // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
+            if (xml_node_name(cur) && !strcmp(xml_node_name(cur), "textnoenc")) xml_save_put(ctxt, xml_node_content(cur));
+            else xml_save_escape(ctxt, xml_node_content(cur), XML_SAVE_ESCAPE_TEXT);
             break;
         case XML_DOM_PI:
         {
@@ -25938,6 +25954,428 @@ static void xml_save_node_internal(XmlSaveCtxt *ctxt, const XMQNode *cur)
             }
         }
     }
+}
+
+// XHTML, port of xhtmlNodeDumpOutput (used when the dtd is an XHTML 1.0 dtd).
+
+#define XML_SAVE_XHTML_NS "http://www.w3.org/1999/xhtml"
+
+/** Port of xmlIsXHTML: 1 for the XHTML 1.0 strict, frameset and transitional dtds, -1 if no ids. */
+static int xml_save_is_xhtml(const char *system_id, const char *public_id)
+{
+    if (!system_id && !public_id) return -1;
+    if (public_id)
+    {
+        if (!strcmp(public_id, "-//W3C//DTD XHTML 1.0 Strict//EN")) return 1;
+        if (!strcmp(public_id, "-//W3C//DTD XHTML 1.0 Frameset//EN")) return 1;
+        if (!strcmp(public_id, "-//W3C//DTD XHTML 1.0 Transitional//EN")) return 1;
+    }
+    if (system_id)
+    {
+        if (!strcmp(system_id, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd")) return 1;
+        if (!strcmp(system_id, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd")) return 1;
+        if (!strcmp(system_id, "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd")) return 1;
+    }
+    return 0;
+}
+
+/** Port of xhtmlIsEmpty: an element with an empty content model. */
+static int xml_save_xhtml_is_empty(const XMQNode *node)
+{
+    if (!node) return -1;
+    if (xml_node_kind(node) != XML_DOM_ELEMENT) return 0;
+    XmlNs *ns = xml_node_ns(node);
+    if (ns && !(xml_ns_href(ns) && !strcmp(xml_ns_href(ns), XML_SAVE_XHTML_NS))) return 0;
+    if (xml_node_first_child(node)) return 0;
+    static const char *empty[] = { "area", "br", "base", "basefont", "col", "frame", "hr", "img", "input", "isindex",
+                                   "link", "meta", "param", NULL };
+    const char *name = xml_node_name(node);
+    if (!name) return 0;
+    for (int i = 0; empty[i]; i++) if (!strcmp(name, empty[i])) return 1;
+    return 0;
+}
+
+static bool xml_save_attr_is(const XMQNode *a, const char *name, bool with_ns)
+{
+    XmlNs *ns = xml_node_ns(a);
+    if (with_ns != (ns != NULL)) return false;
+    return xml_node_name(a) && !strcmp(xml_node_name(a), name);
+}
+
+static void xml_save_attr_content(XmlSaveCtxt *ctxt, const XMQNode *a)
+{
+    for (const XMQNode *c = xml_node_first_child(a); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_TEXT)
+        {
+            xml_save_escape(ctxt, xml_node_content(c), XML_SAVE_ESCAPE_ATTR);
+        }
+        else if (xml_node_kind(c) == XML_DOM_ENTITY_REF)
+        {
+            xml_save_putc(ctxt, '&');
+            xml_save_put(ctxt, xml_node_name(c));
+            xml_save_putc(ctxt, ';');
+        }
+    }
+}
+
+/** Port of xhtmlAttrListDumpOutput (with the C.7 and C.8 compatibility attributes). */
+static void xml_save_xhtml_attrs(XmlSaveCtxt *ctxt, const XMQNode *parent)
+{
+    const XMQNode *xml_lang = NULL, *lang = NULL, *name = NULL, *id = NULL;
+    for (XMQAttr *at = xml_node_first_attr(parent); at; at = xml_attr_next(at))
+    {
+        const XMQNode *a = xml_attr_node(at);
+        if (xml_save_attr_is(a, "id", false)) id = a;
+        else if (xml_save_attr_is(a, "name", false)) name = a;
+        else if (xml_save_attr_is(a, "lang", false)) lang = a;
+        else if (xml_save_attr_is(a, "lang", true) && xml_ns_prefix(xml_node_ns(a)) && !strcmp(xml_ns_prefix(xml_node_ns(a)), "xml")) xml_lang = a;
+        xml_save_attr(ctxt, a);
+    }
+    // C.8
+    if (name && !id)
+    {
+        static const char *names[] = { "a", "p", "div", "img", "map", "applet", "form", "frame", "iframe", NULL };
+        const char *pn = xml_node_name(parent);
+        for (int i = 0; pn && names[i]; i++)
+        {
+            if (!strcmp(pn, names[i]))
+            {
+                xml_save_put(ctxt, " id=\"");
+                xml_save_attr_content(ctxt, name);
+                xml_save_putc(ctxt, '"');
+                break;
+            }
+        }
+    }
+    // C.7.
+    if (lang && !xml_lang)
+    {
+        xml_save_put(ctxt, " xml:lang=\"");
+        xml_save_attr_content(ctxt, lang);
+        xml_save_putc(ctxt, '"');
+    }
+    else if (xml_lang && !lang)
+    {
+        xml_save_put(ctxt, " lang=\"");
+        xml_save_attr_content(ctxt, xml_lang);
+        xml_save_putc(ctxt, '"');
+    }
+}
+
+static void xml_save_meta_content_type(XmlSaveCtxt *ctxt, const char *encoding)
+{
+    xml_save_put(ctxt, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=");
+    xml_save_put(ctxt, encoding ? encoding : "UTF-8");
+    xml_save_put(ctxt, "\" />");
+}
+
+/** Port of xhtmlNodeDumpOutput. */
+static void xml_save_xhtml_node(XmlSaveCtxt *ctxt, const XMQNode *cur, const char *encoding)
+{
+    int format = ctxt->format;
+    const XMQNode *root = cur;
+    const XMQNode *unformatted = NULL;
+    while (true)
+    {
+        switch (xml_node_kind(cur))
+        {
+        case XML_DOM_DOCUMENT:
+        {
+            XmlDom *dom = xml_node_dom(cur);
+            xml_save_doc_internal(ctxt, dom, encoding);
+            break;
+        }
+        case XML_DOM_DTD:
+            xml_save_dtd(ctxt, cur);
+            break;
+        case XML_DOM_ELEMENT_DECL:
+        case XML_DOM_ATTRIBUTE_DECL:
+        case XML_DOM_NOTATION_DECL:
+            xml_save_dtd_decl(ctxt, cur);
+            break;
+        case XML_DOM_ENTITY_DECL:
+            xml_save_entity_decl(ctxt, cur);
+            break;
+        case XML_DOM_ELEMENT:
+        {
+            int addmeta = 0;
+            if (cur != root && ctxt->format == 1) xml_save_indent(ctxt);
+            xml_save_putc(ctxt, '<');
+            xml_save_qname(ctxt, cur);
+            for (const XmlNs *ns = xml_node_first_ns_decl(cur); ns; ns = xml_ns_next_decl(ns)) xml_save_ns(ctxt, ns);
+            if (!strcmp(xml_node_name(cur), "html") && !xml_node_ns(cur) && !xml_node_first_ns_decl(cur))
+            {
+                // 3.1.1. Strictly Conforming Documents A.3.1.1 3/
+                xml_save_put(ctxt, " xmlns=\"http://www.w3.org/1999/xhtml\"");
+            }
+            if (xml_node_first_attr(cur)) xml_save_xhtml_attrs(ctxt, cur);
+            const XMQNode *parent = xml_node_parent(cur);
+            if (parent && xml_node_kind(parent) == XML_DOM_ELEMENT && xml_node_parent(parent) &&
+                xml_node_kind(xml_node_parent(parent)) == XML_DOM_DOCUMENT && !strcmp(xml_node_name(cur), "head") &&
+                !strcmp(xml_node_name(parent), "html"))
+            {
+                const XMQNode *tmp;
+                for (tmp = xml_node_first_child(cur); tmp; tmp = xml_node_next(tmp))
+                {
+                    if (xml_node_name(tmp) && !strcmp(xml_node_name(tmp), "meta") && xml_node_kind(tmp) == XML_DOM_ELEMENT)
+                    {
+                        XMQAttr *he = xml_node_get_attr(tmp, "http-equiv", NULL);
+                        if (he)
+                        {
+                            char *v = xml_node_string_value(xml_attr_node(he));
+                            bool ct = !strcasecmp(v, "Content-Type");
+                            free(v);
+                            if (ct) break;
+                        }
+                    }
+                }
+                if (!tmp) addmeta = 1;
+            }
+            const XMQNode *first = xml_node_first_child(cur);
+            if (!first)
+            {
+                XmlNs *ns = xml_node_ns(cur);
+                if ((!ns || !xml_ns_prefix(ns)) && xml_save_xhtml_is_empty(cur) == 1 && addmeta == 0)
+                {
+                    // C.2. Empty Elements
+                    xml_save_put(ctxt, " />");
+                }
+                else
+                {
+                    if (addmeta == 1)
+                    {
+                        xml_save_putc(ctxt, '>');
+                        if (ctxt->format == 1)
+                        {
+                            xml_save_putc(ctxt, '\n');
+                            ctxt->level++;
+                            xml_save_indent(ctxt);
+                            ctxt->level--;
+                        }
+                        xml_save_meta_content_type(ctxt, encoding);
+                        if (ctxt->format == 1) xml_save_putc(ctxt, '\n');
+                    }
+                    else
+                    {
+                        xml_save_putc(ctxt, '>');
+                    }
+                    // C.3. Element Minimization and Empty Element Content
+                    xml_save_put(ctxt, "</");
+                    xml_save_qname(ctxt, cur);
+                    xml_save_putc(ctxt, '>');
+                }
+                break;
+            }
+            xml_save_putc(ctxt, '>');
+            if (addmeta == 1)
+            {
+                if (ctxt->format == 1)
+                {
+                    xml_save_putc(ctxt, '\n');
+                    ctxt->level++;
+                    xml_save_indent(ctxt);
+                    ctxt->level--;
+                }
+                xml_save_meta_content_type(ctxt, encoding);
+            }
+            if (ctxt->format == 1)
+            {
+                for (const XMQNode *t = first; t; t = xml_node_next(t))
+                {
+                    XmlNodeKind tk = xml_node_kind(t);
+                    if (tk == XML_DOM_TEXT || tk == XML_DOM_ENTITY_REF)
+                    {
+                        unformatted = cur;
+                        ctxt->format = 0;
+                        break;
+                    }
+                }
+            }
+            if (ctxt->format == 1) xml_save_putc(ctxt, '\n');
+            if (ctxt->level >= 0) ctxt->level++;
+            cur = first;
+            continue;
+        }
+        case XML_DOM_TEXT:
+            if (!xml_node_content(cur)) break;
+            if (xml_node_name(cur) && !strcmp(xml_node_name(cur), "textnoenc")) xml_save_put(ctxt, xml_node_content(cur));
+            else xml_save_escape(ctxt, xml_node_content(cur), XML_SAVE_ESCAPE_TEXT);
+            break;
+        case XML_DOM_PI:
+            xml_save_put(ctxt, "<?");
+            xml_save_put(ctxt, xml_node_name(cur));
+            if (xml_node_content(cur))
+            {
+                xml_save_putc(ctxt, ' ');
+                xml_save_put(ctxt, xml_node_content(cur));
+            }
+            xml_save_put(ctxt, "?>");
+            break;
+        case XML_DOM_COMMENT:
+            if (xml_node_content(cur))
+            {
+                xml_save_put(ctxt, "<!--");
+                xml_save_put(ctxt, xml_node_content(cur));
+                xml_save_put(ctxt, "-->");
+            }
+            break;
+        case XML_DOM_ENTITY_REF:
+            xml_save_putc(ctxt, '&');
+            xml_save_put(ctxt, xml_node_name(cur));
+            xml_save_putc(ctxt, ';');
+            break;
+        case XML_DOM_CDATA:
+            xml_save_cdata(ctxt, xml_node_content(cur));
+            break;
+        case XML_DOM_ATTRIBUTE:
+            xml_save_attr(ctxt, cur);
+            break;
+        default:
+            break;
+        }
+        while (true)
+        {
+            if (cur == root) return;
+            if (ctxt->format == 1) xml_save_putc(ctxt, '\n');
+            const XMQNode *next = xml_node_next(cur);
+            if (next)
+            {
+                cur = next;
+                break;
+            }
+            cur = xml_node_parent(cur);
+            if (xml_node_kind(cur) == XML_DOM_ELEMENT)
+            {
+                if (ctxt->level > 0) ctxt->level--;
+                if (ctxt->format == 1) xml_save_indent(ctxt);
+                xml_save_put(ctxt, "</");
+                xml_save_qname(ctxt, cur);
+                xml_save_putc(ctxt, '>');
+                if (cur == unformatted)
+                {
+                    ctxt->format = format;
+                    unformatted = NULL;
+                }
+            }
+        }
+    }
+}
+
+void xml_save_node_dump_output(MemBuffer *mb, XmlDom *doc, const XMQNode *node, int level, bool format, const char *encoding)
+{
+    if (!node) return;
+    if (level < 0) level = 0;
+    else if (level > 100) level = 100;
+    if (!encoding) encoding = "UTF-8";
+    XmlSaveCtxt ctxt = { mb, level, format ? 1 : 0, false };
+    int is_xhtml = 0;
+    XMQNode *dtd = doc ? xml_dom_dtd(doc) : NULL;
+    if (dtd)
+    {
+        is_xhtml = xml_save_is_xhtml(xml_dtd_system_id(dtd), xml_dtd_public_id(dtd));
+        if (is_xhtml < 0) is_xhtml = 0;
+    }
+    if (is_xhtml) xml_save_xhtml_node(&ctxt, node, encoding);
+    else xml_save_node_internal(&ctxt, node);
+}
+
+// Output encodings, like libxml2 xmlCharEncOutput (characters that the encoding
+// cannot represent become decimal character references).
+
+typedef enum { XML_SAVE_ENC_UTF8, XML_SAVE_ENC_LATIN1, XML_SAVE_ENC_ASCII, XML_SAVE_ENC_UTF16, XML_SAVE_ENC_UTF16LE,
+               XML_SAVE_ENC_UTF16BE, XML_SAVE_ENC_UNKNOWN } XmlSaveEncoding;
+
+static XmlSaveEncoding xml_save_find_encoding(const char *encoding)
+{
+    if (!encoding) return XML_SAVE_ENC_UTF8;
+    static const struct { const char *name; XmlSaveEncoding enc; } names[] = {
+        { "UTF-8", XML_SAVE_ENC_UTF8 }, { "UTF8", XML_SAVE_ENC_UTF8 },
+        { "ISO-8859-1", XML_SAVE_ENC_LATIN1 }, { "ISO-LATIN-1", XML_SAVE_ENC_LATIN1 }, { "ISO_8859-1", XML_SAVE_ENC_LATIN1 },
+        { "LATIN1", XML_SAVE_ENC_LATIN1 }, { "L1", XML_SAVE_ENC_LATIN1 }, { "ISO8859-1", XML_SAVE_ENC_LATIN1 },
+        { "US-ASCII", XML_SAVE_ENC_ASCII }, { "ASCII", XML_SAVE_ENC_ASCII },
+        { "UTF-16", XML_SAVE_ENC_UTF16 }, { "UTF16", XML_SAVE_ENC_UTF16 },
+        { "UTF-16LE", XML_SAVE_ENC_UTF16LE }, { "UTF-16BE", XML_SAVE_ENC_UTF16BE } };
+    for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+    {
+        if (!strcasecmp(encoding, names[i].name)) return names[i].enc;
+    }
+    return XML_SAVE_ENC_UNKNOWN;
+}
+
+bool xml_save_encoding_supported(const char *encoding)
+{
+    return xml_save_find_encoding(encoding) != XML_SAVE_ENC_UNKNOWN;
+}
+
+bool xml_save_transcode(MemBuffer *out, const char *utf8, size_t len, const char *encoding)
+{
+    XmlSaveEncoding enc = xml_save_find_encoding(encoding);
+    if (enc == XML_SAVE_ENC_UNKNOWN) return false;
+    if (enc == XML_SAVE_ENC_UTF8)
+    {
+        membuffer_append_region(out, utf8, utf8 + len);
+        return true;
+    }
+    // The UTF-16 encoder writes a byte order mark (little endian).
+    if (enc == XML_SAVE_ENC_UTF16)
+    {
+        membuffer_append_char(out, (char)0xFF);
+        membuffer_append_char(out, (char)0xFE);
+    }
+    const unsigned char *p = (const unsigned char*)utf8, *end = p + len;
+    char ref[16];
+    while (p < end)
+    {
+        int clen = 1;
+        int c = *p < 0x80 ? *p : xml_save_utf8_char(p, &clen);
+        if (c < 0)
+        {
+            // Invalid input is passed on byte by byte.
+            c = *p;
+            clen = 1;
+        }
+        p += clen;
+        switch (enc)
+        {
+        case XML_SAVE_ENC_LATIN1:
+        case XML_SAVE_ENC_ASCII:
+            if (c < (enc == XML_SAVE_ENC_LATIN1 ? 0x100 : 0x80))
+            {
+                membuffer_append_char(out, (char)c);
+            }
+            else
+            {
+                snprintf(ref, sizeof(ref), "&#%d;", c);
+                membuffer_append(out, ref);
+            }
+            break;
+        default:
+        {
+            bool be = enc == XML_SAVE_ENC_UTF16BE;
+            unsigned units[2];
+            int n = 1;
+            if (c >= 0x10000)
+            {
+                units[0] = 0xD800 | (((unsigned)c - 0x10000) >> 10);
+                units[1] = 0xDC00 | (((unsigned)c - 0x10000) & 0x3FF);
+                n = 2;
+            }
+            else
+            {
+                units[0] = (unsigned)c;
+            }
+            for (int i = 0; i < n; i++)
+            {
+                char hi = (char)(units[i] >> 8), lo = (char)(units[i] & 0xFF);
+                membuffer_append_char(out, be ? hi : lo);
+                membuffer_append_char(out, be ? lo : hi);
+            }
+            break;
+        }
+        }
+    }
+    return true;
 }
 
 void xml_save_doc_to(MemBuffer *mb, XmlDom *dom, const char *encoding, bool format)
@@ -29964,7 +30402,8 @@ static void xml_html_node(MemBuffer *mb, const XMQNode *cur, bool format)
         {
             const char *content = xml_node_content(cur);
             if (!content) break;
-            if (is_raw) membuffer_append(mb, content);
+            // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
+            if (is_raw || (xml_node_name(cur) && !strcmp(xml_node_name(cur), "textnoenc"))) membuffer_append(mb, content);
             else xml_html_escape(mb, content, false);
             break;
         }
@@ -30081,6 +30520,179 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len)
     MemBuffer *mb = new_membuffer();
     xml_html_save_node_to(mb, node, format);
     return xml_html_finish(mb, out_len);
+}
+
+// Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
+
+static bool xml_html_is_ws(int c)
+{
+    return c == 0x20 || (c >= 0x09 && c <= 0x0D && c != 0x0B);
+}
+
+static XMQNode *xml_html_find_first_child(XMQNode *parent, const char *name)
+{
+    for (XMQNode *c = xml_node_first_child(parent); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ELEMENT && !strcasecmp(xml_node_name(c), name)) return c;
+    }
+    return NULL;
+}
+
+static XMQNode *xml_html_find_head(XmlDom *dom)
+{
+    XMQNode *html = xml_html_find_first_child(xml_dom_document(dom), "html");
+    if (!html) return NULL;
+    return xml_html_find_first_child(html, "head");
+}
+
+typedef struct
+{
+    size_t start;
+    size_t end;
+    size_t size;
+} XmlHtmlMetaOffsets;
+
+/** Port of htmlParseContentType: the charset in a content-type value. */
+static bool xml_html_parse_content_type(const char *val, XmlHtmlMetaOffsets *off)
+{
+    const char *p = val;
+    while (true)
+    {
+        size_t start, end;
+        while (*p != 'c' && *p != 'C')
+        {
+            if (*p == 0) return false;
+            p += 1;
+        }
+        p += 1;
+        if (strncasecmp(p, "harset", 6) != 0) continue;
+        p += 6;
+        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        if (*p != '=') continue;
+        p += 1;
+        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        if (*p == 0) return false;
+        if (*p == '"' || *p == '\'')
+        {
+            int quote = *p;
+            p += 1;
+            while (xml_html_is_ws((unsigned char)*p)) p += 1;
+            start = (size_t)(p - val);
+            end = start;
+            while (*p != quote)
+            {
+                if (*p == 0) return false;
+                if (!xml_html_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
+                p += 1;
+            }
+        }
+        else
+        {
+            start = (size_t)(p - val);
+            while (*p != 0 && *p != ';' && !xml_html_is_ws((unsigned char)*p)) p += 1;
+            end = (size_t)(p - val);
+        }
+        off->start = start;
+        off->end = end;
+        off->size = (size_t)(p - val) + strlen(p);
+        return true;
+    }
+}
+
+static const char *xml_html_simple_attr_value(XMQNode *attr)
+{
+    XMQNode *c = xml_node_first_child(attr);
+    if (c && xml_node_kind(c) == XML_DOM_TEXT && !xml_node_next(c) && xml_node_content(c)) return xml_node_content(c);
+    return NULL;
+}
+
+/** Port of htmlFindMetaEncodingAttr. */
+static XMQNode *xml_html_find_meta_encoding_attr(XMQNode *elem, bool *is_content_type)
+{
+    if (strcasecmp(xml_node_name(elem), "meta")) return NULL;
+    XMQNode *content_attr = NULL;
+    bool ct = false;
+    for (XMQAttr *at = xml_node_first_attr(elem); at; at = xml_attr_next(at))
+    {
+        XMQNode *a = xml_attr_node(at);
+        if (xml_node_ns(a)) continue;
+        if (!strcasecmp(xml_node_name(a), "charset"))
+        {
+            *is_content_type = false;
+            return a;
+        }
+        if (!strcasecmp(xml_node_name(a), "content")) content_attr = a;
+        const char *v = xml_html_simple_attr_value(a);
+        if (!strcasecmp(xml_node_name(a), "http-equiv") && v && !strcasecmp(v, "Content-Type")) ct = true;
+    }
+    if (ct && content_attr)
+    {
+        *is_content_type = true;
+        return content_attr;
+    }
+    return NULL;
+}
+
+/** Port of htmlParseMetaEncoding: the attribute and the offsets of the encoding in its value. */
+static XMQNode *xml_html_parse_meta_encoding(XMQNode *elem, const char **value, XmlHtmlMetaOffsets *off)
+{
+    if (xml_node_kind(elem) != XML_DOM_ELEMENT || strcasecmp(xml_node_name(elem), "meta")) return NULL;
+    bool is_content_type = false;
+    XMQNode *attr = xml_html_find_meta_encoding_attr(elem, &is_content_type);
+    if (!attr) return NULL;
+    const char *val = xml_html_simple_attr_value(attr);
+    if (!val) val = "";
+    if (!is_content_type)
+    {
+        size_t size = strlen(val), start = 0, end = size;
+        while (start < size && xml_html_is_ws((unsigned char)val[start])) start += 1;
+        while (end > 0 && xml_html_is_ws((unsigned char)val[end - 1])) end -= 1;
+        off->start = start;
+        off->end = end;
+        off->size = size;
+        *value = val;
+        return attr;
+    }
+    if (xml_html_parse_content_type(val, off))
+    {
+        *value = val;
+        return attr;
+    }
+    return NULL;
+}
+
+int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding)
+{
+    if (!encoding) return 1;
+    XMQNode *head = xml_html_find_head(dom);
+    if (!head) return 1;
+    bool found = false;
+    for (XMQNode *meta = xml_node_first_child(head); meta; meta = xml_node_next(meta))
+    {
+        const char *val = NULL;
+        XmlHtmlMetaOffsets off;
+        XMQNode *attr = xml_html_parse_meta_encoding(meta, &val, &off);
+        if (!attr) continue;
+        found = true;
+        // The pseudo "HTML" encoding only produces ASCII.
+        const char *enc = !strcasecmp(encoding, "HTML") ? "ASCII" : encoding;
+        size_t old_size = off.end - off.start, new_size = strlen(enc);
+        size_t size = off.size - old_size + new_size;
+        char *nv = (char*)malloc(size + 1);
+        memcpy(nv, val, off.start);
+        memcpy(nv + off.start, enc, new_size);
+        memcpy(nv + off.start + new_size, val + off.end, off.size - off.end);
+        nv[size] = 0;
+        xml_node_set_content(attr, nv);
+        free(nv);
+    }
+    if (found) return 0;
+    XMQNode *meta = xml_node_new_element(xml_node_dom(head), "meta", NULL);
+    xml_node_append_attr(meta, "charset", NULL, encoding);
+    XMQNode *first = xml_node_first_child(head);
+    if (!first) xml_node_append_child(head, meta);
+    else xml_node_add_prev_sibling(first, meta);
+    return 0;
 }
 
 #endif // XML_HTML_SAVE_MODULE

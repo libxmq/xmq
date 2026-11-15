@@ -317,7 +317,8 @@ static void xml_html_node(MemBuffer *mb, const XMQNode *cur, bool format)
         {
             const char *content = xml_node_content(cur);
             if (!content) break;
-            if (is_raw) membuffer_append(mb, content);
+            // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
+            if (is_raw || (xml_node_name(cur) && !strcmp(xml_node_name(cur), "textnoenc"))) membuffer_append(mb, content);
             else xml_html_escape(mb, content, false);
             break;
         }
@@ -434,6 +435,179 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len)
     MemBuffer *mb = new_membuffer();
     xml_html_save_node_to(mb, node, format);
     return xml_html_finish(mb, out_len);
+}
+
+// Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
+
+static bool xml_html_is_ws(int c)
+{
+    return c == 0x20 || (c >= 0x09 && c <= 0x0D && c != 0x0B);
+}
+
+static XMQNode *xml_html_find_first_child(XMQNode *parent, const char *name)
+{
+    for (XMQNode *c = xml_node_first_child(parent); c; c = xml_node_next(c))
+    {
+        if (xml_node_kind(c) == XML_DOM_ELEMENT && !strcasecmp(xml_node_name(c), name)) return c;
+    }
+    return NULL;
+}
+
+static XMQNode *xml_html_find_head(XmlDom *dom)
+{
+    XMQNode *html = xml_html_find_first_child(xml_dom_document(dom), "html");
+    if (!html) return NULL;
+    return xml_html_find_first_child(html, "head");
+}
+
+typedef struct
+{
+    size_t start;
+    size_t end;
+    size_t size;
+} XmlHtmlMetaOffsets;
+
+/** Port of htmlParseContentType: the charset in a content-type value. */
+static bool xml_html_parse_content_type(const char *val, XmlHtmlMetaOffsets *off)
+{
+    const char *p = val;
+    while (true)
+    {
+        size_t start, end;
+        while (*p != 'c' && *p != 'C')
+        {
+            if (*p == 0) return false;
+            p += 1;
+        }
+        p += 1;
+        if (strncasecmp(p, "harset", 6) != 0) continue;
+        p += 6;
+        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        if (*p != '=') continue;
+        p += 1;
+        while (xml_html_is_ws((unsigned char)*p)) p += 1;
+        if (*p == 0) return false;
+        if (*p == '"' || *p == '\'')
+        {
+            int quote = *p;
+            p += 1;
+            while (xml_html_is_ws((unsigned char)*p)) p += 1;
+            start = (size_t)(p - val);
+            end = start;
+            while (*p != quote)
+            {
+                if (*p == 0) return false;
+                if (!xml_html_is_ws((unsigned char)*p)) end = (size_t)(p + 1 - val);
+                p += 1;
+            }
+        }
+        else
+        {
+            start = (size_t)(p - val);
+            while (*p != 0 && *p != ';' && !xml_html_is_ws((unsigned char)*p)) p += 1;
+            end = (size_t)(p - val);
+        }
+        off->start = start;
+        off->end = end;
+        off->size = (size_t)(p - val) + strlen(p);
+        return true;
+    }
+}
+
+static const char *xml_html_simple_attr_value(XMQNode *attr)
+{
+    XMQNode *c = xml_node_first_child(attr);
+    if (c && xml_node_kind(c) == XML_DOM_TEXT && !xml_node_next(c) && xml_node_content(c)) return xml_node_content(c);
+    return NULL;
+}
+
+/** Port of htmlFindMetaEncodingAttr. */
+static XMQNode *xml_html_find_meta_encoding_attr(XMQNode *elem, bool *is_content_type)
+{
+    if (strcasecmp(xml_node_name(elem), "meta")) return NULL;
+    XMQNode *content_attr = NULL;
+    bool ct = false;
+    for (XMQAttr *at = xml_node_first_attr(elem); at; at = xml_attr_next(at))
+    {
+        XMQNode *a = xml_attr_node(at);
+        if (xml_node_ns(a)) continue;
+        if (!strcasecmp(xml_node_name(a), "charset"))
+        {
+            *is_content_type = false;
+            return a;
+        }
+        if (!strcasecmp(xml_node_name(a), "content")) content_attr = a;
+        const char *v = xml_html_simple_attr_value(a);
+        if (!strcasecmp(xml_node_name(a), "http-equiv") && v && !strcasecmp(v, "Content-Type")) ct = true;
+    }
+    if (ct && content_attr)
+    {
+        *is_content_type = true;
+        return content_attr;
+    }
+    return NULL;
+}
+
+/** Port of htmlParseMetaEncoding: the attribute and the offsets of the encoding in its value. */
+static XMQNode *xml_html_parse_meta_encoding(XMQNode *elem, const char **value, XmlHtmlMetaOffsets *off)
+{
+    if (xml_node_kind(elem) != XML_DOM_ELEMENT || strcasecmp(xml_node_name(elem), "meta")) return NULL;
+    bool is_content_type = false;
+    XMQNode *attr = xml_html_find_meta_encoding_attr(elem, &is_content_type);
+    if (!attr) return NULL;
+    const char *val = xml_html_simple_attr_value(attr);
+    if (!val) val = "";
+    if (!is_content_type)
+    {
+        size_t size = strlen(val), start = 0, end = size;
+        while (start < size && xml_html_is_ws((unsigned char)val[start])) start += 1;
+        while (end > 0 && xml_html_is_ws((unsigned char)val[end - 1])) end -= 1;
+        off->start = start;
+        off->end = end;
+        off->size = size;
+        *value = val;
+        return attr;
+    }
+    if (xml_html_parse_content_type(val, off))
+    {
+        *value = val;
+        return attr;
+    }
+    return NULL;
+}
+
+int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding)
+{
+    if (!encoding) return 1;
+    XMQNode *head = xml_html_find_head(dom);
+    if (!head) return 1;
+    bool found = false;
+    for (XMQNode *meta = xml_node_first_child(head); meta; meta = xml_node_next(meta))
+    {
+        const char *val = NULL;
+        XmlHtmlMetaOffsets off;
+        XMQNode *attr = xml_html_parse_meta_encoding(meta, &val, &off);
+        if (!attr) continue;
+        found = true;
+        // The pseudo "HTML" encoding only produces ASCII.
+        const char *enc = !strcasecmp(encoding, "HTML") ? "ASCII" : encoding;
+        size_t old_size = off.end - off.start, new_size = strlen(enc);
+        size_t size = off.size - old_size + new_size;
+        char *nv = (char*)malloc(size + 1);
+        memcpy(nv, val, off.start);
+        memcpy(nv + off.start, enc, new_size);
+        memcpy(nv + off.start + new_size, val + off.end, off.size - off.end);
+        nv[size] = 0;
+        xml_node_set_content(attr, nv);
+        free(nv);
+    }
+    if (found) return 0;
+    XMQNode *meta = xml_node_new_element(xml_node_dom(head), "meta", NULL);
+    xml_node_append_attr(meta, "charset", NULL, encoding);
+    XMQNode *first = xml_node_first_child(head);
+    if (!first) xml_node_append_child(head, meta);
+    else xml_node_add_prev_sibling(first, meta);
+    return 0;
 }
 
 #endif // XML_HTML_SAVE_MODULE

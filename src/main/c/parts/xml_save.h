@@ -51,6 +51,16 @@ char *xml_save_doc(XmlDom *dom, const char *encoding, bool format, size_t *out_l
 void xml_save_node_to(MemBuffer *mb, const XMQNode *node, int level, bool format);
 char *xml_save_node(const XMQNode *node, int level, bool format, size_t *out_len);
 
+/** Serialize a node like libxml2 xmlNodeDumpOutput: in the XHTML mode if the dtd of doc is an
+    XHTML 1.0 dtd. Text is written in UTF-8 (transcode afterwards for other encodings);
+    encoding (NULL is UTF-8) is only used for the XHTML meta tag. */
+void xml_save_node_dump_output(MemBuffer *mb, XmlDom *doc, const XMQNode *node, int level, bool format, const char *encoding);
+/** Is the output encoding supported by xml_save_transcode (UTF-8, ISO-8859-1, ASCII, UTF-16)? */
+bool xml_save_encoding_supported(const char *encoding);
+/** Append the utf8 text converted to the encoding, characters the encoding cannot represent
+    become decimal character references (like libxml2 output encoders). Returns false (and
+    appends nothing) if the encoding is not supported. */
+bool xml_save_transcode(MemBuffer *out, const char *utf8, size_t len, const char *encoding);
 /** Append s escaped for an xml attribute value (xmlSerializeText with XML_ESCAPE_ATTR),
     non ascii characters are written as character references if escape_non_ascii. */
 void xml_save_escape_attr(MemBuffer *mb, const char *s, bool escape_non_ascii);

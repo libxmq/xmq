@@ -58,6 +58,8 @@ ings in this Software without prior written authorization from him.
 #include"xml_xpath.h"
 #include"xml_uri.h"
 #include"xml_chars.h"
+#include"xml_save.h"
+#include"xml_html_save.h"
 #include"hashmap.h"
 #include"membuffer.h"
 
@@ -232,18 +234,29 @@ static XMQNode *lx_add_child(XMQNode *parent, XMQNode *cur)
     return xml_node_append_child(parent, cur);
 }
 
+/** libxml2 gives an attribute set to "" an empty text child (the html serializer writes it as a=""). */
+static XMQAttr *lx_attr_text_child(XMQAttr *a, const char *value)
+{
+    if (a && value && !xml_node_first_child(xml_attr_node(a)))
+    {
+        XMQNode *an = xml_attr_node(a);
+        xml_node_append_child(an, xml_node_new_text(xml_node_dom(an), ""));
+    }
+    return a;
+}
+
 /** Port of xmlSetNsProp: replace the value of an attribute with the same name and namespace or add one. */
 static XMQAttr *lx_set_ns_prop(XMQNode *elem, XmlNs *ns, const char *name, const char *value)
 {
     if (!lx_is_element(elem) || !name) return NULL;
-    return xml_node_set_attr(elem, name, ns, value ? value : "");
+    return lx_attr_text_child(xml_node_set_attr(elem, name, ns, value ? value : ""), value);
 }
 
 /** Port of xmlNewNsProp: add an attribute without looking for duplicates. */
 static XMQAttr *lx_new_ns_prop(XMQNode *elem, XmlNs *ns, const char *name, const char *value)
 {
     if (!lx_is_element(elem) || !name) return NULL;
-    return xml_node_append_attr(elem, name, ns, value ? value : "");
+    return lx_attr_text_child(xml_node_append_attr(elem, name, ns, value ? value : ""), value);
 }
 
 /** The attribute value with the entity references substituted (xmlNodeListGetString). */
@@ -3579,12 +3592,31 @@ static void xslt_debug(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *inst)
     }
 }
 
-/** Save a result document to a file (xsltSaveResultToFilename), returns -1 on failure.
-    TODO (step 7e): the serialization; the document is not written yet. */
+static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Stylesheet *style, int type);
+
+/** Port of xsltSaveResultToFilename: save a result document (xsl:document), -1 on failure. */
 static int xslt_save_result_to_filename(XmlLibxslt1Transform *t, const char *filename, XmlDom *res, XmlLibxslt1Stylesheet *style, bool append)
 {
-    (void)t; (void)filename; (void)res; (void)style; (void)append;
-    return 0;
+    (void)t;
+    if (!filename || !res || !style) return -1;
+    if (!xml_node_first_child(xml_dom_document(res))) return 0;
+    size_t len = 0;
+    char *out = xml_libxslt1_save_result_to_string(res, style, t->type, &len);
+    const char *path = filename;
+    if (!strncmp(path, "file://", 7))
+    {
+        path += 7;
+        if (!strncmp(path, "localhost/", 10)) path += 9;
+    }
+    FILE *f = fopen(path, append ? "ab" : "wb");
+    int ret = -1;
+    if (f)
+    {
+        ret = fwrite(out, 1, len, f) == len ? (int)len : -1;
+        if (fclose(f) != 0) ret = -1;
+    }
+    free(out);
+    return ret;
 }
 
 static XmlDom *xslt_html_new_doc(const char *system_id, const char *public_id);
@@ -6504,6 +6536,126 @@ static int xslt_eval_user_params(XmlLibxslt1Transform *t, const char **params)
         if (xslt_process_user_param(t, params[i], params[i + 1]) != 0) return -1;
     }
     return 0;
+}
+
+// Output, port of libxslt xsltutils.c xsltSaveResultTo ///////////////
+
+static int xslt_import_int_indent(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->indent != -1) return s->indent; return -1; }
+static int xslt_import_int_omit(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->omit_xml_declaration != -1) return s->omit_xml_declaration; return -1; }
+static int xslt_import_int_standalone(XmlLibxslt1Stylesheet *s) { for (; s; s = xslt1_next_import(s)) if (s->standalone != -1) return s->standalone; return -1; }
+
+/** Port of xsltSaveResultTo: serialize the result in UTF-8 (the encoding is applied by the caller). */
+static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Stylesheet *style, int type)
+{
+    if (!buf || !result || !style) return false;
+    XMQNode *doc_node = xml_dom_document(result);
+    XMQNode *first = xml_node_first_child(doc_node);
+    if (!first || (xml_node_kind(first) == XML_DOM_DTD && !xml_node_next(first))) return true;
+    if (style->method_uri && (!style->method || strcmp(style->method, "xhtml")))
+    {
+        xslt1_generic_error(&style->settings, "xsltSaveResultTo : unknown output method\n");
+        return false;
+    }
+    const char *method = xslt_import_method(style);
+    const char *encoding = xslt_import_encoding(style);
+    int indent = xslt_import_int_indent(style);
+    if (!method && type == XSLT_OUTPUT_HTML) method = "html";
+    if (method && !strcmp(method, "html"))
+    {
+        xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
+        if (indent == -1) indent = 1;
+        xml_html_save_doc_to(buf, result, indent != 0);
+    }
+    else if (method && !strcmp(method, "xhtml"))
+    {
+        xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
+        xml_html_save_doc_to(buf, result, true);
+    }
+    else if (method && !strcmp(method, "text"))
+    {
+        XMQNode *cur = first;
+        while (cur)
+        {
+            if (xml_node_kind(cur) == XML_DOM_TEXT && xml_node_content(cur)) membuffer_append(buf, xml_node_content(cur));
+            XMQNode *child = lx_children(cur);
+            if (child && xml_node_kind(child) != XML_DOM_ENTITY_DECL && xml_node_kind(child) != XML_DOM_ENTITY_REF)
+            {
+                cur = child;
+                continue;
+            }
+            if (xml_node_next(cur))
+            {
+                cur = xml_node_next(cur);
+                continue;
+            }
+            do
+            {
+                cur = xml_node_parent(cur);
+                if (!cur || cur == doc_node)
+                {
+                    cur = NULL;
+                    break;
+                }
+                if (xml_node_next(cur))
+                {
+                    cur = xml_node_next(cur);
+                    break;
+                }
+            } while (cur);
+        }
+    }
+    else
+    {
+        int omit_xml_decl = xslt_import_int_omit(style);
+        int standalone = xslt_import_int_standalone(style);
+        if (omit_xml_decl != 1)
+        {
+            membuffer_append(buf, "<?xml version=");
+            const char *version = xml_dom_version(result);
+            membuffer_append(buf, "\"");
+            membuffer_append(buf, version ? version : "1.0");
+            membuffer_append(buf, "\"");
+            if (!encoding) encoding = xml_dom_encoding(result);
+            if (encoding)
+            {
+                membuffer_append(buf, " encoding=\"");
+                membuffer_append(buf, encoding);
+                membuffer_append(buf, "\"");
+            }
+            if (standalone == 0) membuffer_append(buf, " standalone=\"no\"");
+            else if (standalone == 1) membuffer_append(buf, " standalone=\"yes\"");
+            membuffer_append(buf, "?>\n");
+        }
+        for (XMQNode *child = first; child; child = xml_node_next(child))
+        {
+            xml_save_node_dump_output(buf, result, child, 0, indent == 1, encoding);
+            if (indent && (xml_node_kind(child) == XML_DOM_DTD || (xml_node_kind(child) == XML_DOM_COMMENT && xml_node_next(child))))
+                membuffer_append(buf, "\n");
+        }
+        if (indent) membuffer_append(buf, "\n");
+    }
+    return true;
+}
+
+char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *style, int output_type, size_t *len)
+{
+    MemBuffer *utf8 = new_membuffer();
+    if (result && xml_node_first_child(xml_dom_document(result))) xslt_save_result_to(utf8, result, style, output_type);
+    const char *encoding = xslt_import_encoding(style);
+    size_t n = utf8->used_;
+    MemBuffer *out = utf8;
+    // Like libxslt, no encoder for UTF-8; an encoding without an encoder is written as UTF-8.
+    if (encoding && strcasecmp(encoding, "UTF-8") && strcasecmp(encoding, "UTF8") && xml_save_encoding_supported(encoding))
+    {
+        membuffer_append_null(utf8);
+        char *u = free_membuffer_but_return_trimmed_content(utf8);
+        out = new_membuffer();
+        xml_save_transcode(out, u, n, encoding);
+        free(u);
+    }
+    if (len) *len = out->used_;
+    membuffer_append_null(out);
+    return free_membuffer_but_return_trimmed_content(out);
 }
 
 /** Port of xsltApplyStylesheetInternal. */

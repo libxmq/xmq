@@ -30,7 +30,10 @@
 #include<libxslt/extensions.h>
 #include<libxslt/preproc.h>
 
+#include<dirent.h>
+#include<sys/stat.h>
 #include<stdarg.h>
+#include<unistd.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -43,6 +46,7 @@ char *xmqLineVPrintf(XMQLineConfig *lc, const char *element_name, va_list ap)
 }
 
 static int verbose_ = 0;
+static long out_same_ = 0, out_diff_ = 0;
 static long files_ = 0, skipped_ = 0, same_ = 0, diff_ = 0, both_fail_ = 0, msg_diff_ = 0, with_msgs_ = 0;
 static int max_shown_ = 10;
 static int shown_ = 0;
@@ -314,6 +318,77 @@ static void show_diff(const char *what, const char *a, const char *b)
 
 #include"xml_libxslt1_mutate.h"
 
+static long files_written_same_ = 0, files_written_diff_ = 0;
+
+static char *read_all(const char *path, size_t *len)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+    size_t cap = 4096, n = 0;
+    char *b = malloc(cap);
+    size_t r;
+    while ((r = fread(b + n, 1, cap - n, f)) > 0)
+    {
+        n += r;
+        if (n == cap) b = realloc(b, cap *= 2);
+    }
+    fclose(f);
+    *len = n;
+    return b;
+}
+
+/** Compare the files xsl:document wrote in lx/ and nx/, then remove them. Returns true if equal. */
+static bool compare_written_files(const char *what)
+{
+    bool same = true;
+    const char *dirs[2] = { "lx", "nx" };
+    for (int d = 0; d < 2; d++)
+    {
+        DIR *dir = opendir(dirs[d]);
+        if (!dir) continue;
+        struct dirent *e;
+        while ((e = readdir(dir)))
+        {
+            if (e->d_name[0] == '.') continue;
+            char a[1024], b[1024];
+            snprintf(a, sizeof(a), "lx/%s", e->d_name);
+            snprintf(b, sizeof(b), "nx/%s", e->d_name);
+            size_t la = 0, lb = 0;
+            char *ca = read_all(a, &la), *cb = read_all(b, &lb);
+            bool eq = ca && cb && la == lb && !memcmp(ca, cb, la);
+            if (d == 0 || !ca)
+            {
+                if (eq) files_written_same_++;
+                else
+                {
+                    files_written_diff_++;
+                    if (shown_ < max_shown_) printf("DIFF %s: written file %s differs\n", what, e->d_name);
+                    same = false;
+                }
+            }
+            free(ca);
+            free(cb);
+        }
+        closedir(dir);
+    }
+    // Remove them.
+    for (int d = 0; d < 2; d++)
+    {
+        DIR *dir = opendir(dirs[d]);
+        if (!dir) continue;
+        struct dirent *e;
+        while ((e = readdir(dir)))
+        {
+            if (e->d_name[0] == '.') continue;
+            char a[1024];
+            snprintf(a, sizeof(a), "%s/%s", dirs[d], e->d_name);
+            unlink(a);
+        }
+        closedir(dir);
+    }
+    return same;
+}
+
 static const char *params_[] = { "test", "'passed_value'", "test2", "'passed_value2'", NULL };
 
 static void test_file(const char *path, int mutant)
@@ -361,6 +436,10 @@ static void test_file(const char *path, int mutant)
     nx_msgs_ = new_membuffer();
 
     char *lx_desc = NULL, *nx_desc = NULL;
+    xmlChar *lx_out = NULL;
+    int lx_out_len = 0;
+    char *nx_out = NULL;
+    size_t nx_out_len = 0;
     xsltStylesheetPtr lx = xsltParseStylesheetDoc(lx_style_doc);
     if (!lx)
     {
@@ -369,10 +448,14 @@ static void test_file(const char *path, int mutant)
     }
     else
     {
+        // Files written by xsl:document go below lx/ and nx/.
+        if (chdir("lx") != 0) {}
         xmlDocPtr res = xsltApplyStylesheet(lx, lx_doc, params_);
+        if (chdir("..") != 0) {}
         if (res)
         {
             lx_desc = lx_describe(res);
+            xsltSaveResultToString(&lx_out, &lx_out_len, res, lx);
             xmlFreeDoc(res);
         }
         else
@@ -392,10 +475,13 @@ static void test_file(const char *path, int mutant)
     else
     {
         int type = 0;
+        if (chdir("nx") != 0) {}
         XmlDom *res = xml_libxslt1_apply_stylesheet(nx, nx_doc, params_, &type);
+        if (chdir("..") != 0) {}
         if (res)
         {
             nx_desc = nx_describe(res, type);
+            nx_out = xml_libxslt1_save_result_to_string(res, nx, type, &nx_out_len);
             xml_dom_free(res);
         }
         else
@@ -410,18 +496,39 @@ static void test_file(const char *path, int mutant)
     char *nm = take(nx_msgs_);
     bool same = !strcmp(lx_desc, nx_desc);
     bool msame = !strcmp(lm, nm);
+    if (!compare_written_files(path)) diff_++;
+    // The serialized results (compared when both have one).
+    bool osame = true;
+    if (lx_out || nx_out)
+    {
+        size_t ll = lx_out ? (size_t)lx_out_len : 0;
+        osame = (ll == nx_out_len) && (!ll || !memcmp(lx_out, nx_out, ll));
+        if (osame) out_same_++;
+        else out_diff_++;
+    }
     if (!strncmp(lx_desc, "NO ", 3) && !strncmp(nx_desc, "NO ", 3)) both_fail_++;
-    if (same) same_++;
+    if (same && osame) same_++;
     else diff_++;
     if (!msame) msg_diff_++;
     if (*lm) with_msgs_++;
-    if ((!same || !msame) && shown_ < max_shown_)
+    if ((!same || !msame || !osame) && shown_ < max_shown_)
     {
         shown_++;
         if (mutant) printf("DIFF %s (mutant %d)\n", path, mutant);
         else printf("DIFF %s\n", path);
         if (!same) show_diff("result", lx_desc, nx_desc);
         if (!msame) show_diff("messages", lm, nm);
+        if (!osame)
+        {
+            size_t ll = lx_out ? (size_t)lx_out_len : 0, k = 0;
+            while (k < ll && k < nx_out_len && lx_out[k] == (unsigned char)nx_out[k]) k++;
+            size_t from = k > 40 ? k - 40 : 0;
+            printf("  output differs at byte %zu (libxslt %zu bytes, native %zu bytes)\n    libxslt: ", k, ll, nx_out_len);
+            for (size_t j = from; j < ll && j < k + 40; j++) putchar(lx_out[j] == '\n' ? '|' : lx_out[j]);
+            printf("\n    native:  ");
+            for (size_t j = from; j < nx_out_len && j < k + 40; j++) putchar(nx_out[j] == '\n' ? '|' : nx_out[j]);
+            printf("\n");
+        }
         if (verbose_ > 1) printf("---- libxslt\n%s%s---- native\n%s%s", lx_desc, lm, nx_desc, nm);
         else printf("  ---- libxslt messages\n%.2000s  ---- native messages\n%.2000s", lm, nm);
     }
@@ -431,6 +538,8 @@ static void test_file(const char *path, int mutant)
     }
     free(lx_desc);
     free(nx_desc);
+    xmlFree(lx_out);
+    free(nx_out);
     free(lm);
     free(nm);
     free(input);
@@ -454,12 +563,16 @@ int main(int argc, char **argv)
     xmlSetStructuredErrorFunc(NULL, capture_structured);
     xsltSetGenericErrorFunc(NULL, capture_lx);
     xmlSetGenericErrorFunc(NULL, capture_lx);
+    mkdir("lx", 0777);
+    mkdir("nx", 0777);
     for (; i < argc; ++i)
     {
         for (int m = 0; m <= mutants_; ++m) test_file(argv[i], m);
     }
     printf("xml_libxslt1_transform_diff: %ld transformations (%ld mutated), %ld skipped (parse errors), %ld same (%ld both fail), %ld differ, "
-           "%ld with messages, %ld message differences\n", files_, mutated_, skipped_, same_, both_fail_, diff_, with_msgs_, msg_diff_);
+           "%ld with messages, %ld message differences, outputs %ld same %ld differ, written files %ld same %ld differ\n",
+           files_, mutated_, skipped_, same_, both_fail_, diff_, with_msgs_, msg_diff_, out_same_, out_diff_,
+           files_written_same_, files_written_diff_);
     xsltCleanupGlobals();
     xmlCleanupParser();
     return (diff_ || msg_diff_) ? 1 : 0;

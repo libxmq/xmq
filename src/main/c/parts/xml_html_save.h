@@ -50,6 +50,10 @@ char *xml_html_save_doc(XmlDom *dom, bool format, size_t *out_len);
 void xml_html_save_node_to(MemBuffer *mb, const XMQNode *node, bool format);
 char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len);
 
+/** Create or update the meta tags with the encoding in the head (libxml2 htmlSetMetaEncoding).
+    Returns 0, or 1 if there is no html/head. */
+int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding);
+
 #define XML_HTML_SAVE_MODULE
 
 #endif // XML_HTML_SAVE_H
