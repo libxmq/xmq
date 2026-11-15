@@ -454,7 +454,7 @@ void hashmap_free_iterator(HashMapIterator *i);
 
 // PART H LANG ////////////////////////////////////////
 
-#include<xmq.h>
+#include"xmq.h"
 #include<stdbool.h>
 #include<stdlib.h>
 #include<string.h>
@@ -36195,7 +36195,7 @@ static void xp_compile_location_path(XpCtx *c, XpStep **steps, size_t *num)
             xp_next(c);
             xp_skip_blanks(c);
             int ch = xp_cur(c);
-            if (ch != 0 && (xp_is_ascii_letter(ch) || ch == '_' || ch == '.' || ch == '@' || ch == '*'))
+            if (ch != 0 && (xp_is_ascii_letter(ch) || ch >= 0x80 || ch == '_' || ch == '.' || ch == '@' || ch == '*'))
             {
                 xp_compile_relative_location_path(c, steps, num);
             }
