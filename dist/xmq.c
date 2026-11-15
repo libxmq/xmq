@@ -590,6 +590,11 @@ typedef struct
 
 size_t count_whitespace(const char *i, const char *stop);
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+/** Find the first invalid UTF-8 sequence: a stray continuation byte, a truncated
+    sequence, an overlong encoding, a surrogate or a code point above U+10FFFF.
+    Returns NULL if all is valid. *bad_len is the length of the invalid sequence,
+    the first byte and the continuation bytes that follow it (at most 4). */
+const char *find_invalid_utf8(const char *start, const char *stop, size_t *bad_len);
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);
@@ -4030,6 +4035,7 @@ struct XMQParseState
     size_t col; // Current col.
     XMQStatus error_nr; // A standard parse error enum that maps to text.
     const char *error_info; // Additional info printed with the error nr.
+    char error_info_buf[32]; // Storage for a generated error_info.
     char *generated_error_msg; // Additional error information.
     MemBuffer *generating_error_msg;
     jmp_buf error_handler;
@@ -5410,6 +5416,32 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         return false;
     }
 
+
+    // The xmq source must be valid UTF-8.
+    size_t bad_len = 0;
+    const char *bad = find_invalid_utf8(state->buffer_start, state->buffer_stop, &bad_len);
+    if (bad)
+    {
+        size_t line = 1, col = 1;
+        for (const char *k = state->buffer_start; k < bad; ++k)
+        {
+            if (*k == '\n') { line++; col = 1; }
+            else if ((*k & 0xc0) != 0x80) col++;
+        }
+        state->i = bad;
+        state->line = line;
+        state->col = col;
+        char *b = state->error_info_buf;
+        b[0] = 0;
+        for (size_t k = 0; k < bad_len; ++k)
+        {
+            snprintf(b + strlen(b), sizeof(state->error_info_buf) - strlen(b), " 0x%02X", (unsigned char)bad[k]);
+        }
+        state->error_info = b;
+        state->error_nr = XMQ_ERROR_INVALID_UTF8;
+        generate_state_error_message(state, XMQ_ERROR_INVALID_UTF8, state->buffer_start, state->buffer_stop);
+        return false;
+    }
 
     if (state->parse->init) state->parse->init(state);
 
@@ -19320,6 +19352,39 @@ size_t encode_utf8(int uc, UTF8Char *utf8)
 
    Return true if valid utf8 char.
 */
+const char *find_invalid_utf8(const char *start, const char *stop, size_t *bad_len)
+{
+    const unsigned char *s = (const unsigned char*)start;
+    const unsigned char *e = (const unsigned char*)stop;
+    while (s < e)
+    {
+        unsigned int c = *s;
+        if (c < 0x80) { s++; continue; }
+        size_t need = 0;
+        unsigned int v = 0, min = 0;
+        if (c >= 0xC2 && c < 0xE0) { need = 2; v = c & 0x1F; min = 0x80; }
+        else if (c >= 0xE0 && c < 0xF0) { need = 3; v = c & 0x0F; min = 0x800; }
+        else if (c >= 0xF0 && c < 0xF5) { need = 4; v = c & 0x07; min = 0x10000; }
+        bool ok = need > 0 && (size_t)(e - s) >= need;
+        for (size_t k = 1; ok && k < need; ++k)
+        {
+            if ((s[k] & 0xC0) != 0x80) ok = false;
+            else v = (v << 6) | (s[k] & 0x3F);
+        }
+        if (ok && (v < min || v > 0x10FFFF || (v >= 0xD800 && v < 0xE000))) ok = false;
+        if (!ok)
+        {
+            size_t l = 1;
+            while (l < 4 && s + l < e && (s[l] & 0xC0) == 0x80) l++;
+            *bad_len = l;
+            return (const char*)s;
+        }
+        s += need;
+    }
+    *bad_len = 0;
+    return NULL;
+}
+
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len)
 {
     int c = (int)(unsigned char)(*start);
@@ -33914,9 +33979,9 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
         indent++;
     }
 
-    // Now find the end of the line.
+    // Now find the end of the line. For invalid UTF-8 the line is shown up to the bad bytes.
     const char *line_stop = statei;
-    while (line_stop < stop && *line_stop && *line_stop != '\n' && line_length < 1024)
+    while (error_nr != XMQ_ERROR_INVALID_UTF8 && line_stop < stop && *line_stop && *line_stop != '\n' && line_length < 1024)
     {
         line_length++;
         line_stop++;
@@ -34013,6 +34078,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_BAD_VALUE: return "parameter has bad value";
     case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_ERROR_ENTITY_EXPANSION: return "entity expansion failed";
+    case XMQ_ERROR_INVALID_UTF8: return "invalid UTF-8";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

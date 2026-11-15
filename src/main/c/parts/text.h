@@ -43,6 +43,11 @@ typedef struct
 
 size_t count_whitespace(const char *i, const char *stop);
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len);
+/** Find the first invalid UTF-8 sequence: a stray continuation byte, a truncated
+    sequence, an overlong encoding, a surrogate or a code point above U+10FFFF.
+    Returns NULL if all is valid. *bad_len is the length of the invalid sequence,
+    the first byte and the continuation bytes that follow it (at most 4). */
+const char *find_invalid_utf8(const char *start, const char *stop, size_t *bad_len);
 size_t encode_utf8(int uc, UTF8Char *utf8);
 const char *has_ending_nl_space(const char *start, const char *stop, size_t *only_newlines);
 const char *has_leading_space_nl(const char *start, const char *stop, size_t *only_newlines);

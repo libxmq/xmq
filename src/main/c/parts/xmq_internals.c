@@ -87,9 +87,9 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
         indent++;
     }
 
-    // Now find the end of the line.
+    // Now find the end of the line. For invalid UTF-8 the line is shown up to the bad bytes.
     const char *line_stop = statei;
-    while (line_stop < stop && *line_stop && *line_stop != '\n' && line_length < 1024)
+    while (error_nr != XMQ_ERROR_INVALID_UTF8 && line_stop < stop && *line_stop && *line_stop != '\n' && line_length < 1024)
     {
         line_length++;
         line_stop++;
@@ -186,6 +186,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_BAD_VALUE: return "parameter has bad value";
     case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_ERROR_ENTITY_EXPANSION: return "entity expansion failed";
+    case XMQ_ERROR_INVALID_UTF8: return "invalid UTF-8";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

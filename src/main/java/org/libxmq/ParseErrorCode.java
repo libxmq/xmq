@@ -91,6 +91,8 @@ public enum ParseErrorCode
     XMQ_ERROR_VALUE_CANNOT_START_WITH(30),
     /** Embedded xml fragment is not closed. */
     XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED(37),
+    /** The input is not valid UTF-8. */
+    XMQ_ERROR_INVALID_UTF8(39),
     /** IXML expected rule. */
     XMQ_ERROR_IXML_EXPECTED_RULE(50),
     /** IXML expected name. */

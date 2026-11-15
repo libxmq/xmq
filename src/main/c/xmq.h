@@ -396,6 +396,8 @@ typedef enum
     XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED = 37,
     /** An entity could not be expanded: a loop, too deep nesting, too large expansion or malformed replacement text. */
     XMQ_ERROR_ENTITY_EXPANSION = 38,
+    /** The input is not valid UTF-8. */
+    XMQ_ERROR_INVALID_UTF8 = 39,
     /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
     /** Warning, when parse succeeds, but it seems there is a mistake. */

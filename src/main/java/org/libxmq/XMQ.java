@@ -235,7 +235,8 @@ public class XMQ
             out.append(" \"").append(cp == 0 ? "" : new String(Character.toChars(cp))).append("\" U+")
                .append(Integer.toHexString(cp).toUpperCase(Locale.ROOT));
         }
-        if (!atEnd)
+        // For invalid UTF-8 the text is the line up to the bad bytes and the marker goes after it.
+        if (!atEnd || e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_UTF8)
         {
             out.append("\n").append(text).append("\n").append(" ".repeat(Math.max(1, at))).append("^");
         }

@@ -362,6 +362,39 @@ size_t encode_utf8(int uc, UTF8Char *utf8)
 
    Return true if valid utf8 char.
 */
+const char *find_invalid_utf8(const char *start, const char *stop, size_t *bad_len)
+{
+    const unsigned char *s = (const unsigned char*)start;
+    const unsigned char *e = (const unsigned char*)stop;
+    while (s < e)
+    {
+        unsigned int c = *s;
+        if (c < 0x80) { s++; continue; }
+        size_t need = 0;
+        unsigned int v = 0, min = 0;
+        if (c >= 0xC2 && c < 0xE0) { need = 2; v = c & 0x1F; min = 0x80; }
+        else if (c >= 0xE0 && c < 0xF0) { need = 3; v = c & 0x0F; min = 0x800; }
+        else if (c >= 0xF0 && c < 0xF5) { need = 4; v = c & 0x07; min = 0x10000; }
+        bool ok = need > 0 && (size_t)(e - s) >= need;
+        for (size_t k = 1; ok && k < need; ++k)
+        {
+            if ((s[k] & 0xC0) != 0x80) ok = false;
+            else v = (v << 6) | (s[k] & 0x3F);
+        }
+        if (ok && (v < min || v > 0x10FFFF || (v >= 0xD800 && v < 0xE000))) ok = false;
+        if (!ok)
+        {
+            size_t l = 1;
+            while (l < 4 && s + l < e && (s[l] & 0xC0) == 0x80) l++;
+            *bad_len = l;
+            return (const char*)s;
+        }
+        s += need;
+    }
+    *bad_len = 0;
+    return NULL;
+}
+
 bool decode_utf8(const char *start, const char *stop, int *out_char, size_t *out_len)
 {
     int c = (int)(unsigned char)(*start);

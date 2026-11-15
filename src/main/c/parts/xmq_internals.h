@@ -296,6 +296,7 @@ struct XMQParseState
     size_t col; // Current col.
     XMQStatus error_nr; // A standard parse error enum that maps to text.
     const char *error_info; // Additional info printed with the error nr.
+    char error_info_buf[32]; // Storage for a generated error_info.
     char *generated_error_msg; // Additional error information.
     MemBuffer *generating_error_msg;
     jmp_buf error_handler;

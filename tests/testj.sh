@@ -78,6 +78,12 @@ then
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
 fi
 
+if [ -z "$FILTER" ] || [[ "invalid_utf8" =~ $FILTER ]]
+then
+    tests/test_cmd_007_invalid_utf8.sh "$PROG" "$OUTPUT"
+    if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi
+fi
+
 for i in tests/backforth_???_*.test
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

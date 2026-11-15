@@ -312,10 +312,62 @@ public class Main
             return jp.doc();
         }
 
+        if (raw != null)
+        {
+            // The xmq source must be valid UTF-8, like xmqTokenizeBuffer in the C version.
+            ParseException bad = invalidUtf8(raw, file);
+            if (bad != null) throw bad;
+        }
         XMQParseIntoDOM pa = new XMQParseIntoDOM();
         pa.setMergeText(!no_merge);
         pa.parse(content, file);
         return pa.doc();
+    }
+
+    /**
+     * Find the first invalid UTF-8 sequence (a stray continuation byte, a truncated sequence,
+     * an overlong encoding, a surrogate or above U+10FFFF), like find_invalid_utf8 in the C
+     * version, and return the error for it, or null if the input is valid. The error shows the
+     * line up to the bad bytes, the marker indented by bytes like the C version.
+     * @param raw The input bytes.
+     * @param source The source name.
+     * @return The error or null.
+     */
+    static ParseException invalidUtf8(byte[] raw, String source)
+    {
+        int k = 0;
+        while (k < raw.length)
+        {
+            int c = raw[k] & 0xFF;
+            if (c < 0x80) { k++; continue; }
+            int need = 0, v = 0, min = 0;
+            if (c >= 0xC2 && c < 0xE0) { need = 2; v = c & 0x1F; min = 0x80; }
+            else if (c >= 0xE0 && c < 0xF0) { need = 3; v = c & 0x0F; min = 0x800; }
+            else if (c >= 0xF0 && c < 0xF5) { need = 4; v = c & 0x07; min = 0x10000; }
+            boolean ok = need > 0 && raw.length - k >= need;
+            for (int j = 1; ok && j < need; j++)
+            {
+                if ((raw[k + j] & 0xC0) != 0x80) ok = false;
+                else v = (v << 6) | (raw[k + j] & 0x3F);
+            }
+            if (ok && (v < min || v > 0x10FFFF || (v >= 0xD800 && v < 0xE000))) ok = false;
+            if (!ok) break;
+            k += need;
+        }
+        if (k >= raw.length) return null;
+        int l = 1;
+        while (l < 4 && k + l < raw.length && (raw[k + l] & 0xC0) == 0x80) l++;
+        StringBuilder info = new StringBuilder();
+        for (int j = 0; j < l; j++) info.append(String.format(" 0x%02X", raw[k + j] & 0xFF));
+        int line = 1, col = 1, line_start = 0;
+        for (int j = 0; j < k; j++)
+        {
+            if (raw[j] == '\n') { line++; col = 1; line_start = j + 1; }
+            else if ((raw[j] & 0xC0) != 0x80) col++;
+        }
+        String text = new String(raw, line_start, k - line_start, StandardCharsets.UTF_8);
+        // The text ends at the bad bytes, the marker goes after it.
+        return new ParseException(org.libxmq.ParseErrorCode.XMQ_ERROR_INVALID_UTF8, text, line, col, source, info.toString(), k - line_start);
     }
 
     /**

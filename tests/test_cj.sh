@@ -24,9 +24,8 @@ OUT=$(cd "$OUT" && pwd)
 X=$(cd "$(dirname "$X")" && pwd)/$(basename "$X")
 J=$(cd "$(dirname "$J")" && pwd)/$(basename "$J")
 
-# Files where C and Java deliberately or knowingly differ.
-# ebcdic_566012.xml: invalid UTF-8 in the xmq format parser, which C reports with raw bytes.
-EXCLUDE="ebcdic_566012.xml"
+# Files where C and Java deliberately or knowingly differ (file names, space separated).
+EXCLUDE=""
 
 FILES="$OUT/files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xml" -print > "$FILES"

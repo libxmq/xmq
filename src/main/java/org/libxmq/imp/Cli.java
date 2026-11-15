@@ -767,6 +767,16 @@ final class Cli
             System.err.println(inIsContent ? "xmq: you can only tokenize the xmq format" : "You can only tokenize xmq!");
             throw new Exit(1);
         }
+        if (!lines && inputBytes != null)
+        {
+            // The xmq source must be valid UTF-8, like xmqTokenizeBuffer in the C version.
+            ParseException bad = Main.invalidUtf8(inputBytes, source);
+            if (bad != null)
+            {
+                System.err.print(tokenizeError(bad));
+                throw new Exit(1);
+            }
+        }
         String type = c.tokenizeType;
         if (type == null || type.equals("terminal") || type.equals("html") || type.equals("tex"))
         {
