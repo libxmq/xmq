@@ -85,6 +85,10 @@ final class Cli
 
     // Global settings.
     boolean trimNone, trimHeuristic, noMerge, lines, noInput, inIsContent;
+    /** --ixml-fail-silent: a rejected ixml input gives an empty document. */
+    boolean ixmlFailSilent;
+    /** An ixml input was rejected, the failure document was output and xmq exits with 1. */
+    boolean ixmlFailed;
     /** --we-should-stop-using-yaml: no reminder comment before the to-yaml output. */
     boolean weShouldStopUsingYaml;
     String inFormat;        // null = detect, else xmq xml html text
@@ -206,7 +210,8 @@ final class Cli
             throw fail("xmq: the global option " + optionString(name, value) + " is not implemented in xmqj yet");
         // Logging and things that do not change the result.
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
-             "ixml-all-parses", "ixml-try-to-recover", "ixml-fail-silent" -> { }
+             "ixml-all-parses", "ixml-try-to-recover" -> { }
+        case "ixml-fail-silent" -> ixmlFailSilent = true;
         case "version" -> { System.out.println("xmqj"); throw new Exit(0); }
         // Like the C version built without any XMQ_NO_... define.
         case "features" -> { System.out.println("xmq-printing json yaml xslt xsd ixml html"); throw new Exit(0); }
@@ -427,6 +432,7 @@ final class Cli
         if (!lines)
         {
             performOn(content, ixml);
+            if (ixmlFailed) throw new Exit(1);
             return;
         }
         int start = 0;
@@ -437,6 +443,7 @@ final class Cli
             performOn(content.substring(start, stop), ixml);
             start = stop + 1;
         }
+        if (ixmlFailed) throw new Exit(1);
     }
 
     String readInput() throws Exit
@@ -512,14 +519,11 @@ final class Cli
         if (content == null) return new XmlDocument();
         if (ixml != null)
         {
-            try
-            {
-                return ixml.parseInput(content);
-            }
-            catch (IllegalArgumentException e)
-            {
-                throw fail("xmq: " + source + ": ixml parse failed: " + e.getMessage());
-            }
+            // A rejected input is output as a failure document, ixml(ixml:state=failed){info=...},
+            // like in the C version, and xmq exits with 1.
+            XmlDocument d = ixml.parseInputOrFailure(content, ixmlFailSilent);
+            if (IXMLAnalyzer.isFailure(d)) ixmlFailed = true;
+            return d;
         }
         if ("text".equals(inFormat))
         {

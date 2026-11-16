@@ -1,0 +1,14 @@
+START
+doc: A, B, C, -#a?.
+A: "a".
+@B: "b".
+@C>B: "c".
+INPUT
+abc
+OUTPUT
+<?xml version="1.0" encoding="utf-8"?>
+<ixml xmlns:ixml="http://invisiblexml.org/NS" ixml:state="failed"><info>dynamic error D02: the attribute B occurs more than once on an element</info></ixml>
+END
+ARGS=
+CMDS=to-xml
+EXIT=1

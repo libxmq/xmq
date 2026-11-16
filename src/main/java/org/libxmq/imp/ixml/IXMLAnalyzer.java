@@ -2,9 +2,11 @@
 package org.libxmq.imp.ixml;
 
 import java.util.*;
+import org.libxmq.imp.xml.XmlAttr;
 import org.libxmq.imp.xml.XmlDocument;
 import org.libxmq.imp.xml.XmlElement;
 import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlNs;
 import org.libxmq.imp.xml.XmlText;
 import org.libxmq.imp.ixml.IXMLGrammar.Rule;
 import org.libxmq.imp.ixml.IXMLGrammar.Term;
@@ -81,6 +83,73 @@ public final class IXMLAnalyzer {
         XmlNode root = tree.firstChild();
         if (root instanceof XmlElement e) d.appendRaw(e);
         return d;
+    }
+
+    /** The namespace of the ixml:state attribute. */
+    public static final String IXML_NS = "http://invisiblexml.org/NS";
+
+    /** Parse an input with a parser from compileParser. When the input is rejected,
+     * the result is a failure document, like in the C version:
+     * ixml(ixml:state=failed){info=... line=... column=... pos=...}
+     * A dynamic error, eg D02, has only the info.
+     * @param input the input to parse
+     * @param silent if true a rejected input gives an empty document
+     * @return the parse tree or the failure document
+     */
+    public XmlDocument parseInputOrFailure(String input, boolean silent) {
+        Element tree = new Element("tree");
+        String error = run(input, tree);
+        XmlDocument d = new XmlDocument();
+        if (error == null) {
+            XmlNode root = tree.firstChild();
+            if (root instanceof XmlElement e) d.appendRaw(e);
+            return d;
+        }
+        if (silent) return d;
+        XmlElement root = new XmlElement("ixml");
+        d.appendRaw(root);
+        XmlNs ns = root.declareNs("ixml", IXML_NS);
+        root.addAttribute(new XmlAttr("state", "failed")).setNs(ns);
+        if (error.startsWith("dynamic error")) {
+            addKey(root, "info", error);
+            return d;
+        }
+        // Like the C version: the line and column of the failing character, and the
+        // input around it with a ^ below the failing character.
+        int[] cps = input.codePoints().toArray();
+        int at = Math.min(failedAt, cps.length);
+        int line = 1, col = 1;
+        for (int i = 0; i < at; i++) {
+            if (cps[i] == '\n') { line++; col = 1; } else col++;
+        }
+        int start = Math.max(0, at - 20);
+        StringBuilder info = new StringBuilder("ixml:" + line + ":" + col + ": syntax error\n");
+        info.append(new String(cps, start, Math.min(cps.length, at + 20) - start)).append('\n');
+        info.append(" ".repeat(at - start)).append('^');
+        addKey(root, "info", info.toString());
+        addKey(root, "line", Integer.toString(line));
+        addKey(root, "column", Integer.toString(col));
+        addKey(root, "pos", Integer.toString(at + 1));
+        return d;
+    }
+
+    /** Returns true if the document is a failure document from parseInputOrFailure.
+     * @param d the document
+     * @return true if the root has ixml:state=failed
+     */
+    public static boolean isFailure(XmlDocument d) {
+        XmlElement root = d.rootElement();
+        if (root == null) return false;
+        for (XmlAttr a : root.attributes()) {
+            if (a.name().equals("state") && a.ns() != null && IXML_NS.equals(a.ns().href())) return "failed".equals(a.value());
+        }
+        return false;
+    }
+
+    private static void addKey(XmlElement root, String key, String value) {
+        XmlElement e = new XmlElement(key);
+        e.appendRaw(new XmlText(value));
+        root.appendRaw(e);
     }
 
     IXMLGrammar grammar() { return grammar; }

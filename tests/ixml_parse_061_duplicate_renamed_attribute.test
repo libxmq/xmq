@@ -13,3 +13,4 @@ ixml(ixml:state = failed
 }
 END
 ARGS=
+EXIT=1

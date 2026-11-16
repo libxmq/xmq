@@ -5675,7 +5675,7 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
 
     size_t len = strlen(buf);
     size_t j = len;
-    for (int i = start; i < stop && pr->buffer_start[i] != 0; ++i)
+    for (int i = start; i < stop && pr->buffer_start + i < pr->buffer_stop && pr->buffer_start[i] != 0; ++i)
     {
         buf[j++] =  pr->buffer_start[i];
     }

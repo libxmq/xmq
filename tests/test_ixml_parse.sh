@@ -23,6 +23,10 @@ mkdir -p $OUTPUT
 
 ARGS=$(grep ^ARGS $TEST_FILE | cut -b 6- | tr -d '\n')
 ONLY_INTERNAL_ENGINE=$(grep ^ONLY_INTERNAL_ENGINE $TEST_FILE)
+# Optional commands after the input, eg CMDS=to-xml, and the expected exit code, eg EXIT=1.
+CMDS=$(grep ^CMDS= $TEST_FILE | cut -b 6- | tr -d '\n')
+EXIT=$(grep ^EXIT= $TEST_FILE | cut -b 6- | tr -d '\n')
+EXIT=${EXIT:-any}
 
 if [ -n "$XMQ_IXML_ENGINE" ] && [ "$ONLY_INTERNAL_ENGINE" = "ONLY_INTERNAL_ENGINE=true" ]
 then
@@ -34,7 +38,14 @@ sed -n '/^START$/,/^INPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TES
 sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' | tr -d '\n' > $OUTPUT/${TEST_NAME}.input
 sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected
 
-$PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input > $OUTPUT/${TEST_NAME}.output 2>/dev/null
+$PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output 2>/dev/null
+RC=$?
+
+if [ "$EXIT" != "any" ] && [ "$RC" != "$EXIT" ]
+then
+    echo "ERR: $TEST_NAME exit code $RC expected $EXIT"
+    exit 1
+fi
 
 if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output
 then
