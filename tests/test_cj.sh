@@ -38,14 +38,25 @@ do
     mv "$FILES.tmp" "$FILES"
 done
 
+# timeout is gtimeout (coreutils) on macOS, without either the commands run without a limit.
+with_timeout()
+{
+    local t=$1
+    shift
+    if command -v timeout > /dev/null; then timeout "$t" "$@"
+    elif command -v gtimeout > /dev/null; then gtimeout "$t" "$@"
+    else "$@"
+    fi
+}
+export -f with_timeout
 export X J OUT
 one()
 {
     f=$1
     shift
     k=$(echo "$f $*" | md5sum | cut -c1-12)
-    (cd "$OUT"; timeout 60 "$X" "$f" "$@" to-xml > "$OUT/$k.c" 2>&1; echo "rc=$?" >> "$OUT/$k.c")
-    (cd "$OUT"; timeout 120 "$J" "$f" "$@" to-xml > "$OUT/$k.j" 2>&1; echo "rc=$?" >> "$OUT/$k.j")
+    (cd "$OUT"; with_timeout 60 "$X" "$f" "$@" to-xml > "$OUT/$k.c" 2>&1; echo "rc=$?" >> "$OUT/$k.c")
+    (cd "$OUT"; with_timeout 120 "$J" "$f" "$@" to-xml > "$OUT/$k.j" 2>&1; echo "rc=$?" >> "$OUT/$k.j")
     if cmp -s "$OUT/$k.c" "$OUT/$k.j"
     then
         rm "$OUT/$k.c" "$OUT/$k.j"
@@ -93,8 +104,8 @@ onex()
     k=$1
     b=$2
     d=$3
-    (cd "$OUT/xslt/c/$k"; timeout 60 "$X" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.c" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.c")
-    (cd "$OUT/xslt/j/$k"; timeout 120 "$J" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.j" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.j")
+    (cd "$OUT/xslt/c/$k"; with_timeout 60 "$X" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.c" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.c")
+    (cd "$OUT/xslt/j/$k"; with_timeout 120 "$J" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.j" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.j")
     if cmp -s "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
     then
         rm "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
@@ -151,8 +162,8 @@ onev()
     i=$2
     s=$3
     k=$(echo "$d $i $s" | md5sum | cut -c1-12)
-    (cd "$d"; timeout 60 "$X" "$i" validate "$s" to-xml > "$OUT/v_$k.c" 2>&1; echo "rc=$?" >> "$OUT/v_$k.c")
-    (cd "$d"; timeout 120 "$J" "$i" validate "$s" to-xml > "$OUT/v_$k.j" 2>&1; echo "rc=$?" >> "$OUT/v_$k.j")
+    (cd "$d"; with_timeout 60 "$X" "$i" validate "$s" to-xml > "$OUT/v_$k.c" 2>&1; echo "rc=$?" >> "$OUT/v_$k.c")
+    (cd "$d"; with_timeout 120 "$J" "$i" validate "$s" to-xml > "$OUT/v_$k.j" 2>&1; echo "rc=$?" >> "$OUT/v_$k.j")
     if cmp -s "$OUT/v_$k.c" "$OUT/v_$k.j"
     then
         rm "$OUT/v_$k.c" "$OUT/v_$k.j"

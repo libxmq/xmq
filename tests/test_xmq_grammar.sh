@@ -104,16 +104,28 @@ then
     fi
 fi
 
+# timeout is gtimeout (coreutils) on macOS, without either the commands run without a limit.
+with_timeout()
+{
+    local t=$1
+    shift
+    if command -v timeout > /dev/null; then timeout "$t" "$@"
+    elif command -v gtimeout > /dev/null; then gtimeout "$t" "$@"
+    else "$@"
+    fi
+}
+export -f with_timeout
+
 # Compare, in parallel.
 one()
 {
     local f=$1
     local e=${f%.xmq}
-    timeout "$TIMEOUT" "$PROG" "$GRAMMAR" "$f" > "$e.engine" 2>&1; local ra=$?
+    with_timeout "$TIMEOUT" "$PROG" "$GRAMMAR" "$f" > "$e.engine" 2>&1; local ra=$?
     local rb=$ra
     if [ "$GENERATED" = yes ]
     then
-        timeout "$TIMEOUT" "$OUTPUT/xmqg" "$f" > "$e.generated" 2>&1; rb=$?
+        with_timeout "$TIMEOUT" "$OUTPUT/xmqg" "$f" > "$e.generated" 2>&1; rb=$?
     else
         cp "$e.engine" "$e.generated"
     fi
@@ -127,8 +139,8 @@ one()
     else
         # The round trip: the parse tree transformed by xmq.xslq must be the
         # same document as the one the xmq parser builds.
-        timeout "$TIMEOUT" "$PROG" "$f" > "$e.xmq_expected" 2>&1
-        timeout "$TIMEOUT" "$PROG" "$GRAMMAR" "$f" transform "$XSLQ" > "$e.xmq_roundtrip" 2>&1
+        with_timeout "$TIMEOUT" "$PROG" "$f" > "$e.xmq_expected" 2>&1
+        with_timeout "$TIMEOUT" "$PROG" "$GRAMMAR" "$f" transform "$XSLQ" > "$e.xmq_roundtrip" 2>&1
         if cmp -s "$e.xmq_expected" "$e.xmq_roundtrip"; then result=SAME; else result=ROUNDTRIP; fi
     fi
     echo "$result $(basename $f) $(cat $e.from)"
