@@ -75,7 +75,7 @@ public class Main
         // Like C stdio, stdout is fully buffered when it is not a terminal: the bytes reach the
         // file descriptor in 4096 byte blocks (and at fflush/exit), so the order of the stdout and
         // stderr output in a combined file is the same as for the C version.
-        if (System.console() == null)
+        if (!stdoutIsTerminal())
         {
             final java.io.PrintStream out = new java.io.PrintStream(new CStdout(), false, StandardCharsets.UTF_8);
             System.setOut(out);
@@ -514,6 +514,28 @@ EXAMPLES
     static void printHelp()
     {
         System.out.print(help);
+    }
+
+    /**
+     * True when stdout is a terminal. Before JDK 22 System.console() is null unless stdin and
+     * stdout are terminals. JDK 22-24 return a console even when stdout is redirected (JDK 25
+     * does not), there Console.isTerminal() (JDK 22) tells, called by reflection since the
+     * code is compiled for Java 17.
+     * @return true if stdout is a terminal.
+     */
+    static boolean stdoutIsTerminal()
+    {
+        java.io.Console c = System.console();
+        if (c == null) return false;
+        try
+        {
+            java.lang.reflect.Method m = java.io.Console.class.getMethod("isTerminal");
+            return (Boolean)m.invoke(c);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            return true; // Before JDK 22 a console means a terminal.
+        }
     }
 
     /** A fully buffered stdout like glibc's (block size 4096, flushed at multiples of the block size). */
