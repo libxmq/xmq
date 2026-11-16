@@ -81,11 +81,13 @@ typedef unsigned long int terminal_bitset_t;
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
 
+#ifndef XMQ_NO_IXML
 /* Prime number(79087987342985798987987) mod 32 used for hash calculations. */
 static const unsigned jauquet_prime_mod32 = 2053222611;
 
 /* Shift used for hash calculations. */
 static const unsigned hash_shift = 611;
+#endif
 
 struct YaepSymbol;
 typedef struct YaepSymbol YaepSymbol;

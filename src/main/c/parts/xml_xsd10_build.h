@@ -55,6 +55,8 @@ THE SOFTWARE.
    fixup of the components and the schema component constraints).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_BUILD_MODULE
+#endif
 
 #endif // XML_XSD10_BUILD_H

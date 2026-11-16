@@ -6574,6 +6574,13 @@ static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Style
     const char *encoding = xslt_import_encoding(style);
     int indent = xslt_import_int_indent(style);
     if (!method && type == XSLT_OUTPUT_HTML) method = "html";
+#ifdef XMQ_NO_HTML
+    if (method && (!strcmp(method, "html") || !strcmp(method, "xhtml")))
+    {
+        xslt1_generic_error(&style->settings, "xmq: the html output method was excluded when xmq was built (XMQ_NO_HTML)\n");
+        return false;
+    }
+#else
     if (method && !strcmp(method, "html"))
     {
         xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
@@ -6585,6 +6592,7 @@ static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Style
         xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
         xml_html_save_doc_to(buf, result, true);
     }
+#endif
     else if (method && !strcmp(method, "text"))
     {
         XMQNode *cur = first;

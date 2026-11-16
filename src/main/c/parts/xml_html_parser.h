@@ -71,6 +71,8 @@ void xml_html_parse_settings_default(XmlHtmlParseSettings *settings);
     bom is the character U+FEFF). Always returns a dom (it may lack a root element). */
 XmlDom *xml_html_parse_buffer(const char *start, const char *stop, const XmlHtmlParseSettings *settings);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_PARSER_MODULE
+#endif
 
 #endif // XML_HTML_PARSER_H

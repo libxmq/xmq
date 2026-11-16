@@ -152,6 +152,8 @@ int xml_reg_exec_err_info(XmlRegExecCtxt *exec, const char **string, int *nbval,
 /** libxml2 xmlRegExecClearErrors. */
 void xml_reg_exec_clear_errors(XmlRegExecCtxt *exec);
 
+#ifndef XMQ_NO_XSD
 #define XML_REGEXP_MODULE
+#endif
 
 #endif // XML_REGEXP_H

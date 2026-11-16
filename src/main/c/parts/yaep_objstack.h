@@ -336,6 +336,8 @@ extern void _OS_expand_memory (os_t *os, size_t additional_length);
 /* Return total amount of memory used by this objstack. */
 size_t objstack_memusage(os_t *os);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_OBJSTACK_MODULE
+#endif
 
 #endif

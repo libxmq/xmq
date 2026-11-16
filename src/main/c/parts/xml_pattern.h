@@ -122,6 +122,8 @@ int xml_stream_pop(XmlStreamCtxt *stream);
     attributes are needed, -1 on error (libxml2 xmlStreamWantsAnyNode). */
 int xml_stream_wants_any_node(XmlStreamCtxt *stream);
 
+#ifndef XMQ_NO_XSD
 #define XML_PATTERN_MODULE
+#endif
 
 #endif // XML_PATTERN_H

@@ -307,6 +307,20 @@ testcj: build/xmqj release
 	@echo "Comparing the C and Java command lines"
 	@for x in $(BUILDDIRS); do JOBS="$(JOBS)" ./tests/test_cj.sh $${x}release/xmq build/xmqj $${x}release/test_output/cj || exit 1 ; done
 
+# Build xmq with parts excluded and run tests/test.sh on it, the tests that need an
+# excluded part are skipped (xmq --features). WITHOUT is one or more of
+# XMQ_PRINTING JSON YAML LIBXSLT XSD IXML HTML, eg: make test_without WITHOUT="IXML JSON"
+WITHOUT_DIR:=$(CURDIR)/build/without_$(shell echo $(WITHOUT) | tr 'A-Z ' 'a-z_')
+test_without:
+	@if [ -z "$(WITHOUT)" ]; then echo 'Usage: make test_without WITHOUT="IXML JSON"'; exit 1; fi
+	@JOBS="$(JOBS)" ./tests/build_without.sh $(WITHOUT_DIR) $(WITHOUT)
+	@./tests/test.sh $(WITHOUT_DIR)/release $(WITHOUT_DIR)/release/test_output
+
+# Build the dist style xmq.c with each of the XMQ_NO_... defines (xmq.h) that exclude a
+# part, as C and C++, and check that the excluded api returns errors. JOBS=n parallel builds.
+test_excluded:
+	@JOBS="$(JOBS)" ./tests/test_excluded.sh build/test_excluded
+
 # The test targets first build what they test, so that tests never run on old binaries.
 test_release: release
 	@echo "Running release tests"
@@ -411,7 +425,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

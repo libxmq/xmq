@@ -1286,6 +1286,11 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
             settings.message_callback = cli_xsd_parse_message;
             settings.message_user_data = (void*)arg;
             XMQReturnXsd rx = xmqCompileXsd(doq, &settings);
+            if (rx.status == XMQ_ERROR_EXCLUDED_FROM_BUILD)
+            {
+                fprintf(stderr, "%s", xmqDocError(doq));
+                exit(1);
+            }
             command->xsd = rx.xsd;
             return true;
         }
@@ -1825,6 +1830,14 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->print_version = true;
         return true;
     }
+    if (!strcmp(arg, "--features"))
+    {
+        // The optional parts compiled in, eg "xmq-printing json yaml xslt xsd ixml html".
+        const char *f = xmqFeatures();
+        while (*f == ' ') f++;
+        printf("%s\n", f);
+        exit(0);
+    }
     if (!strcmp(arg, "--check-bg-dark-light"))
     {
         bool color, dark, forced;
@@ -2031,6 +2044,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --progress Print parse progress on stderr when parsing with an ixml grammar.\n"
            "  --verbose  Output extra information on stderr.\n"
            "  --version  Output version information and exit.\n"
+           "  --features Print the optional parts compiled in: xmq-printing json yaml xslt xsd ixml html.\n"
            "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
@@ -2576,6 +2590,12 @@ bool cmd_to(XMQCliCommand *command)
     xmqPrint(command->env->doc, settings);
 
     xmqFreeOutputSettings(settings);
+    if (xmqDocErrno(command->env->doc) == XMQ_ERROR_EXCLUDED_FROM_BUILD)
+    {
+        // The output format was excluded when xmq was built, eg XMQ_NO_JSON.
+        fprintf(stderr, "%s", xmqDocError(command->env->doc));
+        exit(1);
+    }
     return true;
 }
 
@@ -4561,6 +4581,11 @@ bool load_xslt(XMQCliCommand *command, const char *arg)
     command->xslt_doq = doq;
     // The messages are printed on stderr, like libxslt does.
     XMQReturnXslt rx = xmqCompileXslt(doq, NULL);
+    if (rx.status == XMQ_ERROR_EXCLUDED_FROM_BUILD)
+    {
+        fprintf(stderr, "%s", xmqDocError(doq));
+        exit(1);
+    }
     command->xslt = rx.xslt;
     return true;
 }

@@ -55,6 +55,8 @@ THE SOFTWARE.
    validation, identity constraints and the validation interfaces).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_VALID_MODULE
+#endif
 
 #endif // XML_XSD10_VALID_H

@@ -39,9 +39,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef XMQ_H
 #define XMQ_H
 
-// #define XMQ_NO_XMQ_PRINTING
-// #define XMQ_NO_LIBXML
-// #define XMQ_NO_JSON
+// Parts of the implementation can be excluded when building libxmq (eg -DXMQ_NO_JSON), to
+// harden a build by leaving out code that is not needed (and to make it smaller). The api
+// functions of an excluded part remain, they return XMQ_ERROR_EXCLUDED_FROM_BUILD (or fail
+// like an error of that part), the rest of its implementation is not compiled in, so no
+// input can reach it. xmqFeatures() (xmq --features) lists the parts that are compiled in.
+// #define XMQ_NO_XMQ_PRINTING  No printing as xmq/htmq, nor rendering (render-terminal/html/tex).
+// #define XMQ_NO_JSON          No json parsing and printing.
+// #define XMQ_NO_YAML          No yaml parsing and printing.
+// #define XMQ_NO_LIBXSLT       No xslt (xmqCompileXslt, xmqTransform...).
+// #define XMQ_NO_XSD           No xsd validation (xmqCompileXsd, xmqValidate...).
+// #define XMQ_NO_IXML          No ixml (the yaep engine, ixml grammars, xmqParseBufferWithIXML...).
+// #define XMQ_NO_HTML          No html parsing and printing (also not the xslt html output method),
+//                              htmq and render-html are xmq and are not affected.
 
 #define _hideLBfromEditor {
 #define _hideRBfromEditor }
@@ -408,6 +418,8 @@ typedef enum
     XMQ_ERROR_XSD_COMPILE = 62,
     /** The document is not valid according to the xsd schema. */
     XMQ_ERROR_XSD_INVALID = 63,
+    /** The feature was excluded when libxmq was built (eg XMQ_NO_JSON). */
+    XMQ_ERROR_EXCLUDED_FROM_BUILD = 64,
     /** Warning, when parse succeeds, but it seems there is a mistake. */
     XMQ_WARNING_QUOTES_NEEDED = 1000
 } XMQStatus;
@@ -1400,6 +1412,16 @@ XMQStatus xmqExpandEntities(XMQDoc *doq);
     Return the current xmq version in this library.
 */
 const char *xmqVersion();
+
+/**
+    xmqFeatures:
+
+    Return the optional parts compiled into this library, space separated, from
+    "xmq-printing json yaml xslt xsd ixml html". A part is missing when it was excluded with
+    XMQ_NO_XMQ_PRINTING, XMQ_NO_JSON, XMQ_NO_YAML, XMQ_NO_LIBXSLT, XMQ_NO_XSD, XMQ_NO_IXML or
+    XMQ_NO_HTML.
+*/
+const char *xmqFeatures();
 
 /**
     xmqSetVerbose:

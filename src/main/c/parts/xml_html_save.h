@@ -54,6 +54,8 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len);
     Returns 0, or 1 if there is no html/head. */
 int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_SAVE_MODULE
+#endif
 
 #endif // XML_HTML_SAVE_H

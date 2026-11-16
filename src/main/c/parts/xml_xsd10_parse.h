@@ -55,6 +55,8 @@ THE SOFTWARE.
    utilities for parsing, schema extraction from an infoset, reading schemas).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_PARSE_MODULE
+#endif
 
 #endif // XML_XSD10_PARSE_H

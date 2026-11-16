@@ -51,6 +51,8 @@ int canon_node_id(int id);
    the table.*/
 YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_TREE_MODULE
+#endif
 
 #endif

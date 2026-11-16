@@ -39,6 +39,8 @@ void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *os);
 // true if the NUL-terminated string s must be quoted to stay a string in YAML
 bool yaml_needs_quotes(const char *s);
 
+#ifndef XMQ_NO_YAML
 #define YAML_MODULE
+#endif
 
 #endif // YAML_H

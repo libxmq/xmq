@@ -73,6 +73,8 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
 
 void ixml_print_grammar(XMQParseState *state);
 
+#ifndef XMQ_NO_IXML
 #define IXML_MODULE
+#endif
 
 #endif // IXML_H

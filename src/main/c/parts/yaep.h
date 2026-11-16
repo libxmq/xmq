@@ -390,6 +390,8 @@ extern void yaepFreeTree(YaepTreeNode *root,
                          void (*parse_free)(void*),
                          void (*termcb)(YaepTerminalNode *termial));
 
+#ifndef XMQ_NO_IXML
 #define YAEP_MODULE
+#endif
 
 #endif

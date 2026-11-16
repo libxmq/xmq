@@ -16,6 +16,10 @@
 
 #ifdef XMQ_PRINTER_MODULE
 
+// The xmq printer is excluded with XMQ_NO_XMQ_PRINTING, except the few helpers below
+// that the json, yaml and clines printers and the xmq quoting of log lines also use.
+#ifndef XMQ_NO_XMQ_PRINTING
+
 size_t find_attr_key_max_u_width(XMQAttr *a);
 size_t find_namespace_max_u_width(size_t max, XmlNs *ns);
 size_t find_element_key_max_width(XMQNode* node, XMQNode* *restart_find_at_node);
@@ -41,6 +45,7 @@ void node_strlen_name_prefix(XMQNode *node, const char **name, size_t *name_len,
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
+#endif // XMQ_NO_XMQ_PRINTING
 int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes)
 {
     bool all_safe = true;
@@ -169,6 +174,7 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
 
     return max;
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 /**
     count_necessary_slashes:
@@ -639,6 +645,7 @@ void print_node(XMQPrintState *ps, XMQNode *node, size_t align)
     return print_element_with_children(ps, node, align);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_white_spaces(XMQPrintState *ps, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -653,6 +660,7 @@ void print_white_spaces(XMQPrintState *ps, int num)
     ps->current_indent += num;
     if (c && c->whitespace.post) write(writer_state, c->whitespace.post, NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level)
 {
@@ -755,6 +763,7 @@ void print_double_quote(XMQPrintState *ps, XMQColor color)
     if (post) write(writer_state, post, NULL);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -769,6 +778,7 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     if (ps->restart_line) write(writer_state, ps->restart_line, NULL);
     if (prefix) write(writer_state, prefix, NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix)
 {
@@ -1489,6 +1499,7 @@ void print_value_internal_text(XMQPrintState *ps,
     }
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_color_pre(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -1503,7 +1514,9 @@ void print_color_pre(XMQPrintState *ps, XMQColor color)
         write(writer_state, pre, NULL);
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_color_post(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -1523,6 +1536,7 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
         write(writer_state, ps->replay_active_color_pre, NULL);
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 
 /**
@@ -1785,6 +1799,7 @@ void node_strlen_name_prefix(XMQNode *node,
     assert(*name != NULL);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
 {
     *name = xml_attr_name(attr);
@@ -1809,7 +1824,9 @@ void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **pref
     }
     assert(*name != NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
+#endif // XMQ_NO_XMQ_PRINTING
 void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len)
 {
     size_t prefix_b_len;
@@ -1829,6 +1846,7 @@ void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len
         *total_u_len = /* xmlns */ 5;
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void element_strlen_name_prefix(XMQNode *element, const char **name, const char **prefix, size_t *total_u_len)
 {
@@ -1903,4 +1921,5 @@ void annotate_node(OffsetCounter *counter, XMQNode *node)
     }
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 #endif // XMQ_PRINTER_MODULE

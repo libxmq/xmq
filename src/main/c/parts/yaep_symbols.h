@@ -68,6 +68,8 @@ void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs);
 
 
+#ifndef XMQ_NO_IXML
 #define YAEP_SYMBOLS_MODULE
+#endif
 
 #endif

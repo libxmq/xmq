@@ -73,6 +73,8 @@ bool xml_html_is_boolean_attr(const char *name);
 const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, size_t slen, bool is_attr,
                                                  size_t *nlen, size_t *rlen);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_MODULE
+#endif
 
 #endif // XML_HTML_H

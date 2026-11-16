@@ -48,6 +48,8 @@ void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t 
 void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_PRINT_MODULE
+#endif
 
 #endif

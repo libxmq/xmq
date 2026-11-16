@@ -273,6 +273,8 @@ void *yaep_alloc_getuserptr (YaepAllocator * allocator);
 void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 			void *userptr);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_ALLOCATE_MODULE
+#endif
 
 #endif

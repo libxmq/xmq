@@ -523,7 +523,9 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
 
 void ixml_print_grammar(XMQParseState *state);
 
+#ifndef XMQ_NO_IXML
 #define IXML_MODULE
+#endif
 
 // PART H MEMBUFFER ////////////////////////////////////////
 
@@ -1214,7 +1216,9 @@ bool xml_html_is_boolean_attr(const char *name);
 const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, size_t slen, bool is_attr,
                                                  size_t *nlen, size_t *rlen);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_MODULE
+#endif
 
 // PART H XML_HTML_PARSER ////////////////////////////////////////
 
@@ -1265,7 +1269,9 @@ void xml_html_parse_settings_default(XmlHtmlParseSettings *settings);
     bom is the character U+FEFF). Always returns a dom (it may lack a root element). */
 XmlDom *xml_html_parse_buffer(const char *start, const char *stop, const XmlHtmlParseSettings *settings);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_PARSER_MODULE
+#endif
 
 // PART H XML_HTML_SAVE ////////////////////////////////////////
 
@@ -1299,7 +1305,9 @@ char *xml_html_save_node(const XMQNode *node, bool format, size_t *out_len);
     Returns 0, or 1 if there is no html/head. */
 int xml_html_set_meta_encoding(XmlDom *dom, const char *encoding);
 
+#ifndef XMQ_NO_HTML
 #define XML_HTML_SAVE_MODULE
+#endif
 
 // PART H XML_XPATH ////////////////////////////////////////
 
@@ -1599,7 +1607,9 @@ int xml_ucs_is_cat_zs(int code);
     0 if false and -1 on unknown block. */
 int xml_ucs_is_block(int code, const char *block);
 
+#ifndef XMQ_NO_XSD
 #define XML_UNICODE_MODULE
+#endif
 
 // PART H XML_REGEXP ////////////////////////////////////////
 
@@ -1705,7 +1715,9 @@ int xml_reg_exec_err_info(XmlRegExecCtxt *exec, const char **string, int *nbval,
 /** libxml2 xmlRegExecClearErrors. */
 void xml_reg_exec_clear_errors(XmlRegExecCtxt *exec);
 
+#ifndef XMQ_NO_XSD
 #define XML_REGEXP_MODULE
+#endif
 
 // PART H XML_PATTERN ////////////////////////////////////////
 
@@ -1781,7 +1793,9 @@ int xml_stream_pop(XmlStreamCtxt *stream);
     attributes are needed, -1 on error (libxml2 xmlStreamWantsAnyNode). */
 int xml_stream_wants_any_node(XmlStreamCtxt *stream);
 
+#ifndef XMQ_NO_XSD
 #define XML_PATTERN_MODULE
+#endif
 
 // PART H XML_XSD10_TYPES ////////////////////////////////////////
 
@@ -2495,7 +2509,9 @@ size_t xml_xsd10_ids_num_refs(XmlXsd10Ids *ids);
 const char *xml_xsd10_ids_ref_value(XmlXsd10Ids *ids, size_t i);
 XMQNode *xml_xsd10_ids_ref_attr(XmlXsd10Ids *ids, size_t i);
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_TYPES_MODULE
+#endif
 
 // PART H XML_XSD10_SCHEMAS ////////////////////////////////////////
 
@@ -4419,7 +4435,9 @@ int xml_xsd10_v_start(XmlXsd10ValidCtxt *vctxt); // xmlSchemaVStart
 
 #endif // XML_XSD10_INTERNALS
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_SCHEMAS_MODULE
+#endif
 
 // PART H XML_XSD10_PARSE ////////////////////////////////////////
 
@@ -4427,7 +4445,9 @@ int xml_xsd10_v_start(XmlXsd10ValidCtxt *vctxt); // xmlSchemaVStart
    utilities for parsing, schema extraction from an infoset, reading schemas).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_PARSE_MODULE
+#endif
 
 // PART H XML_XSD10_BUILD ////////////////////////////////////////
 
@@ -4435,7 +4455,9 @@ int xml_xsd10_v_start(XmlXsd10ValidCtxt *vctxt); // xmlSchemaVStart
    fixup of the components and the schema component constraints).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_BUILD_MODULE
+#endif
 
 // PART H XML_XSD10_VALID ////////////////////////////////////////
 
@@ -4443,7 +4465,9 @@ int xml_xsd10_v_start(XmlXsd10ValidCtxt *vctxt); // xmlSchemaVStart
    validation, identity constraints and the validation interfaces).
    The functions are declared in xml_xsd10_schemas.h. */
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_VALID_MODULE
+#endif
 
 // PART H XML_LIBXSLT1_XSLT ////////////////////////////////////////
 
@@ -5023,7 +5047,9 @@ bool xslt1_is_rtf(XmlLibxslt1Transform *t, XmlDom *dom);
 
 #endif // XML_LIBXSLT1_INTERNALS
 
+#ifndef XMQ_NO_LIBXSLT
 #define XML_LIBXSLT1_XSLT_MODULE
+#endif
 
 // PART H XML_LIBXSLT1_TRANSFORM ////////////////////////////////////////
 
@@ -5064,7 +5090,9 @@ char *xml_libxslt1_save_result_to_string(XmlDom *result, XmlLibxslt1Stylesheet *
 /** A copy of the (compiled) stylesheet document, like the xmlCopyDoc loaders give for document(''). */
 XmlDom *xml_libxslt1_copy_stylesheet_doc(const XmlLibxslt1Stylesheet *style);
 
+#ifndef XMQ_NO_LIBXSLT
 #define XML_LIBXSLT1_TRANSFORM_MODULE
+#endif
 
 // PART H XML ////////////////////////////////////////
 
@@ -5448,7 +5476,9 @@ void *yaep_alloc_getuserptr (YaepAllocator * allocator);
 void yaep_alloc_seterr (YaepAllocator * allocator, Yaep_alloc_error errfunc,
 			void *userptr);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_ALLOCATE_MODULE
+#endif
 
 // PART H YAEP_HASHTAB ////////////////////////////////////////
 
@@ -5560,7 +5590,9 @@ int all_hash_table_collision_percentage (void);
 
 size_t hash_table_memusage(hash_table_t htab);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_HASHTAB_MODULE
+#endif
 
 // PART H YAEP_OBJSTACK ////////////////////////////////////////
 
@@ -5840,7 +5872,9 @@ extern void _OS_expand_memory (os_t *os, size_t additional_length);
 /* Return total amount of memory used by this objstack. */
 size_t objstack_memusage(os_t *os);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_OBJSTACK_MODULE
+#endif
 
 // PART H YAEP_VLOBJECT ////////////////////////////////////////
 
@@ -6080,7 +6114,9 @@ extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
 size_t vlo_memusage(vlo_t *vlo);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_VLOBJECT_MODULE
+#endif
 
 // PART H YAEP ////////////////////////////////////////
 
@@ -6442,7 +6478,9 @@ extern void yaepFreeTree(YaepTreeNode *root,
                          void (*parse_free)(void*),
                          void (*termcb)(YaepTerminalNode *termial));
 
+#ifndef XMQ_NO_IXML
 #define YAEP_MODULE
+#endif
 
 // PART H YAEP_STRUCTS ////////////////////////////////////////
 
@@ -6495,11 +6533,13 @@ typedef unsigned long int terminal_bitset_t;
 /* Maximal goto sets saved for triple(set, terminal, lookahead). */
 #define MAX_CACHED_GOTO_RESULTS 3
 
+#ifndef XMQ_NO_IXML
 /* Prime number(79087987342985798987987) mod 32 used for hash calculations. */
 static const unsigned jauquet_prime_mod32 = 2053222611;
 
 /* Shift used for hash calculations. */
 static const unsigned hash_shift = 611;
+#endif
 
 struct YaepSymbol;
 typedef struct YaepSymbol YaepSymbol;
@@ -7308,7 +7348,9 @@ void core_symb_to_predcomps_add_complete(YaepParseState *ps,
                                          int rule_index_in_core);
 void core_symb_to_predcomps_new_all_stop(YaepParseState *ps);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_CSPC_MODULE
+#endif
 
 // PART H YAEP_UTIL ////////////////////////////////////////
 
@@ -7332,7 +7374,9 @@ void yaep_view(YaepParseState *ps, const char *format, ...);
 void yaep_debug(YaepParseState *ps, const char *format, ...);
 void yaep_trace(YaepParseState *ps, const char *format, ...);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_UTIL_MODULE
+#endif
 
 // PART H YAEP_SYMBOLS ////////////////////////////////////////
 
@@ -7377,7 +7421,9 @@ void symb_empty(YaepParseState *ps, YaepSymbolStorage *symbs);
 void symbolstorage_free(YaepParseState *ps, YaepSymbolStorage *symbs);
 
 
+#ifndef XMQ_NO_IXML
 #define YAEP_SYMBOLS_MODULE
+#endif
 
 // PART H YAEP_TERMINAL_BITSET ////////////////////////////////////////
 
@@ -7418,7 +7464,9 @@ void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t 
 void terminal_bitset_empty(YaepTerminalSetStorage *term_sets);
 void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_TERMINAL_BITSET_MODULE
+#endif
 
 // PART H YAEP_TREE ////////////////////////////////////////
 
@@ -7446,7 +7494,9 @@ int canon_node_id(int id);
    the table.*/
 YaepTreeNodeVisit *visit_node(YaepParseState *ps, YaepTreeNode*node);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_TREE_MODULE
+#endif
 
 // PART H YAEP_PRINT ////////////////////////////////////////
 
@@ -7471,7 +7521,9 @@ void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t 
 void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_PRINT_MODULE
+#endif
 
 
 // XMQ STRUCTURES ////////////////////////////////////////////////
@@ -8090,7 +8142,9 @@ void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *os);
 // true if the NUL-terminated string s must be quoted to stay a string in YAML
 bool yaml_needs_quotes(const char *s);
 
+#ifndef XMQ_NO_YAML
 #define YAML_MODULE
+#endif
 
 // PART H IXML ////////////////////////////////////////
 
@@ -8143,7 +8197,9 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
 
 void ixml_print_grammar(XMQParseState *state);
 
+#ifndef XMQ_NO_IXML
 #define IXML_MODULE
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -8238,6 +8294,7 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *output_settings);
+bool xmq_set_doc_error_excluded(XMQDoc *doq, const char *what, const char *define);
 void xmq_print_text(XMQDoc *doq, XMQOutputSettings *output_settings);
 void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *output_settings);
 char *xmq_quote_with_entity_newlines(const char *start, const char *stop, XMQQuoteSettings *settings);
@@ -10334,6 +10391,7 @@ void xmqFreeParseState(XMQParseState *state)
     if (state->yaep_tmp_aliases_) free(state->yaep_tmp_aliases_);
     state->yaep_tmp_aliases_ = NULL;
 
+#ifndef XMQ_NO_IXML
     if (state->ixml_rules) vector_free_and_values(state->ixml_rules, (FreeFuncPtr)free_ixml_rule);
     state->ixml_rules = NULL;
 
@@ -10348,6 +10406,7 @@ void xmqFreeParseState(XMQParseState *state)
 
     if (state->ixml_rule_stack) stack_free(state->ixml_rule_stack);
     state->ixml_rule_stack = NULL;
+#endif
 
     if (state->used_unicodes)
     {
@@ -10373,6 +10432,7 @@ void xmqClearDoc(XMQDoc *doq)
         doq->dom_ = xml_dom_new();
         doq->root_ = NULL;
     }
+#ifndef XMQ_NO_IXML
     if (doq->yaep_grammar_)
     {
         yaepFreeGrammar (doq->yaep_parse_run_, doq->yaep_grammar_);
@@ -10382,6 +10442,7 @@ void xmqClearDoc(XMQDoc *doq)
         doq->yaep_parse_run_ = NULL;
         doq->xmq_parse_state_ = NULL;
     }
+#endif
     debug("xmq=", "clearing xmq doc");
 }
 
@@ -10406,6 +10467,7 @@ void xmqFreeDoc(XMQDoc *doq)
         xml_dom_free(doq->dom_);
         doq->dom_ = NULL;
     }
+#ifndef XMQ_NO_IXML
     if (doq->yaep_grammar_)
     {
         yaepFreeGrammar (doq->yaep_parse_run_, doq->yaep_grammar_);
@@ -10415,6 +10477,7 @@ void xmqFreeDoc(XMQDoc *doq)
         doq->yaep_parse_run_ = NULL;
         doq->xmq_parse_state_ = NULL;
     }
+#endif
 
     debug("xmq=", "freeing xmq doc");
     free(doq);
@@ -10564,6 +10627,33 @@ bool xmqParseFile(XMQDoc *doq, const char *file, const char *implicit_root, int 
 const char *xmqVersion()
 {
     return "4.2.0-modified";
+}
+
+const char *xmqFeatures()
+{
+    return ""
+#ifndef XMQ_NO_XMQ_PRINTING
+        " xmq-printing"
+#endif
+#ifndef XMQ_NO_JSON
+        " json"
+#endif
+#ifndef XMQ_NO_YAML
+        " yaml"
+#endif
+#ifndef XMQ_NO_LIBXSLT
+        " xslt"
+#endif
+#ifndef XMQ_NO_XSD
+        " xsd"
+#endif
+#ifndef XMQ_NO_IXML
+        " ixml"
+#endif
+#ifndef XMQ_NO_HTML
+        " html"
+#endif
+        ;
 }
 
 XMQStatus do_whitespace(XMQParseState *state,
@@ -11453,6 +11543,11 @@ void xmq_print_xml(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
+#ifdef XMQ_NO_HTML
+    (void)output_settings;
+    xmq_set_doc_error_excluded(doq, "html", "XMQ_NO_HTML");
+    return;
+#endif
     xmq_fixup_html_before_writeout(doq);
     char *buffer = xml_html_save_doc(doq->dom_, true, NULL);
     MemBuffer *membuf = output_settings->output_buffer;
@@ -11461,8 +11556,26 @@ void xmq_print_html(XMQDoc *doq, XMQOutputSettings *output_settings)
     debug("xmq=", "xmq_print_html wrote %zu bytes", membuf->used_);
 }
 
+/** Mark a document with the error of a feature excluded from the build (eg XMQ_NO_JSON).
+    Always returns false, the result of a parse that failed. */
+bool xmq_set_doc_error_excluded(XMQDoc *doq, const char *what, const char *define)
+{
+    if (!doq) return false;
+    char buf[256];
+    snprintf(buf, sizeof(buf), "xmq: %s was excluded when xmq was built (%s)\n", what, define);
+    free((void*)doq->error_);
+    doq->error_ = strdup(buf);
+    doq->errno_ = XMQ_ERROR_EXCLUDED_FROM_BUILD;
+    return false;
+}
+
 void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
 {
+#ifdef XMQ_NO_JSON
+    (void)os;
+    xmq_set_doc_error_excluded(doq, "json", "XMQ_NO_JSON");
+}
+#else
     if (doq == NULL || doq->dom_ == NULL) return;
     xmq_fixup_json_before_writeout(doq);
 
@@ -11489,6 +11602,7 @@ void xmq_print_json(XMQDoc *doq, XMQOutputSettings *os)
     stack_free(ps.pre_nodes);
     stack_free(ps.post_nodes);
 }
+#endif // XMQ_NO_JSON
 
 void text_print_node(XMQPrintState *ps, XMQNode *node)
 {
@@ -11663,6 +11777,11 @@ void xmq_print_clines(XMQDoc *doq, XMQOutputSettings *os)
 
 void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 {
+#ifdef XMQ_NO_XMQ_PRINTING
+    (void)os;
+    xmq_set_doc_error_excluded(doq, "printing xmq", "XMQ_NO_XMQ_PRINTING");
+}
+#else
     if (doq == NULL || doq->dom_ == NULL) return;
     void *first = xml_node_first_child(xml_dom_document(doq->dom_));
     if (!doq || !first) return;
@@ -11693,6 +11812,7 @@ void xmq_print_xmq(XMQDoc *doq, XMQOutputSettings *os)
 
     if (os->final_newline) write(writer_state, "\n", NULL);
 }
+#endif // XMQ_NO_XMQ_PRINTING
 
 void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
 {
@@ -11710,7 +11830,11 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
     }
     else if (output_settings->output_format == XMQ_CONTENT_YAML)
     {
+#ifdef XMQ_NO_YAML
+        xmq_set_doc_error_excluded(doq, "yaml", "XMQ_NO_YAML");
+#else
         xmq_print_yaml(doq, output_settings);
+#endif
     }
     else if (output_settings->output_format == XMQ_CONTENT_TEXT)
     {
@@ -11749,7 +11873,12 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 void xmqAnnotateOffsets(XMQDoc *doq, const char *attribute_name, const char *ns)
 {
+#ifdef XMQ_NO_XMQ_PRINTING
+    (void)attribute_name; (void)ns;
+    xmq_set_doc_error_excluded(doq, "printing xmq", "XMQ_NO_XMQ_PRINTING");
+#else
     annotate_offsets(doq->dom_, attribute_name, ns);
+#endif
 }
 
 // Use an internal bit for signaling comment trimming.
@@ -12888,6 +13017,10 @@ XMQStatus xmqExpandEntities(XMQDoc *doq)
 
 bool xmq_parse_buffer_html(XMQDoc *doq, const char *start, const char *stop, int flags)
 {
+#ifdef XMQ_NO_HTML
+    (void)start; (void)stop; (void)flags;
+    return xmq_set_doc_error_excluded(doq, "html", "XMQ_NO_HTML");
+#endif
     XmlHtmlParseSettings settings;
     xml_html_parse_settings_default(&settings);
     settings.source_name = doq->source_name_;
@@ -13013,8 +13146,16 @@ bool xmqParseBufferWithType(XMQDoc *doq,
     case XMQ_CONTENT_HTMQ: ok = xmqParseBuffer(doq, start, stop, implicit_root, flags); break;
     case XMQ_CONTENT_XML: ok = xmq_parse_buffer_xml(doq, start, stop, flags); break;
     case XMQ_CONTENT_HTML: ok = xmq_parse_buffer_html(doq, start, stop, flags); break;
+#ifdef XMQ_NO_JSON
+    case XMQ_CONTENT_JSON: ok = xmq_set_doc_error_excluded(doq, "json", "XMQ_NO_JSON"); break;
+#else
     case XMQ_CONTENT_JSON: ok = xmq_parse_buffer_json(doq, start, stop, implicit_root); break;
+#endif
+#ifdef XMQ_NO_YAML
+    case XMQ_CONTENT_YAML: ok = xmq_set_doc_error_excluded(doq, "yaml", "XMQ_NO_YAML"); break;
+#else
     case XMQ_CONTENT_YAML: ok = xmq_parse_buffer_yaml(doq, start, stop, implicit_root); break;
+#endif
     case XMQ_CONTENT_IXML: ok = xmq_parse_buffer_ixml(doq, start, stop, flags); break;
     case XMQ_CONTENT_TEXT: ok = xmq_parse_buffer_text(doq, start, stop, implicit_root); break;
     case XMQ_CONTENT_CLINES: ok = xmq_parse_buffer_clines(doq, start, stop); break;
@@ -13481,6 +13622,7 @@ void xmq_replace_transform_markers(XMQDoc *doq)
     doq->root_ = xml_dom_root_element(doc);
 }
 
+#ifndef XMQ_NO_JSON
 bool xmq_parse_buffer_json(XMQDoc *doq,
                            const char *start,
                            const char *stop,
@@ -13522,6 +13664,9 @@ bool xmq_parse_buffer_json(XMQDoc *doq,
 
     return rc;
 }
+#endif // XMQ_NO_JSON
+
+#ifndef XMQ_NO_IXML
 
 bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
                            const char *start,
@@ -14066,8 +14211,34 @@ bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_gramm
     return ok;
 }
 
+#else // XMQ_NO_IXML
+
+bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar, const char *start, const char *stop, int flags)
+{
+    (void)start; (void)stop; (void)flags;
+    return xmq_set_doc_error_excluded(ixml_grammar, "ixml", "XMQ_NO_IXML");
+}
+
+bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
+{
+    (void)start; (void)stop; (void)ixml_grammar; (void)flags;
+    return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)
+{
+    (void)file_name; (void)ixml_grammar; (void)flags;
+    return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+#endif // XMQ_NO_IXML
+
 char *xmqCompactQuote(const char *content)
 {
+#ifdef XMQ_NO_XMQ_PRINTING
+    (void)content;
+    return NULL;
+#else
     MemBuffer *mb = new_membuffer();
 
     XMQOutputSettings os;
@@ -14095,6 +14266,7 @@ char *xmqCompactQuote(const char *content)
     membuffer_append_null(mb);
 
     return free_membuffer_but_return_trimmed_content(mb);
+#endif
 }
 
 
@@ -14349,8 +14521,38 @@ char *xmqLinePrintf(XMQLineConfig *lc, const char *element_name, ...)
     return v;
 }
 
+#if !defined(XMQ_NO_LIBXSLT) || !defined(XMQ_NO_XSD)
+
+/** The native dom of an xmq document, taken over (the document is left empty). */
+static XmlDom *xmq_take_dom(XMQDoc *doq, const char *url)
+{
+    XmlDom *dom = xmq_get_dom(doq);
+    if (!dom) return NULL;
+    xmq_set_dom(doq, NULL);
+    if (url && !xml_dom_url(dom)) xml_dom_set_url(dom, url);
+    return dom;
+}
+
+static void xmq_set_doc_error(XMQDoc *doq, MemBuffer *mb)
+{
+    if (!doq || !mb) return;
+    membuffer_append_null(mb);
+    char *msg = free_membuffer_but_return_trimmed_content(mb);
+    if (!*msg)
+    {
+        free(msg);
+        return;
+    }
+    free((void*)doq->error_);
+    doq->error_ = msg;
+}
+
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////////
 // XSLT 1.0, the native port of libxslt (parts/xml_libxslt1_*).
+
+#ifndef XMQ_NO_LIBXSLT
 
 struct XMQXslt
 {
@@ -14369,15 +14571,6 @@ static void xmq_xslt_message(void *user_data, const char *message)
     else fputs(message, stderr);
 }
 
-/** The native dom of an xmq document, taken over (the document is left empty). */
-static XmlDom *xmq_take_dom(XMQDoc *doq, const char *url)
-{
-    XmlDom *dom = xmq_get_dom(doq);
-    if (!dom) return NULL;
-    xmq_set_dom(doq, NULL);
-    if (url && !xml_dom_url(dom)) xml_dom_set_url(dom, url);
-    return dom;
-}
 
 static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1LoadType type)
 {
@@ -14424,19 +14617,6 @@ static XmlDom *xmq_xslt_loader(void *user_data, const char *uri, XmlLibxslt1Load
     return dom;
 }
 
-static void xmq_set_doc_error(XMQDoc *doq, MemBuffer *mb)
-{
-    if (!doq || !mb) return;
-    membuffer_append_null(mb);
-    char *msg = free_membuffer_but_return_trimmed_content(mb);
-    if (!*msg)
-    {
-        free(msg);
-        return;
-    }
-    free((void*)doq->error_);
-    doq->error_ = msg;
-}
 
 XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings)
 {
@@ -14582,7 +14762,46 @@ void xmqFreeXslt(XMQXslt *xslt)
     free(xslt);
 }
 
+#else // XMQ_NO_LIBXSLT
+
+XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings)
+{
+    (void)settings;
+    xmq_set_doc_error_excluded(stylesheet, "xslt", "XMQ_NO_LIBXSLT");
+    XMQReturnXslt ret = { XMQ_ERROR_EXCLUDED_FROM_BUILD, NULL };
+    return ret;
+}
+
+void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is_xpath)
+{
+    (void)xslt; (void)name; (void)value; (void)is_xpath;
+}
+
+XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc)
+{
+    (void)xslt;
+    xmq_set_doc_error_excluded(doc, "xslt", "XMQ_NO_LIBXSLT");
+    XMQReturnDoc ret = { XMQ_ERROR_EXCLUDED_FROM_BUILD, NULL };
+    return ret;
+}
+
+char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len)
+{
+    (void)xslt; (void)result;
+    if (len) *len = 0;
+    return NULL;
+}
+
+void xmqFreeXslt(XMQXslt *xslt)
+{
+    (void)xslt;
+}
+
+#endif // XMQ_NO_LIBXSLT
+
 // XSD 1.0 ////////////////////////////////////////////////////////////////////////
+
+#ifndef XMQ_NO_XSD
 
 struct XMQXsd
 {
@@ -14737,6 +14956,35 @@ void xmqFreeXsd(XMQXsd *xsd)
     if (xsd->messages) free_membuffer_and_free_content(xsd->messages);
     free(xsd);
 }
+
+#else // XMQ_NO_XSD
+
+XMQReturnXsd xmqCompileXsd(XMQDoc *schema, XMQXsdSettings *settings)
+{
+    (void)settings;
+    xmq_set_doc_error_excluded(schema, "xsd", "XMQ_NO_XSD");
+    XMQReturnXsd ret = { XMQ_ERROR_EXCLUDED_FROM_BUILD, NULL };
+    return ret;
+}
+
+void xmqSetXsdMessageCallback(XMQXsd *xsd, XMQXsdMessageCallback callback, void *user_data)
+{
+    (void)xsd; (void)callback; (void)user_data;
+}
+
+XMQStatus xmqValidate(XMQXsd *xsd, XMQDoc *doc)
+{
+    (void)xsd;
+    xmq_set_doc_error_excluded(doc, "xsd", "XMQ_NO_XSD");
+    return XMQ_ERROR_EXCLUDED_FROM_BUILD;
+}
+
+void xmqFreeXsd(XMQXsd *xsd)
+{
+    (void)xsd;
+}
+
+#endif // XMQ_NO_XSD
 
 #ifdef BUILDING_DIST_XMQ
 
@@ -19077,6 +19325,10 @@ void ixml_print_grammar(XMQParseState *state)
 
 #ifdef JSON_MODULE
 
+// The json part is excluded with XMQ_NO_JSON, except eat_json_quote that the xmq
+// parser also uses for its json style "quotes".
+#ifndef XMQ_NO_JSON
+
 void eat_json_boolean(XMQParseState *state);
 void eat_json_null(XMQParseState *state);
 void eat_json_number(XMQParseState *state);
@@ -19143,6 +19395,7 @@ bool is_json_quote_start(char c)
     return c == '"';
 }
 
+#endif // XMQ_NO_JSON
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop)
 {
     const char *start = state->i;
@@ -19233,6 +19486,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     *content_start = quote;
     *content_stop = quote+len-1; // Drop the zero byte.
 }
+#ifndef XMQ_NO_JSON
 
 void trim_index_suffix(const char *key_start, const char **stop)
 {
@@ -20676,6 +20930,12 @@ void json_print_leaf_node(XMQPrintState *ps,
         write(writer_state, "[]", NULL);
         ps->last_char = ']';
     }
+    else if (xml_get_attribute(node, "S") && !has_attr_other_than_AS_(node))
+    {
+        // An empty element forced to be a string: key(S) ---> "key":""
+        write(writer_state, "\"\"", NULL);
+        ps->last_char = '"';
+    }
     else
     {
         if (xml_first_attribute(node))
@@ -20782,32 +21042,7 @@ void collect_leading_ending_comments_doctype(XMQPrintState *ps, XMQNode* *first,
     }
 }
 
-#else
-
-// Empty function when XMQ_NO_JSON is defined.
-void xmq_fixup_json_before_writeout(XMQDoc *doq)
-{
-}
-
-// Empty function when XMQ_NO_JSON is defined.
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
-{
-    return false;
-}
-
-// Empty function when XMQ_NO_JSON is defined.
-void json_print_object_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from, XMQNode *to)
-{
-}
-
-void collect_leading_ending_comments_doctype(XMQPrintState *ps, XMQNode* *first, XMQNode* *last)
-{
-}
-
-void json_print_array_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from, XMQNode *to)
-{
-}
-
+#endif // XMQ_NO_JSON
 #endif // JSON_MODULE
 
 // PART C YAML_C ////////////////////////////////////////
@@ -96621,6 +96856,13 @@ static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Style
     const char *encoding = xslt_import_encoding(style);
     int indent = xslt_import_int_indent(style);
     if (!method && type == XSLT_OUTPUT_HTML) method = "html";
+#ifdef XMQ_NO_HTML
+    if (method && (!strcmp(method, "html") || !strcmp(method, "xhtml")))
+    {
+        xslt1_generic_error(&style->settings, "xmq: the html output method was excluded when xmq was built (XMQ_NO_HTML)\n");
+        return false;
+    }
+#else
     if (method && !strcmp(method, "html"))
     {
         xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
@@ -96632,6 +96874,7 @@ static bool xslt_save_result_to(MemBuffer *buf, XmlDom *result, XmlLibxslt1Style
         xml_html_set_meta_encoding(result, encoding ? encoding : "UTF-8");
         xml_html_save_doc_to(buf, result, true);
     }
+#endif
     else if (method && !strcmp(method, "text"))
     {
         XMQNode *cur = first;
@@ -97357,6 +97600,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_XSLT_TRANSFORM: return "xslt transformation failed";
     case XMQ_ERROR_XSD_COMPILE: return "xsd schema cannot be compiled";
     case XMQ_ERROR_XSD_INVALID: return "document is not valid according to the xsd schema";
+    case XMQ_ERROR_EXCLUDED_FROM_BUILD: return "this feature was excluded when xmq was built";
     case XMQ_ERROR_INVALID_NAMESPACE_URI: return "invalid namespace uri";
     case XMQ_ERROR_INVALID_NAMESPACE_PREFIX: return "invalid namespace prefix";
     case XMQ_ERROR_NAMESPACE_PREFIX_ALREADY_TAKEN: return "namespace prefix already taken";
@@ -98962,6 +99206,10 @@ void parse_xmq_whitespace(XMQParseState *state)
 
 #ifdef XMQ_PRINTER_MODULE
 
+// The xmq printer is excluded with XMQ_NO_XMQ_PRINTING, except the few helpers below
+// that the json, yaml and clines printers and the xmq quoting of log lines also use.
+#ifndef XMQ_NO_XMQ_PRINTING
+
 size_t find_attr_key_max_u_width(XMQAttr *a);
 size_t find_namespace_max_u_width(size_t max, XmlNs *ns);
 size_t find_element_key_max_width(XMQNode* node, XMQNode* *restart_find_at_node);
@@ -98987,6 +99235,7 @@ void node_strlen_name_prefix(XMQNode *node, const char **name, size_t *name_len,
     Set add_compound to true if content starts or ends with spaces/newlines or if forbid_nl==true and
     content starts/ends with quotes.
 */
+#endif // XMQ_NO_XMQ_PRINTING
 int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, bool *add_compound, bool prefer_double_quotes, bool *use_double_quotes)
 {
     bool all_safe = true;
@@ -99115,6 +99364,7 @@ int count_necessary_quotes(const char *start, const char *stop, bool *add_nls, b
 
     return max;
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 /**
     count_necessary_slashes:
@@ -99585,6 +99835,7 @@ void print_node(XMQPrintState *ps, XMQNode *node, size_t align)
     return print_element_with_children(ps, node, align);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_white_spaces(XMQPrintState *ps, int num)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -99599,6 +99850,7 @@ void print_white_spaces(XMQPrintState *ps, int num)
     ps->current_indent += num;
     if (c && c->whitespace.post) write(writer_state, c->whitespace.post, NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void print_all_whitespace(XMQPrintState *ps, const char *start, const char *stop, Level level)
 {
@@ -99701,6 +99953,7 @@ void print_double_quote(XMQPrintState *ps, XMQColor color)
     if (post) write(writer_state, post, NULL);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *postfix)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -99715,6 +99968,7 @@ void print_nl_and_indent(XMQPrintState *ps, const char *prefix, const char *post
     if (ps->restart_line) write(writer_state, ps->restart_line, NULL);
     if (prefix) write(writer_state, prefix, NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void print_nl(XMQPrintState *ps, const char *prefix, const char *postfix)
 {
@@ -100435,6 +100689,7 @@ void print_value_internal_text(XMQPrintState *ps,
     }
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_color_pre(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -100449,7 +100704,9 @@ void print_color_pre(XMQPrintState *ps, XMQColor color)
         write(writer_state, pre, NULL);
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
+#endif // XMQ_NO_XMQ_PRINTING
 void print_color_post(XMQPrintState *ps, XMQColor color)
 {
     XMQOutputSettings *os = ps->output_settings;
@@ -100469,6 +100726,7 @@ void print_color_post(XMQPrintState *ps, XMQColor color)
         write(writer_state, ps->replay_active_color_pre, NULL);
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 
 /**
@@ -100731,6 +100989,7 @@ void node_strlen_name_prefix(XMQNode *node,
     assert(*name != NULL);
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **prefix, size_t *total_u_len)
 {
     *name = xml_attr_name(attr);
@@ -100755,7 +101014,9 @@ void attr_strlen_name_prefix(XMQAttr *attr, const char **name, const char **pref
     }
     assert(*name != NULL);
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
+#endif // XMQ_NO_XMQ_PRINTING
 void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len)
 {
     size_t prefix_b_len;
@@ -100775,6 +101036,7 @@ void namespace_strlen_prefix(XmlNs *ns, const char **prefix, size_t *total_u_len
         *total_u_len = /* xmlns */ 5;
     }
 }
+#ifndef XMQ_NO_XMQ_PRINTING
 
 void element_strlen_name_prefix(XMQNode *element, const char **name, const char **prefix, size_t *total_u_len)
 {
@@ -100849,6 +101111,7 @@ void annotate_node(OffsetCounter *counter, XMQNode *node)
     }
 }
 
+#endif // XMQ_NO_XMQ_PRINTING
 #endif // XMQ_PRINTER_MODULE
 
 // PART C YAEP_ALLOCATE_C ////////////////////////////////////////

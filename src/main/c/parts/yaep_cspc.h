@@ -45,6 +45,8 @@ void core_symb_to_predcomps_add_complete(YaepParseState *ps,
                                          int rule_index_in_core);
 void core_symb_to_predcomps_new_all_stop(YaepParseState *ps);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_CSPC_MODULE
+#endif
 
 #endif

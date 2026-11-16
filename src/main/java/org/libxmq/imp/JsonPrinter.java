@@ -612,6 +612,12 @@ public class JsonPrinter extends XMQPrinter
             write(ps, "[]");
             ps.last_char = ']';
         }
+        else if (has_attr(node, "S") && !has_attr_other_than_AS_(node))
+        {
+            // An empty element forced to be a string: key(S) ---> "key":""
+            write(ps, "\"\"");
+            ps.last_char = '"';
+        }
         else if (has_attributes(node))
         {
             write(ps, "{");

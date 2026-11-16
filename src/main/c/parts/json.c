@@ -23,6 +23,10 @@
 
 #ifdef JSON_MODULE
 
+// The json part is excluded with XMQ_NO_JSON, except eat_json_quote that the xmq
+// parser also uses for its json style "quotes".
+#ifndef XMQ_NO_JSON
+
 void eat_json_boolean(XMQParseState *state);
 void eat_json_null(XMQParseState *state);
 void eat_json_number(XMQParseState *state);
@@ -89,6 +93,7 @@ bool is_json_quote_start(char c)
     return c == '"';
 }
 
+#endif // XMQ_NO_JSON
 void eat_json_quote(XMQParseState *state, char **content_start, char **content_stop)
 {
     const char *start = state->i;
@@ -179,6 +184,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
     *content_start = quote;
     *content_stop = quote+len-1; // Drop the zero byte.
 }
+#ifndef XMQ_NO_JSON
 
 void trim_index_suffix(const char *key_start, const char **stop)
 {
@@ -1622,6 +1628,12 @@ void json_print_leaf_node(XMQPrintState *ps,
         write(writer_state, "[]", NULL);
         ps->last_char = ']';
     }
+    else if (xml_get_attribute(node, "S") && !has_attr_other_than_AS_(node))
+    {
+        // An empty element forced to be a string: key(S) ---> "key":""
+        write(writer_state, "\"\"", NULL);
+        ps->last_char = '"';
+    }
     else
     {
         if (xml_first_attribute(node))
@@ -1728,30 +1740,5 @@ void collect_leading_ending_comments_doctype(XMQPrintState *ps, XMQNode* *first,
     }
 }
 
-#else
-
-// Empty function when XMQ_NO_JSON is defined.
-void xmq_fixup_json_before_writeout(XMQDoc *doq)
-{
-}
-
-// Empty function when XMQ_NO_JSON is defined.
-bool xmq_parse_buffer_json(XMQDoc *doq, const char *start, const char *stop)
-{
-    return false;
-}
-
-// Empty function when XMQ_NO_JSON is defined.
-void json_print_object_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from, XMQNode *to)
-{
-}
-
-void collect_leading_ending_comments_doctype(XMQPrintState *ps, XMQNode* *first, XMQNode* *last)
-{
-}
-
-void json_print_array_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from, XMQNode *to)
-{
-}
-
+#endif // XMQ_NO_JSON
 #endif // JSON_MODULE

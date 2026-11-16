@@ -290,6 +290,8 @@ extern void _VLO_expand_memory (vlo_t *vlo, size_t additional_length);
 
 size_t vlo_memusage(vlo_t *vlo);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_VLOBJECT_MODULE
+#endif
 
 #endif

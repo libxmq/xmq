@@ -94,6 +94,8 @@ void terminal_bitset_print(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t 
 void terminal_bitset_empty(YaepTerminalSetStorage *term_sets);
 void termsetstorage_free(YaepGrammar *grammar, YaepTerminalSetStorage *term_sets);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_TERMINAL_BITSET_MODULE
+#endif
 
 #endif

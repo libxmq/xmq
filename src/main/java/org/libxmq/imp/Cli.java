@@ -205,6 +205,8 @@ final class Cli
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
              "ixml-all-parses", "ixml-try-to-recover", "ixml-fail-silent" -> { }
         case "version" -> { System.out.println("xmqj"); throw new Exit(0); }
+        // Like the C version built without any XMQ_NO_... define.
+        case "features" -> { System.out.println("xmq-printing json yaml xslt xsd ixml html"); throw new Exit(0); }
         default -> throw fail("xmq: unrecognized global option: '" + optionString(name, value)
                               + "'\nTry 'xmq --help' for more information");
         }

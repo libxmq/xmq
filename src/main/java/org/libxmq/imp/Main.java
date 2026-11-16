@@ -466,6 +466,7 @@ Usage: xmqj [options] <file> ( <command> [options] )*
              Not yet implemented: exact will trim exactly to the significant whitespace according to xml/html rules.
   --verbose  Output extra information on stderr.
   --version  Output version information and exit.
+  --features Print the optional parts compiled in: xmq-printing json yaml xslt xsd ixml html.
   --xmq|--htmq|--xml|--html|--ixml|--json|--clines
              The input format is auto detected for xmq/xml/json but you can force the input format here.
   generate-parser --c grammar.ixml [--prefix=name]  Generate a C LL(*) parser with a main function.

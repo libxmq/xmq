@@ -147,6 +147,8 @@ int all_hash_table_collision_percentage (void);
 
 size_t hash_table_memusage(hash_table_t htab);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_HASHTAB_MODULE
+#endif
 
 #endif

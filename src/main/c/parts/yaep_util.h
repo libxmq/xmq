@@ -47,6 +47,8 @@ void yaep_view(YaepParseState *ps, const char *format, ...);
 void yaep_debug(YaepParseState *ps, const char *format, ...);
 void yaep_trace(YaepParseState *ps, const char *format, ...);
 
+#ifndef XMQ_NO_IXML
 #define YAEP_UTIL_MODULE
+#endif
 
 #endif

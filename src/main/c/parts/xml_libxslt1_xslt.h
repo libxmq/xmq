@@ -628,6 +628,8 @@ bool xslt1_is_rtf(XmlLibxslt1Transform *t, XmlDom *dom);
 
 #endif // XML_LIBXSLT1_INTERNALS
 
+#ifndef XMQ_NO_LIBXSLT
 #define XML_LIBXSLT1_XSLT_MODULE
+#endif
 
 #endif // XML_LIBXSLT1_XSLT_H

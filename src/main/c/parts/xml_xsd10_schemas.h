@@ -1970,6 +1970,8 @@ int xml_xsd10_v_start(XmlXsd10ValidCtxt *vctxt); // xmlSchemaVStart
 
 #endif // XML_XSD10_INTERNALS
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_SCHEMAS_MODULE
+#endif
 
 #endif // XML_XSD10_SCHEMAS_H

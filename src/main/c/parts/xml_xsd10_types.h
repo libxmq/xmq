@@ -760,6 +760,8 @@ size_t xml_xsd10_ids_num_refs(XmlXsd10Ids *ids);
 const char *xml_xsd10_ids_ref_value(XmlXsd10Ids *ids, size_t i);
 XMQNode *xml_xsd10_ids_ref_attr(XmlXsd10Ids *ids, size_t i);
 
+#ifndef XMQ_NO_XSD
 #define XML_XSD10_TYPES_MODULE
+#endif
 
 #endif // XML_XSD10_TYPES_H

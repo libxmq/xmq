@@ -96,6 +96,8 @@ int xml_ucs_is_cat_zs(int code);
     0 if false and -1 on unknown block. */
 int xml_ucs_is_block(int code, const char *block);
 
+#ifndef XMQ_NO_XSD
 #define XML_UNICODE_MODULE
+#endif
 
 #endif // XML_UNICODE_H
