@@ -1,42 +1,41 @@
-/* libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT)
-
-   Run the native xml parts (src/main/c/parts) over the libxml2 test suite
-   (tests/libxml2/test) and compare the output, and the error output where
-   libxml2's runtest.c compares it, byte for byte with the expected results
-   in tests/libxml2/result. Only native code: libxml2 is not needed.
-
-   The tests are driven like the functions of libxml2's runtest.c (in
-   3rdparty/libxml2/runtest.c when fetched) with the same names:
-
-   xml          oldParseTest    ./test/*                  result/<name> (and the round trip)
-   noent        noentParseTest  ./test/*                  result/noent/<name>
-   namespaces   errParseTest    ./test/namespaces/*       result/namespaces/<name>(.err)
-   errors       errParseTest    ./test/errors/*.xml       result/errors/<name>(.err)
-   errors-noent errParseTest    ./test/errors/*.xml       result/errors/<name>.ent (XML_PARSE_NOENT)
-   html         errParseTest    ./test/HTML/*             result/HTML/<name>(.err)
-   xpath-expr   xpathExprTest   ./test/XPath/expr/*       result/XPath/expr/<name>
-   xpath-doc    xpathDocTest    ./test/XPath/docs/*       result/XPath/tests/<name>
-   uri-parse    uriParseTest    ./test/URI/*.uri          result/URI/<name>
-   uri-base     uriBaseTest     ./test/URI/*.data         result/URI/<name>
-   schemas      schemasTest     ./test/schemas/*_*.xsd    result/schemas/<prefix>_<n>.err
-                schemasXsiTest  ./test/schemas/any1_0.xml result/schemas/any1_0_0.err
-   pattern      patternTest     ./test/pattern/*.pat      result/pattern/<name>
-   regexp       regexpTest      ./test/regexp/*           result/regexp/<name>(.err)
-   automata     automataTest    ./test/automata/*         result/automata/<name>
-
-   The libxml2 printing helpers used by these tests (xmlXPathDebugDumpObject,
-   xmlPrintURI, xmlFormatError for the schema and regexp errors, xmlGetNodePath)
-   are ported below onto the native api. Modes that libxmq does not have (the
-   reader, sax, push and memory variants, DTD validation, xinclude, c14n, relaxng,
-   schematron, catalogs, xpointer) are not run.
-
-   Usage: runtest [-v] [-k known_failures.txt] [-d libxml2_test_dir] [category...]
-   The test names are category:file, eg xml:./test/att1. Tests listed in the known
-   failures file may fail, the exit status is non zero if any other test fails or
-   a known failure passes. Run from the repository root (the default -d is
-   tests/libxml2, the program changes into it like runtest.c runs from libxml2's
-   source directory, the file names in the messages are ./test/...).
-*/
+// libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT)
+//
+// Run the native xml parts (src/main/c/parts) over the libxml2 test suite
+// (tests/libxml2/test) and compare the output, and the error output where
+// libxml2's runtest.c compares it, byte for byte with the expected results
+// in tests/libxml2/result. Only native code: libxml2 is not needed.
+//
+// The tests are driven like the functions of libxml2's runtest.c (in
+// 3rdparty/libxml2/runtest.c when fetched) with the same names:
+//
+// xml          oldParseTest    ./test/*                  result/<name> (and the round trip)
+// noent        noentParseTest  ./test/*                  result/noent/<name>
+// namespaces   errParseTest    ./test/namespaces/*       result/namespaces/<name>(.err)
+// errors       errParseTest    ./test/errors/*.xml       result/errors/<name>(.err)
+// errors-noent errParseTest    ./test/errors/*.xml       result/errors/<name>.ent (XML_PARSE_NOENT)
+// html         errParseTest    ./test/HTML/*             result/HTML/<name>(.err)
+// xpath-expr   xpathExprTest   ./test/XPath/expr/*       result/XPath/expr/<name>
+// xpath-doc    xpathDocTest    ./test/XPath/docs/*       result/XPath/tests/<name>
+// uri-parse    uriParseTest    ./test/URI/*.uri          result/URI/<name>
+// uri-base     uriBaseTest     ./test/URI/*.data         result/URI/<name>
+// schemas      schemasTest     ./test/schemas/*_*.xsd    result/schemas/<prefix>_<n>.err
+//              schemasXsiTest  ./test/schemas/any1_0.xml result/schemas/any1_0_0.err
+// pattern      patternTest     ./test/pattern/*.pat      result/pattern/<name>
+// regexp       regexpTest      ./test/regexp/*           result/regexp/<name>(.err)
+// automata     automataTest    ./test/automata/*         result/automata/<name>
+//
+// The libxml2 printing helpers used by these tests (xmlXPathDebugDumpObject,
+// xmlPrintURI, xmlFormatError for the schema and regexp errors, xmlGetNodePath)
+// are ported below onto the native api. Modes that libxmq does not have (the
+// reader, sax, push and memory variants, DTD validation, xinclude, c14n, relaxng,
+// schematron, catalogs, xpointer) are not run.
+//
+// Usage: runtest [-v] [-k known_failures.txt] [-d libxml2_test_dir] [category...]
+// The test names are category:file, eg xml:./test/att1. Tests listed in the known
+// failures file may fail, the exit status is non zero if any other test fails or
+// a known failure passes. Run from the repository root (the default -d is
+// tests/libxml2, the program changes into it like runtest.c runs from libxml2's
+// source directory, the file names in the messages are ./test/...).
 
 #include"parts/always.h"
 #include"parts/xml_dom.h"

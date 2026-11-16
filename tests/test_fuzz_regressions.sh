@@ -23,6 +23,13 @@ $CC -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omi
     -I"$ROOT/src/main/c" -o "$OUT/fuzz_replay" \
     "$ROOT/tests/fuzz/fuzz_replay.c" "$ROOT/tests/fuzz/fuzz_xmq.c" "$OUT/xmq.c" -lm || exit 1
 
+# Leak detection is only supported by ASan on linux (it aborts on macOS when asked for).
+LEAKS=0
+if [ "$(uname)" = "Linux" ]; then LEAKS=1; fi
+# timeout is gtimeout (coreutils) on macOS, without either the inputs run without a limit.
+TIMEOUT=""
+if command -v timeout > /dev/null; then TIMEOUT="timeout 10"; elif command -v gtimeout > /dev/null; then TIMEOUT="gtimeout 10"; fi
+
 passed=0
 failed=0
 while IFS='|' read -r name input
@@ -30,7 +37,7 @@ do
     case "$name" in ''|'#'*) continue ;; esac
     printf -- "$input" > "$OUT/inputs/$name"
     # The runner is built with ASan, which must be loaded first: drop preloads such as libeatmydata.
-    if env -u LD_PRELOAD ASAN_OPTIONS=detect_leaks=1 timeout 10 "$OUT/fuzz_replay" "$OUT/inputs/$name" > "$OUT/$name.log" 2>&1
+    if env -u LD_PRELOAD ASAN_OPTIONS=detect_leaks=$LEAKS $TIMEOUT "$OUT/fuzz_replay" "$OUT/inputs/$name" > "$OUT/$name.log" 2>&1
     then
         passed=$((passed+1))
     else

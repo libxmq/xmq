@@ -26,4 +26,7 @@ $CC $CFLAGS -o "$OUT/libxml2_runtest" "$ROOT/tests/libxml2_suite/runtest.c" $PAR
 cd "$ROOT" || exit 1
 # The runner is built with ASan, which must be loaded first: drop preloads such as
 # libeatmydata (eatmydata make test on github).
-env -u LD_PRELOAD ASAN_OPTIONS=detect_leaks=1 "$OUT/libxml2_runtest" -k "$ROOT/tests/libxml2_suite/known_failures.txt" -d "$ROOT/tests/libxml2" "$@"
+# Leak detection is only supported by ASan on linux (it aborts on macOS when asked for).
+LEAKS=0
+if [ "$(uname)" = "Linux" ]; then LEAKS=1; fi
+env -u LD_PRELOAD ASAN_OPTIONS=detect_leaks=$LEAKS "$OUT/libxml2_runtest" -k "$ROOT/tests/libxml2_suite/known_failures.txt" -d "$ROOT/tests/libxml2" "$@"
