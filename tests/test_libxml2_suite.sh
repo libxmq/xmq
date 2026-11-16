@@ -24,4 +24,6 @@ PARTS="$P/always.c $P/membuffer.c $P/hashmap.c $P/xml_dom.c $P/xml_save.c $P/xml
 $CC $CFLAGS -o "$OUT/libxml2_runtest" "$ROOT/tests/libxml2_suite/runtest.c" $PARTS -lm || exit 1
 
 cd "$ROOT" || exit 1
-ASAN_OPTIONS=detect_leaks=1 "$OUT/libxml2_runtest" -k "$ROOT/tests/libxml2_suite/known_failures.txt" -d "$ROOT/tests/libxml2" "$@"
+# The runner is built with ASan, which must be loaded first: drop preloads such as
+# libeatmydata (eatmydata make test on github).
+env -u LD_PRELOAD ASAN_OPTIONS=detect_leaks=1 "$OUT/libxml2_runtest" -k "$ROOT/tests/libxml2_suite/known_failures.txt" -d "$ROOT/tests/libxml2" "$@"
