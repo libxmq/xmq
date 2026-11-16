@@ -147,14 +147,28 @@ public final class XmlParser
     public static XmlDocument parse(byte[] content, String source, int options,
                                     java.util.function.Consumer<String> messages) throws XmlParseException
     {
-        byte[] u8 = XmlInput.prepare(source == null ? "noname.xml" : source, content);
+        int[] info = new int[3];
+        byte[] u8 = XmlInput.prepare(source == null ? "noname.xml" : source, content, info);
         XmlParser p = new XmlParser(new String(u8, java.nio.charset.StandardCharsets.UTF_8), u8, source, options);
         p.messages_ = messages;
+        if (info[0] >= 0)
+        {
+            p.has_bad_ = true;
+            p.bad_pos_ = new String(u8, 0, info[0], java.nio.charset.StandardCharsets.UTF_8).length();
+            p.bad_cp_ = info[1];
+        }
+        p.io_error_at_end_ = info[2] != 0;
         return p.parse_document();
     }
 
     /** Where the messages go, null for stderr. */
     java.util.function.Consumer<String> messages_;
+
+    /** A parser of text used as it is, without end of line normalization. */
+    static XmlParser prepared(String content, String source, int options)
+    {
+        return new XmlParser(content, null, source, options);
+    }
 
     /** A parser of prepared input: valid UTF-8 with normalized line ends. */
     private XmlParser(String prepared, byte[] u8, String source, int options)
@@ -231,9 +245,35 @@ public final class XmlParser
 
     XmlParseException fatal(String msg, int pos)
     {
+        return fatal("parser error", msg, pos);
+    }
+
+    XmlParseException fatal(String kind, String msg, int pos)
+    {
+        if (has_bad_ && pos > bad_pos_)
+        {
+            // The invalid character was passed by a construct that does not check for it.
+            has_bad_ = false;
+            kind = "parser error";
+            msg = bad_message();
+            pos = bad_pos_;
+        }
         int[] line = new int[1];
-        byte[] full = format_error("parser error", msg, pos, line);
+        byte[] full = format_error(kind, msg, pos, line);
         return new XmlParseException(full, msg, line[0]);
+    }
+
+    // The first character of the input that is not an xml char. Like libxml2 the parser
+    // reports it where it finds it, in the words of the construct it is in.
+    boolean has_bad_;
+    int bad_pos_;
+    int bad_cp_;
+    // The input ends with an incomplete UTF-16 code unit.
+    boolean io_error_at_end_;
+
+    String bad_message()
+    {
+        return "Char 0x" + Integer.toHexString(bad_cp_).toUpperCase(java.util.Locale.ROOT) + " out of allowed range";
     }
 
     void warning(String msg)
@@ -346,21 +386,34 @@ public final class XmlParser
         return s.substring(start, i);
     }
 
+    /** Do not report malformed QNames (end tags report them themselves). */
+    boolean qname_quiet_;
+    /** The last QName parsed was malformed. */
+    boolean qname_malformed_;
+
+    void qname_malformed(String name)
+    {
+        // Like libxml2 xmlParseQNameHashed, reported where the name ends.
+        qname_malformed_ = true;
+        if (!qname_quiet_) message("namespace error", "Failed to parse QName '" + name + "'", i);
+    }
+
     /** Parse a QName, returns {prefix, local} where prefix can be null, or null if no name. */
     String[] parse_qname()
     {
         int start = i;
+        qname_malformed_ = false;
         String l = parse_ncname();
         if (l == null)
         {
             // Names starting with a colon are accepted by libxml2 as plain names.
             String n = parse_name();
             if (n == null) return null;
+            qname_malformed(n);
             return new String[] { null, n };
         }
         if (cur() == ':')
         {
-            int save = i;
             i++;
             String l2 = parse_ncname();
             if (l2 == null || cur() == ':')
@@ -368,6 +421,7 @@ public final class XmlParser
                 // Not a valid QName, treat the whole thing as a name.
                 i = start;
                 String n = parse_name();
+                qname_malformed(n);
                 return new String[] { null, n };
             }
             return new String[] { l, l2 };
@@ -415,6 +469,8 @@ public final class XmlParser
         {
             throw fatal("Extra content at the end of the document");
         }
+        if (has_bad_) throw fatal(bad_message(), bad_pos_);
+        if (io_error_at_end_) throw fatal("I/O error", "Invalid bytes in character encoding", s.length());
         return doc_;
     }
 
@@ -514,6 +570,7 @@ public final class XmlParser
         final XmlElement e;
         final String qname;
         final int line;
+        boolean prefixed; // The name has a namespace prefix.
     }
 
     void parse_element_tree() throws XmlParseException
@@ -634,6 +691,76 @@ public final class XmlParser
         List<Object> value = new ArrayList<>(); // String or EntityName
         int pos;
         int end; // After the value, where libxml2 reports problems with the value.
+        boolean ns_skip; // A namespace declaration that is not kept (an error was reported).
+        String qname()
+        {
+            return prefix == null ? local : prefix + ":" + local;
+        }
+    }
+
+    static final String XML_NS_URI = "http://www.w3.org/XML/1998/namespace";
+    static final String XMLNS_NS_URI = "http://www.w3.org/2000/xmlns/";
+
+    /** The checks of a namespace declaration of libxml2 xmlParseStartTag2, reported right
+        after the attribute value. Returns false if the declaration is not kept. */
+    boolean check_ns_decl(RawAttr ra)
+    {
+        String pfx;
+        if (ra.prefix == null && ra.local.equals("xmlns")) pfx = null;
+        else if ("xmlns".equals(ra.prefix)) pfx = ra.local;
+        else return true;
+        for (Object o : ra.value) if (o instanceof EntityName) return true; // Rejected later.
+        String href = value_to_string(ra.value);
+        if (pfx == null)
+        {
+            if (!href.isEmpty())
+            {
+                XmlUri[] uri = new XmlUri[1];
+                XmlUri.parseSafe(href, uri);
+                if (uri[0] == null) message("namespace error", "xmlns: '" + href + "' is not a valid URI", ra.end);
+                else if (uri[0].scheme == null) message("namespace warning", "xmlns: URI " + href + " is not absolute", ra.end);
+                if (href.equals(XML_NS_URI))
+                {
+                    message("namespace error", "xml namespace URI cannot be the default namespace", ra.end);
+                    return false;
+                }
+                if (href.equals(XMLNS_NS_URI))
+                {
+                    message("namespace error", "reuse of the xmlns namespace name is forbidden", ra.end);
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (pfx.equals("xml"))
+        {
+            if (!href.equals(XML_NS_URI)) message("namespace error", "xml namespace prefix mapped to wrong URI", ra.end);
+            return false;
+        }
+        if (href.equals(XML_NS_URI))
+        {
+            message("namespace error", "xml namespace URI mapped to wrong prefix", ra.end);
+            return false;
+        }
+        if (pfx.equals("xmlns"))
+        {
+            message("namespace error", "redefinition of the xmlns prefix is forbidden", ra.end);
+            return false;
+        }
+        if (href.equals(XMLNS_NS_URI))
+        {
+            message("namespace error", "reuse of the xmlns namespace name is forbidden", ra.end);
+            return false;
+        }
+        if (href.isEmpty())
+        {
+            message("namespace error", "xmlns:" + pfx + ": Empty XML namespace is not allowed", ra.end);
+            return false;
+        }
+        XmlUri[] uri = new XmlUri[1];
+        XmlUri.parseSafe(href, uri);
+        if (uri[0] == null) message("namespace error", "xmlns:" + pfx + ": '" + href + "' is not a valid URI", ra.end);
+        return true;
     }
 
     record EntityName(String name) { }
@@ -699,11 +826,14 @@ public final class XmlParser
             ra.pos = apos;
             parse_att_value(ra.value);
             ra.end = i;
+            ra.ns_skip = !check_ns_decl(ra);
             attrs.add(ra);
         }
 
-        // Duplicate attribute names as written.
-        for (int k = 0; k < attrs.size(); k++)
+        // Duplicate attribute names as written, reported after the namespaced duplicates
+        // like libxml2 does.
+        RawAttr raw_dup = null;
+        for (int k = 0; k < attrs.size() && raw_dup == null; k++)
         {
             RawAttr ra = attrs.get(k);
             for (int j = 0; j < k; j++)
@@ -711,9 +841,14 @@ public final class XmlParser
                 RawAttr prev = attrs.get(j);
                 if (prev.local.equals(ra.local) && java.util.Objects.equals(prev.prefix, ra.prefix))
                 {
-                    throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined", tag_end);
+                    raw_dup = ra;
+                    break;
                 }
             }
+        }
+        if (raw_dup != null && ((raw_dup.prefix == null && raw_dup.local.equals("xmlns")) || "xmlns".equals(raw_dup.prefix)))
+        {
+            throw fatal("Attribute " + raw_dup.qname() + " redefined", tag_end);
         }
 
         // Values of attributes declared with a type other than CDATA are normalized.
@@ -767,12 +902,7 @@ public final class XmlParser
                 throw fatal("Attribute xmlns" + (prefix == null ? "" : ":" + prefix) + " redefined", tag_end);
             }
             declared.add(key);
-            if (prefix != null && href.isEmpty())
-            {
-                message("namespace error", "xmlns:" + prefix + ": Empty XML namespace is not allowed", ra.end);
-                continue;
-            }
-            if ("xml".equals(prefix)) continue;
+            if (ra.ns_skip) continue;
             e.nsDefs().add(new XmlNs(prefix, href));
         }
 
@@ -812,7 +942,7 @@ public final class XmlParser
         }
 
         // Then the attributes.
-        List<String> seen = new ArrayList<>();
+        java.util.Map<String, RawAttr> seen = new java.util.HashMap<>();
         int space = space_.isEmpty() ? -1 : space_.get(space_.size() - 1);
         if (space == -2) space = -1;
         for (RawAttr ra : attrs)
@@ -834,12 +964,23 @@ public final class XmlParser
                     uri = ans.href();
                 }
             }
+            // The first earlier attribute with the same expanded name, like the attribute hash of
+            // libxml2 xmlParseStartTag2. The same prefix is a duplicate, another prefix
+            // bound to the same uri a recoverable namespace error, both attributes are kept.
             String key = (uri == null ? "" : uri) + "}" + a.name();
-            if (seen.contains(key))
+            RawAttr prev = seen.get(key);
+            if (prev != null)
             {
- throw fatal("Attribute " + (ra.prefix == null ? ra.local : ra.prefix + ":" + ra.local) + " redefined", tag_end);
+                if (java.util.Objects.equals(prev.prefix, ra.prefix))
+                {
+                    throw fatal("Attribute " + ra.qname() + " redefined", tag_end);
+                }
+                message("namespace error", "Namespaced Attribute " + ra.local + " in '" + uri + "' redefined", tag_end);
             }
-            seen.add(key);
+            else
+            {
+                seen.put(key, ra);
+            }
             for (Object o : ra.value)
             {
                 if (o instanceof String str) a.addChild(new XmlText(str));
@@ -853,6 +994,8 @@ public final class XmlParser
                 else if (v.equals("default")) space = 0;
             }
         }
+
+        if (raw_dup != null) throw fatal("Attribute " + raw_dup.qname() + " redefined", tag_end);
 
         // The attributes defaulted from the dtd (libxml2 XML_PARSE_DTDATTR).
         if ((options_ & DTDATTR) != 0 && defaults != null)
@@ -892,7 +1035,9 @@ public final class XmlParser
         }
         space_.add(space);
         node_ = e;
-        return new Open(e, qname, tag_line);
+        Open o = new Open(e, qname, tag_line);
+        o.prefixed = qn[0] != null;
+        return o;
     }
 
 
@@ -1001,9 +1146,13 @@ public final class XmlParser
     void parse_end_tag(Open top) throws XmlParseException
     {
         i += 2;
-        int name_pos = i;
+        // libxml2 xmlParseQNameAndCompare (used if the start tag has a prefix) only parses the
+        // QName (and reports it) if it differs, otherwise a plain name is parsed.
+        qname_quiet_ = true;
         String[] qn = parse_qname();
+        qname_quiet_ = false;
         String name = qn == null ? "" : (qn[0] == null ? qn[1] : qn[0] + ":" + qn[1]);
+        if (qn != null && qname_malformed_ && top.prefixed && !name.equals(top.qname)) qname_malformed(qn[1]);
         skip_blanks();
         if (cur() != '>')
         {
@@ -1031,6 +1180,11 @@ public final class XmlParser
             if (eof())
             {
                 throw fatal("AttValue: ' expected");
+            }
+            if (has_bad_ && i == bad_pos_)
+            {
+                has_bad_ = false;
+                throw fatal("invalid character in attribute value");
             }
             char c = cur();
             if (c == q)
@@ -1246,6 +1400,13 @@ public final class XmlParser
         {
             char c = s.charAt(i);
             if (c == '<' || c == '&') break;
+            if (has_bad_ && i == bad_pos_)
+            {
+                has_bad_ = false;
+                // libxml2 xmlCurrentChar reports a nul byte itself.
+                if (bad_cp_ == 0) message("parser error", "Invalid character: Char 0x0 out of allowed range\n\n", i);
+                throw fatal("PCDATA invalid Char value " + bad_cp_);
+            }
             if (c == ']' && s.startsWith("]]>", i))
             {
                 throw fatal("Sequence ']]>' not allowed in content");
@@ -1323,6 +1484,17 @@ public final class XmlParser
         int content_start = i;
         while (true)
         {
+            if (has_bad_ && i == bad_pos_)
+            {
+                has_bad_ = false;
+                if (bad_cp_ == 0)
+                {
+                    // libxml2 xmlCurrentChar reports a nul byte, which then ends the comment.
+                    message("parser error", "Invalid character: Char 0x0 out of allowed range\n\n", i);
+                    throw fatal("Comment not terminated", i);
+                }
+                throw fatal("xmlParseComment: invalid xmlChar value " + bad_cp_, i);
+            }
             if (eof())
             {
                 String head = s.substring(content_start, Math.min(s.length(), content_start + 50));
@@ -1377,6 +1549,12 @@ public final class XmlParser
                 throw fatal("ParsePI: PI " + target + " space expected");
             }
             int end = s.indexOf("?>", i);
+            if (has_bad_ && bad_pos_ >= i && bad_pos_ < (end < 0 ? s.length() : end))
+            {
+                // Like libxml2 xmlParsePI, the pi ends at a character that is not an xml char.
+                has_bad_ = false;
+                throw fatal("ParsePI: PI " + target + " never end ...", bad_pos_);
+            }
             if (end < 0)
             {
                 throw fatal("ParsePI: PI " + target + " never end ...", start);
@@ -1508,7 +1686,7 @@ public final class XmlParser
             skip_blanks();
             if (eof())
             {
-                throw fatal("xmlParseInternalSubset: error detected in Markup declaration");
+                throw fatal("Content error in the internal subset");
             }
             if (cur() == ']')
             {
@@ -1555,9 +1733,39 @@ public final class XmlParser
             }
             else
             {
-                throw fatal("xmlParseInternalSubset: error detected in Markup declaration");
+                // Like libxml2 xmlParseMarkupDecl, an unknown declaration starting with
+                // <!E <!A <!N or <!- is skipped by two characters before the error.
+                char k = nxt(2);
+                boolean skip = cur() == '<' && nxt(1) == '!' && (k == 'E' || k == 'A' || k == 'N' || k == '-');
+                throw fatal("Content error in the internal subset", i + (skip ? 2 : 0));
             }
         }
+    }
+
+    /**
+     * An error in an element content declaration. libxml2 reports it and returns from the
+     * declaration at the error position, its internal subset loop then reports
+     * "Content error in the internal subset" there unless a declaration, a parameter entity
+     * reference or the end of the subset follows. The parser stops at the first error it
+     * cannot recover from like that.
+     */
+    XmlParseException cm_error(String msg)
+    {
+        int pos = i;
+        if (in_subset_)
+        {
+            int k = pos;
+            while (k < s.length() && is_blank(s.charAt(k))) k++;
+            char c = k < s.length() ? s.charAt(k) : 0;
+            char n = k + 1 < s.length() ? s.charAt(k + 1) : 0;
+            boolean goes_on = k < s.length() && ((c == '<' && (n == '!' || n == '?')) || c == '%' || c == ']');
+            if (!goes_on)
+            {
+                message("parser error", msg, pos);
+                return fatal("Content error in the internal subset", k);
+            }
+        }
+        return fatal(msg, pos);
     }
 
     void expect_decl_end(String what) throws XmlParseException
@@ -1595,6 +1803,12 @@ public final class XmlParser
             if (end < 0) throw fatal("EntityValue: \" expected");
             String orig = s.substring(i + 1, end);
             int vpos = i + 1;
+            if (has_bad_ && bad_pos_ >= vpos && bad_pos_ < end)
+            {
+                // libxml2 xmlExpandPEsInEntityValue checks the literal once it is read.
+                has_bad_ = false;
+                throw fatal("invalid character in entity value", end);
+            }
             i = end + 1;
             String content = decode_entity_value(orig, dtd, vpos);
             e = new XmlEntityDecl(name, pe ? XmlEntityDecl.INTERNAL_PARAMETER : XmlEntityDecl.INTERNAL_GENERAL,
@@ -1856,7 +2070,7 @@ public final class XmlParser
                 }
                 p.skip_blanks();
                 elem = p.parse_name();
-                if (elem == null) throw p.fatal("xmlParseElementMixedContentDecl : Name expected");
+                if (elem == null) throw p.cm_error("xmlParseElementMixedContentDecl : Name expected");
                 p.skip_blanks();
             }
             if (p.cur() == ')' && p.nxt(1) == '*')
@@ -1867,7 +2081,7 @@ public final class XmlParser
             }
             else
             {
-                throw p.fatal("xmlParseElementMixedContentDecl : '|' or ')*' expected");
+                throw p.cm_error("xmlParseElementMixedContentDecl : '|' or ')*' expected");
             }
             return ret;
         }
@@ -1890,7 +2104,7 @@ public final class XmlParser
             else
             {
                 String elem = p.parse_name();
-                if (elem == null) throw p.fatal("xmlParseElementChildrenContentDecl : Name or '(' expected");
+                if (elem == null) throw p.cm_error("ContentDecl : Name or '(' expected");
                 cur = ret = element(elem);
                 cur.ocur = parseOccur();
             }
@@ -1902,7 +2116,7 @@ public final class XmlParser
                 if (c == ',' || c == '|')
                 {
                     if (type == 0) type = c;
-                    else if (type != c) throw p.fatal("xmlParseElementChildrenContentDecl : '" + type + "' expected");
+                    else if (type != c) throw p.cm_error("xmlParseElementChildrenContentDecl : '" + type + "' expected");
                     p.i++;
                     Node op = new Node(c == ',' ? SEQ : OR);
                     if (last == null)
@@ -1920,7 +2134,7 @@ public final class XmlParser
                 }
                 else
                 {
-                    throw p.fatal("xmlParseElementChildrenContentDecl : ',' '|' or ')' expected");
+                    throw p.cm_error("ContentDecl : ',' '|' or ')' expected");
                 }
                 p.skip_blanks();
                 if (p.cur() == '(')
@@ -1931,7 +2145,7 @@ public final class XmlParser
                 else
                 {
                     String elem = p.parse_name();
-                    if (elem == null) throw p.fatal("xmlParseElementChildrenContentDecl : Name or '(' expected");
+                    if (elem == null) throw p.cm_error("ContentDecl : Name or '(' expected");
                     last = element(elem);
                     last.ocur = parseOccur();
                 }

@@ -52,6 +52,7 @@ THE SOFTWARE.
 #include"xml_html_parser.h"
 #include"xml_html.h"
 #include"hashmap.h"
+#include"xml_parser.h"
 
 #include<stdarg.h>
 #include<stdio.h>
@@ -282,15 +283,38 @@ static size_t xml_html_line(XmlHtmlParser *p)
 static void xml_html_error(XmlHtmlParser *p, const char *fmt, ...)
 {
     if (!p->settings->message_callback) return;
-    char msg[512];
-    va_list ap;
+    // Like libxml2 xmlStrVASPrintf with MAX_ERR_MSG_SIZE (64000 bytes), the message is
+    // truncated without splitting a UTF-8 sequence.
+    const int max_size = 64000;
+    va_list ap, copy;
     va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_copy(copy, ap);
+    int res = vsnprintf(NULL, 0, fmt, copy);
+    va_end(copy);
+    if (res < 0) res = 0;
+    int size = res < max_size ? res + 1 : max_size;
+    unsigned char *msg = (unsigned char*)malloc(size);
+    vsnprintf((char*)msg, size, fmt, ap);
     va_end(ap);
-    char out[700];
-    snprintf(out, sizeof(out), "%s:%zu: HTML parser error : %s\n",
-             p->settings->source_name ? p->settings->source_name : "noname.html", xml_html_line(p), msg);
+    if (res >= max_size)
+    {
+        int i = size - 1;
+        while (i > 0)
+        {
+            if (msg[i-1] < 0x80) break;
+            i -= 1;
+            if (msg[i] >= 0xc0) break;
+        }
+        msg[i] = 0;
+    }
+    // The source context line and the ^ at the current position, like libxml2.
+    size_t pos = p->i < p->len ? p->i : p->len;
+    char *out = xml_parser_format_message(p->settings->source_name ? p->settings->source_name : "noname.html",
+                                          xml_html_line(p), "HTML parser error", (const char*)msg,
+                                          (const char*)p->buf, p->len, pos, NULL);
+    free(msg);
     p->settings->message_callback(p->settings->message_user_data, out);
+    free(out);
 }
 
 // Tree building (the libxml2 SAX2 callbacks for html) ////////////

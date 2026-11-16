@@ -101,6 +101,12 @@ XmlDom *xml_parse_buffer(const char *start, const char *stop, const XmlParseSett
 
 void xml_parse_error_free(XmlParseError *error);
 
+/** Format a parser message like libxml2: "source:line: kind : msg", then the line of s around
+    pos (at most 80 bytes) and a ^ under pos. The column of the ^ (from 1) is stored in out_col
+    if not NULL. Returns a malloced string. */
+char *xml_parser_format_message(const char *source, size_t line, const char *kind, const char *msg,
+                                const char *s, size_t len, size_t pos, size_t *out_col);
+
 /**
     Replace every reference to a declared internal general entity below node (the whole
     document if node is NULL), also inside attribute values, with its replacement text

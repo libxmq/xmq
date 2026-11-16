@@ -66,19 +66,34 @@ final class XmlInput
     {
     }
 
-    /** Like vsnprintf into the 512 byte message buffer of the C version. */
-    static final int MAX_MSG = 511;
+    /** The maximum size of a formatted message (with its terminating zero), like libxml2 MAX_ERR_MSG_SIZE. */
+    static final int MAX_MSG = 64000;
+
+    /**
+     * The UTF-8 bytes of a message truncated like libxml2 xmlStrVASPrintf: at most
+     * MAX_MSG - 1 bytes, not ending with a partial UTF-8 sequence.
+     */
+    static byte[] limit(byte[] m)
+    {
+        if (m.length < MAX_MSG) return m;
+        int i = MAX_MSG - 1;
+        while (i > 0)
+        {
+            // Break after ASCII.
+            if ((m[i-1] & 0xFF) < 0x80) break;
+            i -= 1;
+            // Break before non-ASCII.
+            if ((m[i] & 0xFF) >= 0xc0) break;
+        }
+        byte[] t = new byte[i];
+        System.arraycopy(m, 0, t, 0, i);
+        return t;
+    }
 
     /** Format a message with source context like libxml2 xmlParserPrintFileContextInternal. */
     static byte[] format(String source, String kind, String msg, byte[] s, int len, int pos, int[] out_line)
     {
-        byte[] m = msg.getBytes(StandardCharsets.UTF_8);
-        if (m.length > MAX_MSG)
-        {
-            byte[] t = new byte[MAX_MSG];
-            System.arraycopy(m, 0, t, 0, MAX_MSG);
-            m = t;
-        }
+        byte[] m = limit(msg.getBytes(StandardCharsets.UTF_8));
         if (pos > len) pos = len;
         int line = 1;
         for (int k = 0; k < pos; k++) if (s[k] == '\n') line++;
@@ -202,9 +217,10 @@ final class XmlInput
         else { b.write(0xF0 | (cp >> 18)); b.write(0x80 | ((cp >> 12) & 0x3F)); b.write(0x80 | ((cp >> 6) & 0x3F)); b.write(0x80 | (cp & 0x3F)); }
     }
 
-    static byte[] convert_utf16(String source, byte[] raw, int off, int len, boolean big_endian) throws XmlParseException
+    static byte[] convert_utf16(String source, byte[] raw, int off, int len, boolean big_endian, int[] info) throws XmlParseException
     {
-        if (len % 2 != 0) throw fatal(source, "Invalid bytes in character encoding", raw, raw.length, 0);
+        // Like libxml2 a trailing odd byte is an I/O error found after the decoded input is parsed.
+        if (len % 2 != 0) info[2] = 1;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         for (int k = 0; k + 1 < len; k += 2)
         {
@@ -258,24 +274,31 @@ final class XmlInput
 
     /**
      * Convert the input to UTF-8, skip a UTF-8 bom, normalize \r\n and \r to \n, then
-     * check that the result is valid UTF-8 with only allowed xml characters.
+     * check that the result is valid UTF-8. The first character that is not an xml char
+     * is not an error here, the parser reports it.
+     * @param info Receives the byte position of the first character that is not an xml
+     * char (-1 if none) and that character, and 1 if the input ends with an incomplete
+     * UTF-16 code unit.
      * @return The prepared UTF-8 bytes.
      */
-    static byte[] prepare(String source, byte[] raw) throws XmlParseException
+    static byte[] prepare(String source, byte[] raw, int[] info) throws XmlParseException
     {
+        info[0] = -1;
+        info[1] = 0;
+        info[2] = 0;
         int len = raw.length;
         byte[] buf;
         if (len >= 2 && (((raw[0] & 0xFF) == 0xFE && (raw[1] & 0xFF) == 0xFF) || ((raw[0] & 0xFF) == 0xFF && (raw[1] & 0xFF) == 0xFE)))
         {
-            buf = convert_utf16(source, raw, 2, len - 2, (raw[0] & 0xFF) == 0xFE);
+            buf = convert_utf16(source, raw, 2, len - 2, (raw[0] & 0xFF) == 0xFE, info);
         }
         else if (len >= 4 && raw[0] == 0 && raw[1] == '<' && raw[2] == 0 && raw[3] == '?')
         {
-            buf = convert_utf16(source, raw, 0, len, true);
+            buf = convert_utf16(source, raw, 0, len, true, info);
         }
         else if (len >= 4 && raw[0] == '<' && raw[1] == 0 && raw[2] == '?' && raw[3] == 0)
         {
-            buf = convert_utf16(source, raw, 0, len, false);
+            buf = convert_utf16(source, raw, 0, len, false, info);
         }
         else
         {
@@ -298,7 +321,7 @@ final class XmlInput
                 else if (!(ascii_ieq(e, "UTF-8") || ascii_ieq(e, "UTF8") || ascii_ieq(e, "US-ASCII")
                            || ascii_ieq(e, "ASCII") || ascii_ieq(e, "UTF-16") || ascii_ieq(e, "UTF16")))
                 {
-                    throw fatal(source, "Unsupported encoding: " + e, buf, n, enc[0]);
+                    throw fatal(source, "Unsupported encoding: " + e, buf, n, enc[1] + 1);
                 }
             }
         }
@@ -333,6 +356,12 @@ final class XmlInput
             if (d == null)
             {
                 // Like libxml2 2.16, the decoded input (and so the context line) ends at the bad bytes.
+                if (info[0] >= 0)
+                {
+                    // A character that is not an xml char comes first, the parser would report it.
+                    throw fatal(source, "Char 0x" + Integer.toHexString(info[1]).toUpperCase(java.util.Locale.ROOT)
+                                + " out of allowed range", buf, k, info[0]);
+                }
                 int need = b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : 2;
                 boolean incomplete = b >= 0xC2 && b < 0xF5 && buf.length - k < need;
                 for (int j = k + 1; incomplete && j < buf.length; j++) if ((buf[j] & 0xC0) != 0x80) incomplete = false;
@@ -346,10 +375,10 @@ final class XmlInput
                                                   k + 3 < buf.length ? buf[k + 3] & 0xFF : 0),
                             buf, k, k);
             }
-            if (!XmlParser.is_xml_char(d[0]))
+            if (!XmlParser.is_xml_char(d[0]) && info[0] < 0)
             {
-                throw fatal(source, "Char 0x" + Integer.toHexString(d[0]).toUpperCase(java.util.Locale.ROOT) + " out of allowed range",
-                            buf, buf.length, k);
+                info[0] = k;
+                info[1] = d[0];
             }
             k += d[1];
         }

@@ -26,8 +26,6 @@ scripts/libxmq-docs.xml           %pe; kept
 test/undeclared-entity.xml        &undeclared; kept in attribute
 # Entity references in namespace uris are rejected (libxml2 expands them), see TODO.md:
 test/entity-in-ns-uri.xml         &e; in xmlns value
-# Two attributes with the same expanded name are rejected (libxml2 recovers with a namespace error):
-namespaces/err_9.xml              duplicate expanded attribute name
 # Encodings not yet supported:
 test/ebcdic_566012.xml            EBCDIC
 test/icu_parse_test.xml           EUC-JP

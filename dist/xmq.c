@@ -1089,6 +1089,12 @@ XmlDom *xml_parse_buffer(const char *start, const char *stop, const XmlParseSett
 
 void xml_parse_error_free(XmlParseError *error);
 
+/** Format a parser message like libxml2: "source:line: kind : msg", then the line of s around
+    pos (at most 80 bytes) and a ^ under pos. The column of the ^ (from 1) is stored in out_col
+    if not NULL. Returns a malloced string. */
+char *xml_parser_format_message(const char *source, size_t line, const char *kind, const char *msg,
+                                const char *s, size_t len, size_t pos, size_t *out_col);
+
 /**
     Replace every reference to a declared internal general entity below node (the whole
     document if node is NULL), also inside attribute values, with its replacement text
@@ -26302,6 +26308,7 @@ typedef struct
     char *qname;      // Malloced "prefix:local" as written.
     size_t line;
     int space;        // xml:space state: -1 default, 1 preserve, 0 default declared, -2 mixed content seen.
+    bool prefixed;    // The name has a namespace prefix.
 } XmlOpen;
 
 typedef struct
@@ -26318,6 +26325,7 @@ typedef struct
     size_t num_parts;
     size_t pos;       // Start of the attribute name.
     size_t end;       // After the attribute value, where libxml2 reports problems with the value.
+    bool ns_skip;     // A namespace declaration that is not kept (an error was reported).
 } XmlRawAttr;
 
 typedef struct
@@ -26361,7 +26369,17 @@ typedef struct
     size_t num_attrs;
     size_t attrs_cap;
 
-    XmlPBuf tmp[4];   // Scratch buffers for zero terminated copies.
+    char *cm_msg;       // A message being reported by xml_cm_error.
+    // The first character of the input that is not an xml char. Like libxml2 the parser reports
+    // it where it finds it, in the words of the construct it is in.
+    bool has_bad;
+    size_t bad_pos;
+    int bad_cp;
+    bool io_error_at_end; // The input ends with an incomplete UTF-16 code unit.
+    bool qname_quiet;     // Do not report malformed QNames (end tags report them themselves).
+    bool qname_malformed; // The last QName parsed was malformed.
+    bool in_int_subset; // Parsing the markup declarations of the internal subset.
+    XmlPBuf tmp[6];   // Scratch buffers for zero terminated copies.
 
     HashMap *entities;      // name -> XMQNode* entity declaration (general).
     HashMap *pentities;     // name -> XMQNode* entity declaration (parameter).
@@ -26505,14 +26523,9 @@ static size_t xml_parser_line_at(XmlParser *p, size_t pos)
     return p->line_no;
 }
 
-/** Format a message with source context like libxml2 xmlParserPrintFileContextInternal. */
-static char *xml_parser_format(XmlParser *p, const char *kind, const char *msg, size_t pos, size_t *out_line, size_t *out_col)
+char *xml_parser_format_message(const char *source, size_t line, const char *kind, const char *msg,
+                                const char *s, size_t len, size_t pos, size_t *out_col)
 {
-    const char *s = p->buf;
-    size_t len = p->len;
-    size_t line = xml_parser_line_at(p, pos);
-    const char *source = p->settings->source_name ? p->settings->source_name : "noname.xml";
-
     MemBuffer *mb = new_membuffer();
     membuffer_printf(mb, "%s:%zu: %s : %s", source, line, kind, msg);
     size_t ml = strlen(msg);
@@ -26567,36 +26580,94 @@ static char *xml_parser_format(XmlParser *p, const char *kind, const char *msg, 
     membuffer_append(mb, "^\n");
     membuffer_append_null(mb);
 
-    if (out_line) *out_line = line;
     if (out_col) *out_col = col + 1;
     return free_membuffer_but_return_trimmed_content(mb);
+}
+
+/** Format a message with source context like libxml2 xmlParserPrintFileContextInternal. */
+static char *xml_parser_format(XmlParser *p, const char *kind, const char *msg, size_t pos, size_t *out_line, size_t *out_col)
+{
+    size_t line = xml_parser_line_at(p, pos);
+    if (out_line) *out_line = line;
+    const char *source = p->settings->source_name ? p->settings->source_name : "noname.xml";
+    return xml_parser_format_message(source, line, kind, msg, p->buf, p->len, pos, out_col);
+}
+
+/** The maximum size of a formatted message, like libxml2 MAX_ERR_MSG_SIZE. */
+#define XML_MAX_ERR_MSG_SIZE 64000
+
+/**
+    Port of libxml2 xmlStrVASPrintf: format into a malloced string of at most max_size bytes
+    (including the terminating zero), a truncated result does not end with a partial UTF-8 sequence.
+*/
+static char *xml_parser_vasprintf(int max_size, const char *fmt, va_list ap)
+{
+    va_list copy;
+    va_copy(copy, ap);
+    int res = vsnprintf(NULL, 0, fmt, copy);
+    va_end(copy);
+    if (res < 0) res = 0;
+    int size = res < max_size ? res + 1 : max_size;
+    unsigned char *buf = (unsigned char*)malloc(size);
+    vsnprintf((char*)buf, size, fmt, ap);
+    if (res >= max_size)
+    {
+        int i = size - 1;
+        while (i > 0)
+        {
+            // Break after ASCII.
+            if (buf[i-1] < 0x80) break;
+            i -= 1;
+            // Break before non-ASCII.
+            if (buf[i] >= 0xc0) break;
+        }
+        buf[i] = 0;
+    }
+    return (char*)buf;
 }
 
 static void xml_parser_message(XmlParser *p, const char *kind, size_t pos, const char *fmt, ...)
 {
     if (!p->settings->message_callback) return;
-    char msg[512];
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
+    char *msg = xml_parser_vasprintf(XML_MAX_ERR_MSG_SIZE, fmt, ap);
     va_end(ap);
     char *m = xml_parser_format(p, kind, msg, pos, NULL, NULL);
+    free(msg);
     p->settings->message_callback(p->settings->message_user_data, m);
     free(m);
 }
 
 static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...)
 {
-    char msg[512];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
-    va_end(ap);
+    char *msg;
+    if (p->has_bad && pos > p->bad_pos)
+    {
+        // The invalid character was passed by a construct that does not check for it.
+        p->has_bad = false;
+        p->fatal_kind = NULL;
+        pos = p->bad_pos;
+        char m[64];
+        snprintf(m, sizeof(m), "Char 0x%X out of allowed range", p->bad_cp);
+        msg = xml_parser_strdup(m);
+    }
+    else
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        msg = xml_parser_vasprintf(XML_MAX_ERR_MSG_SIZE, fmt, ap);
+        va_end(ap);
+    }
     if (p->error)
     {
         p->error->message = xml_parser_format(p, p->fatal_kind ? p->fatal_kind : "parser error", msg, pos,
                                               &p->error->line, &p->error->col);
-        p->error->short_message = xml_parser_strdup(msg);
+        p->error->short_message = msg;
+    }
+    else
+    {
+        free(msg);
     }
     longjmp(p->on_error, 1);
 }
@@ -26715,7 +26786,8 @@ static bool xml_find_declared_encoding(const char *s, size_t len, const char **e
 
 static void xml_convert_utf16(XmlPBuf *out, const unsigned char *s, size_t len, bool big_endian, XmlParser *p)
 {
-    if (len % 2) xml_parser_fatal(p, 0, "Invalid bytes in character encoding");
+    // Like libxml2 a trailing odd byte is an I/O error found after the decoded input is parsed.
+    if (len % 2) p->io_error_at_end = true;
     for (size_t k = 0; k + 1 < len; k += 2)
     {
         unsigned int u = big_endian ? (unsigned)(s[k] << 8 | s[k+1]) : (unsigned)(s[k+1] << 8 | s[k]);
@@ -26732,6 +26804,39 @@ static void xml_convert_utf16(XmlPBuf *out, const unsigned char *s, size_t len, 
             xml_parser_fatal(p, 0, "Input is not proper UTF-16, indicate encoding !");
         }
         xml_pbuf_add_cp(out, (int)u);
+    }
+}
+
+/** End of line handling of p->buf: \r\n and \r become \n, p->crmark records where they were. */
+static void xml_normalize_eol(XmlParser *p)
+{
+    free(p->crmark);
+    p->crmark = NULL;
+    if (memchr(p->buf, '\r', p->len))
+    {
+        char *n = (char*)malloc(p->len + 1);
+        p->crmark = (unsigned char*)calloc(p->len + 1, 1);
+        size_t o = 0;
+        for (size_t k = 0; k < p->len; ++k)
+        {
+            char c = p->buf[k];
+            if (c == '\r')
+            {
+                bool crlf = k + 1 < p->len && p->buf[k+1] == '\n';
+                p->crmark[o] = crlf ? 1 : 2;
+                n[o++] = '\n';
+                if (crlf) k++;
+            }
+            else
+            {
+                n[o++] = c;
+            }
+        }
+        n[o] = 0;
+        free(p->owned);
+        p->owned = n;
+        p->buf = n;
+        p->len = o;
     }
 }
 
@@ -26788,7 +26893,7 @@ static void xml_parser_prepare_input(XmlParser *p, const char *start, const char
             {
                 p->buf = (const char*)s;
                 p->len = len;
-                xml_parser_fatal(p, (const char*)enc - (const char*)s, "Unsupported encoding: %.*s", (int)enc_len, enc);
+                xml_parser_fatal(p, (const char*)enc - (const char*)s + enc_len + 1, "Unsupported encoding: %.*s", (int)enc_len, enc);
             }
         }
     }
@@ -26807,33 +26912,7 @@ static void xml_parser_prepare_input(XmlParser *p, const char *start, const char
         p->len = len;
     }
 
-    // End of line handling: \r\n and \r become \n.
-    if (memchr(p->buf, '\r', p->len))
-    {
-        char *n = (char*)malloc(p->len + 1);
-        p->crmark = (unsigned char*)calloc(p->len + 1, 1);
-        size_t o = 0;
-        for (size_t k = 0; k < p->len; ++k)
-        {
-            char c = p->buf[k];
-            if (c == '\r')
-            {
-                bool crlf = k + 1 < p->len && p->buf[k+1] == '\n';
-                p->crmark[o] = crlf ? 1 : 2;
-                n[o++] = '\n';
-                if (crlf) k++;
-            }
-            else
-            {
-                n[o++] = c;
-            }
-        }
-        n[o] = 0;
-        free(p->owned);
-        p->owned = n;
-        p->buf = n;
-        p->len = o;
-    }
+    xml_normalize_eol(p);
 
     // Validate utf8 and xml chars.
     const unsigned char *b = (const unsigned char*)p->buf;
@@ -26858,9 +26937,11 @@ static void xml_parser_prepare_input(XmlParser *p, const char *start, const char
             xml_parser_fatal(p, k, "Invalid bytes in character encoding\nBytes: 0x%02X 0x%02X 0x%02X 0x%02X",
                              b[k], k+1 < full ? b[k+1] : 0, k+2 < full ? b[k+2] : 0, k+3 < full ? b[k+3] : 0);
         }
-        if (!xml_is_xml_char(c))
+        if (!xml_is_xml_char(c) && !p->has_bad)
         {
-            xml_parser_fatal(p, k, "Char 0x%X out of allowed range", c);
+            p->has_bad = true;
+            p->bad_pos = k;
+            p->bad_cp = c;
         }
         k += l;
     }
@@ -26962,12 +27043,23 @@ static XmlSlice xml_parse_nmtoken(XmlParser *p)
     return r;
 }
 
+static void xml_qname_malformed(XmlParser *p, XmlSlice name)
+{
+    // Like libxml2 xmlParseQNameHashed, reported where the name ends.
+    p->qname_malformed = true;
+    if (!p->qname_quiet)
+    {
+        xml_parser_message(p, "namespace error", p->i, "Failed to parse QName '%.*s'", (int)name.len, name.s);
+    }
+}
+
 /** Parse a QName. Returns false if no name starts here. */
 static bool xml_parse_qname(XmlParser *p, XmlQName *q)
 {
     size_t start = p->i;
     q->prefix.s = NULL;
     q->prefix.len = 0;
+    p->qname_malformed = false;
     XmlSlice l = xml_parse_name(p, false);
     if (!l.s)
     {
@@ -26975,6 +27067,7 @@ static bool xml_parse_qname(XmlParser *p, XmlQName *q)
         XmlSlice n = xml_parse_name(p, true);
         if (!n.s) return false;
         q->local = n;
+        xml_qname_malformed(p, n);
         return true;
     }
     if (xml_cur(p) == ':')
@@ -26986,6 +27079,7 @@ static bool xml_parse_qname(XmlParser *p, XmlQName *q)
             // Not a valid QName, treat the whole thing as a name.
             p->i = start;
             q->local = xml_parse_name(p, true);
+            xml_qname_malformed(p, q->local);
             return true;
         }
         q->prefix = l;
@@ -27201,6 +27295,11 @@ static size_t xml_parse_att_value(XmlParser *p)
     while (true)
     {
         if (xml_eof(p)) xml_parser_fatal(p, p->i, "AttValue: ' expected");
+        if (p->has_bad && p->i == p->bad_pos)
+        {
+            p->has_bad = false;
+            xml_parser_fatal(p, p->i, "invalid character in attribute value");
+        }
         char c = xml_cur(p);
         if (c == q)
         {
@@ -27252,6 +27351,7 @@ static size_t xml_parse_att_value(XmlParser *p)
         {
             char d = p->buf[p->i];
             if (d == q || d == '<' || d == '&' || d == '\t' || d == '\n') break;
+            if (p->has_bad && p->i == p->bad_pos) break;
             p->i++;
         }
         if (p->i > start)
@@ -27437,6 +27537,82 @@ static bool xml_ns_declared_here(XMQNode *e, const char *prefix)
     return false;
 }
 
+/** The checks of a namespace declaration of libxml2 xmlParseStartTag2, reported right after
+    the attribute value. Returns false if the declaration is not kept. */
+static bool xml_check_ns_decl(XmlParser *p, XmlRawAttr *ra)
+{
+    XmlSlice prefix;
+    if (!xml_raw_attr_is_xmlns(ra, &prefix)) return true;
+    for (size_t j = ra->first_part; j < ra->first_part + ra->num_parts; ++j)
+    {
+        if (p->parts[j].entity) return true; // Rejected later.
+    }
+    const char *href = xml_att_value_string(p, 0, ra->first_part, ra->num_parts);
+    const char *pfx = prefix.s ? xml_tmp_slice(p, 1, prefix) : NULL;
+    static const char *xml_ns_uri = "http://www.w3.org/XML/1998/namespace";
+    static const char *xmlns_ns_uri = "http://www.w3.org/2000/xmlns/";
+    if (!pfx)
+    {
+        if (*href)
+        {
+            XmlURI *uri = NULL;
+            xml_uri_parse_safe(href, &uri);
+            if (!uri)
+            {
+                xml_parser_message(p, "namespace error", ra->end, "xmlns: '%s' is not a valid URI", href);
+            }
+            else
+            {
+                if (!uri->scheme) xml_parser_message(p, "namespace warning", ra->end, "xmlns: URI %s is not absolute", href);
+                xml_uri_free(uri);
+            }
+            if (!strcmp(href, xml_ns_uri))
+            {
+                xml_parser_message(p, "namespace error", ra->end, "xml namespace URI cannot be the default namespace");
+                return false;
+            }
+            if (!strcmp(href, xmlns_ns_uri))
+            {
+                xml_parser_message(p, "namespace error", ra->end, "reuse of the xmlns namespace name is forbidden");
+                return false;
+            }
+        }
+    }
+    else
+    {
+        if (!strcmp(pfx, "xml"))
+        {
+            if (strcmp(href, xml_ns_uri)) xml_parser_message(p, "namespace error", ra->end, "xml namespace prefix mapped to wrong URI");
+            return false;
+        }
+        if (!strcmp(href, xml_ns_uri))
+        {
+            xml_parser_message(p, "namespace error", ra->end, "xml namespace URI mapped to wrong prefix");
+            return false;
+        }
+        if (!strcmp(pfx, "xmlns"))
+        {
+            xml_parser_message(p, "namespace error", ra->end, "redefinition of the xmlns prefix is forbidden");
+            return false;
+        }
+        if (!strcmp(href, xmlns_ns_uri))
+        {
+            xml_parser_message(p, "namespace error", ra->end, "reuse of the xmlns namespace name is forbidden");
+            return false;
+        }
+        if (!*href)
+        {
+            xml_parser_message(p, "namespace error", ra->end, "xmlns:%s: Empty XML namespace is not allowed", pfx);
+            return false;
+        }
+        XmlURI *uri = NULL;
+        xml_uri_parse_safe(href, &uri);
+        if (!uri) xml_parser_message(p, "namespace error", ra->end, "xmlns:%s: '%s' is not a valid URI", pfx, href);
+        xml_uri_free(uri);
+    }
+    return true;
+}
+
 /** Parse a start tag. Returns true if an element was opened (not an empty element tag). */
 static bool xml_parse_start_tag(XmlParser *p)
 {
@@ -27502,6 +27678,7 @@ static bool xml_parse_start_tag(XmlParser *p)
         ra->num_parts = count;
         ra->pos = apos;
         ra->end = p->i;
+        ra->ns_skip = !xml_check_ns_decl(p, ra);
     }
 
     // Values of attributes declared with a non CDATA type are normalized.
@@ -27519,7 +27696,9 @@ static bool xml_parse_start_tag(XmlParser *p)
         free(element_qname);
     }
 
-    // Duplicate attribute names as written.
+    // Duplicate attribute names as written, reported after the namespaced duplicates
+    // like libxml2 does.
+    XmlRawAttr *raw_dup = NULL;
     HashMap *seen = p->num_attrs > 16 ? hashmap_create(p->num_attrs * 2) : NULL;
     for (size_t k = 0; k < p->num_attrs; ++k)
     {
@@ -27539,13 +27718,18 @@ static bool xml_parse_start_tag(XmlParser *p)
                     xml_slice_eq_slice(p->attrs[j].name.prefix, ra->name.prefix)) dup = true;
             }
         }
-        if (dup)
+        if (dup && !raw_dup)
         {
-            if (seen) hashmap_free(seen);
-            xml_parser_fatal(p, tag_end, "Attribute %s redefined", xml_tmp_qname(p, 0, ra->name));
+            raw_dup = ra;
+            if (seen) break;
         }
     }
     if (seen) hashmap_free(seen);
+    XmlSlice dup_prefix;
+    if (raw_dup && xml_raw_attr_is_xmlns(raw_dup, &dup_prefix))
+    {
+        xml_parser_fatal(p, tag_end, "Attribute %s redefined", xml_tmp_qname(p, 0, raw_dup->name));
+    }
 
     const char *qname = xml_tmp_qname(p, 2, qn);
     XMQNode *e = xml_node_new_element(p->dom, xml_tmp_slice(p, 1, qn.local), NULL);
@@ -27571,12 +27755,7 @@ static bool xml_parse_start_tag(XmlParser *p)
         }
         const char *href = xml_att_value_string(p, 0, ra->first_part, ra->num_parts);
         const char *pfx = prefix.s ? xml_tmp_slice(p, 1, prefix) : NULL;
-        if (pfx && !*href)
-        {
-            xml_parser_message(p, "namespace error", ra->end, "xmlns:%s: Empty XML namespace is not allowed", pfx);
-            continue;
-        }
-        if (pfx && !strcmp(pfx, "xml")) continue;
+        if (ra->ns_skip) continue;
         xml_ns_declare(e, pfx, href);
     }
 
@@ -27631,7 +27810,11 @@ static bool xml_parse_start_tag(XmlParser *p)
             }
         }
         const char *uri = ans ? xml_ns_href(ans) : NULL;
-        bool dup;
+        // The first earlier attribute with the same expanded name, like the attribute hash of
+        // libxml2 xmlParseStartTag2. The same prefix is a duplicate, another prefix
+        // bound to the same uri a recoverable namespace error, both attributes are kept.
+        bool dup = false;
+        bool same_prefix = false;
         if (resolved)
         {
             XmlPBuf *kb = &p->tmp[3];
@@ -27639,19 +27822,31 @@ static bool xml_parse_start_tag(XmlParser *p)
             if (uri) xml_pbuf_add(kb, uri, strlen(uri));
             xml_pbuf_addc(kb, '}');
             xml_pbuf_add(kb, name, strlen(name));
-            dup = hashmap_get(resolved, kb->b) != NULL;
+            XmlRawAttr *prev = (XmlRawAttr*)hashmap_get(resolved, kb->b);
+            dup = prev != NULL;
             if (!dup) hashmap_put(resolved, kb->b, (void*)ra);
+            else same_prefix = xml_slice_eq_slice(prev->name.prefix, ra->name.prefix);
         }
         else
         {
-            dup = xml_node_get_attr(e, name, uri) != NULL;
+            XMQAttr *prev = xml_node_get_attr(e, name, uri);
+            dup = prev != NULL;
+            if (dup)
+            {
+                const char *pp = uri ? xml_node_ns_prefix(xml_attr_node(prev)) : NULL;
+                same_prefix = !uri || (pp && ra->name.prefix.s && xml_slice_eq(ra->name.prefix, pp));
+            }
         }
-        if (dup)
+        if (dup && same_prefix)
         {
             if (resolved) hashmap_free(resolved);
             xml_parser_fatal(p, tag_end, "Attribute %s redefined", xml_tmp_qname(p, 0, ra->name));
         }
-        XMQAttr *a = xml_node_set_attr(e, name, ans, NULL);
+        if (dup)
+        {
+            xml_parser_message(p, "namespace error", tag_end, "Namespaced Attribute %s in '%s' redefined", local, uri);
+        }
+        XMQAttr *a = dup ? xml_node_append_attr(e, name, ans, NULL) : xml_node_set_attr(e, name, ans, NULL);
         XMQNode *an = xml_attr_node(a);
         for (size_t j = ra->first_part; j < ra->first_part + ra->num_parts; ++j)
         {
@@ -27668,6 +27863,7 @@ static bool xml_parse_start_tag(XmlParser *p)
         }
     }
     if (resolved) hashmap_free(resolved);
+    if (raw_dup) xml_parser_fatal(p, tag_end, "Attribute %s redefined", xml_tmp_qname(p, 0, raw_dup->name));
 
     // The attributes defaulted from the dtd (libxml2 XML_PARSE_DTDATTR).
     if (p->settings->dtd_attr)
@@ -27705,6 +27901,7 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     if (empty) return false;
     xml_push_open(p, e, qname, tag_line, space);
+    xml_top(p)->prefixed = qn.prefix.s != NULL;
     p->node = e;
     return true;
 }
@@ -27715,7 +27912,16 @@ static void xml_parse_end_tag(XmlParser *p)
     p->i += 2;
     XmlQName qn;
     const char *name = "";
-    if (xml_parse_qname(p, &qn)) name = xml_tmp_qname(p, 0, qn);
+    // libxml2 xmlParseQNameAndCompare (used if the start tag has a prefix) only parses the
+    // QName (and reports it) if it differs, otherwise a plain name is parsed.
+    p->qname_quiet = true;
+    bool has_name = xml_parse_qname(p, &qn);
+    p->qname_quiet = false;
+    if (has_name)
+    {
+        name = xml_tmp_qname(p, 0, qn);
+        if (p->qname_malformed && top->prefixed && strcmp(name, top->qname)) xml_qname_malformed(p, qn.local);
+    }
     xml_skip_blanks(p);
     if (xml_cur(p) != '>') xml_parser_fatal(p, p->i, "expected '>'");
     p->i++;
@@ -27833,6 +28039,13 @@ static void xml_parse_char_data_complex(XmlParser *p)
         char c = p->buf[p->i];
         if (c == '<' || c == '&') break;
         if (c == ']' && xml_at(p, "]]>")) xml_parser_fatal(p, p->i, "Sequence ']]>' not allowed in content");
+        if (p->has_bad && p->i == p->bad_pos)
+        {
+            p->has_bad = false;
+            // libxml2 xmlCurrentChar reports a nul byte itself.
+            if (p->bad_cp == 0) xml_parser_message(p, "parser error", p->i, "Invalid character: Char 0x0 out of allowed range\n\n");
+            xml_parser_fatal(p, p->i, "PCDATA invalid Char value %d", p->bad_cp);
+        }
         size_t l;
         xml_cp_at(p, p->i, &l);
         p->i += l;
@@ -27931,6 +28144,17 @@ static void xml_parse_comment(XmlParser *p)
     while (true)
     {
         size_t dash = xml_find(p, p->i, "--");
+        if (p->has_bad && p->bad_pos >= content_start && p->bad_pos < dash)
+        {
+            p->has_bad = false;
+            if (p->bad_cp == 0)
+            {
+                // libxml2 xmlCurrentChar reports a nul byte, which then ends the comment.
+                xml_parser_message(p, "parser error", p->bad_pos, "Invalid character: Char 0x0 out of allowed range\n\n");
+                xml_parser_fatal(p, p->bad_pos, "Comment not terminated");
+            }
+            xml_parser_fatal(p, p->bad_pos, "xmlParseComment: invalid xmlChar value %d", p->bad_cp);
+        }
         if (dash == SIZE_MAX)
         {
             size_t n = p->len - content_start;
@@ -27972,6 +28196,12 @@ static void xml_parse_pi(XmlParser *p)
     {
         if (!xml_skip_blanks(p)) xml_parser_fatal(p, p->i, "ParsePI: PI %.*s space expected", (int)target.len, target.s);
         size_t end = xml_find(p, p->i, "?>");
+        if (p->has_bad && p->bad_pos >= p->i && p->bad_pos < end)
+        {
+            // Like libxml2 xmlParsePI, the pi ends at a character that is not an xml char.
+            p->has_bad = false;
+            xml_parser_fatal(p, p->bad_pos, "ParsePI: PI %.*s never end ...", (int)target.len, target.s);
+        }
         if (end == SIZE_MAX) xml_parser_fatal(p, start, "ParsePI: PI %.*s never end ...", (int)target.len, target.s);
         data = p->buf + p->i;
         data_len = end - p->i;
@@ -28269,6 +28499,12 @@ static void xml_parse_entity_decl(XmlParser *p)
         if (!e) xml_parser_fatal(p, p->i, "EntityValue: \" expected");
         size_t end = e - p->buf;
         size_t vpos = p->i + 1;
+        if (p->has_bad && p->bad_pos >= vpos && p->bad_pos < end)
+        {
+            // libxml2 xmlExpandPEsInEntityValue checks the literal once it is read.
+            p->has_bad = false;
+            xml_parser_fatal(p, end, "invalid character in entity value");
+        }
         xml_check_text_length(p, end - vpos, vpos);
         const char *o = xml_tmp(p, 1, p->buf + vpos, end - vpos);
         p->i = end + 1;
@@ -28416,6 +28652,38 @@ static XmlCmOccur xml_cm_parse_occur(XmlParser *p)
     return XML_CM_ONCE;
 }
 
+/**
+    An error in an element content declaration. libxml2 reports it and returns from the
+    declaration at the error position, its internal subset loop then reports
+    "Content error in the internal subset" there unless a declaration, a parameter entity
+    reference or the end of the subset follows. The native parser stops at the first error
+    it cannot recover from like that.
+*/
+static void xml_cm_error(XmlParser *p, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    char *msg = xml_parser_vasprintf(XML_MAX_ERR_MSG_SIZE, fmt, ap);
+    va_end(ap);
+    size_t pos = p->i;
+    if (p->in_int_subset)
+    {
+        size_t k = pos;
+        while (k < p->len && xml_is_blank(p->buf[k])) k++;
+        char c = k < p->len ? p->buf[k] : 0;
+        char n = k + 1 < p->len ? p->buf[k+1] : 0;
+        bool goes_on = k < p->len && ((c == '<' && (n == '!' || n == '?')) || c == '%' || c == ']');
+        if (!goes_on)
+        {
+            xml_parser_message(p, "parser error", pos, "%s", msg);
+            free(msg);
+            xml_parser_fatal(p, k, "Content error in the internal subset");
+        }
+    }
+    p->cm_msg = msg; // Freed by the cleanup, the fatal call does not return.
+    xml_parser_fatal(p, pos, "%s", msg);
+}
+
 /** Port of xmlParseElementMixedContentDecl, the '(' and blanks have been skipped. */
 static size_t xml_cm_parse_mixed(XmlParser *p, XmlContentModel *cm)
 {
@@ -28455,7 +28723,7 @@ static size_t xml_cm_parse_mixed(XmlParser *p, XmlContentModel *cm)
         }
         xml_skip_blanks(p);
         elem = xml_parse_name(p, true);
-        if (!elem.s) xml_parser_fatal(p, p->i, "xmlParseElementMixedContentDecl : Name expected");
+        if (!elem.s) xml_cm_error(p, "xmlParseElementMixedContentDecl : Name expected");
         xml_skip_blanks(p);
     }
     if (xml_cur(p) == ')' && xml_nxt(p, 1) == '*')
@@ -28466,7 +28734,7 @@ static size_t xml_cm_parse_mixed(XmlParser *p, XmlContentModel *cm)
     }
     else
     {
-        xml_parser_fatal(p, p->i, "xmlParseElementMixedContentDecl : '|' or ')*' expected");
+        xml_cm_error(p, "xmlParseElementMixedContentDecl : '|' or ')*' expected");
     }
     return ret;
 }
@@ -28490,7 +28758,7 @@ static size_t xml_cm_parse_children(XmlParser *p, XmlContentModel *cm, size_t de
     else
     {
         XmlSlice elem = xml_parse_name(p, true);
-        if (!elem.s) xml_parser_fatal(p, p->i, "xmlParseElementChildrenContentDecl : Name or '(' expected");
+        if (!elem.s) xml_cm_error(p, "ContentDecl : Name or '(' expected");
         cur = ret = xml_cm_new_element(p, cm, elem);
         cm->nodes[cur].ocur = xml_cm_parse_occur(p);
     }
@@ -28502,7 +28770,7 @@ static size_t xml_cm_parse_children(XmlParser *p, XmlContentModel *cm, size_t de
         if (c == ',' || c == '|')
         {
             if (type == 0) type = c;
-            else if (type != c) xml_parser_fatal(p, p->i, "xmlParseElementChildrenContentDecl : '%c' expected", type);
+            else if (type != c) xml_cm_error(p, "xmlParseElementChildrenContentDecl : '%c' expected", type);
             p->i++;
             size_t op = xml_cm_new(cm, c == ',' ? XML_CM_SEQ : XML_CM_OR);
             if (last == XML_CM_NONE)
@@ -28520,7 +28788,7 @@ static size_t xml_cm_parse_children(XmlParser *p, XmlContentModel *cm, size_t de
         }
         else
         {
-            xml_parser_fatal(p, p->i, "xmlParseElementChildrenContentDecl : ',' '|' or ')' expected");
+            xml_cm_error(p, "ContentDecl : ',' '|' or ')' expected");
         }
         xml_skip_blanks(p);
         if (xml_cur(p) == '(')
@@ -28531,7 +28799,7 @@ static size_t xml_cm_parse_children(XmlParser *p, XmlContentModel *cm, size_t de
         else
         {
             XmlSlice elem = xml_parse_name(p, true);
-            if (!elem.s) xml_parser_fatal(p, p->i, "xmlParseElementChildrenContentDecl : Name or '(' expected");
+            if (!elem.s) xml_cm_error(p, "ContentDecl : Name or '(' expected");
             last = xml_cm_new_element(p, cm, elem);
             cm->nodes[last].ocur = xml_cm_parse_occur(p);
         }
@@ -28886,13 +29154,15 @@ static void xml_parse_notation_decl(XmlParser *p)
 
 static void xml_parse_internal_subset(XmlParser *p)
 {
+    p->in_int_subset = true;
     while (true)
     {
         xml_skip_blanks(p);
-        if (xml_eof(p)) xml_parser_fatal(p, p->i, "xmlParseInternalSubset: error detected in Markup declaration");
+        if (xml_eof(p)) xml_parser_fatal(p, p->i, "Content error in the internal subset");
         if (xml_cur(p) == ']')
         {
             p->i++;
+            p->in_int_subset = false;
             return;
         }
         if (xml_at(p, "<!ENTITY")) xml_parse_entity_decl(p);
@@ -28913,7 +29183,11 @@ static void xml_parse_internal_subset(XmlParser *p)
         }
         else
         {
-            xml_parser_fatal(p, p->i, "xmlParseInternalSubset: error detected in Markup declaration");
+            // Like libxml2 xmlParseMarkupDecl, an unknown declaration starting with
+            // <!E <!A <!N or <!- is skipped by two characters before the error.
+            char k = xml_nxt(p, 2);
+            bool skip = xml_cur(p) == '<' && xml_nxt(p, 1) == '!' && (k == 'E' || k == 'A' || k == 'N' || k == '-');
+            xml_parser_fatal(p, p->i + (skip ? 2 : 0), "Content error in the internal subset");
         }
     }
 }
@@ -28971,11 +29245,12 @@ void xml_parse_settings_default(XmlParseSettings *s)
 
 static void xml_parser_cleanup(XmlParser *p)
 {
+    free(p->cm_msg);
     for (size_t k = 0; k < p->depth; ++k) free(p->stack[k].qname);
     free(p->stack);
     xml_pbuf_free(&p->text);
     xml_pbuf_free(&p->attval);
-    for (int k = 0; k < 4; ++k) xml_pbuf_free(&p->tmp[k]);
+    for (int k = 0; k < 6; ++k) xml_pbuf_free(&p->tmp[k]);
     free(p->parts);
     free(p->attrs);
     if (p->entities) hashmap_free(p->entities);
@@ -29026,6 +29301,12 @@ XmlDom *xml_parse_buffer(const char *start, const char *stop, const XmlParseSett
     xml_parser_prepare_input(p, start, stop);
     xml_parse_document(p);
     xml_flush_text(p);
+    if (p->has_bad) xml_parser_fatal(p, p->bad_pos, "Char 0x%X out of allowed range", p->bad_cp);
+    if (p->io_error_at_end)
+    {
+        p->fatal_kind = "I/O error";
+        xml_parser_fatal(p, p->len, "Invalid bytes in character encoding");
+    }
 
     XmlDom *dom = p->dom;
     xml_parser_cleanup(p);
@@ -29047,8 +29328,9 @@ static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
     p->i = 0;
     p->line_pos = 0;
     p->line_no = 1;
-    p->crmark = NULL;
     p->has_text = false;
+    // The replacement text is an input of its own, its end of lines are normalized.
+    xml_normalize_eol(p);
     XMQNode *base = p->node;
     size_t base_depth = p->depth;
     while (!xml_eof(p))
@@ -29181,7 +29463,93 @@ static void xml_expand_attr_entity(XmlParser *p, XmlPBuf *out, XMQNode *decl, co
     p->num_active--;
 }
 
-static void xml_expand_attr(XmlParser *p, XMQNode *an)
+/** The qualified name of an element or attribute node. */
+static const char *xml_expand_qname(XmlParser *p, int slot, XMQNode *n)
+{
+    XmlPBuf *b = &p->tmp[slot];
+    xml_pbuf_clear(b);
+    const char *prefix = xml_node_ns_prefix(n);
+    if (prefix)
+    {
+        xml_pbuf_add(b, prefix, strlen(prefix));
+        xml_pbuf_addc(b, ':');
+    }
+    const char *name = xml_node_name(n);
+    xml_pbuf_add(b, name, strlen(name));
+    return b->b;
+}
+
+/** Remember the attribute types declared in the dtd, the first declaration wins (libxml2 attsSpecial). */
+static void xml_expand_collect_attr_types(XmlParser *p)
+{
+    for (XMQNode *d = xml_node_first_child(p->dtd); d; d = xml_node_next(d))
+    {
+        if (xml_node_kind(d) != XML_DOM_ATTRIBUTE_DECL) continue;
+        // The declaration is "<!ATTLIST element attr type ...".
+        const char *t = xml_node_content(d);
+        if (!t || strncmp(t, "<!ATTLIST ", 10)) continue;
+        const char *e = t + 10;
+        const char *es = strchr(e, ' ');
+        if (!es) continue;
+        const char *a = es + 1;
+        const char *as = strchr(a, ' ');
+        if (!as) continue;
+        const char *ty = as + 1;
+        bool cdata = !strncmp(ty, "CDATA", 5) && (ty[5] == ' ' || ty[5] == 0);
+        XmlPBuf *tk = &p->tmp[3];
+        xml_pbuf_clear(tk);
+        xml_pbuf_add(tk, e, es - e);
+        xml_pbuf_addc(tk, 1);
+        xml_pbuf_add(tk, a, as - a);
+        if (!p->attr_types) p->attr_types = hashmap_create(1024);
+        if (!hashmap_get(p->attr_types, tk->b)) hashmap_put(p->attr_types, tk->b, cdata ? (void*)1 : (void*)2);
+    }
+}
+
+/**
+    Like libxml2 xmlAttrNormalizeSpace2 for the expanded value of an attribute declared with a
+    non CDATA type: remove leading and trailing spaces and collapse runs of spaces into one.
+    Kept entity references count as non space.
+*/
+static void xml_expand_normalize_attr(XmlParser *p, XMQNode *an)
+{
+    bool started = false;
+    bool pending_space = false;
+    XmlPBuf *b = &p->tmp[4];
+    XMQNode *c = xml_node_first_child(an);
+    while (c)
+    {
+        XMQNode *next = xml_node_next(c);
+        if (xml_node_kind(c) != XML_DOM_TEXT)
+        {
+            if (pending_space) xml_node_add_prev_sibling(c, xml_node_new_text_len(p->dom, " ", 1));
+            pending_space = false;
+            started = true;
+            c = next;
+            continue;
+        }
+        const char *t = xml_node_content(c);
+        xml_pbuf_clear(b);
+        xml_pbuf_add(b, "", 0);
+        for (; t && *t; ++t)
+        {
+            if (*t == ' ')
+            {
+                if (started) pending_space = true;
+                continue;
+            }
+            if (pending_space) xml_pbuf_addc(b, ' ');
+            pending_space = false;
+            xml_pbuf_addc(b, *t);
+            started = true;
+        }
+        if (b->len) xml_node_add_prev_sibling(c, xml_node_new_text_len(p->dom, b->b, b->len));
+        xml_node_free(c);
+        c = next;
+    }
+}
+
+static void xml_expand_attr(XmlParser *p, XMQNode *element, XMQNode *an)
 {
     bool any = false;
     for (XMQNode *c = xml_node_first_child(an); c; c = xml_node_next(c))
@@ -29220,6 +29588,17 @@ static void xml_expand_attr(XmlParser *p, XMQNode *an)
     }
     if (out->len) xml_node_append_child(an, xml_node_new_text_len(p->dom, out->b, out->len));
     xml_pbuf_clear(out);
+    if (p->attr_types)
+    {
+        XmlPBuf *k = &p->tmp[5];
+        xml_pbuf_clear(k);
+        const char *eq = xml_expand_qname(p, 3, element);
+        xml_pbuf_add(k, eq, strlen(eq));
+        xml_pbuf_addc(k, 1);
+        const char *aq = xml_expand_qname(p, 3, an);
+        xml_pbuf_add(k, aq, strlen(aq));
+        if (hashmap_get(p->attr_types, k->b) == (void*)2) xml_expand_normalize_attr(p, an);
+    }
 }
 
 static void xml_expand_ref(XmlParser *p, XMQNode *ref, XMQNode *decl)
@@ -29260,7 +29639,7 @@ static void xml_expand_node_children(XmlParser *p, XMQNode *node)
     {
         for (XMQAttr *a = xml_node_first_attr(node); a; a = xml_attr_next(a))
         {
-            xml_expand_attr(p, xml_attr_node(a));
+            xml_expand_attr(p, node, xml_attr_node(a));
         }
     }
     XMQNode *c = xml_node_first_child(node);
@@ -29335,6 +29714,7 @@ bool xml_expand_entities(XmlDom *dom, XMQNode *node, const char *only, size_t in
     }
     p->buf = "";
     p->line_no = 1;
+    xml_expand_collect_attr_types(p);
 
     if (setjmp(p->on_error))
     {
@@ -32834,15 +33214,38 @@ static size_t xml_html_line(XmlHtmlParser *p)
 static void xml_html_error(XmlHtmlParser *p, const char *fmt, ...)
 {
     if (!p->settings->message_callback) return;
-    char msg[512];
-    va_list ap;
+    // Like libxml2 xmlStrVASPrintf with MAX_ERR_MSG_SIZE (64000 bytes), the message is
+    // truncated without splitting a UTF-8 sequence.
+    const int max_size = 64000;
+    va_list ap, copy;
     va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_copy(copy, ap);
+    int res = vsnprintf(NULL, 0, fmt, copy);
+    va_end(copy);
+    if (res < 0) res = 0;
+    int size = res < max_size ? res + 1 : max_size;
+    unsigned char *msg = (unsigned char*)malloc(size);
+    vsnprintf((char*)msg, size, fmt, ap);
     va_end(ap);
-    char out[700];
-    snprintf(out, sizeof(out), "%s:%zu: HTML parser error : %s\n",
-             p->settings->source_name ? p->settings->source_name : "noname.html", xml_html_line(p), msg);
+    if (res >= max_size)
+    {
+        int i = size - 1;
+        while (i > 0)
+        {
+            if (msg[i-1] < 0x80) break;
+            i -= 1;
+            if (msg[i] >= 0xc0) break;
+        }
+        msg[i] = 0;
+    }
+    // The source context line and the ^ at the current position, like libxml2.
+    size_t pos = p->i < p->len ? p->i : p->len;
+    char *out = xml_parser_format_message(p->settings->source_name ? p->settings->source_name : "noname.html",
+                                          xml_html_line(p), "HTML parser error", (const char*)msg,
+                                          (const char*)p->buf, p->len, pos, NULL);
+    free(msg);
     p->settings->message_callback(p->settings->message_user_data, out);
+    free(out);
 }
 
 // Tree building (the libxml2 SAX2 callbacks for html) ////////////

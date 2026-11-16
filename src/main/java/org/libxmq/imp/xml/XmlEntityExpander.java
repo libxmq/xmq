@@ -75,6 +75,7 @@ public final class XmlEntityExpander
     {
         if (doc.intSubset() == null) return; // No declared entities.
         XmlEntityExpander x = new XmlEntityExpander(doc, only, input_size, options);
+        x.collectAttrTypes();
         x.expandChildren(doc);
         mergeText(doc);
     }
@@ -126,7 +127,7 @@ public final class XmlEntityExpander
     {
         if (node instanceof XmlElement e)
         {
-            for (XmlAttr a : e.attributes()) expandAttr(a);
+            for (XmlAttr a : e.attributes()) expandAttr(e, a);
         }
         XmlNode c = node.firstChild();
         while (c != null)
@@ -177,7 +178,71 @@ public final class XmlEntityExpander
         ref.unlink();
     }
 
-    void expandAttr(XmlAttr a) throws XmlParseException
+    // Declared attribute types, "element\u0001attr" -> true for CDATA, false for other types
+    // (first declaration wins, libxml2 attsSpecial).
+    final java.util.Map<String, Boolean> attr_cdata_ = new java.util.HashMap<>();
+
+    /** Remember the attribute types declared in the dtd. */
+    void collectAttrTypes()
+    {
+        for (XmlNode d = doc_.intSubset().firstChild(); d != null; d = d.next())
+        {
+            if (d.type() != XmlNodeType.ATTRIBUTE_DECL) continue;
+            // The declaration is "<!ATTLIST element attr type ...".
+            String t = ((XmlDtdDecl)d).text();
+            if (t == null || !t.startsWith("<!ATTLIST ")) continue;
+            int es = t.indexOf(' ', 10);
+            if (es < 0) continue;
+            int as = t.indexOf(' ', es + 1);
+            if (as < 0) continue;
+            String ty = t.substring(as + 1);
+            boolean cdata = ty.equals("CDATA") || ty.startsWith("CDATA ");
+            attr_cdata_.putIfAbsent(t.substring(10, es) + "\u0001" + t.substring(es + 1, as), cdata);
+        }
+    }
+
+    /**
+     * Like libxml2 xmlAttrNormalizeSpace2 for the expanded value of an attribute declared
+     * with a non CDATA type. Kept entity references count as non space.
+     */
+    static void normalizeAttr(XmlAttr a)
+    {
+        boolean started = false;
+        boolean pending_space = false;
+        XmlNode c = a.firstChild();
+        while (c != null)
+        {
+            XmlNode next = c.next();
+            if (c.type() != XmlNodeType.TEXT)
+            {
+                if (pending_space) c.addPrevSibling(new XmlText(" "));
+                pending_space = false;
+                started = true;
+                c = next;
+                continue;
+            }
+            String t = c.content() == null ? "" : c.content();
+            StringBuilder b = new StringBuilder();
+            for (int k = 0; k < t.length(); k++)
+            {
+                char ch = t.charAt(k);
+                if (ch == ' ')
+                {
+                    if (started) pending_space = true;
+                    continue;
+                }
+                if (pending_space) b.append(' ');
+                pending_space = false;
+                b.append(ch);
+                started = true;
+            }
+            if (b.length() > 0) c.addPrevSibling(new XmlText(b.toString()));
+            c.unlink();
+            c = next;
+        }
+    }
+
+    void expandAttr(XmlElement e, XmlAttr a) throws XmlParseException
     {
         boolean any = false;
         for (XmlNode c = a.firstChild(); c != null; c = c.next())
@@ -210,6 +275,7 @@ public final class XmlEntityExpander
             c = next;
         }
         if (out.length() > 0) a.appendRaw(new XmlText(out.toString()));
+        if (Boolean.FALSE.equals(attr_cdata_.get(e.fullName() + "\u0001" + a.fullName()))) normalizeAttr(a);
     }
 
     /** Append the expanded replacement text of an entity referenced from an attribute value. */
@@ -218,7 +284,8 @@ public final class XmlEntityExpander
         String v = decl.content() == null ? "" : decl.content();
         if (v.indexOf('<') >= 0) throw error("'<' in entity '" + decl.name() + "' is not allowed in attributes values");
         enter(decl, v.length());
-        XmlParser p = new XmlParser(v, doc_.url(), options_);
+        // Not an input of its own, the end of lines are not normalized (each becomes a space).
+        XmlParser p = XmlParser.prepared(v, doc_.url(), options_);
         p.doc_ = doc_;
         buf_ = v;
         {
