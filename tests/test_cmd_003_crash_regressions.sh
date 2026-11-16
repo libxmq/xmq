@@ -1,7 +1,9 @@
 #!/bin/sh
 # libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
 #
-# Regression tests for crashes found in the xmq cli (see CRASHES.TOFIX).
+# Regression tests for crashes found in the xmq cli: replace without =, quote-c and
+# unquote-c without top level text, replace/replace-entity on an empty document, load
+# without argument, and entity cycles and references in the printers.
 # Each case checks the exit code (a crash gives rc>=128) and the output.
 
 PROG=$1
@@ -91,10 +93,21 @@ $PROG --text $OUTPUT/empty.xmq quote-c to-text > $OUTPUT/out 2> $OUTPUT/err
 RC=$?
 check "quote-c empty input" 0 '""' ""
 
-# 4. unquote-c on input detected as xmq (no top level text) must not crash.
+# 4. unquote-c on input detected as xmq (no top level text) must not crash. The empty
+# text is not a quoted c string (like xmqj).
 $PROG $OUTPUT/hello.txt unquote-c to-text > $OUTPUT/out 2> $OUTPUT/err
 RC=$?
-check "unquote-c xmq input" 0 "" ""
+check "unquote-c xmq input" 0 "[Not a valid C escaped string]" ""
+
+# unquote-c of a quoted string, and of one whose closing quote is missing.
+echo '"a\tb\nc"' > $OUTPUT/quoted.txt
+$PROG --text $OUTPUT/quoted.txt unquote-c to-text > $OUTPUT/out 2> $OUTPUT/err
+RC=$?
+check "unquote-c quoted" 0 "$(printf 'a\tb\nc')" ""
+printf '"abc\\' > $OUTPUT/unclosed.txt
+$PROG --text $OUTPUT/unclosed.txt unquote-c to-text > $OUTPUT/out 2> $OUTPUT/err
+RC=$?
+check "unquote-c unclosed" 0 "[Not a valid C escaped string]" ""
 
 $PROG --text $OUTPUT/hello.txt quote-c to-text > $OUTPUT/out 2> $OUTPUT/err
 RC=$?

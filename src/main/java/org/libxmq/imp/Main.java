@@ -220,7 +220,7 @@ public class Main
      * @param content The content to parse.
      * @param file The source file name, used in error messages.
      * @param trim_none True to keep all whitespace, ie --trim=none.
-     * @param no_merge True to not merge text and character entities, ie --nomerge.
+     * @param no_merge True to not merge text and character entities, ie --no-merge.
      * @return The document or null.
      * @throws ParseException If the xmq content cannot be parsed.
      */
@@ -253,7 +253,7 @@ public class Main
      * @param content The content to parse.
      * @param file The source file name, used in error messages.
      * @param trim_none True to keep all whitespace, ie --trim=none.
-     * @param no_merge True to not merge text and character entities, ie --nomerge.
+     * @param no_merge True to not merge text and character entities, ie --no-merge.
      * @param format The format: null to detect, or json.
      * @return The document or null.
      * @throws ParseException If the content cannot be parsed.
@@ -458,7 +458,7 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --help     Display this help and exit.
   --license  Print license.
   --lines    Assume each input line is a separate document.
-  --nomerge  When loading xmq do not merge text quotes and character entities.
+  --no-merge When loading xmq do not merge text quotes and character entities.
   --root=<name> Create a root node <name> unless the file starts with a node with this <name> already.
   --trim=none|heuristic|exact
              The default setting when reading xml/html content is to trim whitespace using a heuristic.
@@ -499,14 +499,15 @@ COMMANDS
   lsp
 
 EXAMPLES
-  xmq pom.xml page  xmq index.html delete //script delete //style browse
+  xmq pom.xml page
+  xmq index.html delete //script delete //style browse
   xmq template.htmq replace-entity DATE 2024-02-08 to-html > index.html
   xmq data.json select /_/work transform format.xslq to-xml > data.xml
   xmq data.html select "//tr[@class='print_list_table_content']" \
                 delete //@class \
                 add-root Course \
                 transform --stringparam=title=Welcome cols.xslq to-text
-  xmq work.xml validate --silent work.xsd noout
+  xmq work.xml validate --silent work.xsd no-output
 """;
 
 

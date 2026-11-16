@@ -65,7 +65,7 @@ public class XMQParseIntoDOM extends XMQParser
     boolean parsing_pi_; // True when parsing a processing instruction, pi.
     String pi_name_; // Name of the pi node just started.
     boolean no_trim_quotes_; // No trimming of quotes, used when reading json strings.
-    boolean merge_text_ = true; // Merge adjacent text nodes, unless --nomerge.
+    boolean merge_text_ = true; // Merge adjacent text nodes, unless --no-merge.
     String element_namespace_; // The namespace prefix found before the element name.
     String attribute_namespace_; // The namespace prefix found before the attribute key.
     boolean declaring_xmlns_; // True when the next attribute value is a namespace uri.
@@ -109,7 +109,7 @@ public class XMQParseIntoDOM extends XMQParser
 
     /**
      * Control whether adjacent text nodes should be merged (the default)
-     * or kept separate, like the --nomerge option.
+     * or kept separate, like the --no-merge option.
      * @param merge True to merge.
      * @return This parser.
      */
@@ -164,7 +164,7 @@ public class XMQParseIntoDOM extends XMQParser
         return XmqTrim.unQuote(buffer_, start, stop, true, true);
     }
 
-    /** Add a text node, merging with a previous text node unless --nomerge. */
+    /** Add a text node, merging with a previous text node unless --no-merge. */
     XmlNode add_text(XmlNode parent, String content)
     {
         XmlText t = new XmlText(content);

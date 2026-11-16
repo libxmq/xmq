@@ -43,12 +43,12 @@ below, must be placed after the command they apply to.
 Print help.
 
 .TP
-.BR \-z " (empty dom)"
+.BR \-z ", " \-\-no-input " (empty dom)"
 Start with an empty DOM; any input file is ignored.  Combine with
 \fBadd\fP to build a document from scratch.
 
 .TP
-.BR \-y " (yes)"
+.BR \-y ", " \-\-yes
 Automatically answer yes to any questions (e.g. about downloading
 library files).
 
@@ -58,7 +58,7 @@ The next argument is the content to be parsed, not a file name, e.g.
 \fBxmq \-i 'a=2' render-terminal\fP .
 
 .TP
-.BR \-\-xmq ", " \-\-xml", " \-\-html", " \-\-ixml", " \-\-json", " \-\-yaml", " \-\-clines ",
+.BR \-\-xmq ", " \-\-htmq", " \-\-xml", " \-\-html", " \-\-ixml", " \-\-json", " \-\-yaml", " \-\-clines ",
 " \-\-text", " \-\-lines
 Force the input content type instead of auto-detecting it.
 Normally the content type is auto-detected from the file extension (when
@@ -85,7 +85,7 @@ Control how whitespace is trimmed from the input.
 .BR exact : " not implemented yet; xmq warns and exits with status 1"
 
 .TP
-.BR \-\-no-merge
+.BR \-\-no-merge ", " \-\-nomerge
 Do not merge adjacent text nodes during parsing.
 
 .TP
@@ -119,6 +119,10 @@ Do not warn if an ixml parse fails.
 .BR \-\-ixml-engine=NAME
 Use the named ixml engine implementation.
 Can also be set with the \fBXMQ_IXML_ENGINE\fP environment variable.
+
+.TP
+.BR \-\-progress
+Print the parse progress on stderr when parsing with an ixml grammar.
 
 .TP
 .BR \-\-xml-of-ixml
@@ -341,11 +345,13 @@ Rename the loaded document's root element to NAME before merging.
 
 .TP
 .BR "validate" " schema-file.xsd [options]"
-Validate the document against the given xml schema (xsxsl).
-Exits non-zero if validation fails.
+Validate the document against the given xml schema (xsd 1.0).
+The schema may import or include other schemas, they are loaded relative
+to the schema file. Every validation error is printed on stderr and xmq
+exits with status 1 if the document does not validate.
 .TP
 .BR \-\-silent
-Only print the error, not the document.
+Print no messages, exit with status 1 at the first validation error.
 
 .TP
 .BR "transform" " xslfile.xslq|library_name [options]"
@@ -741,9 +747,8 @@ The two check options have a special status scheme:
 background and 2 for a light background; \fB\-\-check-truecolor\fP exits
 0 if the terminal supports truecolor and 1 otherwise.
 .SH BUGS
-xmq is young so it does have bugs.  Known crashes are catalogued in
-\fBCRASHES.TOFIX\fP in the source tree.
-Report other bugs to https://libxmq.org/feedback.
+xmq is young so it does have bugs.
+Report bugs to https://libxmq.org/feedback.
 .SH AUTHOR
 Written by Fredrik Öhrström <oehrstroem@gmail.com>.
 .SH COPYRIGHT

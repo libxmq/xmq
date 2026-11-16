@@ -1841,8 +1841,9 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         if (tc) exit(0); // True color
         exit(1); // Not true color.
     }
-    if (!strcmp(arg, "--xmq"))
+    if (!strcmp(arg, "--xmq") || !strcmp(arg, "--htmq"))
     {
+        // htmq is xmq (the html flavour of it), it is read by the xmq parser.
         command->in_format=XMQ_CONTENT_XMQ;
         return true;
     }
@@ -1916,7 +1917,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->lines = true;
         return true;
     }
-    if (!strcmp(arg, "--no-merge"))
+    if (!strcmp(arg, "--no-merge") || !strcmp(arg, "--nomerge"))
     {
         command->flags |= XMQ_FLAG_NOMERGE;
         return true;
@@ -2020,7 +2021,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --help     Display this help and exit.\n"
            "  --license  Print license.\n"
            "  --lines    Assume each input line is a separate document.\n"
-           "  --nomerge  When loading xmq do not merge text quotes and character entities.\n"
+           "  --no-merge When loading xmq do not merge text quotes and character entities.\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
            "  --trim=none|heuristic|exact\n"
@@ -2057,7 +2058,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  transform\n"
            "  validate\n\n"
            "EXAMPLES\n"
-           "  xmq pom.xml page"
+           "  xmq pom.xml page\n"
            "  xmq index.html delete //script delete //style browse\n"
            "  xmq template.htmq replace-entity DATE 2024-02-08 to-html > index.html\n"
            "  xmq data.json select /_/work transform format.xslq to-xml > data.xml\n"
@@ -2065,7 +2066,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "                delete //@class \\\n"
            "                add-root Course \\\n"
            "                transform --stringparam=title=Welcome cols.xslq to-text\n"
-           "  xmq work.xml validate --silent work.xsd noout\n"
+           "  xmq work.xml validate --silent work.xsd no-output\n"
         );
 
     exit(0);

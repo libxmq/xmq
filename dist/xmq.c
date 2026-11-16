@@ -23742,8 +23742,18 @@ XMQReturnString xmq_quote_as_c(const char *start, const char *stop, bool add_quo
 
     Unescape the in string using c/json quotes. I.e. Replace \" with ", \n with newline etc.
 */
+static XMQReturnString not_a_valid_c_escaped_string(char *buf)
+{
+    free(buf);
+    char *s = strdup("[Not a valid C escaped string]");
+    if (!s) return (XMQReturnString) { XMQ_ERROR_OOM, NULL};
+    return (XMQReturnString) { XMQ_OK, s};
+}
+
 XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remove_quotes)
 {
+    // Without the quotes an empty string is not a valid c string.
+    if (stop == start && remove_quotes) return not_a_valid_c_escaped_string(NULL);
     if (stop == start)
     {
         char *tmp = (char*)malloc(1);
@@ -23761,11 +23771,7 @@ XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remov
     if (remove_quotes)
     {
         for (; i < stop && is_xml_whitespace(*i); ++i);
-        if (*i != '"') {
-            char *s = strdup("[Not a valid C escaped string]");
-            if (!s) return (XMQReturnString) { XMQ_ERROR_OOM, NULL};
-            return (XMQReturnString) { XMQ_OK, s};
-        }
+        if (i >= stop || *i != '"') return not_a_valid_c_escaped_string(buf);
         i++;
     }
 
@@ -23793,11 +23799,8 @@ XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remov
     }
     if (remove_quotes)
     {
-        if (*i != '"') {
-            char *s = strdup("[Not a valid C escaped string]");
-            if (!s) return (XMQReturnString) { XMQ_ERROR_OOM, NULL};
-            return (XMQReturnString) { XMQ_OK, s};
-        }
+        // The closing quote must be there, also not cut off by a backslash at the end.
+        if (i >= stop || *i != '"') return not_a_valid_c_escaped_string(buf);
     }
     real++;
     *o = 0;
