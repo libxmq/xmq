@@ -2271,6 +2271,10 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
         size_t len = command->input_current_line_stop - command->input_current_line_start;
         size_t wrote = fwrite(command->input_current_line_start, 1, len, f);
         fclose(f);
+        if (wrote != len)
+        {
+            fprintf(stderr, "xmq: Failed to write all bytes to %s wrote %zu but expected %zu\n", tmp_in, wrote, len);
+        }
     }
 
     char buf[1024];

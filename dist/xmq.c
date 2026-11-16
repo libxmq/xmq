@@ -10748,7 +10748,7 @@ XMQNode* create_entity(XMQParseState *state,
                 longjmp(state->error_handler, 1);
             }
             size_t len = encode_utf8(uc, &uni);
-            char buf[len+1];
+            char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
             n = xml_node_new_text(state->doq->dom_, buf);
@@ -11983,7 +11983,7 @@ XMQNode *merge_surrounding_text_nodes(XMQNode *node)
     UTF8Char uni;
     int uc = strtol(val+2, NULL, 16);
     size_t len = encode_utf8(uc, &uni);
-    char buf[len+1];
+    char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
     memcpy(buf, uni.bytes, len);
     buf[len] = 0;
 
@@ -13348,7 +13348,7 @@ static XMQNode* marker_entity_node(XmlDom* doc, XMQNode* marker)
         {
             UTF8Char uni;
             size_t len = encode_utf8(uc, &uni);
-            char buf[len+1];
+            char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
             n = xml_node_new_text(doc, buf);
@@ -14677,13 +14677,15 @@ void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is
         // A string literal, like xsltQuoteUserParams (concat() when both quotes are used).
         if (!strchr(value, '\''))
         {
-            v = (char*)malloc(strlen(value) + 3);
-            sprintf(v, "'%s'", value);
+            size_t n = strlen(value) + 3;
+            v = (char*)malloc(n);
+            snprintf(v, n, "'%s'", value);
         }
         else if (!strchr(value, '"'))
         {
-            v = (char*)malloc(strlen(value) + 3);
-            sprintf(v, "\"%s\"", value);
+            size_t n = strlen(value) + 3;
+            v = (char*)malloc(n);
+            snprintf(v, n, "\"%s\"", value);
         }
         else
         {
@@ -21054,6 +21056,7 @@ void collect_leading_ending_comments_doctype(XMQPrintState *ps, XMQNode* *first,
 
 static const char y_underline[]  = "_";
 static const char y_array[]      = "A";
+static const char y_string[]     = "S";
 static const char y_id[]         = "id";
 static const char y_ref[]        = "ref";
 static const char y_tag[]        = "tag";
@@ -22302,7 +22305,7 @@ static bool ylooks_like_native(const char *s, size_t len)
 static void yforce_string(XMQParseState *state)
 {
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
-    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, "S", "S"+1, "S"+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_string, y_string+1, y_string+1);
     DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
 }
 
@@ -26636,7 +26639,14 @@ typedef struct
     const char *only;      // Expand only references to this entity (but everything inside it).
 } XmlParser;
 
-static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...);
+// xml_parser_fatal never returns, it longjmps out of the parse (and the compilers then know
+// that the variables after it are set).
+#if defined(__GNUC__) || defined(__clang__)
+#define XML_PARSER_NORETURN __attribute__((noreturn))
+#else
+#define XML_PARSER_NORETURN
+#endif
+static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...) XML_PARSER_NORETURN;
 static int xml_utf8_decode(const unsigned char *s, size_t avail, size_t *len);
 
 // Buffers ////////////////////////////////////////////////////////
@@ -29974,6 +29984,8 @@ void xml_parse_error_free(XmlParseError *error)
     error->message = NULL;
     error->short_message = NULL;
 }
+
+#undef XML_PARSER_NORETURN
 
 #endif // XML_PARSER_MODULE
 
@@ -94140,8 +94152,9 @@ static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *
         XmlNs *rns = xml_node_ns(root);
         if (rns && xml_ns_prefix(rns))
         {
-            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
-            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+            size_t n = strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2;
+            doctype = (char*)malloc(n);
+            snprintf(doctype, n, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
         }
         else
         {
@@ -97048,8 +97061,9 @@ XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc,
         XmlNs *rns = xml_node_ns(root);
         if (rns && xml_ns_prefix(rns))
         {
-            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
-            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+            size_t n = strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2;
+            doctype = (char*)malloc(n);
+            snprintf(doctype, n, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
         }
         else
         {
@@ -97692,8 +97706,8 @@ XMQColor level_to_entity_color(Level level)
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
 {
     bool rc = true;
-    int blocksize = 1024;
-    char block[blocksize];
+    // A fixed block, not a variable length array.
+    char block[1024];
 
     MemBuffer *mb = new_membuffer();
 
@@ -105406,9 +105420,10 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...)
 
     ps->run.grammar->error_code = code;
     va_start(arguments, format);
-    vsprintf(ps->run.grammar->error_message, format, arguments);
+    // Bounded, a longer message is cut (error_message has room for the terminating zero).
+    vsnprintf(ps->run.grammar->error_message, sizeof(ps->run.grammar->error_message), format, arguments);
     va_end(arguments);
-    assert(strlen(ps->run.grammar->error_message) < YAEP_MAX_ERROR_MESSAGE_LENGTH);
+    assert(strlen(ps->run.grammar->error_message) <= YAEP_MAX_ERROR_MESSAGE_LENGTH);
     longjmp(ps->error_longjump_buff, code);
 }
 

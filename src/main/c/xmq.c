@@ -2642,7 +2642,7 @@ XMQNode* create_entity(XMQParseState *state,
                 longjmp(state->error_handler, 1);
             }
             size_t len = encode_utf8(uc, &uni);
-            char buf[len+1];
+            char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
             n = xml_node_new_text(state->doq->dom_, buf);
@@ -3877,7 +3877,7 @@ XMQNode *merge_surrounding_text_nodes(XMQNode *node)
     UTF8Char uni;
     int uc = strtol(val+2, NULL, 16);
     size_t len = encode_utf8(uc, &uni);
-    char buf[len+1];
+    char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
     memcpy(buf, uni.bytes, len);
     buf[len] = 0;
 
@@ -5242,7 +5242,7 @@ static XMQNode* marker_entity_node(XmlDom* doc, XMQNode* marker)
         {
             UTF8Char uni;
             size_t len = encode_utf8(uc, &uni);
-            char buf[len+1];
+            char buf[MAX_NUM_UTF8_BYTES+1]; // One utf8 char, len <= 4.
             memcpy(buf, uni.bytes, len);
             buf[len] = 0;
             n = xml_node_new_text(doc, buf);
@@ -6571,13 +6571,15 @@ void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is
         // A string literal, like xsltQuoteUserParams (concat() when both quotes are used).
         if (!strchr(value, '\''))
         {
-            v = (char*)malloc(strlen(value) + 3);
-            sprintf(v, "'%s'", value);
+            size_t n = strlen(value) + 3;
+            v = (char*)malloc(n);
+            snprintf(v, n, "'%s'", value);
         }
         else if (!strchr(value, '"'))
         {
-            v = (char*)malloc(strlen(value) + 3);
-            sprintf(v, "\"%s\"", value);
+            size_t n = strlen(value) + 3;
+            v = (char*)malloc(n);
+            snprintf(v, n, "\"%s\"", value);
         }
         else
         {

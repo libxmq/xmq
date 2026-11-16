@@ -1116,9 +1116,10 @@ static void yaep_error(YaepParseState *ps, int code, const char*format, ...)
 
     ps->run.grammar->error_code = code;
     va_start(arguments, format);
-    vsprintf(ps->run.grammar->error_message, format, arguments);
+    // Bounded, a longer message is cut (error_message has room for the terminating zero).
+    vsnprintf(ps->run.grammar->error_message, sizeof(ps->run.grammar->error_message), format, arguments);
     va_end(arguments);
-    assert(strlen(ps->run.grammar->error_message) < YAEP_MAX_ERROR_MESSAGE_LENGTH);
+    assert(strlen(ps->run.grammar->error_message) <= YAEP_MAX_ERROR_MESSAGE_LENGTH);
     longjmp(ps->error_longjump_buff, code);
 }
 

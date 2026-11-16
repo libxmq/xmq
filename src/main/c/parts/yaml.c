@@ -117,6 +117,7 @@ Not supported (reported as errors):
 
 static const char y_underline[]  = "_";
 static const char y_array[]      = "A";
+static const char y_string[]     = "S";
 static const char y_id[]         = "id";
 static const char y_ref[]        = "ref";
 static const char y_tag[]        = "tag";
@@ -1365,7 +1366,7 @@ static bool ylooks_like_native(const char *s, size_t len)
 static void yforce_string(XMQParseState *state)
 {
     DO_CALLBACK_SIM(apar_left, state, state->line, state->col, y_leftpar, y_leftpar+1, y_leftpar+1);
-    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, "S", "S"+1, "S"+1);
+    DO_CALLBACK_SIM(attr_key, state, state->line, state->col, y_string, y_string+1, y_string+1);
     DO_CALLBACK_SIM(apar_right, state, state->line, state->col, y_rightpar, y_rightpar+1, y_rightpar+1);
 }
 

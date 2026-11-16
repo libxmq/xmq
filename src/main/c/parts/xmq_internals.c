@@ -306,8 +306,8 @@ XMQColor level_to_entity_color(Level level)
 bool load_stdin(XMQDoc *doq, size_t *out_fsize, const char **out_buffer)
 {
     bool rc = true;
-    int blocksize = 1024;
-    char block[blocksize];
+    // A fixed block, not a variable length array.
+    char block[1024];
 
     MemBuffer *mb = new_membuffer();
 

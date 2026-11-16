@@ -62,22 +62,26 @@ done
 for t in tests/*.test
 do
     case "$t" in tests/error_*) continue ;; esac
-    sec=$(sed -n '/^\(INPUT\|START\)$/,/^[A-Z_]*$/p' "$t" | sed '1d;$d')
+    # sed -E: the BSD sed of macOS has no \| in basic regular expressions.
+    sec=$(sed -E -n '/^(INPUT|START)$/,/^[A-Z_]*$/p' "$t" | sed -e '1d' -e '$d')
     [ -n "$sec" ] || continue
     n=$((n+1)); printf '%s\n' "$sec" > "$OUTPUT/candidates/c$n.xmq"; echo "$t" > "$OUTPUT/candidates/c$n.from"
 done
 
-# Keep the ones that the xmq parser accepts as xmq, without duplicates.
-declare -A seen
+# Keep the ones that the xmq parser accepts as xmq, without duplicates. The checksums seen
+# are files in a directory (macOS has bash 3.2, without associative arrays, and no md5sum).
+SEEN="$OUTPUT/seen"
+rm -rf "$SEEN"
+mkdir -p "$SEEN"
 k=0
 for f in "$OUTPUT"/candidates/*.xmq
 do
     "$PROG" --xmq "$f" to-xml > /dev/null 2>&1 || continue
     # A known limitation of xmq.ixml: quotes of at most 9 quote chars.
     grep -qE "'{10}|\"{10}" "$f" && continue
-    sum=$(md5sum < "$f" | cut -d' ' -f1)
-    [ -n "${seen[$sum]}" ] && continue
-    seen[$sum]=1
+    sum=$(cksum < "$f" | tr ' ' '_')
+    [ -e "$SEEN/$sum" ] && continue
+    touch "$SEEN/$sum"
     k=$((k+1))
     cp "$f" "$OUTPUT/examples/e$k.xmq"
     cp "${f%.xmq}.from" "$OUTPUT/examples/e$k.from"
@@ -114,7 +118,7 @@ one()
         cp "$e.engine" "$e.generated"
     fi
     local result
-    if grep -q "state = ambiguous\|^AMBIGUOUS" "$e.engine"; then result=AMBIGUOUS
+    if grep -q -E "state = ambiguous|^AMBIGUOUS" "$e.engine"; then result=AMBIGUOUS
     elif grep -q "state = failed" "$e.engine" || [ $ra != 0 ]
     then
         if [ $rb != 0 ]; then result=REJECT; else result=GENERATED; fi

@@ -3855,8 +3855,9 @@ static void xslt_document_elem(XmlLibxslt1Transform *t, XMQNode *node, XMQNode *
         XmlNs *rns = xml_node_ns(root);
         if (rns && xml_ns_prefix(rns))
         {
-            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
-            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+            size_t n = strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2;
+            doctype = (char*)malloc(n);
+            snprintf(doctype, n, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
         }
         else
         {
@@ -6763,8 +6764,9 @@ XmlDom *xml_libxslt1_apply_stylesheet(XmlLibxslt1Stylesheet *style, XmlDom *doc,
         XmlNs *rns = xml_node_ns(root);
         if (rns && xml_ns_prefix(rns))
         {
-            doctype = (char*)malloc(strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2);
-            sprintf(doctype, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
+            size_t n = strlen(xml_ns_prefix(rns)) + strlen(xml_node_name(root)) + 2;
+            doctype = (char*)malloc(n);
+            snprintf(doctype, n, "%s:%s", xml_ns_prefix(rns), xml_node_name(root));
         }
         else
         {

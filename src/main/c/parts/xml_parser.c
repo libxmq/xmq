@@ -192,7 +192,14 @@ typedef struct
     const char *only;      // Expand only references to this entity (but everything inside it).
 } XmlParser;
 
-static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...);
+// xml_parser_fatal never returns, it longjmps out of the parse (and the compilers then know
+// that the variables after it are set).
+#if defined(__GNUC__) || defined(__clang__)
+#define XML_PARSER_NORETURN __attribute__((noreturn))
+#else
+#define XML_PARSER_NORETURN
+#endif
+static void xml_parser_fatal(XmlParser *p, size_t pos, const char *fmt, ...) XML_PARSER_NORETURN;
 static int xml_utf8_decode(const unsigned char *s, size_t avail, size_t *len);
 
 // Buffers ////////////////////////////////////////////////////////
@@ -3530,5 +3537,7 @@ void xml_parse_error_free(XmlParseError *error)
     error->message = NULL;
     error->short_message = NULL;
 }
+
+#undef XML_PARSER_NORETURN
 
 #endif // XML_PARSER_MODULE
