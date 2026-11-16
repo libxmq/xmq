@@ -2,7 +2,7 @@
 //
 // Clang + libFuzzer in-process harness over the xmq, xml, html, json and yaml
 // parsers and the xmq/xml/json printers, built with AddressSanitizer and
-// UndefinedBehaviorSanitizer from dist/xmq.c.
+// UndefinedBehaviorSanitizer from an amalgamation of the parts (like dist/xmq.c).
 //
 // The first byte of the input selects the content type, the rest is parsed.
 // A successful parse is printed back as xmq, xml and json.

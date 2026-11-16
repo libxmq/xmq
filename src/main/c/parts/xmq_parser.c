@@ -1154,7 +1154,8 @@ void parse_xmq_attributes(XMQParseState *state)
     {
         char c = xmq_parser_peek(state, 0);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        // Only xmq whitespace, a tab is not eaten by parse_xmq_whitespace and would loop.
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') return;
         // A key start that is not a name character (eg ; or å) would give an empty key
         // without advancing, stop here so that the attributes are reported as not closed.
@@ -1284,7 +1285,8 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
     {
         char c = xmq_parser_peek(state, 0);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        // Only xmq whitespace, a tab is not eaten by parse_xmq_whitespace and would loop.
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') break;
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, level);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, level);
@@ -1313,8 +1315,10 @@ bool possibly_lost_content_after_equals(XMQParseState *state)
     // Not {(= then not lost content, probably.
     if (!(c == '{' || c == '(' || c == '=')) return false;
 
-    const char *i = state->i-1;
     const char *start = state->buffer_start;
+    // Nothing before, eg the buffer starts with ( or {.
+    if (state->i <= start) return false;
+    const char *i = state->i-1;
 
     // Scan backwards for newline accepting only texts and xml whitespace.
     while (i > start && *i != '\n' && (is_xmq_text_name(*i) || is_xml_whitespace(*i))) i--;

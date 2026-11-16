@@ -9244,10 +9244,11 @@ const char *find_word_ignore_case(const char *start, const char *stop, const cha
     size_t len = strlen(word);
 
     while (i < stop && is_xml_whitespace(*i)) i++;
-    if (!strncasecmp(i, word, len))
+    // Never compare or look beyond stop.
+    if ((size_t)(stop-i) >= len && !strncasecmp(i, word, len))
     {
         const char *next = i+len;
-        if (next <= stop && (is_xml_whitespace(*next) || *next == 0 || !isalnum(*next)))
+        if (next == stop || is_xml_whitespace(*next) || *next == 0 || !isalnum(*next))
         {
             // The word was properly terminated with a 0, or a whitespace or something not alpha numeric.
             return i+strlen(word);
@@ -11228,6 +11229,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
     else if (name[0] == '?')
     {
         state->parsing_pi = true;
+        free((char*)state->pi_name); // A pi inside a pi without content, eg ?a?b
         state->pi_name = strdup(name+1); // Drop the ?
         if (!state->pi_name)
         {
@@ -98694,7 +98696,8 @@ void parse_xmq_attributes(XMQParseState *state)
     {
         char c = xmq_parser_peek(state, 0);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        // Only xmq whitespace, a tab is not eaten by parse_xmq_whitespace and would loop.
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') return;
         // A key start that is not a name character (eg ; or å) would give an empty key
         // without advancing, stop here so that the attributes are reported as not closed.
@@ -98824,7 +98827,8 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
     {
         char c = xmq_parser_peek(state, 0);
 
-        if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
+        // Only xmq whitespace, a tab is not eaten by parse_xmq_whitespace and would loop.
+        if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') break;
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, level);
         else if (is_xmq_entity_start(c)) parse_xmq_entity(state, level);
@@ -98853,8 +98857,10 @@ bool possibly_lost_content_after_equals(XMQParseState *state)
     // Not {(= then not lost content, probably.
     if (!(c == '{' || c == '(' || c == '=')) return false;
 
-    const char *i = state->i-1;
     const char *start = state->buffer_start;
+    // Nothing before, eg the buffer starts with ( or {.
+    if (state->i <= start) return false;
+    const char *i = state->i-1;
 
     // Scan backwards for newline accepting only texts and xml whitespace.
     while (i > start && *i != '\n' && (is_xmq_text_name(*i) || is_xml_whitespace(*i))) i--;

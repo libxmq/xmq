@@ -1194,10 +1194,11 @@ const char *find_word_ignore_case(const char *start, const char *stop, const cha
     size_t len = strlen(word);
 
     while (i < stop && is_xml_whitespace(*i)) i++;
-    if (!strncasecmp(i, word, len))
+    // Never compare or look beyond stop.
+    if ((size_t)(stop-i) >= len && !strncasecmp(i, word, len))
     {
         const char *next = i+len;
-        if (next <= stop && (is_xml_whitespace(*next) || *next == 0 || !isalnum(*next)))
+        if (next == stop || is_xml_whitespace(*next) || *next == 0 || !isalnum(*next))
         {
             // The word was properly terminated with a 0, or a whitespace or something not alpha numeric.
             return i+strlen(word);
@@ -3178,6 +3179,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
     else if (name[0] == '?')
     {
         state->parsing_pi = true;
+        free((char*)state->pi_name); // A pi inside a pi without content, eg ?a?b
         state->pi_name = strdup(name+1); // Drop the ?
         if (!state->pi_name)
         {

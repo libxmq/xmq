@@ -1,0 +1,13 @@
+# Inputs found by the fuzzer (make run_fuzz_clang), replayed by tests/test_fuzz_regressions.sh.
+# Each line is name|printf format of the input. The first byte selects the content type:
+# \000 xmq, \001 xml, \002 html, \003 json, \004 yaml (see fuzz_xmq.c).
+xmq_read_at_stop|\000alfa(x=1)\n
+xmq_attr_key_not_a_name_hang|\000a(b;
+xmq_attr_key_non_ascii_hang|\000a(\303\245=1)
+xmq_attr_tab_hang|\000alfa(x=1\t\n
+xmq_read_before_start|\000(x=1 y=2 z='how`y')\nalfa(x=1 y=2 z='how`y')\n
+xmq_pi_name_leak_on_error|\000Sandex.cgi?a&lta&gta">link</a>\ndex.\000 Q\000\000e'\n
+xmq_pi_in_pi_leak|\000?html?htmlmlke}=x{ze}=x{zw\n
+yaml_utf8_peek_at_stop|\004e: { f: 1,\n\n
+yaml_wrong_bracket_hang|\004a: [b}]\n
+html_detect_read_at_stop|\002<\n

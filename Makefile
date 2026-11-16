@@ -165,8 +165,8 @@ run_fuzz_yaml:
 	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/yaml -o fuzz_findings_yaml -- build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
 
 # In-process libFuzzer harness (tests/fuzz/fuzz_xmq.c) over the parsers and printers,
-# built with clang + AddressSanitizer + UndefinedBehaviorSanitizer from dist/xmq.c
-# (regenerated from the parts first). The first input byte selects the content type.
+# built with clang + AddressSanitizer + UndefinedBehaviorSanitizer from its own
+# amalgamation of the parts (like dist/xmq.c, but dist/ is left untouched). The first input byte selects the content type.
 #   make build_fuzz_clang
 #   make run_fuzz_clang
 FUZZ_CLANG_DIR:=$(FIRSTDIR)fuzz_clang
@@ -174,10 +174,11 @@ FUZZ_CLANG?=clang
 FUZZ_CLANG_FLAGS?=
 
 build_fuzz_clang:
-	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(CURDIR)/dist/xmq.c $(CURDIR)/dist/xmq.h
 	@mkdir -p $(FUZZ_CLANG_DIR)
+	@./scripts/build_xmq_from_parts.sh $(FUZZ_CLANG_DIR) src/main/c/xmq.c dist/VERSION
+	@cp $(FUZZ_CLANG_DIR)/xmq-in-progress $(FUZZ_CLANG_DIR)/xmq.c
 	$(FUZZ_CLANG) -O1 -g -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined -fno-sanitize-recover=undefined \
-	  $(FUZZ_CLANG_FLAGS) -Idist -o $(FUZZ_CLANG_DIR)/fuzzxmq tests/fuzz/fuzz_xmq.c dist/xmq.c -lm
+	  $(FUZZ_CLANG_FLAGS) -Isrc/main/c -o $(FUZZ_CLANG_DIR)/fuzzxmq tests/fuzz/fuzz_xmq.c $(FUZZ_CLANG_DIR)/xmq.c -lm
 	@echo "Built $(FUZZ_CLANG_DIR)/fuzzxmq"
 
 # Seeds: the first byte is the content type index (0 xmq, 1 xml, 2 html, 3 json, 4 yaml).
@@ -313,6 +314,7 @@ test_release: release
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/parts/testinternals ]; then echo "Run make first. $${x}release/parts/testinternals not found."; exit 1; fi ; $${x}release/parts/testinternals $(SILENCER) || exit 1 ; ./tests/test.sh $${x}release $${x}release/test_output $(FILTER) $(SILENCER) || exit 1 ; done
 	@for x in $(BUILDDIRS); do $(NO_ASLR) ./tests/test_libxml2_suite.sh $${x}release/test_output/libxml2_suite || exit 1 ; done
 	@for x in $(BUILDDIRS); do ./tests/test_libxslt_suite.sh $${x}release/test_output/libxslt_suite || exit 1 ; done
+	@for x in $(BUILDDIRS); do $(NO_ASLR) ./tests/test_fuzz_regressions.sh $${x}release/test_output/fuzz_regressions || exit 1 ; done
 	@$(MAKE) --no-print-directory test_xmq_grammar
 
 test_debug: debug
