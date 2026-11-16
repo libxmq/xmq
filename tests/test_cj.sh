@@ -4,7 +4,8 @@
 # Compare the C command line (xmq) with the Java command line (xmqj) byte for byte,
 # output, errors and exit code of "to-xml", on every xml file in the repository and in
 # the libxml2 test suite (tests/libxml2), plain and after expand-entities, and of
-# "transform" on the libxslt test suite (tests/libxslt).
+# "transform" on the libxslt test suite (tests/libxslt) and of "validate" on the libxml2
+# schema test suite (tests/libxml2/test/schemas) and the tests/xsd_*.test cases.
 #
 # Usage: tests/test_cj.sh XMQ_BINARY XMQJ_BINARY OUTPUT_DIR
 # JOBS=n sets the number of parallel jobs (default 8).
@@ -29,7 +30,7 @@ J=$(cd "$(dirname "$J")" && pwd)/$(basename "$J")
 EXCLUDE=""
 
 FILES="$OUT/files.txt"
-find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" \) -prune -o -name "*.xml" -print > "$FILES"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/fuzz_testcases" -o -path "$ROOT/fuzz_findings_clang" \) -prune -o -name "*.xml" -print > "$FILES"
 # The libxml2 test suite is in tests/libxml2, found by the find above.
 for e in $EXCLUDE
 do
@@ -111,12 +112,65 @@ then
     echo "DIFF: files written by the transforms (see $OUT/xslt_files.diff)" >> "$OUT/differ.txt"
 fi
 
+# validate: every schema prefix_N.xsd of the libxml2 schema suite with its instances
+# prefix_*_M.xml (paired like schemasTest of runtest), run from tests/libxml2 with the
+# relative paths of runtest, and the xsd_*.test cases of tests (see tests/test_xsd.sh).
+VALIDATE_CASES="$OUT/validate_cases.txt"
+: > "$VALIDATE_CASES"
+SCHEMAS="$ROOT/tests/libxml2/test/schemas"
+if [ -d "$SCHEMAS" ]
+then
+    for x in "$SCHEMAS"/*_*.xsd
+    do
+        b=$(basename "$x" .xsd)
+        p=$b
+        case "$p" in *_?) p=${p%_?} ;; esac
+        case "$p" in *_?) p=${p%_?} ;; esac
+        for i in "$SCHEMAS/${p}"_*.xml
+        do
+            [ -f "$i" ] || continue
+            ib=$(basename "$i")
+            # runtest only processes instances named ..._M.xml
+            case "$ib" in *_?.xml) ;; *) continue ;; esac
+            echo "$ROOT/tests/libxml2 ./test/schemas/$ib ./test/schemas/$b.xsd" >> "$VALIDATE_CASES"
+        done
+    done
+fi
+mkdir -p "$OUT/xsd"
+for t in "$ROOT"/tests/xsd_*.test
+do
+    [ -f "$t" ] || continue
+    n=$(basename "$t" .test)
+    sed -n '/^XSD.*$/,/^INPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUT/xsd/$n.xsd"
+    sed -n '/^INPUT$/,/^OUTPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUT/xsd/$n.input"
+    echo "$OUT/xsd $n.input $n.xsd" >> "$VALIDATE_CASES"
+done
+onev()
+{
+    d=$1
+    i=$2
+    s=$3
+    k=$(echo "$d $i $s" | md5sum | cut -c1-12)
+    (cd "$d"; timeout 60 "$X" "$i" validate "$s" to-xml > "$OUT/v_$k.c" 2>&1; echo "rc=$?" >> "$OUT/v_$k.c")
+    (cd "$d"; timeout 120 "$J" "$i" validate "$s" to-xml > "$OUT/v_$k.j" 2>&1; echo "rc=$?" >> "$OUT/v_$k.j")
+    if cmp -s "$OUT/v_$k.c" "$OUT/v_$k.j"
+    then
+        rm "$OUT/v_$k.c" "$OUT/v_$k.j"
+    else
+        echo "DIFF: $d $i validate $s (diff $OUT/v_$k.c $OUT/v_$k.j)" >> "$OUT/differ.txt"
+    fi
+}
+export -f onev
+xargs -P "${JOBS:-8}" -L 1 bash -c 'onev "$@"' _ < "$VALIDATE_CASES"
+NV=$(wc -l < "$VALIDATE_CASES")
+N=$((N + NV))
+
 D=$(wc -l < "$OUT/differ.txt")
 sort "$OUT/differ.txt" | sed "s#$ROOT/##"
 if [ "$D" = "0" ]
 then
-    echo "OK: C and Java command lines give the same to-xml for $N cases ($NX transforms)"
+    echo "OK: C and Java command lines give the same to-xml for $N cases ($NX transforms, $NV validates)"
 else
-    echo "ERR: C and Java command lines differ in $D of $N cases ($NX transforms)"
+    echo "ERR: C and Java command lines differ in $D of $N cases ($NX transforms, $NV validates)"
     exit 1
 fi

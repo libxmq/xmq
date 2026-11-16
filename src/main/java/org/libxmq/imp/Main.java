@@ -72,8 +72,20 @@ public class Main
         // the native locale charset (ASCII under a C/POSIX locale), which would
         // replace non-ASCII characters in values with '?'. Force UTF-8 so the
         // rendered output matches the C implementation byte-for-byte.
-        System.setOut(new java.io.PrintStream(
-            new java.io.FileOutputStream(java.io.FileDescriptor.out), true, StandardCharsets.UTF_8));
+        // Like C stdio, stdout is fully buffered when it is not a terminal: the bytes reach the
+        // file descriptor in 4096 byte blocks (and at fflush/exit), so the order of the stdout and
+        // stderr output in a combined file is the same as for the C version.
+        if (System.console() == null)
+        {
+            final java.io.PrintStream out = new java.io.PrintStream(new CStdout(), false, StandardCharsets.UTF_8);
+            System.setOut(out);
+            Runtime.getRuntime().addShutdownHook(new Thread(out::flush));
+        }
+        else
+        {
+            System.setOut(new java.io.PrintStream(
+                new java.io.FileOutputStream(java.io.FileDescriptor.out), true, StandardCharsets.UTF_8));
+        }
 
         if (args.length == 0)
         {
@@ -501,5 +513,42 @@ EXAMPLES
     static void printHelp()
     {
         System.out.print(help);
+    }
+
+    /** A fully buffered stdout like glibc's (block size 4096, flushed at multiples of the block size). */
+    static final class CStdout extends java.io.OutputStream
+    {
+        private static final int BLOCK = 4096;
+        private final java.io.FileOutputStream fd = new java.io.FileOutputStream(java.io.FileDescriptor.out);
+        private byte[] buf = new byte[BLOCK];
+        private int len;
+
+        @Override
+        public synchronized void write(int b) throws java.io.IOException
+        {
+            write(new byte[] { (byte)b }, 0, 1);
+        }
+
+        @Override
+        public synchronized void write(byte[] b, int off, int n) throws java.io.IOException
+        {
+            if (len + n > buf.length) buf = java.util.Arrays.copyOf(buf, Math.max(buf.length * 2, len + n));
+            System.arraycopy(b, off, buf, len, n);
+            len += n;
+            if (len >= BLOCK)
+            {
+                int w = len - len % BLOCK;
+                fd.write(buf, 0, w);
+                System.arraycopy(buf, w, buf, 0, len - w);
+                len -= w;
+            }
+        }
+
+        @Override
+        public synchronized void flush() throws java.io.IOException
+        {
+            if (len > 0) fd.write(buf, 0, len);
+            len = 0;
+        }
     }
 }

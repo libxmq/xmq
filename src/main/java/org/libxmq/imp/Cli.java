@@ -69,6 +69,18 @@ final class Cli
         // transform: the compiled stylesheet and the --stringparam/--param values (xpath expressions).
         org.libxmq.imp.xml.libxslt1.Stylesheet xslt;
         final java.util.LinkedHashMap<String, String> xsltParams = new java.util.LinkedHashMap<>();
+        // validate: the compiled xsd, its file name and --silent.
+        Validate xsd;
+        String xsdName;
+        boolean silent;
+    }
+
+    /** exit(code) called deep inside a library callback in the C version (the xsd messages). */
+    static final class ExitNow extends RuntimeException
+    {
+        private static final long serialVersionUID = 1L;
+        final int code;
+        ExitNow(int code) { super(null, null, false, false); this.code = code; }
     }
 
     // Global settings.
@@ -82,7 +94,7 @@ final class Cli
     byte[] inputBytes;      // The undecoded input file or stdin, null for -i content.
 
     static final String[] NOT_IMPLEMENTED = {
-        "validate", "for-each", "statistics",
+        "for-each", "statistics",
         "substitute-entity", "substitute-char-entities", "page", "pa", "browse", "br", "heu",
         "load", "xsl", "replace",
     };
@@ -102,6 +114,10 @@ final class Cli
             return 0;
         }
         catch (Exit e)
+        {
+            return e.code;
+        }
+        catch (ExitNow e)
         {
             return e.code;
         }
@@ -225,6 +241,19 @@ final class Cli
         if (c.name.equals("to-yaml")) c.indent = 2; // The default yaml output indentation.
         for (XmlElement p : e.elements())
         {
+            if (c.name.equals("validate"))
+            {
+                // Like handle_option of the validate group in the C version.
+                boolean isOption = p.name().equals("option");
+                String arg = isOption ? optionString(p.attributeValue("name"), value(p)) : p.textContent();
+                if (!validateArg(c, arg, isOption))
+                {
+                    if (isOption) System.out.print("xmq: option \"" + arg + "\" not available for command \"validate\"\n");
+                    else System.out.print("xmq: bad argument \"" + arg + "\" for command \"validate\"\n");
+                    throw new Exit(1);
+                }
+                continue;
+            }
             if (p.name().equals("option")) commandOption(c, p.attributeValue("name"), value(p));
             else c.args.add(p.textContent());
         }
@@ -456,6 +485,7 @@ final class Cli
             case "expand-entities" -> expandEntities(doc, content);
             case "quote-c", "unquote-c" -> doc = quote(doc, c);
             case "transform" -> doc = transform(doc, c, source);
+            case "validate" -> { if (!validate(doc, c)) throw new Exit(1); }
             case "no-output" -> { }
             case "print" -> { if (output != null) System.out.print(output); }
             case "save-to" -> save(output, c.args.get(0));
@@ -515,6 +545,99 @@ final class Cli
             System.err.print(XMQ.printException(e));
             return null;
         }
+    }
+
+    // ------------------------------------------------------------ validate
+
+    /** Like cli_xsd_put: a 4096 byte buffer (snprintf) and puts. */
+    static void xsdPut(String message)
+    {
+        byte[] b = message.getBytes(StandardCharsets.UTF_8);
+        int n = Math.min(b.length, 4095);
+        System.out.write(b, 0, n);
+        System.out.write('\n');
+    }
+
+    /** Like cli_xsd_parse_message: the schema cannot be parsed, print the first error and exit. */
+    static void xsdParseMessage(Object ctx, String message, boolean isWarning)
+    {
+        if (isWarning)
+        {
+            System.err.print("xmq: " + ctx + " parse warning\n");
+            xsdPut(message);
+            return;
+        }
+        System.err.print("xmq: " + ctx + " parse error\n");
+        xsdPut(message);
+        throw new ExitNow(1);
+    }
+
+    /** Like cli_xsd_validate_message: the document is not valid, print the first error and exit. */
+    static void xsdValidateMessage(Object ctx, String message, boolean isWarning)
+    {
+        if (isWarning)
+        {
+            System.out.print("xmq: validation warning\n");
+            xsdPut(message);
+            return;
+        }
+        System.out.print("xmq: Document cannot be validated against " + ctx + "\n");
+        xsdPut(message);
+        throw new ExitNow(1);
+    }
+
+    /** Like cli_xsd_silent_message: exit at the first error without a message. */
+    static void xsdSilentMessage(Object ctx, String message, boolean isWarning)
+    {
+        if (!isWarning) throw new ExitNow(1);
+    }
+
+    /** Like the validate group of handle_option in the C version: the xsd is loaded and compiled here. */
+    boolean validateArg(Command c, String arg, boolean isOption)
+    {
+        if (arg.startsWith("--silent"))
+        {
+            c.silent = true;
+            return true;
+        }
+        if (!isOption && c.xsd == null)
+        {
+            String[] error = new String[1];
+            XmlDocument doq = loadForXslt(arg, null, error);
+            if (doq == null)
+            {
+                System.err.print((error[0] != null ? error[0] : "xmq: parse error") + "\n");
+                return false;
+            }
+            c.xsdName = arg;
+            c.xsd = Validate.compile(doq, Cli::xsdParseMessage, arg);
+            return true;
+        }
+        return false;
+    }
+
+    /** Like cmd_validate in the C version. */
+    boolean validate(XmlDocument doc, Command c)
+    {
+        if (c.xsd == null)
+        {
+            System.err.print("xmq: Schema xsd not valid, cannot be used to validate document.\n");
+            throw new ExitNow(1);
+        }
+        c.xsd.setMessageCallback(c.silent ? Cli::xsdSilentMessage : Cli::xsdValidateMessage, c.xsdName);
+        int status = c.xsd.validate(doc);
+        if (status == Validate.ERROR_XSD_COMPILE)
+        {
+            System.err.print("xmq: Schema xsd not valid, cannot be used to validate document.\n");
+            throw new ExitNow(1);
+        }
+        if (status != Validate.OK)
+        {
+            System.out.print("xmq: Document failed validation agains " + in + "\n");
+            return false;
+        }
+        c.xsd = null;
+        return true;
     }
 
     // ------------------------------------------------------------ xslt
