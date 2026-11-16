@@ -2268,6 +2268,9 @@ void xmqFreeParseState(XMQParseState *state)
     }
     stack_free(state->element_stack);
     state->element_stack = NULL;
+    // A pi whose content was never parsed (the parse failed) still owns its name.
+    free((char*)state->pi_name);
+    state->pi_name = NULL;
     // Settings are not freed here.
     state->output_settings = NULL;
 

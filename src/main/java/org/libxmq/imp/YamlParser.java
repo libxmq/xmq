@@ -634,6 +634,11 @@ public class YamlParser extends XMQParseIntoDOM
                 e++;
                 continue;
             }
+            if (buf[e] == ']' || buf[e] == '}')
+            {
+                // The other closing bracket, eg [a}], an entry would be empty and never advance.
+                yfail("YAML: a flow collection is closed with the wrong bracket");
+            }
             if (is_seq)
             {
                 ykey(null);

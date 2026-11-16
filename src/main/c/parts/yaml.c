@@ -896,6 +896,14 @@ yflow(y_parser *p, XMQParseState *state, const char *s, const char **e_after)
             continue;
         }
 
+        if ((*e == ']') || (*e == '}'))
+        {
+            // The other closing bracket, eg [a}], an entry would be empty and never advance.
+            yfail(p, state, "YAML: a flow collection is closed with the wrong bracket");
+            rc = 1;
+            goto out;
+        }
+
         if (is_seq)
         {
             ykey(state, NULL, NULL);

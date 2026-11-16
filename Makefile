@@ -164,6 +164,38 @@ run_fuzz_xmq:
 run_fuzz_yaml:
 	$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz -i fuzz_testcases/yaml -o fuzz_findings_yaml -- build/x86_64-pc-linux-gnu/fuzz/xmq --yaml -
 
+# In-process libFuzzer harness (tests/fuzz/fuzz_xmq.c) over the parsers and printers,
+# built with clang + AddressSanitizer + UndefinedBehaviorSanitizer from dist/xmq.c
+# (regenerated from the parts first). The first input byte selects the content type.
+#   make build_fuzz_clang
+#   make run_fuzz_clang
+FUZZ_CLANG_DIR:=$(FIRSTDIR)fuzz_clang
+FUZZ_CLANG?=clang
+FUZZ_CLANG_FLAGS?=
+
+build_fuzz_clang:
+	@$(MAKE) --no-print-directory -C $(FIRSTDIR) release $(CURDIR)/dist/xmq.c $(CURDIR)/dist/xmq.h
+	@mkdir -p $(FUZZ_CLANG_DIR)
+	$(FUZZ_CLANG) -O1 -g -fno-omit-frame-pointer -fsanitize=fuzzer,address,undefined -fno-sanitize-recover=undefined \
+	  $(FUZZ_CLANG_FLAGS) -Idist -o $(FUZZ_CLANG_DIR)/fuzzxmq tests/fuzz/fuzz_xmq.c dist/xmq.c -lm
+	@echo "Built $(FUZZ_CLANG_DIR)/fuzzxmq"
+
+# Seeds: the first byte is the content type index (0 xmq, 1 xml, 2 html, 3 json, 4 yaml).
+extract_fuzz_clang_seeds:
+	@rm -rf fuzz_testcases/clang && mkdir -p fuzz_testcases/clang
+	@for f in fuzz_testcases/xmq/*; do { printf '\000'; cat $$f; } > fuzz_testcases/clang/xmq_$$(basename $$f); done
+	@for f in tests/libxml2/test/*.xml; do [ $$(wc -c < $$f) -le 4096 ] && { printf '\001'; cat $$f; } > fuzz_testcases/clang/xml_$$(basename $$f); done; true
+	@for f in tests/libxml2/test/HTML/*.html; do [ $$(wc -c < $$f) -le 4096 ] && { printf '\002'; cat $$f; } > fuzz_testcases/clang/html_$$(basename $$f); done; true
+	@for f in fuzz_testcases/json/*; do { printf '\003'; cat $$f; } > fuzz_testcases/clang/json_$$(basename $$f); done
+	@for f in fuzz_testcases/yaml/*; do { printf '\004'; cat $$f; } > fuzz_testcases/clang/yaml_$$(basename $$f); done
+	@echo "Extracted $$(ls fuzz_testcases/clang | wc -l) seeds into fuzz_testcases/clang"
+
+# New inputs go into fuzz_findings_clang/corpus, crashes into fuzz_findings_clang.
+run_fuzz_clang: build_fuzz_clang
+	@if [ ! -d fuzz_testcases/clang ]; then $(MAKE) --no-print-directory extract_fuzz_clang_seeds; fi
+	@mkdir -p fuzz_findings_clang/corpus
+	$(FUZZ_CLANG_DIR)/fuzzxmq -artifact_prefix=fuzz_findings_clang/ -timeout=10 fuzz_findings_clang/corpus fuzz_testcases/clang
+
 run_fuzz_yaml_until_crash:
 	$(CURDIR)/scripts/fuzz_until_crash.sh \
 		$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz \
@@ -377,7 +409,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

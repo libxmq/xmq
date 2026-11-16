@@ -53,6 +53,13 @@ void parse_xmq_text_value(XMQParseState *state, Level level);
 void parse_xmq_value(XMQParseState *state, Level level);
 void parse_xmq_whitespace(XMQParseState *state);
 bool peek_xmq_next_is_equal(XMQParseState *state);
+
+/** The byte at state->i+offset, or 0 at and beyond the buffer stop. The buffer is
+    only valid up to stop, there is no NUL terminator after it. */
+static inline char xmq_parser_peek(XMQParseState *state, size_t offset)
+{
+    return state->i + offset < state->buffer_stop ? state->i[offset] : 0;
+}
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 
@@ -758,9 +765,9 @@ void parse_xmq(XMQParseState *state)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
         char cc = 0;
-        if ((c == '/' || c == '(') && state->i+1 < end) cc = *(state->i+1);
+        if ((c == '/' || c == '(') && state->i+1 < end) cc = xmq_parser_peek(state, 1);
 
         if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
@@ -944,12 +951,12 @@ void parse_xmq_text_value(XMQParseState *state, Level level)
 
 void parse_xmq_value(XMQParseState *state, Level level)
 {
-    char c = *state->i;
+    char c = xmq_parser_peek(state, 0);
 
     if (is_xml_whitespace(c))
     {
         parse_xmq_whitespace(state);
-        c = *state->i;
+        c = xmq_parser_peek(state, 0);
     }
 
     if (is_xmq_quote_start(c))
@@ -966,7 +973,7 @@ void parse_xmq_value(XMQParseState *state, Level level)
     }
     else
     {
-        char cc = *(state->i+1);
+        char cc = xmq_parser_peek(state, 1);
         if (unsafe_value_start(c, cc))
         {
             state->error_nr = XMQ_ERROR_VALUE_CANNOT_START_WITH;
@@ -1037,8 +1044,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     }
 
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '(')
     {
@@ -1054,8 +1061,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
 
         parse_xmq_attributes(state);
 
-        c = *state->i;
-        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+        c = xmq_parser_peek(state, 0);
+        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != ')')
         {
             state->error_nr = XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
@@ -1073,8 +1080,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         DO_CALLBACK(apar_right, state, start_line, start_col, parentheses_right_start, parentheses_right_stop, stop);
     }
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '=')
     {
@@ -1106,8 +1113,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         DO_CALLBACK(brace_left, state, start_line, start_col, start, stop, stop);
 
         parse_xmq(state);
-        c = *state->i;
-        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+        c = xmq_parser_peek(state, 0);
+        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != '}')
         {
             state->error_nr = XMQ_ERROR_BODY_NOT_CLOSED;
@@ -1145,7 +1152,7 @@ void parse_xmq_attributes(XMQParseState *state)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
 
         if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') return;
@@ -1213,8 +1220,8 @@ void parse_xmq_attribute(XMQParseState *state)
         }
     }
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '=')
     {
@@ -1251,8 +1258,8 @@ void parse_xmq_compound(XMQParseState *state, Level level)
 
     parse_xmq_compound_children(state, enter_compound_level(level));
 
-    char c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    char c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c != ')')
     {
@@ -1275,7 +1282,7 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
 
         if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') break;
@@ -1291,7 +1298,7 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
 
 bool possibly_lost_content_after_equals(XMQParseState *state)
 {
-    char c = *(state->i);
+    char c = xmq_parser_peek(state, 0);
 
     // Look for unexpected = before 123 since beta was gobbled into being alfa:s value.
     // alfa = <newline>
@@ -1337,7 +1344,7 @@ bool possibly_need_more_quotes(XMQParseState *state)
     // c2 = s
     char c0 = *(state->i-2);
     char c1 = *(state->i-1); // This is the apostrophe
-    char c2 = *(state->i);
+    char c2 = xmq_parser_peek(state, 0);
 
     // We have just parsed a quote. Check if this is a false ending and
     // there is a syntax error since we need more quotes. For example:

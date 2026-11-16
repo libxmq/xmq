@@ -10318,6 +10318,9 @@ void xmqFreeParseState(XMQParseState *state)
     }
     stack_free(state->element_stack);
     state->element_stack = NULL;
+    // A pi whose content was never parsed (the parse failed) still owns its name.
+    free((char*)state->pi_name);
+    state->pi_name = NULL;
     // Settings are not freed here.
     state->output_settings = NULL;
 
@@ -21590,6 +21593,14 @@ yflow(y_parser *p, XMQParseState *state, const char *s, const char **e_after)
             continue;
         }
 
+        if ((*e == ']') || (*e == '}'))
+        {
+            // The other closing bracket, eg [a}], an entry would be empty and never advance.
+            yfail(p, state, "YAML: a flow collection is closed with the wrong bracket");
+            rc = 1;
+            goto out;
+        }
+
         if (is_seq)
         {
             ykey(state, NULL, NULL);
@@ -23357,49 +23368,24 @@ size_t num_utf8_bytes(char c)
 */
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
 {
-    char a = *start;
-    size_t n = num_utf8_bytes(a);
+    // Never read at or beyond stop (or past a NUL when stop is NULL),
+    // a char cut off by the end is returned as 0.
+    memset(uc->bytes, 0, sizeof(uc->bytes));
+    if (stop && start >= stop) return 0;
 
-    if (n == 1)
+    size_t n = num_utf8_bytes(*start);
+    if (n < 1 || n > 4) return 0;
+
+    for (size_t j = 0; j < n; j++)
     {
-        uc->bytes[0] = a;
-        uc->bytes[1] = 0;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 1;
+        if (stop ? start+j >= stop : (j > 0 && start[j] == 0))
+        {
+            memset(uc->bytes, 0, sizeof(uc->bytes));
+            return 0;
+        }
+        uc->bytes[j] = start[j];
     }
-
-    char b = *(start+1);
-    if (n == 2)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 2;
-    }
-
-    char c = *(start+2);
-    if (n == 3)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = 0;
-        return 3;
-    }
-
-    char d = *(start+3);
-    if (n == 4)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = d;
-        return 4;
-    }
-
-    return 0;
+    return n;
 }
 
 /**
@@ -97607,6 +97593,13 @@ void parse_xmq_text_value(XMQParseState *state, Level level);
 void parse_xmq_value(XMQParseState *state, Level level);
 void parse_xmq_whitespace(XMQParseState *state);
 bool peek_xmq_next_is_equal(XMQParseState *state);
+
+/** The byte at state->i+offset, or 0 at and beyond the buffer stop. The buffer is
+    only valid up to stop, there is no NUL terminator after it. */
+static inline char xmq_parser_peek(XMQParseState *state, size_t offset)
+{
+    return state->i + offset < state->buffer_stop ? state->i[offset] : 0;
+}
 bool possibly_lost_content_after_equals(XMQParseState *state);
 bool possibly_need_more_quotes(XMQParseState *state);
 
@@ -98312,9 +98305,9 @@ void parse_xmq(XMQParseState *state)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
         char cc = 0;
-        if ((c == '/' || c == '(') && state->i+1 < end) cc = *(state->i+1);
+        if ((c == '/' || c == '(') && state->i+1 < end) cc = xmq_parser_peek(state, 1);
 
         if (is_xmq_token_whitespace(c)) parse_xmq_whitespace(state);
         else if (is_xmq_quote_start(c)) parse_xmq_quote(state, LEVEL_XMQ);
@@ -98498,12 +98491,12 @@ void parse_xmq_text_value(XMQParseState *state, Level level)
 
 void parse_xmq_value(XMQParseState *state, Level level)
 {
-    char c = *state->i;
+    char c = xmq_parser_peek(state, 0);
 
     if (is_xml_whitespace(c))
     {
         parse_xmq_whitespace(state);
-        c = *state->i;
+        c = xmq_parser_peek(state, 0);
     }
 
     if (is_xmq_quote_start(c))
@@ -98520,7 +98513,7 @@ void parse_xmq_value(XMQParseState *state, Level level)
     }
     else
     {
-        char cc = *(state->i+1);
+        char cc = xmq_parser_peek(state, 1);
         if (unsafe_value_start(c, cc))
         {
             state->error_nr = XMQ_ERROR_VALUE_CANNOT_START_WITH;
@@ -98591,8 +98584,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
     }
 
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '(')
     {
@@ -98608,8 +98601,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
 
         parse_xmq_attributes(state);
 
-        c = *state->i;
-        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+        c = xmq_parser_peek(state, 0);
+        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != ')')
         {
             state->error_nr = XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
@@ -98627,8 +98620,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         DO_CALLBACK(apar_right, state, start_line, start_col, parentheses_right_start, parentheses_right_stop, stop);
     }
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '=')
     {
@@ -98660,8 +98653,8 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         DO_CALLBACK(brace_left, state, start_line, start_col, start, stop, stop);
 
         parse_xmq(state);
-        c = *state->i;
-        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+        c = xmq_parser_peek(state, 0);
+        if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != '}')
         {
             state->error_nr = XMQ_ERROR_BODY_NOT_CLOSED;
@@ -98699,7 +98692,7 @@ void parse_xmq_attributes(XMQParseState *state)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
 
         if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') return;
@@ -98767,8 +98760,8 @@ void parse_xmq_attribute(XMQParseState *state)
         }
     }
 
-    c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c == '=')
     {
@@ -98805,8 +98798,8 @@ void parse_xmq_compound(XMQParseState *state, Level level)
 
     parse_xmq_compound_children(state, enter_compound_level(level));
 
-    char c = *state->i;
-    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = *state->i; }
+    char c = xmq_parser_peek(state, 0);
+    if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
 
     if (c != ')')
     {
@@ -98829,7 +98822,7 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
 
     while (state->i < end)
     {
-        char c = *(state->i);
+        char c = xmq_parser_peek(state, 0);
 
         if (is_xml_whitespace(c)) parse_xmq_whitespace(state);
         else if (c == ')') break;
@@ -98845,7 +98838,7 @@ void parse_xmq_compound_children(XMQParseState *state, Level level)
 
 bool possibly_lost_content_after_equals(XMQParseState *state)
 {
-    char c = *(state->i);
+    char c = xmq_parser_peek(state, 0);
 
     // Look for unexpected = before 123 since beta was gobbled into being alfa:s value.
     // alfa = <newline>
@@ -98891,7 +98884,7 @@ bool possibly_need_more_quotes(XMQParseState *state)
     // c2 = s
     char c0 = *(state->i-2);
     char c1 = *(state->i-1); // This is the apostrophe
-    char c2 = *(state->i);
+    char c2 = xmq_parser_peek(state, 0);
 
     // We have just parsed a quote. Check if this is a false ending and
     // there is a syntax error since we need more quotes. For example:

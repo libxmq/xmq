@@ -247,49 +247,24 @@ size_t num_utf8_bytes(char c)
 */
 size_t peek_utf8_char(const char *start, const char *stop, UTF8Char *uc)
 {
-    char a = *start;
-    size_t n = num_utf8_bytes(a);
+    // Never read at or beyond stop (or past a NUL when stop is NULL),
+    // a char cut off by the end is returned as 0.
+    memset(uc->bytes, 0, sizeof(uc->bytes));
+    if (stop && start >= stop) return 0;
 
-    if (n == 1)
+    size_t n = num_utf8_bytes(*start);
+    if (n < 1 || n > 4) return 0;
+
+    for (size_t j = 0; j < n; j++)
     {
-        uc->bytes[0] = a;
-        uc->bytes[1] = 0;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 1;
+        if (stop ? start+j >= stop : (j > 0 && start[j] == 0))
+        {
+            memset(uc->bytes, 0, sizeof(uc->bytes));
+            return 0;
+        }
+        uc->bytes[j] = start[j];
     }
-
-    char b = *(start+1);
-    if (n == 2)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = 0;
-        uc->bytes[3] = 0;
-        return 2;
-    }
-
-    char c = *(start+2);
-    if (n == 3)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = 0;
-        return 3;
-    }
-
-    char d = *(start+3);
-    if (n == 4)
-    {
-        uc->bytes[0] = a;
-        uc->bytes[1] = b;
-        uc->bytes[2] = c;
-        uc->bytes[3] = d;
-        return 4;
-    }
-
-    return 0;
+    return n;
 }
 
 /**

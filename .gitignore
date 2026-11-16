@@ -18,3 +18,4 @@ AFLplusplus/
 
 # AFL++ findings (make run_fuzz_xmq / run_fuzz_yaml)
 fuzz_findings_*/
+fuzz_testcases/clang/
