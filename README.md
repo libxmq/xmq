@@ -68,6 +68,11 @@ curl -s 'https://dummyjson.com/todos?limit=10' | xmq pa
 
 # View the yaml file, but add some heuristics to add missing element names.
 xmq setup.yaml heu pa
+
+# Convert to yaml. The output starts with the comment "# we should stop using yaml",
+# leave it out with --we-should-stop-using-yaml.
+xmq config.json to-yaml
+xmq --we-should-stop-using-yaml config.json to-yaml
 # Likewise for json. You can compare with or without heu.
 xmq config.json heu pa
 

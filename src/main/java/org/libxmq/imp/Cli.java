@@ -85,6 +85,8 @@ final class Cli
 
     // Global settings.
     boolean trimNone, trimHeuristic, noMerge, lines, noInput, inIsContent;
+    /** --we-should-stop-using-yaml: no reminder comment before the to-yaml output. */
+    boolean weShouldStopUsingYaml;
     String inFormat;        // null = detect, else xmq xml html text
     String in;              // file name, "-" for stdin, or the content with -i
     String ixmlSource;      // --ixml=grammar.ixml or a positional grammar
@@ -187,6 +189,7 @@ final class Cli
             else throw fail("No such trim rule \"" + value + "\"!");
         }
         case "no-merge", "nomerge" -> noMerge = true;
+        case "we-should-stop-using-yaml" -> weShouldStopUsingYaml = true;
         case "lines" -> lines = true;
         case "xmq", "htmq" -> inFormat = "xmq";
         case "xml" -> inFormat = "xml";
@@ -1197,7 +1200,11 @@ final class Cli
             return new JsonPrinter().toJson(doc, os, !noFinalNl);
         }
         case "to-yaml" -> {
-            return YamlPrinter.print(doc, c.indent, !noFinalNl);
+            String yaml = YamlPrinter.print(doc, c.indent, !noFinalNl);
+            // Like C: the reminder first, unless --we-should-stop-using-yaml or it is already there.
+            String note = "# we should stop using yaml\n";
+            if (!weShouldStopUsingYaml && !yaml.startsWith(note)) yaml = note + yaml;
+            return yaml;
         }
         case "to-text" -> {
             StringBuilder b = new StringBuilder();

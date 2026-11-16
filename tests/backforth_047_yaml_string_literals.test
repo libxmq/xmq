@@ -6,12 +6,14 @@ all {
     noll(S) = null
 }
 FIRST
+# we should stop using yaml
 all:
   bajs: "true"
   boo: "false"
   num: "-123.0"
   noll: "null"
 SECOND
+# we should stop using yaml
 all:
   bajs: "true"
   boo: "false"

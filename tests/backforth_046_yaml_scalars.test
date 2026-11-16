@@ -10,6 +10,7 @@ arr(A) {
     _ = 42
 }
 FIRST
+# we should stop using yaml
 b: null
 t: true
 s: null
@@ -20,6 +21,7 @@ arr:
   - ""
   - 42
 SECOND
+# we should stop using yaml
 b: null
 t: true
 s: null

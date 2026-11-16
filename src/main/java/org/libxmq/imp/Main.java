@@ -459,6 +459,8 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   --license  Print license.
   --lines    Assume each input line is a separate document.
   --no-merge When loading xmq do not merge text quotes and character entities.
+  --we-should-stop-using-yaml
+             Do not start the to-yaml output with the comment # we should stop using yaml
   --root=<name> Create a root node <name> unless the file starts with a node with this <name> already.
   --trim=none|heuristic|exact
              The default setting when reading xml/html content is to trim whitespace using a heuristic.

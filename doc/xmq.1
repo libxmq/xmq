@@ -89,6 +89,11 @@ Control how whitespace is trimmed from the input.
 Do not merge adjacent text nodes during parsing.
 
 .TP
+.BR \-\-we-should-stop-using-yaml
+Do not start the \fBto-yaml\fP output with the comment
+\fB# we should stop using yaml\fP.
+
+.TP
 .BR \-\-force-download
 Always download library files, even if a cached copy exists.
 
@@ -195,7 +200,10 @@ Output is compact by default; use \fB\-p\fP for a pretty-printed form.
 
 .TP
 .BR "to-yaml" " [options]"
-Write the document out as yaml.
+Write the document out as yaml. The output starts with the comment
+\fB# we should stop using yaml\fP, unless the global option
+\fB\-\-we-should-stop-using-yaml\fP is given (the comment is not repeated
+when the yaml already starts with it).
 
 .TP
 .BR "to-text" " [options]"

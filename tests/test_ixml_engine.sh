@@ -41,7 +41,8 @@ S {
 EOF
 
 # Note the final space which is required.
-echo -n "a man runs " > $OUTPUT/natlang.inp
+# printf, the /bin/sh of macOS prints the -n of echo -n.
+printf "a man runs " > $OUTPUT/natlang.inp
 
 $PROG $OUTPUT/natlang.ixml $OUTPUT/natlang.inp > $OUTPUT/natlang.out
 

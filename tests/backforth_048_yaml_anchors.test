@@ -22,6 +22,7 @@ _ {
     replitwoo(ref = lerepp)
 }
 FIRST
+# we should stop using yaml
 replicated: &lerepp
   - &prutt
     name: Replica 1
@@ -33,6 +34,7 @@ scalars:
   - *x
 replitwoo: *lerepp
 SECOND
+# we should stop using yaml
 replicated: &lerepp
   - &prutt
     name: Replica 1

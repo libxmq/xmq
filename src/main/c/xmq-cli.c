@@ -419,6 +419,8 @@ const char *error_to_print_on_exit = NULL;
 XMQLineConfig xmq_log_line_config__;
 
 bool log_xmq__ = false;
+// Without --we-should-stop-using-yaml every to-yaml output starts with a reminder comment.
+bool we_should_stop_using_yaml__ = false;
 
 const char *default_theme_spec_ = NULL;
 
@@ -1930,6 +1932,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->lines = true;
         return true;
     }
+    if (!strcmp(arg, "--we-should-stop-using-yaml"))
+    {
+        we_should_stop_using_yaml__ = true;
+        return true;
+    }
     if (!strcmp(arg, "--no-merge") || !strcmp(arg, "--nomerge"))
     {
         command->flags |= XMQ_FLAG_NOMERGE;
@@ -2035,6 +2042,8 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --license  Print license.\n"
            "  --lines    Assume each input line is a separate document.\n"
            "  --no-merge When loading xmq do not merge text quotes and character entities.\n"
+           "  --we-should-stop-using-yaml\n"
+           "             Do not start the to-yaml output with the comment # we should stop using yaml\n"
            "  --root=<name>\n"
            "             Create a root node <name> unless the file starts with a node with this <name> already.\n"
            "  --trim=none|heuristic|exact\n"
@@ -2595,6 +2604,22 @@ bool cmd_to(XMQCliCommand *command)
         // The output format was excluded when xmq was built, eg XMQ_NO_JSON.
         fprintf(stderr, "%s", xmqDocError(command->env->doc));
         exit(1);
+    }
+    const char *note = "# we should stop using yaml\n";
+    if (command->out_format == XMQ_CONTENT_YAML && !we_should_stop_using_yaml__ && command->env->out_start &&
+        strncmp(command->env->out_start, note, strlen(note)))
+    {
+        // Put the reminder before the yaml. Reading yaml keeps its comments, so a yaml that
+        // already starts with the reminder (eg yaml to yaml) does not get it twice.
+        size_t nl = strlen(note);
+        size_t len = command->env->out_stop - command->env->out_start;
+        char *buf = (char*)malloc(nl + len + 1);
+        memcpy(buf, note, nl);
+        memcpy(buf + nl, command->env->out_start, len);
+        buf[nl + len] = 0;
+        free(command->env->out_start);
+        command->env->out_start = buf;
+        command->env->out_stop = buf + nl + len;
     }
     return true;
 }
@@ -3608,6 +3633,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_ADD_ROOT:
         return;
     case XMQ_CLI_CMD_ADD:
+        return;
+    case XMQ_CLI_CMD_HEU:
         return;
     case XMQ_CLI_CMD_STATISTICS:
         return;

@@ -8,12 +8,14 @@ _ {
     omega(S) = 010
 }
 FIRST
+# we should stop using yaml
 alfa: 123
 beta:
   gamma: 123
   delta: 456
 omega: "010"
 SECOND
+# we should stop using yaml
 alfa: 123
 beta:
   gamma: 123

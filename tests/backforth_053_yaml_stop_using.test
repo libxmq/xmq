@@ -1,0 +1,14 @@
+INPUT
+_ {
+    alfa = 123
+}
+FIRST
+alfa: 123
+SECOND
+# we should stop using yaml
+alfa: 123
+END
+ARGS_FIRST --we-should-stop-using-yaml
+ARGS_SECOND --yaml
+CMDS_FIRST to-yaml
+CMDS_SECOND to-yaml

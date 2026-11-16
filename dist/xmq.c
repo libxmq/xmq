@@ -19007,7 +19007,10 @@ void new_ixml_charset_part(IXMLCharset *cs, int from, int to, const char *catego
     IXMLCharsetPart *csp = (IXMLCharsetPart*)calloc(1, sizeof(IXMLCharsetPart));
     csp->from = from;
     csp->to = to;
-    strncpy(csp->category, category, 2);
+    // A unicode category has one or two letters (eg L or Lu), category[3] keeps its NUL.
+    size_t n = 0;
+    while (n < sizeof(csp->category)-1 && category[n]) { csp->category[n] = category[n]; n++; }
+    csp->category[n] = 0;
     if (cs->last == NULL)
     {
         cs->first = cs->last = csp;
