@@ -1,0 +1,5 @@
+# Full-line comment
+name: Alice # Inline comment
+
+# Blank lines are ignored
+city: Stockholm

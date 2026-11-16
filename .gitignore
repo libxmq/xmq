@@ -15,3 +15,6 @@ uploaded
 
 # Locally prepared AFL++ toolchain (debs + unpacked clang)
 AFLplusplus/
+
+# AFL++ findings (make run_fuzz_xmq / run_fuzz_yaml)
+fuzz_findings_*/

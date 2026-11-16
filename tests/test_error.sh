@@ -24,7 +24,8 @@ mkdir -p $OUTPUT
 sed -n '/^START$/,/^ERROR$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.input
 sed -n '/^ERROR$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.expected_error
 
-$PROG $OUTPUT/${TEST_NAME}.input tokenize --type=debugtokens > $OUTPUT/${TEST_NAME}.tokens 2> $OUTPUT/${TEST_NAME}.err
+# The timeout turns a parser that never finishes into a failed test.
+timeout 60 $PROG $OUTPUT/${TEST_NAME}.input tokenize --type=debugtokens > $OUTPUT/${TEST_NAME}.tokens 2> $OUTPUT/${TEST_NAME}.err
 
 cat $OUTPUT/${TEST_NAME}.err | sed 's|'${OUTPUT}'|...|'  > $OUTPUT/${TEST_NAME}.error
 

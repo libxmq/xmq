@@ -1,0 +1,18 @@
+x1 = 'alfa'
+x3 = 'alfa
+    '
+x4 = '
+alfa'
+x5='
+alfa
+'
+x6='
+   alfa
+'
+z1 = ' beta'
+z2 = ' beta
+  '
+z3 = ' beta
+       gamma'
+z4 = 'beta
+      gamma'

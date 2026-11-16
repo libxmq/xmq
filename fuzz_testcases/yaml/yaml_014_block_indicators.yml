@@ -1,0 +1,15 @@
+strip: |-
+  a
+
+clip: |
+  a
+
+block: |
+  a
+
+keep: |+
+  a
+
+# Explicit indent 2 preserves two extra leading spaces.
+indented: |2-
+    padded

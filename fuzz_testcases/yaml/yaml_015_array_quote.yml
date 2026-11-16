@@ -1,0 +1,8 @@
+on:
+    branches:
+      - master
+    tags:
+      - '*.*.*'
+
+jobs:
+  trigger_ha_addon_build: 123

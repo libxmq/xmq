@@ -1,0 +1,3 @@
+togged: !!map { alfa: !!int 1, beta: !!float 2 }
+seql: !!seq [ !!int 1, !grummel "woot" ]
+

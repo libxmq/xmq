@@ -1,0 +1,5 @@
+all:
+  bajs: "true"
+  boo: "false"
+  num: "-123.0"
+  noll: "null"

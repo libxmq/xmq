@@ -1,0 +1,6 @@
+primary: &person
+  name: Alice
+  roles: [reader, writer]
+backup: *person
+label: &alfa hello
+repeated_label: *alfa

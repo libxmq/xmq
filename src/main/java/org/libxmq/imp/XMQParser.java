@@ -860,7 +860,9 @@ public abstract class XMQParser extends XMQParseCallbacks
 
             if (is_xmq_token_whitespace(c)) parse_xmq_whitespace();
             else if (c == ')') return;
-            else if (is_xmq_attribute_key_start(c)) parse_xmq_attribute();
+            // A key start that is not a name character (eg ; or å) would give an empty key
+            // without advancing, stop here so that the attributes are reported as not closed.
+            else if (is_xmq_attribute_key_start(c) && is_xmq_text_name(c)) parse_xmq_attribute();
             else break;
         }
     }

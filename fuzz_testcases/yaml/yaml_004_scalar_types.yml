@@ -1,0 +1,7 @@
+text: hello
+integer: 42
+negative: -7
+decimal: 3.14
+enabled: true
+disabled: false
+missing: null

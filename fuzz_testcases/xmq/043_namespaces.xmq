@@ -1,0 +1,7 @@
+a:root(xmlns:a = z://a
+       xmlns   = https://gurka)
+{
+    a:xyz(a:alfa = 9) {
+        gurka = '123'
+    }
+}

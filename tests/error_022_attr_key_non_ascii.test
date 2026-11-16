@@ -1,0 +1,7 @@
+START
+tag(åtta=1)
+ERROR
+.../error_022_attr_key_non_ascii.input:1:4: error: attributes are not closed
+tag(åtta=1)
+   ^
+END

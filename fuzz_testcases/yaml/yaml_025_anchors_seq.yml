@@ -1,0 +1,13 @@
+replicated:
+    - &prutt
+      name: "Replica 1"
+      details: "This structure is replicated with aliases."
+    - *prutt
+    - *prutt
+scalars:
+    - &x 5
+    - *x
+flows:
+    - &x [a,
+ b]
+

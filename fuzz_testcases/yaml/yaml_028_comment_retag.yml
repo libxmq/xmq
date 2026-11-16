@@ -1,0 +1,4 @@
+server:
+# the host line
+    host: localhost
+    port: 8080

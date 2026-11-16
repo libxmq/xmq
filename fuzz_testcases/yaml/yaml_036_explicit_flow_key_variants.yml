@@ -1,0 +1,7 @@
+one: { ? key : value }
+two: { a: 1, ? "weird key" : 2, b: 3 }
+three: { ? !!str "tagged key" : 42 }
+four: {
+  ? multi
+  : line
+}

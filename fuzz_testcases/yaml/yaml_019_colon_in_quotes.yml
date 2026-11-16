@@ -1,0 +1,8 @@
+items:
+  - "And special characters: {}[]()"
+  - 'Single-quoted: also fine'
+  - "Escaped: \": x"
+mapping:
+  key: "colon: inside"
+  url: "http://example.com:8080/x"
+

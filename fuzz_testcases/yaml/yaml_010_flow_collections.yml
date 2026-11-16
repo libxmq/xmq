@@ -1,0 +1,3 @@
+colors: [red, green, blue]
+point: {x: 10, y: 20}
+items: [{id: 1, tags: [a, b]}, {id: 2, tags: []}]

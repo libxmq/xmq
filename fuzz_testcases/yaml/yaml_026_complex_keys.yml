@@ -1,0 +1,11 @@
+foo:
+  ? "gurka topp"
+  : 1
+  ? "%&#{}"
+  :
+    howdy: 1
+    ? "woot woot"
+    : 2
+bar:
+  ? plain
+  : 3

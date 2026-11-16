@@ -1,0 +1,8 @@
+togged: !!map
+    alfa:
+        - !!int 1
+        - !!str "String with special"
+        - !!float 3.14
+        - !!null "Eh?"
+        - !leprutt "Woot?"
+

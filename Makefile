@@ -142,7 +142,7 @@ AFL_DEBS:=afl++ clang clang-19 libclang1-19 libclang-common-19-dev libclang-cpp1
 afl_prepared:
 	@mkdir -p AFLplusplus/debs
 	@for pkg in $(AFL_DEBS); do \
-		ls AFLplusplus/debs/$$pkg_*.deb >/dev/null 2>&1 || \
+		ls AFLplusplus/debs/$${pkg}_*.deb >/dev/null 2>&1 || \
 		( cd AFLplusplus/debs && apt-get download $$pkg ) || exit 1; \
 	done
 	@ls AFLplusplus/usroot/usr/bin/afl-cc AFLplusplus/usroot/usr/bin/clang-19 >/dev/null 2>&1 || \

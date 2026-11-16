@@ -1,0 +1,26 @@
+# A classic YAML 1.1 pitfall: `no` was resolved to boolean false by
+# old buggy parsers. Norway is not false.
+country: no
+iso: NO
+values:
+  agree: yes
+  light: on
+  switch: off
+  es: si
+  sv: ja
+  a: y
+  b: n
+  c: true
+  d: false
+  one: 1
+  pi: 1.5
+  hex: 0x1F
+  oct: 0o17
+  exp: 1e3
+  inf: .inf
+  nan: .NaN
+  empty: ""
+flags:
+  no: yes
+  off: on
+  true: false

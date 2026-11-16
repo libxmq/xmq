@@ -1,0 +1,6 @@
+newline: "first\nsecond"
+tab: "left\tright"
+quote: "Say \"hello\""
+backslash: "C:\\temp"
+unicode: "\u00E5"
+literal: '\n stays literal'

@@ -1,0 +1,9 @@
+custom_tags: !!map {
+  ? !!str "key with special chars: @#$%"
+  : !!seq [
+    !!int 1,
+    !!str "String with special tag",
+    !!float 3.14,
+    !!null "Explicitly null"
+  ]
+}

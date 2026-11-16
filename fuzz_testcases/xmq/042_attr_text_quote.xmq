@@ -1,0 +1,7 @@
+alfa {
+     beta(href='howdy'
+          refh=howdy)
+     {
+        img(src='alfa')
+     }
+}

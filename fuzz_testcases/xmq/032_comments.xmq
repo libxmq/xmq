@@ -1,0 +1,6 @@
+alfa_xyz = 123
+// Helpful comment
+node(xyz) {
+   howdy
+   /* foo bar */
+}

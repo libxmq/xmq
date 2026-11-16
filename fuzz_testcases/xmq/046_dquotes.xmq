@@ -1,0 +1,4 @@
+work {
+    a1 = """dquote("''")quote"""
+    a2 = '''dquote("''")quote'''
+}
