@@ -736,8 +736,8 @@ public final class Xsd10Types
         Xsd10Val v = new Xsd10Val();
         v.type = XML_XSD10_SCHEMAS_NNINTEGER;
         v.decimal.str = "+1.0";
-        v.decimal.integralPlaces = 1;
-        v.decimal.fractionalPlaces = 1;
+        v.decimal.integral_places = 1;
+        v.decimal.fractional_places = 1;
         Xsd10Facet f = new Xsd10Facet();
         f.type = XML_XSD10_SCHEMA_FACET_MINLENGTH;
         f.val = v;
@@ -751,19 +751,19 @@ public final class Xsd10Types
 
     /* Port of xmlSchemaInitBasicType: one built in type. */
     private static void def(String name, int t, Xsd10Type base, int flags, Xsd10Facet facets,
-                            Xsd10BasicItem subtypes, int contentType, Xsd10Wildcard wildcard)
+                            Xsd10BasicItem subtypes, int content_type, Xsd10Wildcard wildcard)
     {
         Xsd10Type ty = xsd10_types_builtin_[t];
         ty.type = XML_XSD10_SCHEMA_TYPE_BASIC;
         ty.name = name;
         ty.subtypes = subtypes;
         ty.flags = flags;
-        ty.contentType = contentType;
-        ty.baseType = base;
+        ty.content_type = content_type;
+        ty.base_type = base;
         ty.facets = facets;
-        ty.attributeWildcard = wildcard;
-        ty.builtInType = t;
-        ty.targetNamespace = XSD10_TYPES_NS;
+        ty.attribute_wildcard = wildcard;
+        ty.built_in_type = t;
+        ty.target_namespace = XSD10_TYPES_NS;
     }
 
     private static void simple(String name, int t, int base, int flags)
@@ -782,29 +782,29 @@ public final class Xsd10Types
         for (int i = 0; i < xsd10_types_builtin_.length; i++) xsd10_types_builtin_[i] = new Xsd10Type();
 
         /* The content type of xs:anyType (3.4.7 Built-in Complex Type Definition): a particle
-           holding a sequence holding a particle (minOccurs 0, maxOccurs unbounded) of a lax
+           holding a sequence holding a particle (min_occurs 0, max_occurs unbounded) of a lax
            wildcard, plus a lax attribute wildcard. */
-        Xsd10Wildcard anyWildcard = new Xsd10Wildcard();
-        anyWildcard.type = XML_XSD10_SCHEMA_TYPE_ANY;
-        anyWildcard.processContents = XML_XSD10_SCHEMAS_ANY_LAX;
-        anyWildcard.any = 1;
-        Xsd10Wildcard anyAttributeWildcard = new Xsd10Wildcard();
-        anyAttributeWildcard.type = 0;
-        anyAttributeWildcard.processContents = XML_XSD10_SCHEMAS_ANY_LAX;
-        anyAttributeWildcard.any = 1;
-        Xsd10Particle anyInnerParticle = new Xsd10Particle();
-        anyInnerParticle.type = XML_XSD10_SCHEMA_TYPE_PARTICLE;
-        anyInnerParticle.children = anyWildcard;
-        anyInnerParticle.minOccurs = 0;
-        anyInnerParticle.maxOccurs = XML_XSD10_UNBOUNDED;
-        Xsd10ModelGroup anySequence = new Xsd10ModelGroup();
-        anySequence.type = XML_XSD10_SCHEMA_TYPE_SEQUENCE;
-        anySequence.children = anyInnerParticle;
-        Xsd10Particle anyParticle = new Xsd10Particle();
-        anyParticle.type = XML_XSD10_SCHEMA_TYPE_PARTICLE;
-        anyParticle.children = anySequence;
-        anyParticle.minOccurs = 1;
-        anyParticle.maxOccurs = 1;
+        Xsd10Wildcard any_wildcard = new Xsd10Wildcard();
+        any_wildcard.type = XML_XSD10_SCHEMA_TYPE_ANY;
+        any_wildcard.process_contents = XML_XSD10_SCHEMAS_ANY_LAX;
+        any_wildcard.any = 1;
+        Xsd10Wildcard any_attribute_wildcard = new Xsd10Wildcard();
+        any_attribute_wildcard.type = 0;
+        any_attribute_wildcard.process_contents = XML_XSD10_SCHEMAS_ANY_LAX;
+        any_attribute_wildcard.any = 1;
+        Xsd10Particle any_inner_particle = new Xsd10Particle();
+        any_inner_particle.type = XML_XSD10_SCHEMA_TYPE_PARTICLE;
+        any_inner_particle.children = any_wildcard;
+        any_inner_particle.min_occurs = 0;
+        any_inner_particle.max_occurs = XML_XSD10_UNBOUNDED;
+        Xsd10ModelGroup any_sequence = new Xsd10ModelGroup();
+        any_sequence.type = XML_XSD10_SCHEMA_TYPE_SEQUENCE;
+        any_sequence.children = any_inner_particle;
+        Xsd10Particle any_particle = new Xsd10Particle();
+        any_particle.type = XML_XSD10_SCHEMA_TYPE_PARTICLE;
+        any_particle.children = any_sequence;
+        any_particle.min_occurs = 1;
+        any_particle.max_occurs = 1;
 
         /* 0 XML_XSD10_SCHEMAS_UNKNOWN, unused */
         def(null, XML_XSD10_SCHEMAS_UNKNOWN, null, 0, null, null, XML_XSD10_SCHEMA_CONTENT_UNKNOWN, null);
@@ -854,7 +854,7 @@ public final class Xsd10Types
         simple("base64Binary", XML_XSD10_SCHEMAS_BASE64BINARY, XML_XSD10_SCHEMAS_ANYSIMPLETYPE, XSD10_TYPES_PRIMITIVE);
         /* anyType is its own base type, its content type is mixed. */
         def("anyType", XML_XSD10_SCHEMAS_ANYTYPE, ref(XML_XSD10_SCHEMAS_ANYTYPE), 0, null,
-            anyParticle, XML_XSD10_SCHEMA_CONTENT_MIXED, anyAttributeWildcard);
+            any_particle, XML_XSD10_SCHEMA_CONTENT_MIXED, any_attribute_wildcard);
         def("anySimpleType", XML_XSD10_SCHEMAS_ANYSIMPLETYPE, ref(XML_XSD10_SCHEMAS_ANYTYPE), 0, null, null,
             XML_XSD10_SCHEMA_CONTENT_BASIC, null);
     }
@@ -880,19 +880,19 @@ public final class Xsd10Types
 
     // xml_xsd10_is_built_in_type_facet
     /** Port of xmlSchemaIsBuiltInTypeFacet.
-        @param type the built in type @param facetType the facet type
+        @param type the built in type @param facet_type the facet type
         @return 1 if allowed, 0 if not, -1 on error */
-    public static int isBuiltInTypeFacet(Xsd10Type type, int facetType)
+    public static int isBuiltInTypeFacet(Xsd10Type type, int facet_type)
     {
         if (type == null)
             return -1;
         if (type.type != XML_XSD10_SCHEMA_TYPE_BASIC)
             return -1;
-        switch (type.builtInType)
+        switch (type.built_in_type)
         {
             case XML_XSD10_SCHEMAS_BOOLEAN:
-                if ((facetType == XML_XSD10_SCHEMA_FACET_PATTERN) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_WHITESPACE))
+                if ((facet_type == XML_XSD10_SCHEMA_FACET_PATTERN) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_WHITESPACE))
                     return 1;
                 else
                     return 0;
@@ -902,25 +902,25 @@ public final class Xsd10Types
             case XML_XSD10_SCHEMAS_ANYURI:
             case XML_XSD10_SCHEMAS_BASE64BINARY:
             case XML_XSD10_SCHEMAS_HEXBINARY:
-                if ((facetType == XML_XSD10_SCHEMA_FACET_LENGTH) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MINLENGTH) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MAXLENGTH) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_PATTERN) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_WHITESPACE))
+                if ((facet_type == XML_XSD10_SCHEMA_FACET_LENGTH) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MINLENGTH) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MAXLENGTH) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_PATTERN) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_WHITESPACE))
                     return 1;
                 else
                     return 0;
             case XML_XSD10_SCHEMAS_DECIMAL:
-                if ((facetType == XML_XSD10_SCHEMA_FACET_TOTALDIGITS) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_FRACTIONDIGITS) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_PATTERN) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_WHITESPACE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MININCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE))
+                if ((facet_type == XML_XSD10_SCHEMA_FACET_TOTALDIGITS) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_FRACTIONDIGITS) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_PATTERN) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_WHITESPACE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MININCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE))
                     return 1;
                 else
                     return 0;
@@ -935,13 +935,13 @@ public final class Xsd10Types
             case XML_XSD10_SCHEMAS_DURATION:
             case XML_XSD10_SCHEMAS_FLOAT:
             case XML_XSD10_SCHEMAS_DOUBLE:
-                if ((facetType == XML_XSD10_SCHEMA_FACET_PATTERN) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_WHITESPACE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MININCLUSIVE) ||
-                    (facetType == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE))
+                if ((facet_type == XML_XSD10_SCHEMA_FACET_PATTERN) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_ENUMERATION) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_WHITESPACE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MININCLUSIVE) ||
+                    (facet_type == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE))
                     return 1;
                 else
                     return 0;
@@ -986,7 +986,7 @@ public final class Xsd10Types
     {
         if ((type == null) || (type.type != XML_XSD10_SCHEMA_TYPE_BASIC))
             return null;
-        switch (type.builtInType)
+        switch (type.built_in_type)
         {
             case XML_XSD10_SCHEMAS_NMTOKENS:
                 return ref(XML_XSD10_SCHEMAS_NMTOKEN);
@@ -1022,27 +1022,27 @@ public final class Xsd10Types
     private static int typesDecimalGetFractionalPart(Xsd10Val.Decimal decimal)
     {
         /* 2 = sign+dot */
-        return 2 + decimal.integralPlaces;
+        return 2 + decimal.integral_places;
     }
 
     // xsd10_types_decimal_is_integer
     /* Port of xmlSchemaValDecimalIsInteger. */
     private static boolean typesDecimalIsInteger(Xsd10Val.Decimal decimal)
     {
-        return decimal.fractionalPlaces == 1 && dc(decimal.str, typesDecimalGetFractionalPart(decimal)) == '0';
+        return decimal.fractional_places == 1 && dc(decimal.str, typesDecimalGetFractionalPart(decimal)) == '0';
     }
 
     // xsd10_types_decimal_get_significant_digit_count
     /* Port of xmlSchemaValDecimalGetSignificantDigitCount (unsigned). */
     private static long typesDecimalGetSignificantDigitCount(Xsd10Val.Decimal decimal)
     {
-        long fractionalPlaces = typesDecimalIsInteger(decimal) ? 0 : Integer.toUnsignedLong(decimal.fractionalPlaces);
-        long integralPlaces = Integer.toUnsignedLong(decimal.integralPlaces);
-        if (integralPlaces == 1 && dc(decimal.str, 1) == '0')
+        long fractional_places = typesDecimalIsInteger(decimal) ? 0 : Integer.toUnsignedLong(decimal.fractional_places);
+        long integral_places = Integer.toUnsignedLong(decimal.integral_places);
+        if (integral_places == 1 && dc(decimal.str, 1) == '0')
         {
-            integralPlaces = 0;
+            integral_places = 0;
         }
-        long sum = (integralPlaces + fractionalPlaces) & 0xffffffffL;
+        long sum = (integral_places + fractional_places) & 0xffffffffL;
         if (sum == 0)
         {
             /* 0, but that's still 1 significant digit */
@@ -1088,9 +1088,9 @@ public final class Xsd10Types
             sign = -1;
         }
         /* internal representation never contains leading zeroes, longer decimal representation = larger number */
-        if (lhs.integralPlaces != rhs.integralPlaces)
+        if (lhs.integral_places != rhs.integral_places)
         {
-            return (lhs.integralPlaces - rhs.integralPlaces) * sign;
+            return (lhs.integral_places - rhs.integral_places) * sign;
         }
         /* same length, only digits => lexicographical sorting == numerical sorting. +1 to skip the sign */
         return strcmpFrom(lhs.str, rhs.str, 1) * sign;
@@ -1100,13 +1100,13 @@ public final class Xsd10Types
     /* Port of xmlSchemaValDecimalCompareWithInteger. */
     private static int typesDecimalCompareWithInteger(Xsd10Val.Decimal lhs, long rhs)
     {
-        Xsd10Val.Decimal tmpVal = new Xsd10Val.Decimal();
+        Xsd10Val.Decimal tmp_val = new Xsd10Val.Decimal();
         String buf = (rhs >= 0 ? "+" : "") + rhs + ".0";
         /* 3 = sign+dot+0+NULL */
-        tmpVal.integralPlaces = buf.length() - 3;
-        tmpVal.str = buf;
-        tmpVal.fractionalPlaces = 1;
-        return typesDecimalCompare(lhs, tmpVal);
+        tmp_val.integral_places = buf.length() - 3;
+        tmp_val.str = buf;
+        tmp_val.fractional_places = 1;
+        return typesDecimalCompare(lhs, tmp_val);
     }
 
     // xml_xsd10_value_append
@@ -1199,14 +1199,14 @@ public final class Xsd10Types
 
     // xml_xsd10_new_qname_value
     /** Port of xmlSchemaNewQNameValue.
-        @param namespaceName the namespace @param localName the local name @return the value */
-    public static Xsd10Val newQnameValue(String namespaceName, String localName)
+        @param namespace_name the namespace @param localName the local name @return the value */
+    public static Xsd10Val newQnameValue(String namespace_name, String local_name)
     {
         Xsd10Val val;
 
         val = typesNewValue(XML_XSD10_SCHEMAS_QNAME);
-        val.qname.name = localName;
-        val.qname.uri = namespaceName;
+        val.qname.name = local_name;
+        val.qname.uri = namespace_name;
         return val;
     }
 
@@ -1313,7 +1313,7 @@ public final class Xsd10Types
        xs:gYear. Returns 0 or the error code. */
     private static int typesParseGyear(Xsd10Val.Date dt, byte[] s, int[] str)
     {
-        int cur = str[0], firstChar;
+        int cur = str[0], first_char;
         int isneg = 0, digcnt = 0;
 
         if (((at(s, cur) < '0') || (at(s, cur) > '9')) &&
@@ -1326,7 +1326,7 @@ public final class Xsd10Types
             cur++;
         }
 
-        firstChar = cur;
+        first_char = cur;
 
         while ((at(s, cur) >= '0') && (at(s, cur) <= '9'))
         {
@@ -1344,7 +1344,7 @@ public final class Xsd10Types
 
         /* year must be at least 4 digits (CCYY); over 4
          * digits cannot have a leading zero. */
-        if ((digcnt < 4) || ((digcnt > 4) && (at(s, firstChar) == '0')))
+        if ((digcnt < 4) || ((digcnt > 4) && (at(s, first_char) == '0')))
             return 1;
 
         if (isneg != 0)
@@ -1571,31 +1571,31 @@ public final class Xsd10Types
     }
 
     // xsd10_types_validate_dates
-    /* Port of xmlSchemaValidateDates: check that dateTime conforms to the lexical space of one
+    /* Port of xmlSchemaValidateDates: check that date_time conforms to the lexical space of one
        of the date types. if true a value is computed and returned in val.
        Returns 0 if this validates, a positive error code number otherwise
        and -1 in case of internal or API error. */
-    private static int typesValidateDates(int type, byte[] dateTime, Xsd10Val[] val, int collapse)
+    private static int typesValidateDates(int type, byte[] date_time, Xsd10Val[] val, int collapse)
     {
         Xsd10Val dt;
         int ret;
         int[] cur = { 0 };
         int r;
 
-        if (dateTime == null)
+        if (date_time == null)
             return -1;
 
         if (collapse != 0)
-            while (isBlankCh(at(dateTime, cur[0]))) cur[0]++;
+            while (isBlankCh(at(date_time, cur[0]))) cur[0]++;
 
-        if ((at(dateTime, cur[0]) != '-') && (at(dateTime, cur[0]) < '0') && (at(dateTime, cur[0]) > '9'))
+        if ((at(date_time, cur[0]) != '-') && (at(date_time, cur[0]) < '0') && (at(date_time, cur[0]) > '9'))
             return 1;
 
         dt = typesNewValue(XML_XSD10_SCHEMAS_UNKNOWN);
 
         done:
         {
-            if ((at(dateTime, cur[0]) == '-') && (at(dateTime, cur[0] + 1) == '-'))
+            if ((at(date_time, cur[0]) == '-') && (at(date_time, cur[0] + 1) == '-'))
             {
                 /*
                  * It's an incomplete date (xs:gMonthDay, xs:gMonth or
@@ -1604,16 +1604,16 @@ public final class Xsd10Types
                 cur[0] += 2;
 
                 /* is it an xs:gDay? */
-                if (at(dateTime, cur[0]) == '-')
+                if (at(date_time, cur[0]) == '-')
                 {
                     if (type == XML_XSD10_SCHEMAS_GMONTH)
                         return 1;
                     ++cur[0];
-                    ret = typesParseGday(dt.date, dateTime, cur);
+                    ret = typesParseGday(dt.date, date_time, cur);
                     if (ret != 0)
                         return 1;
 
-                    r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_GDAY);
+                    r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_GDAY);
                     if (r > 0) break done;
                     return 1;
                 }
@@ -1621,7 +1621,7 @@ public final class Xsd10Types
                 /*
                  * it should be an xs:gMonthDay or xs:gMonth
                  */
-                ret = typesParseGmonth(dt.date, dateTime, cur);
+                ret = typesParseGmonth(dt.date, date_time, cur);
                 if (ret != 0)
                     return 1;
 
@@ -1633,13 +1633,13 @@ public final class Xsd10Types
                  * of the xs:gMonthDay verifies, we must insure it was not
                  * a tzo.
                  */
-                if (at(dateTime, cur[0]) == '-')
+                if (at(date_time, cur[0]) == '-')
                 {
                     int rewnd = cur[0];
                     cur[0]++;
 
-                    ret = typesParseGday(dt.date, dateTime, cur);
-                    if ((ret == 0) && ((at(dateTime, cur[0]) == 0) || (at(dateTime, cur[0]) != ':')))
+                    ret = typesParseGday(dt.date, date_time, cur);
+                    if ((ret == 0) && ((at(date_time, cur[0]) == 0) || (at(date_time, cur[0]) != ':')))
                     {
                         /*
                          * we can use the VALID_MDAY macro to validate the month
@@ -1648,7 +1648,7 @@ public final class Xsd10Types
                          */
                         if (validMday(dt.date))
                         {
-                            r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_GMONTHDAY);
+                            r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_GMONTHDAY);
                             if (r > 0) break done;
                             return 1;
                         }
@@ -1661,7 +1661,7 @@ public final class Xsd10Types
                     cur[0] = rewnd;
                 }
 
-                r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_GMONTH);
+                r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_GMONTH);
                 if (r > 0) break done;
                 return 1;
             }
@@ -1670,13 +1670,13 @@ public final class Xsd10Types
              * It's a right-truncated date or an xs:time.
              * Try to parse an xs:time then fallback on right-truncated dates.
              */
-            if ((at(dateTime, cur[0]) >= '0') && (at(dateTime, cur[0]) <= '9'))
+            if ((at(date_time, cur[0]) >= '0') && (at(date_time, cur[0]) <= '9'))
             {
-                ret = typesParseTime(dt.date, dateTime, cur);
+                ret = typesParseTime(dt.date, date_time, cur);
                 if (ret == 0)
                 {
                     /* it's an xs:time */
-                    r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_TIME);
+                    r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_TIME);
                     if (r > 0) break done;
                     if (r < 0) return 1;
                 }
@@ -1685,54 +1685,54 @@ public final class Xsd10Types
             /* fallback on date parsing */
             cur[0] = 0;
 
-            ret = typesParseGyear(dt.date, dateTime, cur);
+            ret = typesParseGyear(dt.date, date_time, cur);
             if (ret != 0)
                 return 1;
 
             /* is it an xs:gYear? */
-            r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_GYEAR);
+            r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_GYEAR);
             if (r > 0) break done;
             if (r < 0) return 1;
 
-            if (at(dateTime, cur[0]) != '-')
+            if (at(date_time, cur[0]) != '-')
                 return 1;
             cur[0]++;
 
-            ret = typesParseGmonth(dt.date, dateTime, cur);
+            ret = typesParseGmonth(dt.date, date_time, cur);
             if (ret != 0)
                 return 1;
 
             /* is it an xs:gYearMonth? */
-            r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_GYEARMONTH);
+            r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_GYEARMONTH);
             if (r > 0) break done;
             if (r < 0) return 1;
 
-            if (at(dateTime, cur[0]) != '-')
+            if (at(date_time, cur[0]) != '-')
                 return 1;
             cur[0]++;
 
-            ret = typesParseGday(dt.date, dateTime, cur);
+            ret = typesParseGday(dt.date, date_time, cur);
             if ((ret != 0) || !validDate(dt.date))
                 return 1;
 
             /* is it an xs:date? */
-            r = returnTypeIfValid(dt, dateTime, cur, XML_XSD10_SCHEMAS_DATE);
+            r = returnTypeIfValid(dt, date_time, cur, XML_XSD10_SCHEMAS_DATE);
             if (r > 0) break done;
             if (r < 0) return 1;
 
-            if (at(dateTime, cur[0]) != 'T')
+            if (at(date_time, cur[0]) != 'T')
                 return 1;
             cur[0]++;
 
-            /* it should be an xs:dateTime */
-            ret = typesParseTime(dt.date, dateTime, cur);
+            /* it should be an xs:date_time */
+            ret = typesParseTime(dt.date, date_time, cur);
             if (ret != 0)
                 return 1;
 
-            ret = typesParseTimeZone(dt.date, dateTime, cur);
+            ret = typesParseTimeZone(dt.date, date_time, cur);
             if (collapse != 0)
-                while (isBlankCh(at(dateTime, cur[0]))) cur[0]++;
-            if ((ret != 0) || (at(dateTime, cur[0]) != 0) || (!validDatetime(dt.date)))
+                while (isBlankCh(at(date_time, cur[0]))) cur[0]++;
+            if ((ret != 0) || (at(date_time, cur[0]) != 0) || (!validDatetime(dt.date)))
                 return 1;
 
             dt.type = XML_XSD10_SCHEMAS_DATETIME;
@@ -2124,8 +2124,8 @@ public final class Xsd10Types
         {
             i++; tmp++; ret++;
         }
-        val.fractionalPlaces = 1;
-        val.integralPlaces = i;
+        val.fractional_places = 1;
+        val.integral_places = i;
         val.str = "+" + new String(s, cur, i, StandardCharsets.ISO_8859_1) + ".0";
 
         str[0] = tmp;
@@ -2239,7 +2239,7 @@ public final class Xsd10Types
        Returns 0 if this validates, a positive error code number otherwise
        and -1 in case of internal or API error. */
     private static int typesValAtomicType(Xsd10Type type, byte[] value, Xsd10Val[] val, XmlNode node, int flags,
-                                          int ws, int normOnTheFly, int applyNorm, int createStringValue,
+                                          int ws, int norm_on_the_fly, int apply_norm, int create_string_value,
                                           Xsd10Ids ids)
     {
         Xsd10Val v;
@@ -2260,11 +2260,11 @@ public final class Xsd10Types
             val[0] = null;
         if (flags == 0)
         {
-            if ((type.builtInType != XML_XSD10_SCHEMAS_STRING) &&
-                (type.builtInType != XML_XSD10_SCHEMAS_ANYTYPE) &&
-                (type.builtInType != XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
+            if ((type.built_in_type != XML_XSD10_SCHEMAS_STRING) &&
+                (type.built_in_type != XML_XSD10_SCHEMAS_ANYTYPE) &&
+                (type.built_in_type != XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
             {
-                if (type.builtInType == XML_XSD10_SCHEMAS_NORMSTRING)
+                if (type.built_in_type == XML_XSD10_SCHEMAS_NORMSTRING)
                     norm = typesWhiteSpaceReplace(value);
                 else
                     norm = typesCollapseString(value);
@@ -2273,13 +2273,13 @@ public final class Xsd10Types
             }
         }
 
-        switch (type.builtInType)
+        switch (type.built_in_type)
         {
             case XML_XSD10_SCHEMAS_UNKNOWN:
                 return -1;
             case XML_XSD10_SCHEMAS_ANYTYPE:
             case XML_XSD10_SCHEMAS_ANYSIMPLETYPE:
-                if ((createStringValue != 0) && (val != null))
+                if ((create_string_value != 0) && (val != null))
                 {
                     v = typesNewValue(XML_XSD10_SCHEMAS_ANYSIMPLETYPE);
                     v.str = str(value, 0);
@@ -2287,7 +2287,7 @@ public final class Xsd10Types
                 }
                 return 0;
             case XML_XSD10_SCHEMAS_STRING:
-                if (normOnTheFly == 0)
+                if (norm_on_the_fly == 0)
                 {
                     int cur = 0;
 
@@ -2324,9 +2324,9 @@ public final class Xsd10Types
                         }
                     }
                 }
-                if ((createStringValue != 0) && (val != null))
+                if ((create_string_value != 0) && (val != null))
                 {
-                    if (applyNorm != 0)
+                    if (apply_norm != 0)
                     {
                         if (ws == XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE)
                             norm = typesCollapseString(value);
@@ -2342,9 +2342,9 @@ public final class Xsd10Types
                 return 0;
             case XML_XSD10_SCHEMAS_NORMSTRING:
             {
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                 {
-                    if (applyNorm != 0)
+                    if (apply_norm != 0)
                     {
                         byte[] prev = norm;
                         if (ws == XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE)
@@ -2380,8 +2380,8 @@ public final class Xsd10Types
             case XML_XSD10_SCHEMAS_DECIMAL:
             {
                 int cur = 0;
-                int numStart, numEnd;
-                int integralPlaces = 0, fractionalPlaces = 0;
+                int num_start, num_end;
+                int integral_places = 0, fractional_places = 0;
                 char sign;
 
                 if (at(value, cur) == 0)
@@ -2390,7 +2390,7 @@ public final class Xsd10Types
                 /*
                  * xs:decimal has a whitespace-facet value of 'collapse'.
                  */
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
 
                 /*
@@ -2418,12 +2418,12 @@ public final class Xsd10Types
                     cur++;
                 }
 
-                numStart = cur;
+                num_start = cur;
 
                 while ((at(value, cur) >= '0') && (at(value, cur) <= '9'))
                 {
                     ++cur;
-                    ++integralPlaces;
+                    ++integral_places;
                 }
                 if (at(value, cur) == '.')
                 {
@@ -2432,26 +2432,26 @@ public final class Xsd10Types
                 while ((at(value, cur) >= '0') && (at(value, cur) <= '9'))
                 {
                     ++cur;
-                    ++fractionalPlaces;
+                    ++fractional_places;
                 }
 
                 /*  disallow "." */
-                if (fractionalPlaces == 0 && integralPlaces == 0
-                    && (numStart == 0 || at(value, numStart - 1) != '0'))
+                if (fractional_places == 0 && integral_places == 0
+                    && (num_start == 0 || at(value, num_start - 1) != '0'))
                 {
                     return 1;
                 }
 
-                numEnd = cur;
+                num_end = cur;
 
                 /*  find if there are trailing FRACTIONAL zeroes, and deal with them if necessary */
-                while (numEnd > numStart && fractionalPlaces != 0 && at(value, numEnd - 1) == '0')
+                while (num_end > num_start && fractional_places != 0 && at(value, num_end - 1) == '0')
                 {
-                    --numEnd;
-                    --fractionalPlaces;
+                    --num_end;
+                    --fractional_places;
                 }
 
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
                 if (at(value, cur) != 0)
                     return 1; /* error if any extraneous chars */
@@ -2459,21 +2459,21 @@ public final class Xsd10Types
                 {
                     v = typesNewValue(XML_XSD10_SCHEMAS_DECIMAL);
                     /*  create a standardized representation */
-                    String integral = new String(value, numStart, integralPlaces, StandardCharsets.ISO_8859_1);
-                    String fractional = new String(value, numEnd - fractionalPlaces, fractionalPlaces, StandardCharsets.ISO_8859_1);
-                    if (integralPlaces == 0)
+                    String integral = new String(value, num_start, integral_places, StandardCharsets.ISO_8859_1);
+                    String fractional = new String(value, num_end - fractional_places, fractional_places, StandardCharsets.ISO_8859_1);
+                    if (integral_places == 0)
                     {
                         integral = "0";
-                        integralPlaces = 1;
+                        integral_places = 1;
                     }
-                    if (fractionalPlaces == 0)
+                    if (fractional_places == 0)
                     {
                         fractional = "0";
-                        fractionalPlaces = 1;
+                        fractional_places = 1;
                     }
                     v.decimal.str = sign + integral + "." + fractional;
-                    v.decimal.integralPlaces = integralPlaces;
-                    v.decimal.fractionalPlaces = fractionalPlaces;
+                    v.decimal.integral_places = integral_places;
+                    v.decimal.fractional_places = fractional_places;
                     val[0] = v;
                 }
                 return 0;
@@ -2486,10 +2486,10 @@ public final class Xsd10Types
             case XML_XSD10_SCHEMAS_GYEARMONTH:
             case XML_XSD10_SCHEMAS_DATE:
             case XML_XSD10_SCHEMAS_DATETIME:
-                ret = typesValidateDates(type.builtInType, value, val, normOnTheFly);
+                ret = typesValidateDates(type.built_in_type, value, val, norm_on_the_fly);
                 break;
             case XML_XSD10_SCHEMAS_DURATION:
-                ret = typesValidateDuration(type, value, val, normOnTheFly);
+                ret = typesValidateDuration(type, value, val, norm_on_the_fly);
                 break;
             case XML_XSD10_SCHEMAS_FLOAT:
             case XML_XSD10_SCHEMAS_DOUBLE:
@@ -2499,7 +2499,7 @@ public final class Xsd10Types
                 int digits_before = 0;
                 int digits_after = 0;
 
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
 
                 if ((at(value, cur) == 'N') && (at(value, cur + 1) == 'a') && (at(value, cur + 2) == 'N'))
@@ -2583,7 +2583,7 @@ public final class Xsd10Types
                     while ((at(value, cur) >= '0') && (at(value, cur) <= '9'))
                         cur++;
                 }
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
 
                 if (at(value, cur) != 0)
@@ -2629,7 +2629,7 @@ public final class Xsd10Types
             {
                 int cur = 0;
 
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                 {
                     while (isBlankCh(at(value, cur))) cur++;
                     if (at(value, cur) == '0')
@@ -2702,7 +2702,7 @@ public final class Xsd10Types
             {
                 int cur = 0;
 
-                if (normOnTheFly == 0)
+                if (norm_on_the_fly == 0)
                 {
                     while (at(value, cur) != 0)
                     {
@@ -2734,7 +2734,7 @@ public final class Xsd10Types
                 return 0;
             }
             case XML_XSD10_SCHEMAS_LANGUAGE:
-                if ((norm == null) && (normOnTheFly != 0))
+                if ((norm == null) && (norm_on_the_fly != 0))
                 {
                     norm = typesCollapseString(value);
                     if (norm != null)
@@ -3005,7 +3005,7 @@ public final class Xsd10Types
                 {
                     XmlUri uri;
                     byte[] tmpval;
-                    if ((norm == null) && (normOnTheFly != 0))
+                    if ((norm == null) && (norm_on_the_fly != 0))
                     {
                         norm = typesCollapseString(value);
                         if (norm != null)
@@ -3040,7 +3040,7 @@ public final class Xsd10Types
                 int cur = 0, start;
                 int total, i = 0;
 
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
 
                 start = cur;
@@ -3051,7 +3051,7 @@ public final class Xsd10Types
                     i++;
                     cur++;
                 }
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur))) cur++;
 
                 if (at(value, cur) != 0)
@@ -3195,7 +3195,7 @@ public final class Xsd10Types
                 Xsd10Val.Decimal decimal = new Xsd10Val.Decimal();
                 char sign = '+';
 
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur[0]))) cur[0]++;
                 if (at(value, cur[0]) == '-')
                 {
@@ -3209,96 +3209,96 @@ public final class Xsd10Types
                 if (ret < 0)
                     return 1;
                 decimal.str = sign + decimal.str.substring(1);
-                if (normOnTheFly != 0)
+                if (norm_on_the_fly != 0)
                     while (isBlankCh(at(value, cur[0]))) cur[0]++;
                 if (at(value, cur[0]) != 0)
                     return 1;
-                if (type.builtInType == XML_XSD10_SCHEMAS_NPINTEGER)
+                if (type.built_in_type == XML_XSD10_SCHEMAS_NPINTEGER)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0) > 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_PINTEGER)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_PINTEGER)
                 {
                     if (sign == '-')
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, 0) <= 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_NINTEGER)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_NINTEGER)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0) >= 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_NNINTEGER)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_NNINTEGER)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0) < 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_LONG)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_LONG)
                 {
                     /* (u)int64_t may not be available on 32 bit platform, just use decimal */
-                    Xsd10Val.Decimal tmpDecimal = new Xsd10Val.Decimal();
-                    tmpDecimal.fractionalPlaces = 1;
-                    tmpDecimal.integralPlaces = 19;
-                    tmpDecimal.str = "+9223372036854775807.0";
-                    if (typesDecimalCompare(decimal, tmpDecimal) > 0)
+                    Xsd10Val.Decimal tmp_decimal = new Xsd10Val.Decimal();
+                    tmp_decimal.fractional_places = 1;
+                    tmp_decimal.integral_places = 19;
+                    tmp_decimal.str = "+9223372036854775807.0";
+                    if (typesDecimalCompare(decimal, tmp_decimal) > 0)
                         return 1;
-                    tmpDecimal.str = "-9223372036854775808.0";
-                    if (typesDecimalCompare(decimal, tmpDecimal) < 0)
+                    tmp_decimal.str = "-9223372036854775808.0";
+                    if (typesDecimalCompare(decimal, tmp_decimal) < 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_ULONG)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_ULONG)
                 {
-                    Xsd10Val.Decimal tmpDecimal = new Xsd10Val.Decimal();
-                    tmpDecimal.fractionalPlaces = 1;
-                    tmpDecimal.integralPlaces = 20;
-                    tmpDecimal.str = "+18446744073709551615.0";
-                    if (typesDecimalCompare(decimal, tmpDecimal) > 0)
+                    Xsd10Val.Decimal tmp_decimal = new Xsd10Val.Decimal();
+                    tmp_decimal.fractional_places = 1;
+                    tmp_decimal.integral_places = 20;
+                    tmp_decimal.str = "+18446744073709551615.0";
+                    if (typesDecimalCompare(decimal, tmp_decimal) > 0)
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, 0) < 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_INT)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_INT)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0x7fffffff) > 0) /* INT32_MAX */
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, -0x7fffffff - 1) < 0) /* INT32_MIN */
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_SHORT)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_SHORT)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0x7fff) > 0) /* INT16_MAX */
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, -0x8000) < 0) /* INT16_MIN */
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_BYTE)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_BYTE)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0x7f) > 0) /* INT8_MAX */
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, -0x80) < 0) /* INT8_MIN */
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_UINT)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_UINT)
                 {
-                    Xsd10Val.Decimal tmpDecimal = new Xsd10Val.Decimal();
-                    tmpDecimal.fractionalPlaces = 1;
-                    tmpDecimal.integralPlaces = 10;
-                    tmpDecimal.str = "+4294967295.0";
-                    if (typesDecimalCompare(decimal, tmpDecimal) > 0)
+                    Xsd10Val.Decimal tmp_decimal = new Xsd10Val.Decimal();
+                    tmp_decimal.fractional_places = 1;
+                    tmp_decimal.integral_places = 10;
+                    tmp_decimal.str = "+4294967295.0";
+                    if (typesDecimalCompare(decimal, tmp_decimal) > 0)
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, 0) < 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_USHORT)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_USHORT)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0xffff) > 0) /* UINT16_MAX */
                         return 1;
                     if (typesDecimalCompareWithInteger(decimal, 0) < 0)
                         return 1;
                 }
-                else if (type.builtInType == XML_XSD10_SCHEMAS_UBYTE)
+                else if (type.built_in_type == XML_XSD10_SCHEMAS_UBYTE)
                 {
                     if (typesDecimalCompareWithInteger(decimal, 0xff) > 0) /* UINT8_MAX */
                         return 1;
@@ -3307,7 +3307,7 @@ public final class Xsd10Types
                 }
                 if (val != null)
                 {
-                    v = typesNewValue(type.builtInType);
+                    v = typesNewValue(type.built_in_type);
                     v.decimal = decimal;
                     val[0] = v;
                 }
@@ -3388,7 +3388,7 @@ public final class Xsd10Types
         return 0;
     }
 
-    private static final long[][] dayRange = {
+    private static final long[][] day_range = {
         { 0, 28, 59, 89, 120, 150, 181, 212, 242, 273, 303, 334, },
         { 0, 31, 62, 92, 123, 153, 184, 215, 245, 276, 306, 337 } };
 
@@ -3471,8 +3471,8 @@ public final class Xsd10Types
         }
 
         xmon = xmon % 12;
-        minday += tab(dayRange[0], xmon);
-        maxday += tab(dayRange[1], xmon);
+        minday += tab(day_range[0], xmon);
+        maxday += tab(day_range[1], xmon);
 
         if ((maxday == minday) && (maxday == xday))
             return 0; /* can this really happen ? */
@@ -4773,10 +4773,10 @@ public final class Xsd10Types
     // xml_xsd10_validate_list_simple_type_facet
     /** Port of xmlSchemaValidateListSimpleTypeFacet: checks the value of a list simple type against
         a facet.
-        @param facet the facet @param value the lexical value @param actualLen the number of items
-        @param expectedLen out: the expected length (may be null)
+        @param facet the facet @param value the lexical value @param actual_len the number of items
+        @param expected_len out: the expected length (may be null)
         @return 0 if valid, a positive error code otherwise and -1 in case of an internal error */
-    public static int validateListSimpleTypeFacet(Xsd10Facet facet, String value, long actualLen, long[] expectedLen)
+    public static int validateListSimpleTypeFacet(Xsd10Facet facet, String value, long actual_len, long[] expected_len)
     {
         if (facet == null)
             return -1;
@@ -4785,28 +4785,28 @@ public final class Xsd10Types
          */
         if (facet.type == XML_XSD10_SCHEMA_FACET_LENGTH)
         {
-            if (actualLen != getFacetValueAsUlong(facet))
+            if (actual_len != getFacetValueAsUlong(facet))
             {
-                if (expectedLen != null)
-                    expectedLen[0] = getFacetValueAsUlong(facet);
+                if (expected_len != null)
+                    expected_len[0] = getFacetValueAsUlong(facet);
                 return XML_XSD10_SCHEMAV_CVC_LENGTH_VALID;
             }
         }
         else if (facet.type == XML_XSD10_SCHEMA_FACET_MINLENGTH)
         {
-            if (Long.compareUnsigned(actualLen, getFacetValueAsUlong(facet)) < 0)
+            if (Long.compareUnsigned(actual_len, getFacetValueAsUlong(facet)) < 0)
             {
-                if (expectedLen != null)
-                    expectedLen[0] = getFacetValueAsUlong(facet);
+                if (expected_len != null)
+                    expected_len[0] = getFacetValueAsUlong(facet);
                 return XML_XSD10_SCHEMAV_CVC_MINLENGTH_VALID;
             }
         }
         else if (facet.type == XML_XSD10_SCHEMA_FACET_MAXLENGTH)
         {
-            if (Long.compareUnsigned(actualLen, getFacetValueAsUlong(facet)) > 0)
+            if (Long.compareUnsigned(actual_len, getFacetValueAsUlong(facet)) > 0)
             {
-                if (expectedLen != null)
-                    expectedLen[0] = getFacetValueAsUlong(facet);
+                if (expected_len != null)
+                    expected_len[0] = getFacetValueAsUlong(facet);
                 return XML_XSD10_SCHEMAV_CVC_MAXLENGTH_VALID;
             }
         }
@@ -4823,7 +4823,7 @@ public final class Xsd10Types
     /** The length of a string value for the length facets (shared code of
         xsd10_types_validate_length_facet_internal and xsd10_types_validate_facet_internal).
         Returns the unsigned int len, or null for QName/NOTATION (return 0) in the length facet. */
-    private static int lengthOfValue(int valType, byte[] value, Xsd10Val val, int ws)
+    private static int lengthOfValue(int val_type, byte[] value, Xsd10Val val, int ws)
     {
         int len = 0;
         if ((val != null) && (val.type == XML_XSD10_SCHEMAS_HEXBINARY))
@@ -4832,7 +4832,7 @@ public final class Xsd10Types
             len = val.base64.total;
         else
         {
-            switch (valType)
+            switch (val_type)
             {
                 case XML_XSD10_SCHEMAS_STRING:
                 case XML_XSD10_SCHEMAS_NORMSTRING:
@@ -4844,7 +4844,7 @@ public final class Xsd10Types
                          * is not the correct handling.
                          * TODO: Get rid of this case somehow.
                          */
-                        if (valType == XML_XSD10_SCHEMAS_STRING)
+                        if (val_type == XML_XSD10_SCHEMAS_STRING)
                             len = typesUtf8Strlen(value);
                         else
                             len = typesNormLen(value);
@@ -4887,7 +4887,7 @@ public final class Xsd10Types
        and "maxLength" facet; sets length to the computed length of value.
        Returns 0 if the value is valid, a positive error code otherwise and -1 in case of an internal
        or API error. */
-    private static int typesValidateLengthFacetInternal(Xsd10Facet facet, int valType, byte[] value,
+    private static int typesValidateLengthFacetInternal(Xsd10Facet facet, int val_type, byte[] value,
                                                         Xsd10Val val, long[] length, int ws)
     {
         int len = 0;
@@ -4912,7 +4912,7 @@ public final class Xsd10Types
             return -1;
         }
         if (!((val != null) && ((val.type == XML_XSD10_SCHEMAS_HEXBINARY) || (val.type == XML_XSD10_SCHEMAS_BASE64BINARY))) &&
-            ((valType == XML_XSD10_SCHEMAS_QNAME) || (valType == XML_XSD10_SCHEMAS_NOTATION)))
+            ((val_type == XML_XSD10_SCHEMAS_QNAME) || (val_type == XML_XSD10_SCHEMAS_NOTATION)))
         {
             /*
              * For QName and NOTATION, those facets are
@@ -4920,7 +4920,7 @@ public final class Xsd10Types
              */
             return 0;
         }
-        len = lengthOfValue(valType, value, val, ws);
+        len = lengthOfValue(val_type, value, val, ws);
         long ulen = Integer.toUnsignedLong(len);
         length[0] = ulen;
         /*
@@ -4954,25 +4954,25 @@ public final class Xsd10Types
     {
         if (type == null)
             return -1;
-        return typesValidateLengthFacetInternal(facet, type.builtInType, b(value), val, length,
+        return typesValidateLengthFacetInternal(facet, type.built_in_type, b(value), val, length,
             XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN);
     }
 
     // xml_xsd10_validate_length_facet_whtsp
     /** Port of xmlSchemaValidateLengthFacetWhtsp.
-        @param facet the facet @param valType the value type @param value the value
+        @param facet the facet @param val_type the value type @param value the value
         @param val the computed value @param length out: the computed length @param ws the whitespace
         @return 0 if valid, a positive error code otherwise, -1 on error */
-    public static int validateLengthFacetWhtsp(Xsd10Facet facet, int valType, String value, Xsd10Val val, long[] length, int ws)
+    public static int validateLengthFacetWhtsp(Xsd10Facet facet, int val_type, String value, Xsd10Val val, long[] length, int ws)
     {
-        return typesValidateLengthFacetInternal(facet, valType, b(value), val, length, ws);
+        return typesValidateLengthFacetInternal(facet, val_type, b(value), val, length, ws);
     }
 
     // xsd10_types_validate_facet_internal
     /* Port of xmlSchemaValidateFacetInternal: check a value against a facet condition.
        Returns 0 if the element is schemas valid, a positive error code
        number otherwise and -1 in case of internal or API error. */
-    private static int typesValidateFacetInternal(Xsd10Facet facet, int fws, int valType, String value,
+    private static int typesValidateFacetInternal(Xsd10Facet facet, int fws, int val_type, String value,
                                                   Xsd10Val val, int ws)
     {
         int ret;
@@ -5063,7 +5063,7 @@ public final class Xsd10Types
                     if (facet.val == null)
                         return -1; /* C would dereference NULL here */
                     ret = typesCompareValuesWhtspExt(facet.val.type,
-                        facet.val, b(facet.value), fws, valType, val,
+                        facet.val, b(facet.value), fws, val_type, val,
                         b(value), ws);
                     if (ret == -2)
                         return -1;
@@ -5081,8 +5081,8 @@ public final class Xsd10Types
                  */
                 int len = 0;
 
-                if ((valType == XML_XSD10_SCHEMAS_QNAME) ||
-                    (valType == XML_XSD10_SCHEMAS_NOTATION))
+                if ((val_type == XML_XSD10_SCHEMAS_QNAME) ||
+                    (val_type == XML_XSD10_SCHEMAS_NOTATION))
                     return 0;
                 /*
                  * TODO: length, maxLength and minLength must be of type
@@ -5095,7 +5095,7 @@ public final class Xsd10Types
                 {
                     return -1;
                 }
-                len = lengthOfValue(valType, b(value), val, ws);
+                len = lengthOfValue(val_type, b(value), val, ws);
                 long ulen = Integer.toUnsignedLong(len);
                 if (facet.type == XML_XSD10_SCHEMA_FACET_LENGTH)
                 {
@@ -5148,7 +5148,7 @@ public final class Xsd10Types
                 }
                 else if (facet.type == XML_XSD10_SCHEMA_FACET_FRACTIONDIGITS)
                 {
-                    long fd = typesDecimalIsInteger(val.decimal) ? 0 : Integer.toUnsignedLong(val.decimal.fractionalPlaces);
+                    long fd = typesDecimalIsInteger(val.decimal) ? 0 : Integer.toUnsignedLong(val.decimal.fractional_places);
                     if (Long.compareUnsigned(fd, getFacetValueAsUlong(facet)) > 0)
                         return XML_XSD10_SCHEMAV_CVC_FRACTIONDIGITS_VALID;
                 }
@@ -5178,7 +5178,7 @@ public final class Xsd10Types
                 XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN);
         else if (base != null)
             return typesValidateFacetInternal(facet,
-                XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN, base.builtInType, value, val,
+                XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN, base.built_in_type, value, val,
                 XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN);
         return -1;
     }
@@ -5186,12 +5186,12 @@ public final class Xsd10Types
     // xml_xsd10_validate_facet_whtsp
     /** Port of xmlSchemaValidateFacetWhtsp: check a value against a facet condition, taking the
         whitespace types into account. value needs to be the normalized value for patterns.
-        @param facet the facet @param fws the facet whitespace @param valType the value type
+        @param facet the facet @param fws the facet whitespace @param val_type the value type
         @param value the lexical value @param val the computed value @param ws the value whitespace
         @return 0 if valid, a positive error code otherwise and -1 in case of internal or API error */
-    public static int validateFacetWhtsp(Xsd10Facet facet, int fws, int valType, String value, Xsd10Val val, int ws)
+    public static int validateFacetWhtsp(Xsd10Facet facet, int fws, int val_type, String value, Xsd10Val val, int ws)
     {
-        return typesValidateFacetInternal(facet, fws, valType, value, val, ws);
+        return typesValidateFacetInternal(facet, fws, val_type, value, val, ws);
     }
 
     // printf helpers (glibc formatting of the canonical values) //////////////////
@@ -5206,11 +5206,11 @@ public final class Xsd10Types
     private static String zpad(String s, int width)
     {
         if (s.length() >= width) return s;
-        int signLen = (s.startsWith("-") || s.startsWith("+")) ? 1 : 0;
+        int sign_len = (s.startsWith("-") || s.startsWith("+")) ? 1 : 0;
         StringBuilder sb = new StringBuilder();
-        sb.append(s, 0, signLen);
+        sb.append(s, 0, sign_len);
         for (int i = s.length(); i < width; i++) sb.append('0');
-        sb.append(s, signLen, s.length());
+        sb.append(s, sign_len, s.length());
         return sb.toString();
     }
 
@@ -5332,30 +5332,30 @@ public final class Xsd10Types
 
     // xsd10_types_get_canon_value
     /* Port of xmlSchemaGetCanonValue: get the canonical lexical representation of the value.
-       WARNING: Some value types are not supported yet, resulting in a retValue of "???".
+       WARNING: Some value types are not supported yet, resulting in a ret_value of "???".
        Returns 0 if the value could be built, 1 if the value type is
        not supported yet and -1 in case of API errors. */
-    private static int typesGetCanonValue(Xsd10Val val, String[] retValue)
+    private static int typesGetCanonValue(Xsd10Val val, String[] ret_value)
     {
-        if ((retValue == null) || (val == null))
+        if ((ret_value == null) || (val == null))
             return -1;
-        retValue[0] = null;
+        ret_value[0] = null;
         switch (val.type)
         {
             case XML_XSD10_SCHEMAS_STRING:
                 if (val.str == null)
-                    retValue[0] = "";
+                    ret_value[0] = "";
                 else
-                    retValue[0] = val.str;
+                    ret_value[0] = val.str;
                 break;
             case XML_XSD10_SCHEMAS_NORMSTRING:
                 if (val.str == null)
-                    retValue[0] = "";
+                    ret_value[0] = "";
                 else
                 {
-                    retValue[0] = whiteSpaceReplace(val.str);
-                    if ((retValue[0]) == null)
-                        retValue[0] = val.str;
+                    ret_value[0] = whiteSpaceReplace(val.str);
+                    if ((ret_value[0]) == null)
+                        ret_value[0] = val.str;
                 }
                 break;
             case XML_XSD10_SCHEMAS_TOKEN:
@@ -5372,22 +5372,22 @@ public final class Xsd10Types
                 String s = unionStr(val);
                 if (s == null)
                     return -1;
-                retValue[0] = collapseString(s);
-                if (retValue[0] == null)
-                    retValue[0] = s;
+                ret_value[0] = collapseString(s);
+                if (ret_value[0] == null)
+                    ret_value[0] = s;
                 break;
             }
             case XML_XSD10_SCHEMAS_QNAME:
                 /* TODO: Unclear in XML Schema 1.0. */
                 if (val.qname.uri == null)
                 {
-                    retValue[0] = val.qname.name;
+                    ret_value[0] = val.qname.name;
                     return 0;
                 }
                 else
                 {
                     /* Like libxml2, the uri is appended twice ("{uri}uri"). */
-                    retValue[0] = "{" + val.qname.uri + "}" + val.qname.uri;
+                    ret_value[0] = "{" + val.qname.uri + "}" + val.qname.uri;
                 }
                 break;
             case XML_XSD10_SCHEMAS_DECIMAL:
@@ -5399,7 +5399,7 @@ public final class Xsd10Types
                 {
                     start = start.substring(1);
                 }
-                retValue[0] = start;
+                ret_value[0] = start;
                 break;
             }
             case XML_XSD10_SCHEMAS_INTEGER:
@@ -5420,20 +5420,20 @@ public final class Xsd10Types
                 if (start == null)
                     return -1;
                 /* 2 = sign+NULL */
-                long bufSize = Integer.toUnsignedLong(val.decimal.integralPlaces) + 2;
+                long buf_size = Integer.toUnsignedLong(val.decimal.integral_places) + 2;
                 if (dc(start, 0) == '+')
                 {
                     start = start.substring(1);
-                    bufSize -= 1;
+                    buf_size -= 1;
                 }
-                retValue[0] = start.substring(0, (int) Math.min(start.length(), bufSize - 1));
+                ret_value[0] = start.substring(0, (int) Math.min(start.length(), buf_size - 1));
                 break;
             }
             case XML_XSD10_SCHEMAS_BOOLEAN:
                 if (val.b != 0)
-                    retValue[0] = "true";
+                    ret_value[0] = "true";
                 else
-                    retValue[0] = "false";
+                    ret_value[0] = "false";
                 break;
             case XML_XSD10_SCHEMAS_DURATION:
             {
@@ -5463,28 +5463,28 @@ public final class Xsd10Types
                     buf = "P" + ul(year) + "Y" + ul(mon) + "M" + ul(day) + "DT" + ul(hour) + "H" + ul(min) + "M" + fmtG(sec, 14) + "S";
                 else
                     buf = "-P" + ul(year) + "Y" + ul(mon) + "M" + ul(day) + "DT" + ul(hour) + "H" + ul(min) + "M" + fmtG(sec, 14) + "S";
-                retValue[0] = trunc(buf, 100);
+                ret_value[0] = trunc(buf, 100);
                 break;
             }
             case XML_XSD10_SCHEMAS_GYEAR:
                 /* TODO: Unclear in XML Schema 1.0 */
                 /* TODO: What to do with the timezone? */
-                retValue[0] = trunc(ld4(val.date.year), 30);
+                ret_value[0] = trunc(ld4(val.date.year), 30);
                 break;
             case XML_XSD10_SCHEMAS_GMONTH:
                 /* TODO: Unclear in XML Schema 1.0 */
                 /* TODO: What to do with the timezone? */
-                retValue[0] = trunc("--" + u2(val.date.mon), 6);
+                ret_value[0] = trunc("--" + u2(val.date.mon), 6);
                 break;
             case XML_XSD10_SCHEMAS_GDAY:
                 /* TODO: Unclear in XML Schema 1.0 */
                 /* TODO: What to do with the timezone? */
-                retValue[0] = trunc("---" + u2(val.date.day), 6);
+                ret_value[0] = trunc("---" + u2(val.date.day), 6);
                 break;
             case XML_XSD10_SCHEMAS_GMONTHDAY:
                 /* TODO: Unclear in XML Schema 1.0 */
                 /* TODO: What to do with the timezone? */
-                retValue[0] = trunc("--" + u2(val.date.mon) + "-" + u2(val.date.day), 8);
+                ret_value[0] = trunc("--" + u2(val.date.mon) + "-" + u2(val.date.day), 8);
                 break;
             case XML_XSD10_SCHEMAS_GYEARMONTH:
             {
@@ -5495,7 +5495,7 @@ public final class Xsd10Types
                     buf = "-" + ld4(Math.abs(val.date.year)) + "-" + u2(val.date.mon);
                 else
                     buf = ld4(val.date.year) + "-" + u2(val.date.mon);
-                retValue[0] = trunc(buf, 35);
+                ret_value[0] = trunc(buf, 35);
                 break;
             }
             case XML_XSD10_SCHEMAS_TIME:
@@ -5518,7 +5518,7 @@ public final class Xsd10Types
                 {
                     buf = u2(val.date.hour) + ":" + u2(val.date.min) + ":" + zpad(fmtG(val.date.sec, 14), 2);
                 }
-                retValue[0] = trunc(buf, 30);
+                ret_value[0] = trunc(buf, 30);
                 break;
             }
             case XML_XSD10_SCHEMAS_DATE:
@@ -5542,7 +5542,7 @@ public final class Xsd10Types
                 {
                     buf = ld4(val.date.year) + "-" + u2(val.date.mon) + "-" + u2(val.date.day);
                 }
-                retValue[0] = trunc(buf, 30);
+                ret_value[0] = trunc(buf, 30);
                 break;
             }
             case XML_XSD10_SCHEMAS_DATETIME:
@@ -5567,11 +5567,11 @@ public final class Xsd10Types
                     buf = ld4(val.date.year) + "-" + u2(val.date.mon) + "-" + u2(val.date.day) + "T" +
                         u2(val.date.hour) + ":" + u2(val.date.min) + ":" + zpad(fmtG(val.date.sec, 14), 2);
                 }
-                retValue[0] = trunc(buf, 50);
+                ret_value[0] = trunc(buf, 50);
                 break;
             }
             case XML_XSD10_SCHEMAS_HEXBINARY:
-                retValue[0] = val.hex.str;
+                ret_value[0] = val.hex.str;
                 break;
             case XML_XSD10_SCHEMAS_BASE64BINARY:
                 /*
@@ -5580,7 +5580,7 @@ public final class Xsd10Types
                  * above does not conform to [RFC 2045], which requires breaking
                  * with linefeeds at appropriate intervals."
                  */
-                retValue[0] = val.base64.str;
+                ret_value[0] = val.base64.str;
                 break;
             case XML_XSD10_SCHEMAS_FLOAT:
                 /*
@@ -5589,17 +5589,17 @@ public final class Xsd10Types
                  * yet conformant. The c type float does not cover
                  * the whole range.
                  */
-                retValue[0] = trunc(fmtE(val.f, 14), 30);
+                ret_value[0] = trunc(fmtE(val.f, 14), 30);
                 break;
             case XML_XSD10_SCHEMAS_DOUBLE:
                 /* |m| < 9007199254740992, -1075 <= e <= 970 */
-                retValue[0] = trunc(fmtE(val.d, 14), 40);
+                ret_value[0] = trunc(fmtE(val.d, 14), 40);
                 break;
             default:
-                retValue[0] = "???";
+                ret_value[0] = "???";
                 return 1;
         }
-        if (retValue[0] == null)
+        if (ret_value[0] == null)
             return -1;
         return 0;
     }
@@ -5613,36 +5613,36 @@ public final class Xsd10Types
 
     // xml_xsd10_get_canon_value
     /** Port of xmlSchemaGetCanonValue.
-        @param val the value @param retValue out: the canonical value
+        @param val the value @param ret_value out: the canonical value
         @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors */
-    public static int getCanonValue(Xsd10Val val, String[] retValue)
+    public static int getCanonValue(Xsd10Val val, String[] ret_value)
     {
         String[] r = { null };
         int ret;
 
-        if (retValue == null)
+        if (ret_value == null)
             return -1;
         ret = typesGetCanonValue(val, r);
         if (val != null)
-            retValue[0] = r[0];
+            ret_value[0] = r[0];
         return ret;
     }
 
     // xml_xsd10_get_canon_value_whtsp
     /** Port of xmlSchemaGetCanonValueWhtsp: get the canonical representation of the value.
-        @param val the value @param retValue out: the canonical value @param ws the whitespace
+        @param val the value @param ret_value out: the canonical value @param ws the whitespace
         @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors */
-    public static int getCanonValueWhtsp(Xsd10Val val, String[] retValue, int ws)
+    public static int getCanonValueWhtsp(Xsd10Val val, String[] ret_value, int ws)
     {
         String r = null;
 
-        if ((retValue == null) || (val == null))
+        if ((ret_value == null) || (val == null))
             return -1;
         if ((ws == XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN) ||
             (ws > XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE))
             return -1;
 
-        retValue[0] = null;
+        ret_value[0] = null;
         switch (val.type)
         {
             case XML_XSD10_SCHEMAS_STRING:
@@ -5669,9 +5669,9 @@ public final class Xsd10Types
                 }
                 break;
             default:
-                return getCanonValue(val, retValue);
+                return getCanonValue(val, ret_value);
         }
-        retValue[0] = r;
+        ret_value[0] = r;
         return 0;
     }
 
@@ -5724,10 +5724,10 @@ public final class Xsd10Types
         /*
          * Note that we assume a whitespace of preserve for anySimpleType.
          */
-        if ((type.builtInType == XML_XSD10_SCHEMAS_STRING) ||
-            (type.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
+        if ((type.built_in_type == XML_XSD10_SCHEMAS_STRING) ||
+            (type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
             return XML_XSD10_SCHEMA_WHITESPACE_PRESERVE;
-        else if (type.builtInType == XML_XSD10_SCHEMAS_NORMSTRING)
+        else if (type.built_in_type == XML_XSD10_SCHEMAS_NORMSTRING)
             return XML_XSD10_SCHEMA_WHITESPACE_REPLACE;
         /*
          * For all `atomic` datatypes other than string (and types `derived`
@@ -5755,30 +5755,30 @@ public final class Xsd10Types
     /* Port of xmlSchemaVCheckCVCSimpleType (cvc-simple-type) for built in types, as called by
        xmlSchemaCheckFacet with a parser context and without error reporting. */
     private static int typesCheckCvcSimpleType(XmlNode node, Xsd10Type type, byte[] value,
-                                               Xsd10Val[] retVal, int normalize, int isNormalized)
+                                               Xsd10Val[] ret_val, int normalize, int is_normalized)
     {
-        int ret = 0, valNeeded = (retVal != null) ? 1 : 0;
+        int ret = 0, val_needed = (ret_val != null) ? 1 : 0;
         Xsd10Val val = null;
-        Xsd10Val[] valOut = { null };
+        Xsd10Val[] val_out = { null };
 
-        if ((retVal != null) && (retVal[0] != null))
+        if ((ret_val != null) && (ret_val[0] != null))
         {
-            freeValue(retVal[0]);
-            retVal[0] = null;
+            freeValue(ret_val[0]);
+            ret_val[0] = null;
         }
         if (type == null)
             return -1; /* C would crash */
         /* User derived types are checked by the schema part. */
         if (type.type != XML_XSD10_SCHEMA_TYPE_BASIC)
             return -1;
-        if ((valNeeded == 0) && ((type.flags & XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE) != 0))
-            valNeeded = 1;
+        if ((val_needed == 0) && ((type.flags & XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE) != 0))
+            val_needed = 1;
         if (value == null)
             value = new byte[1];
-        if ((type.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
+        if ((type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
             ((type.flags & XML_XSD10_SCHEMAS_TYPE_VARIETY_ATOMIC) != 0))
         {
-            Xsd10Type biType; /* The built-in type. */
+            Xsd10Type bi_type; /* The built-in type. */
             /*
              * SPEC (1.2.1) "if {variety} is `atomic` then the string must `match`
              * a literal in the `lexical space` of {base type definition}"
@@ -5786,37 +5786,37 @@ public final class Xsd10Types
             /*
              * Whitespace-normalize.
              */
-            if ((isNormalized == 0) &&
+            if ((is_normalized == 0) &&
                 (normalize != 0 || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
             {
-                byte[] normValue = null;
+                byte[] norm_value = null;
                 switch (typesBuiltinWhiteSpace(type))
                 {
                     case XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE:
-                        normValue = typesCollapseString(value); break;
+                        norm_value = typesCollapseString(value); break;
                     case XML_XSD10_SCHEMA_WHITESPACE_REPLACE:
-                        normValue = typesWhiteSpaceReplace(value); break;
+                        norm_value = typesWhiteSpaceReplace(value); break;
                     default: break;
                 }
-                if (normValue != null)
-                    value = normValue;
-                isNormalized = 1;
+                if (norm_value != null)
+                    value = norm_value;
+                is_normalized = 1;
             }
-            biType = type;
-            switch (biType.builtInType)
+            bi_type = type;
+            switch (bi_type.built_in_type)
             {
                 case XML_XSD10_SCHEMAS_NOTATION:
                     ret = typesValidateNotation(value);
                     break;
                 default:
-                    if (valNeeded != 0)
+                    if (val_needed != 0)
                     {
-                        ret = typesValAtomicType(biType, value, valOut, node, 1,
+                        ret = typesValAtomicType(bi_type, value, val_out, node, 1,
                             XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN, 1, 0, 1, null);
-                        val = valOut[0];
+                        val = val_out[0];
                     }
                     else
-                        ret = typesValAtomicType(biType, value, null, node, 1,
+                        ret = typesValAtomicType(bi_type, value, null, node, 1,
                             XML_XSD10_SCHEMA_WHITESPACE_UNKNOWN, 1, 0, 1, null);
                     break;
             }
@@ -5833,32 +5833,32 @@ public final class Xsd10Types
         }
         else if ((type.flags & XML_XSD10_SCHEMAS_TYPE_VARIETY_LIST) != 0)
         {
-            Xsd10Type itemType;
+            Xsd10Type item_type;
             int cur, end;
-            byte[] tmpValue;
-            Xsd10Val prevVal = null;
-            Xsd10Val[] curVal = { null };
+            byte[] tmp_value;
+            Xsd10Val prev_val = null;
+            Xsd10Val[] cur_val = { null };
             /* 1.2.2 if {variety} is `list` then the string must be a sequence
              * of white space separated tokens, each of which `match`es a literal
              * in the `lexical space` of {item type definition}
              */
-            if ((isNormalized == 0) &&
+            if ((is_normalized == 0) &&
                 (normalize != 0 || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
             {
-                byte[] normValue = null;
+                byte[] norm_value = null;
                 switch (typesBuiltinWhiteSpace(type))
                 {
                     case XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE:
-                        normValue = typesCollapseString(value); break;
+                        norm_value = typesCollapseString(value); break;
                     case XML_XSD10_SCHEMA_WHITESPACE_REPLACE:
-                        normValue = typesWhiteSpaceReplace(value); break;
+                        norm_value = typesWhiteSpaceReplace(value); break;
                     default: break;
                 }
-                if (normValue != null)
-                    value = normValue;
-                isNormalized = 1;
+                if (norm_value != null)
+                    value = norm_value;
+                is_normalized = 1;
             }
-            itemType = (type.subtypes instanceof Xsd10Type) ? (Xsd10Type) type.subtypes : null;
+            item_type = (type.subtypes instanceof Xsd10Type) ? (Xsd10Type) type.subtypes : null;
             cur = 0;
             do
             {
@@ -5869,23 +5869,23 @@ public final class Xsd10Types
                     end++;
                 if (end == cur)
                     break;
-                tmpValue = cbytes(value, cur, end - cur);
+                tmp_value = cbytes(value, cur, end - cur);
 
-                if (valNeeded != 0)
-                    ret = typesCheckCvcSimpleType(node, itemType, tmpValue, curVal, 0, 1);
+                if (val_needed != 0)
+                    ret = typesCheckCvcSimpleType(node, item_type, tmp_value, cur_val, 0, 1);
                 else
-                    ret = typesCheckCvcSimpleType(node, itemType, tmpValue, null, 0, 1);
-                if (curVal[0] != null)
+                    ret = typesCheckCvcSimpleType(node, item_type, tmp_value, null, 0, 1);
+                if (cur_val[0] != null)
                 {
                     /*
                      * Add to list of computed values.
                      */
                     if (val == null)
-                        val = curVal[0];
+                        val = cur_val[0];
                     else
-                        valueAppend(prevVal, curVal[0]);
-                    prevVal = curVal[0];
-                    curVal[0] = null;
+                        valueAppend(prev_val, cur_val[0]);
+                    prev_val = cur_val[0];
+                    cur_val[0] = null;
                 }
                 if (ret != 0)
                 {
@@ -5901,8 +5901,8 @@ public final class Xsd10Types
 
         if (ret == 0)
         {
-            if (retVal != null)
-                retVal[0] = val;
+            if (ret_val != null)
+                ret_val[0] = val;
         }
         return ret;
     }
@@ -5910,13 +5910,13 @@ public final class Xsd10Types
     // xml_xsd10_check_facet
     /** Port of xmlSchemaCheckFacet (without a parser context, as used by RelaxNG): checks and
         computes the values of facets.
-        @param facet the facet @param typeDecl the type holding the facet @param name unused
+        @param facet the facet @param type_decl the type holding the facet @param name unused
         @return 0 if valid, a positive error code if not valid and -1 in case of an internal or API error */
-    public static int checkFacet(Xsd10Facet facet, Xsd10Type typeDecl, String name)
+    public static int checkFacet(Xsd10Facet facet, Xsd10Type type_decl, String name)
     {
         int ret = 0;
 
-        if ((facet == null) || (typeDecl == null))
+        if ((facet == null) || (type_decl == null))
             return -1;
 
         switch (facet.type)
@@ -5951,16 +5951,16 @@ public final class Xsd10Types
                  * type, we will assume that the given built-in type *is
                  * already* the base type.
                  */
-                if (typeDecl.type != XML_XSD10_SCHEMA_TYPE_BASIC)
+                if (type_decl.type != XML_XSD10_SCHEMA_TYPE_BASIC)
                 {
-                    base = typeDecl.baseType;
+                    base = type_decl.base_type;
                     if (base == null)
                     {
                         return -1;
                     }
                 }
                 else
-                    base = typeDecl;
+                    base = type_decl;
 
                 /*
                  * NOTE: This call does not check the content nodes,

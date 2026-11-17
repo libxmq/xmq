@@ -59,15 +59,15 @@ public final class Xsd10IDCMatcher
     /** next in the list */
     Xsd10IDCMatcher next;
     /** next in the cache list */
-    Xsd10IDCMatcher nextCached;
+    Xsd10IDCMatcher next_cached;
     /** the augmented IDC item */
     Xsd10IDCAug aidc;
-    /** C {@code int idcType}. */
-    int idcType;
-    /** C {@code XmlXsd10PSVIIDCKey *** keySeqs}. */
-    Xsd10PSVIIDCKey[][] keySeqs;
-    /** C {@code int sizeKeySeqs}. */
-    int sizeKeySeqs;
+    /** C {@code int idc_type}. */
+    int idc_type;
+    /** C {@code XmlXsd10PSVIIDCKey *** key_seqs}. */
+    Xsd10PSVIIDCKey[][] key_seqs;
+    /** C {@code int size_key_seqs}. */
+    int size_key_seqs;
     /** C {@code XmlXsd10ItemList * targets}. */
     Xsd10ItemList targets;
     /** C {@code XmlXsd10Hash * htab}. */

@@ -98,7 +98,7 @@ public final class Settings
     public static final int LOAD_DOCUMENT = 2;
 
     /** null prints the messages on stderr, like libxslt. */
-    public MessageCallback messageCallback;
+    public MessageCallback message_callback;
     /** null reads files and parses them with entities expanded, like libxslt XSLT_PARSE_OPTIONS. */
     public Loader loader;
 

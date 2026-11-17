@@ -58,8 +58,8 @@ public final class Xsd10AttributeUseProhib extends Xsd10BasicItem
     XmlNode node;
     /** C {@code const char * name}. */
     String name;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
-    /** C {@code int isRef}. */
-    int isRef;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
+    /** C {@code int is_ref}. */
+    int is_ref;
 }

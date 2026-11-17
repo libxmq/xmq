@@ -210,16 +210,16 @@ public final class XmlDomApi
      * (xml_dom_set_dtd).
      * @param dom The dom.
      * @param name The name.
-     * @param publicId The public id or null.
+     * @param public_id The public id or null.
      * @param systemId The system id or null.
      * @return The dtd.
      */
-    public static XmlNode domSetDtd(XmlDocument dom, String name, String publicId, String systemId)
+    public static XmlNode domSetDtd(XmlDocument dom, String name, String public_id, String system_id)
     {
         XmlDtd old = dom.intSubset();
         if (old != null) old.unlink();
         dom.setIntSubsetRef(null);
-        XmlDtd dtd = new XmlDtd(name, publicId, systemId);
+        XmlDtd dtd = new XmlDtd(name, public_id, system_id);
         XmlNode root = domRootElement(dom);
         if (root != null) root.addPrevSibling(dtd);
         else dom.appendRaw(dtd);
@@ -653,7 +653,7 @@ public final class XmlDomApi
      */
     public static Object nodeUserData(XmlNode n)
     {
-        return n.userData_;
+        return n.user_data_;
     }
 
     /**
@@ -663,7 +663,7 @@ public final class XmlDomApi
      */
     public static void nodeSetUserData(XmlNode n, Object data)
     {
-        n.userData_ = data;
+        n.user_data_ = data;
     }
 
     /**
@@ -928,10 +928,10 @@ public final class XmlDomApi
 
     // Attributes //////////////////////////////////////////////////
 
-    private static boolean attrMatches(XmlAttr a, String name, String nsUri)
+    private static boolean attrMatches(XmlAttr a, String name, String ns_uri)
     {
         if (!Objects.equals(a.name_, name)) return false;
-        return Objects.equals(nodeNsUri(a), nsUri);
+        return Objects.equals(nodeNsUri(a), ns_uri);
     }
 
     /**
@@ -1013,15 +1013,15 @@ public final class XmlDomApi
      * The attribute with this name and namespace uri (null or "" for none).
      * @param e The element.
      * @param name The local name.
-     * @param nsUri The uri.
+     * @param ns_uri The uri.
      * @return The attribute or null.
      */
-    public static XmlAttr nodeGetAttr(XmlNode e, String name, String nsUri)
+    public static XmlAttr nodeGetAttr(XmlNode e, String name, String ns_uri)
     {
-        if (nsUri != null && nsUri.isEmpty()) nsUri = null;
+        if (ns_uri != null && ns_uri.isEmpty()) ns_uri = null;
         for (XmlAttr a : nodeAttrs(e))
         {
-            if (attrMatches(a, name, nsUri)) return a;
+            if (attrMatches(a, name, ns_uri)) return a;
         }
         return null;
     }
@@ -1089,12 +1089,12 @@ public final class XmlDomApi
      * Remove the attribute with this name and namespace uri.
      * @param e The element.
      * @param name The local name.
-     * @param nsUri The uri or null.
+     * @param ns_uri The uri or null.
      * @return True if one was removed.
      */
-    public static boolean nodeRemoveAttr(XmlNode e, String name, String nsUri)
+    public static boolean nodeRemoveAttr(XmlNode e, String name, String ns_uri)
     {
-        XmlAttr a = nodeGetAttr(e, name, nsUri);
+        XmlAttr a = nodeGetAttr(e, name, ns_uri);
         if (a == null) return false;
         nodeUnlink(a);
         return true;

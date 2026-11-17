@@ -5,42 +5,54 @@ package org.libxmq.imp.ixml;
 
 import java.util.*;
 
-/** Grammar reader ported from ixml.c; independent of the YAEP backend. */
+/** Grammar reader ported from ixml.c; independent of the YAEP backend.
+ *  The rules and terms are public for the Earley parser in the earley package. */
 public final class IXMLGrammar {
-    static final int EOF = 0x110000;
-    final Map<String, Rule> rules = new LinkedHashMap<>();
+    /** The code point after the last unicode code point, used for end of input. */
+    public static final int EOF = 0x110000;
+    /** The rules, in grammar order, followed by the generated rules /1, /2, ... */
+    public final Map<String, Rule> rules = new LinkedHashMap<>();
     final Set<String> extensions = new LinkedHashSet<>();
-    String start;
+    /** The name of the start rule, the first rule of the grammar. */
+    public String start;
     private final String source;
     private int pos, serial;
     private String current; // The rule being read.
 
-    static final class Rule {
-        final String name;
-        String mark = "", alias = "";
-        int cost; // Number of < after = or :, used to prefer cheaper alternatives.
-        final List<List<Term>> alternatives = new ArrayList<>();
+    /** A rule, name = alternatives. A generated rule (/1, /2, ...) is hidden. */
+    public static final class Rule {
+        /** The rule name. */
+        public final String name;
+        /** The mark (^ @ - or empty) and the alias (rule>alias or empty). */
+        public String mark = "", alias = "";
+        /** Number of &lt; after = or :, used to prefer cheaper alternatives. */
+        public int cost;
+        /** The alternatives, each a sequence of terms. */
+        public final List<List<Term>> alternatives = new ArrayList<>();
         final BitSet first = new BitSet(), follow = new BitSet();
         boolean nullable, productive;
         // Left recursion elimination (see eliminateLeftRecursion):
-        // lrTail is set on a rewritten rule A, the name of its loop rule.
-        // lrOwner is set on the loop rule, the name of A, and lrWrap has for
+        // lr_tail is set on a rewritten rule A, the name of its loop rule.
+        // lr_owner is set on the loop rule, the name of A, and lr_wrap has for
         // each alternative of the loop rule the element name that wraps the
         // content of A so far, or null for no wrapping.
-        String lrTail, lrOwner;
+        String lr_tail, lr_owner;
         // For a generated rule (/1, /2, ...) the named rule it was made for, used in error messages.
         String origin;
-        List<String> lrWrap;
+        List<String> lr_wrap;
         Rule(String name) { this.name = name; }
     }
-    static final class Term {
-        String ref, insertion, mark = "", alias = "";
-        BitSet chars;
-        // A negative lookahead !'abc' or ![set]: the following input must not
-        // start with a code point sequence matching these sets in order.
-        List<BitSet> not;
+    /** A term: a call of a rule (ref), a character set (chars), an insertion or a not. */
+    public static final class Term {
+        /** The called rule, the inserted text, the mark (^ @ - or empty) and the alias. */
+        public String ref, insertion, mark = "", alias = "";
+        /** The code points this term matches. */
+        public BitSet chars;
+        /** A negative lookahead !'abc' or ![set]: the following input must not
+         *  start with a code point sequence matching these sets in order. */
+        public List<BitSet> not;
         // A negative lookahead !name, resolved into not after the grammar is read.
-        String notRef;
+        String not_ref;
         static Term call(String ref) { Term t = new Term(); t.ref = ref; return t; }
         static Term match(BitSet chars) { Term t = new Term(); t.chars = chars; return t; }
     }
@@ -67,14 +79,14 @@ public final class IXMLGrammar {
      */
     void eliminateLeftRecursion() {
         for (Rule a : new ArrayList<>(rules.values())) {
-            if (a.lrOwner != null || a.lrTail != null) continue;
+            if (a.lr_owner != null || a.lr_tail != null) continue;
             // Expand A = G, rest where G = A | () into A = A, rest | rest.
             List<List<Term>> expanded = new ArrayList<>();
-            boolean viaOptional = false;
+            boolean via_optional = false;
             for (List<Term> alt : a.alternatives) {
                 Term g = alt.isEmpty() ? null : optionalOf(alt.get(0), a.name);
                 if (g == null) { expanded.add(alt); continue; }
-                viaOptional = true;
+                via_optional = true;
                 List<Term> with = new ArrayList<>(alt); with.set(0, g);
                 expanded.add(with);
                 expanded.add(new ArrayList<>(alt.subList(1, alt.size())));
@@ -95,23 +107,23 @@ public final class IXMLGrammar {
             if (!ok) continue;
             Rule tail = generated();
             tail.origin = a.origin != null ? a.origin : a.name;
-            tail.lrOwner = a.name;
-            tail.lrWrap = wraps;
+            tail.lr_owner = a.name;
+            tail.lr_wrap = wraps;
             for (List<Term> alt : rec) {
                 List<Term> l = new ArrayList<>(alt.subList(1, alt.size()));
                 l.add(call(tail));
                 tail.alternatives.add(l);
             }
             tail.alternatives.add(new ArrayList<>());
-            tail.lrWrap.add(null);
+            tail.lr_wrap.add(null);
             a.alternatives.clear();
             for (List<Term> alt : base) {
                 List<Term> l = new ArrayList<>(alt);
                 l.add(call(tail));
                 a.alternatives.add(l);
             }
-            a.lrTail = tail.name;
-            if (viaOptional) { /* The optional rule may now be unused, which is harmless. */ }
+            a.lr_tail = tail.name;
+            if (via_optional) { /* The optional rule may now be unused, which is harmless. */ }
         }
     }
     // If t calls a generated rule G = A | () (in any order), return the call of A in G.
@@ -171,10 +183,10 @@ public final class IXMLGrammar {
         for (Rule r : rules.values()) for (List<Term> a : r.alternatives) {
             for (int i = 0; i < a.size(); i++) {
                 Term t = a.get(i);
-                if (t.notRef == null) continue;
-                if (!rules.containsKey(t.notRef)) throw error("the rule " + t.notRef + " after not ! is not defined");
-                List<List<BitSet>> seqs = notSequences(t.notRef, 0);
-                if (seqs == null) throw error("the rule " + t.notRef + " after not ! must match fixed sequences of" +
+                if (t.not_ref == null) continue;
+                if (!rules.containsKey(t.not_ref)) throw error("the rule " + t.not_ref + " after not ! is not defined");
+                List<List<BitSet>> seqs = notSequences(t.not_ref, 0);
+                if (seqs == null) throw error("the rule " + t.not_ref + " after not ! must match fixed sequences of" +
                                               " characters (no repetitions, options or empty alternatives)");
                 // !(x | y) is !x, !y: one negative lookahead per alternative.
                 t.not.addAll(seqs.get(0));
@@ -305,7 +317,7 @@ public final class IXMLGrammar {
             Term t = new Term();
             t.not = new ArrayList<>();
             if (peek() == '[' || peek() == '~') t.not.add(charset());
-            else if (nameStart(peek())) t.notRef = name();
+            else if (nameStart(peek())) t.not_ref = name();
             else literal().codePoints().forEach(cp -> { BitSet b = new BitSet(); b.set(cp); t.not.add(b); });
             whitespace(); return t;
         }

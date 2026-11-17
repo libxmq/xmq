@@ -70,12 +70,12 @@ final class NumberData
     String from;
     String value;
     String format;
-    int hasFormat;
-    int digitsPerGroup;
-    int groupingCharacter;
-    int groupingCharacterLen;
+    int has_format;
+    int digits_per_group;
+    int grouping_character;
+    int grouping_character_len;
     XmlDocument doc;
     XmlNode node;
-    Pattern countPat;
-    Pattern fromPat;
+    Pattern count_pat;
+    Pattern from_pat;
 }

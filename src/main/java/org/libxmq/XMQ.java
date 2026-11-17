@@ -228,15 +228,15 @@ public class XMQ
         if (e.info() != null) out.append(e.info());
         String text = e.text() == null ? "" : e.text();
         int at = e.charIndex();
-        boolean atEnd = at < 0 || at >= text.length();
+        boolean at_end = at < 0 || at >= text.length();
         if (e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_CHAR || e.errorCode() == ParseErrorCode.XMQ_ERROR_JSON_INVALID_CHAR)
         {
-            int cp = atEnd ? 0 : text.codePointAt(at);
+            int cp = at_end ? 0 : text.codePointAt(at);
             out.append(" \"").append(cp == 0 ? "" : new String(Character.toChars(cp))).append("\" U+")
                .append(Integer.toHexString(cp).toUpperCase(Locale.ROOT));
         }
         // For invalid UTF-8 the text is the line up to the bad bytes and the marker goes after it.
-        if (!atEnd || e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_UTF8)
+        if (!at_end || e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_UTF8)
         {
             // C prints the line as a C string, it ends at a NUL character.
             int nul = text.indexOf('\0');

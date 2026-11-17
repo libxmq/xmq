@@ -156,7 +156,7 @@ public final class HtmlSave
                 }
                 else if (cur.children_ == null)
                 {
-                    if (info != null && info.saveEndTag != 0 && !info.name.equals("html") && !info.name.equals("body"))
+                    if (info != null && info.save_end_tag != 0 && !info.name.equals("html") && !info.name.equals("body"))
                     {
                         out.append('>');
                     }
@@ -611,7 +611,7 @@ public final class HtmlSave
     static String encodeEntities(XmlDocument doc, String input, boolean attr)
     {
         boolean html = doc != null && doc.isHtml();
-        boolean hasEncoding = doc != null && doc.encoding() != null;
+        boolean has_encoding = doc != null && doc.encoding() != null;
         StringBuilder out = new StringBuilder(input.length() + 16);
         int len = input.length();
         int i = 0;
@@ -652,7 +652,7 @@ public final class HtmlSave
             {
                 int cp = input.codePointAt(i);
                 int n = Character.charCount(cp);
-                if (hasEncoding || html)
+                if (has_encoding || html)
                 {
                     out.append(input, i, i + n);
                 }

@@ -56,6 +56,6 @@ public final class Xsd10IDCAug
     Xsd10IDCAug next;
     /** the IDC definition */
     Xsd10IDC def;
-    /** C {@code int keyrefDepth}. */
-    int keyrefDepth;
+    /** C {@code int keyref_depth}. */
+    int keyref_depth;
 }

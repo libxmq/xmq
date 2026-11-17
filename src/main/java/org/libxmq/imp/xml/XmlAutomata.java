@@ -70,16 +70,16 @@ public final class XmlAutomata
 
     XmlRegexp.RegAtom atom;
 
-    int maxAtoms;
-    int nbAtoms;
+    int max_atoms;
+    int nb_atoms;
     XmlRegexp.RegAtom[] atoms;
 
-    int maxStates;
-    int nbStates;
+    int max_states;
+    int nb_states;
     XmlAutomataState[] states;
 
-    int maxCounters;
-    int nbCounters;
+    int max_counters;
+    int nb_counters;
     XmlRegexp.RegCounter[] counters;
 
     int determinist;

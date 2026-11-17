@@ -29,34 +29,34 @@ public class Validate
     {
         /**
          * A message.
-         * @param userData The user data.
+         * @param user_data The user data.
          * @param message The message.
-         * @param isWarning True for warnings.
+         * @param is_warning True for warnings.
          */
-        void message(Object userData, String message, boolean isWarning);
+        void message(Object user_data, String message, boolean is_warning);
     }
 
     private Xsd10Schema schema;
     private XmlDocument dom;
     private MessageCallback callback;
-    private Object userData;
+    private Object user_data;
     private StringBuilder messages;
 
     private Validate()
     {
     }
 
-    private void deliver(String message, boolean isWarning)
+    private void deliver(String message, boolean is_warning)
     {
         if (messages != null) messages.append(message);
-        if (callback != null) callback.message(userData, message, isWarning);
+        if (callback != null) callback.message(user_data, message, is_warning);
     }
 
     /** Like xmq_xsd_error/xmq_xsd_warning: called as cb(ctx, "%s", message). */
-    private void vdeliver(boolean isWarning, String fmt, Object... args)
+    private void vdeliver(boolean is_warning, String fmt, Object... args)
     {
         String m = fmt.equals("%s") && args.length == 1 ? String.valueOf(args[0]) : org.libxmq.imp.xml.CFormat.format(fmt, args);
-        deliver(m, isWarning);
+        deliver(m, is_warning);
     }
 
     /** Like xmq_xsd_structured: print the formatted error on stderr. */
@@ -72,15 +72,15 @@ public class Validate
      * Compile a schema (xmqCompileXsd).
      * @param src The schema document.
      * @param callback The message callback, or null to print the messages on stderr.
-     * @param userData The user data of the callback.
+     * @param user_data The user data of the callback.
      * @return The compiled schema, or null.
      */
-    public static Validate compile(XmlDocument src, MessageCallback callback, Object userData)
+    public static Validate compile(XmlDocument src, MessageCallback callback, Object user_data)
     {
         if (src == null) return null;
         Validate x = new Validate();
         x.callback = callback;
-        x.userData = userData;
+        x.user_data = user_data;
         // A copy of the schema document, it must live as long as the schema.
         x.dom = XmlDomApi.domNew();
         if (src.version() != null) x.dom.setVersion(src.version());
@@ -116,12 +116,12 @@ public class Validate
     /**
      * Set the message callback used by validate (xmqSetXsdMessageCallback).
      * @param callback The callback.
-     * @param userData The user data.
+     * @param user_data The user data.
      */
-    public void setMessageCallback(MessageCallback callback, Object userData)
+    public void setMessageCallback(MessageCallback callback, Object user_data)
     {
         this.callback = callback;
-        this.userData = userData;
+        this.user_data = user_data;
     }
 
     /**

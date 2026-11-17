@@ -61,5 +61,5 @@ public final class Xsd10IDCSelect
     /** the XPath expression */
     String xpath;
     /** the compiled XPath expression (an XmlPattern) */
-    Object xpathComp;
+    Object xpath_comp;
 }

@@ -60,13 +60,13 @@ public final class XmlAutomataState
     int markd;
     int reached;
     int no;
-    int maxTrans;
-    int nbTrans;
+    int max_trans;
+    int nb_trans;
     XmlRegexp.RegTrans[] trans;
     /*  knowing states pointing to us can speed things up */
-    int maxTransTo;
-    int nbTransTo;
-    int[] transTo;
+    int max_trans_to;
+    int nb_trans_to;
+    int[] trans_to;
 
     XmlAutomataState()
     {

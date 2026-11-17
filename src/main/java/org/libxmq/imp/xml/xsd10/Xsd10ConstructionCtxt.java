@@ -53,9 +53,9 @@ package org.libxmq.imp.xml.xsd10;
 public final class Xsd10ConstructionCtxt
 {
     /** The main schema. */
-    Xsd10Schema mainSchema;
+    Xsd10Schema main_schema;
     /** The main schema bucket */
-    Xsd10Bucket mainBucket;
+    Xsd10Bucket main_bucket;
     /** C {@code XmlXsd10Dict * dict}. */
     Xsd10Dict dict;
     /** List of schema buckets. */
@@ -64,10 +64,10 @@ public final class Xsd10ConstructionCtxt
     Xsd10Bucket bucket;
     /** C {@code XmlXsd10ItemList * pending}. */
     Xsd10ItemList pending;
-    /** C {@code XmlXsd10Hash * substGroups}. */
-    Xsd10Hash substGroups;
+    /** C {@code XmlXsd10Hash * subst_groups}. */
+    Xsd10Hash subst_groups;
     /** C {@code XmlXsd10Redef * redefs}. */
     Xsd10Redef redefs;
-    /** C {@code XmlXsd10Redef * lastRedef}. */
-    Xsd10Redef lastRedef;
+    /** C {@code XmlXsd10Redef * last_redef}. */
+    Xsd10Redef last_redef;
 }

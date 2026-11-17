@@ -56,8 +56,8 @@ public final class Xsd10SchemaRelation
     Xsd10SchemaRelation next;
     /** E.g. XML_XSD10_SCHEMA_SCHEMA_IMPORT */
     int type;
-    /** C {@code const char * importNamespace}. */
-    String importNamespace;
+    /** C {@code const char * import_namespace}. */
+    String import_namespace;
     /** C {@code XmlXsd10Bucket * bucket}. */
     Xsd10Bucket bucket;
 }

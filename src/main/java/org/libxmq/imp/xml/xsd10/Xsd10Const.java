@@ -129,15 +129,15 @@ public interface Xsd10Const
     @FunctionalInterface
     interface StructuredErrorFunc
     {
-        /** @param userData user data @param error the error, only valid during the call */
-        void error(Object userData, Xsd10Error error);
+        /** @param user_data user data @param error the error, only valid during the call */
+        void error(Object user_data, Xsd10Error error);
     }
     /** C XmlXsd10Loader: load the schema document at uri, null if it cannot be loaded. */
     @FunctionalInterface
     interface Loader
     {
-        /** @param userData user data @param uri the uri @return the document or null */
-        XmlDocument load(Object userData, String uri);
+        /** @param user_data user data @param uri the uri @return the document or null */
+        XmlDocument load(Object user_data, String uri);
     }
     /** C XmlXsd10HashDeallocator. */
     @FunctionalInterface

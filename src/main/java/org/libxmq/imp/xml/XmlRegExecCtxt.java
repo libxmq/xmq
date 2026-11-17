@@ -69,8 +69,8 @@ public final class XmlRegExecCtxt
     /*
      * A stack of rollback states
      */
-    int maxRollbacks;
-    int nbRollbacks;
+    int max_rollbacks;
+    int nb_rollbacks;
     XmlRegexp.RegExecRollback[] rollbacks;
 
     /*
@@ -81,21 +81,21 @@ public final class XmlRegExecCtxt
     /*
      * The input stack
      */
-    int inputStackMax;
-    int inputStackNr;
+    int input_stack_max;
+    int input_stack_nr;
     int index;
-    int[] charStack;
-    byte[] inputString; /* when operating on characters (UTF-8, read as 0 past the end) */
-    XmlRegexp.RegInputToken[] inputStack; /* when operating on strings */
+    int[] char_stack;
+    byte[] input_string; /* when operating on characters (UTF-8, read as 0 past the end) */
+    XmlRegexp.RegInputToken[] input_stack; /* when operating on strings */
 
     /*
      * error handling
      */
-    int errStateNo;		/* the error state number */
-    XmlAutomataState errState;    /* the error state */
-    String errString;		/* the string raising the error */
-    int[] errCounts;		/* counters at the error state (C: second half of counts) */
-    int nbPush;
+    int err_state_no;		/* the error state number */
+    XmlAutomataState err_state;    /* the error state */
+    String err_string;		/* the string raising the error */
+    int[] err_counts;		/* counters at the error state (C: second half of counts) */
+    int nb_push;
 
     XmlRegExecCtxt()
     {

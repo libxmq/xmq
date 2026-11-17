@@ -83,7 +83,7 @@ final class XPathContext
         this.px = px;
         this.settings = settings;
         this.expr = expr;
-        this.node = settings.noContextNode ? null : context;
+        this.node = settings.no_context_node ? null : context;
         this.doc = documentOf(context);
         this.position = position;
         this.size = size;
@@ -323,7 +323,7 @@ final class XPathContext
     {
         XmlDocument d = doc instanceof XmlDocument ? (XmlDocument)doc : null;
         Map<String, java.util.Set<String>> dtd_ids = d == null ? null : dtdIdAttributes(d);
-        boolean html = settings.htmlIds;
+        boolean html = settings.html_ids;
         XmlNode n = doc;
         while (n != null)
         {

@@ -63,13 +63,13 @@ public final class XPathSettings
     /** Prefixes that may be used in expressions (the xml prefix is always known). */
     public Map<String, String> namespaces = new HashMap<>();
     /** id() also finds id attributes (and name on a), like libxml2 for html documents. */
-    public boolean htmlIds;
+    public boolean html_ids;
     /** Maximum nesting of the expression. */
-    public int maxDepth = DEFAULT_MAX_DEPTH;
+    public int max_depth = DEFAULT_MAX_DEPTH;
     /** There is no context node (like a fresh libxml2 xmlXPathNewContext): relative paths select nothing. */
-    public boolean noContextNode;
+    public boolean no_context_node;
     /** Variable references are compile errors (libxml2 XML_XPATH_NOVAR, xslt patterns). */
-    public boolean noVariables;
+    public boolean no_variables;
 
     /** Default settings. */
     public XPathSettings()
@@ -83,9 +83,9 @@ public final class XPathSettings
     public XPathSettings(XPathSettings s)
     {
         namespaces = new HashMap<>(s.namespaces);
-        htmlIds = s.htmlIds;
-        maxDepth = s.maxDepth;
-        noContextNode = s.noContextNode;
-        noVariables = s.noVariables;
+        html_ids = s.html_ids;
+        max_depth = s.max_depth;
+        no_context_node = s.no_context_node;
+        no_variables = s.no_variables;
     }
 }

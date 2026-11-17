@@ -100,17 +100,17 @@ public final class Xsd10Schemas
     /** XSD10_WXS_ELEM_TYPEDEF(e). @param e element @return subtypes */
     static Xsd10Type wxsElemTypedef(Xsd10Element e) { return e.subtypes; }
     // XSD10_WXS_SUBST_HEAD
-    /** XSD10_WXS_SUBST_HEAD(item). @param item element @return refDecl */
-    static Xsd10Element wxsSubstHead(Xsd10Element item) { return item.refDecl; }
+    /** XSD10_WXS_SUBST_HEAD(item). @param item element @return ref_decl */
+    static Xsd10Element wxsSubstHead(Xsd10Element item) { return item.ref_decl; }
     // XSD10_WXS_ATTR_TYPEDEF
     /** XSD10_WXS_ATTR_TYPEDEF(a). @param a attribute @return subtypes */
     static Xsd10Type wxsAttrTypedef(Xsd10Attribute a) { return a.subtypes; }
     // XSD10_WXS_ATTRUSE_DECL
-    /** XSD10_WXS_ATTRUSE_DECL(au): the attribute decl (null if attrDecl is not an Xsd10Attribute).
+    /** XSD10_WXS_ATTRUSE_DECL(au): the attribute decl (null if attr_decl is not an Xsd10Attribute).
         @param au attribute use @return decl */
     static Xsd10Attribute wxsAttruseDecl(Xsd10BasicItem au)
     {
-        Xsd10BasicItem d = ((Xsd10AttributeUse) au).attrDecl;
+        Xsd10BasicItem d = ((Xsd10AttributeUse) au).attr_decl;
         return (d instanceof Xsd10Attribute) ? (Xsd10Attribute) d : null;
     }
     // XSD10_WXS_ATTRUSE_TYPEDEF
@@ -121,7 +121,7 @@ public final class Xsd10Schemas
     static String wxsAttruseDeclName(Xsd10BasicItem au) { return wxsAttruseDecl(au).name; }
     // XSD10_WXS_ATTRUSE_DECL_TNS
     /** XSD10_WXS_ATTRUSE_DECL_TNS(au). @param au attribute use @return namespace */
-    static String wxsAttruseDeclTns(Xsd10BasicItem au) { return wxsAttruseDecl(au).targetNamespace; }
+    static String wxsAttruseDeclTns(Xsd10BasicItem au) { return wxsAttruseDecl(au).target_namespace; }
     // XSD10_WXS_ATTR_GROUP_HAS_REFS
     /** XSD10_WXS_ATTR_GROUP_HAS_REFS(ag). @param ag group @return flag bits */
     static int wxsAttrGroupHasRefs(Xsd10BasicItem ag) { return ((Xsd10AttributeGroup) ag).flags & XML_XSD10_SCHEMAS_ATTRGROUP_HAS_REFS; }
@@ -170,21 +170,21 @@ public final class Xsd10Schemas
     static int wxsIsAnytype(Xsd10BasicItem i)
     {
         return ((i.type == XML_XSD10_SCHEMA_TYPE_BASIC) && (i instanceof Xsd10Type)
-                && (((Xsd10Type) i).builtInType == XML_XSD10_SCHEMAS_ANYTYPE)) ? 1 : 0;
+                && (((Xsd10Type) i).built_in_type == XML_XSD10_SCHEMAS_ANYTYPE)) ? 1 : 0;
     }
     // XSD10_WXS_IS_COMPLEX
     /** XSD10_WXS_IS_COMPLEX(i). @param i type @return 1 or 0 */
-    static int wxsIsComplex(Xsd10Type i) { return ((i.type == XML_XSD10_SCHEMA_TYPE_COMPLEX) || (i.builtInType == XML_XSD10_SCHEMAS_ANYTYPE)) ? 1 : 0; }
+    static int wxsIsComplex(Xsd10Type i) { return ((i.type == XML_XSD10_SCHEMA_TYPE_COMPLEX) || (i.built_in_type == XML_XSD10_SCHEMAS_ANYTYPE)) ? 1 : 0; }
     // XSD10_WXS_IS_SIMPLE
     /** XSD10_WXS_IS_SIMPLE(item). @param item type @return 1 or 0 */
     static int wxsIsSimple(Xsd10Type item)
     {
         return ((item.type == XML_XSD10_SCHEMA_TYPE_SIMPLE)
-                || ((item.type == XML_XSD10_SCHEMA_TYPE_BASIC) && (item.builtInType != XML_XSD10_SCHEMAS_ANYTYPE))) ? 1 : 0;
+                || ((item.type == XML_XSD10_SCHEMA_TYPE_BASIC) && (item.built_in_type != XML_XSD10_SCHEMAS_ANYTYPE))) ? 1 : 0;
     }
     // XSD10_WXS_IS_ANY_SIMPLE_TYPE
     /** XSD10_WXS_IS_ANY_SIMPLE_TYPE(i). @param i type @return 1 or 0 */
-    static int wxsIsAnySimpleType(Xsd10Type i) { return ((i.type == XML_XSD10_SCHEMA_TYPE_BASIC) && (i.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE)) ? 1 : 0; }
+    static int wxsIsAnySimpleType(Xsd10Type i) { return ((i.type == XML_XSD10_SCHEMA_TYPE_BASIC) && (i.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE)) ? 1 : 0; }
     // XSD10_WXS_IS_RESTRICTION
     /** XSD10_WXS_IS_RESTRICTION(t). @param t type @return flag bits */
     static int wxsIsRestriction(Xsd10Type t) { return t.flags & XML_XSD10_SCHEMAS_TYPE_DERIVATION_METHOD_RESTRICTION; }
@@ -207,18 +207,18 @@ public final class Xsd10Schemas
     /** XSD10_WXS_HAS_COMPLEX_CONTENT(item). @param item type @return 1 or 0 */
     static int wxsHasComplexContent(Xsd10Type item)
     {
-        return ((item.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) || (item.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
-                || (item.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)) ? 1 : 0;
+        return ((item.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) || (item.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+                || (item.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)) ? 1 : 0;
     }
     // XSD10_WXS_HAS_SIMPLE_CONTENT
     /** XSD10_WXS_HAS_SIMPLE_CONTENT(item). @param item type @return 1 or 0 */
     static int wxsHasSimpleContent(Xsd10Type item)
     {
-        return ((item.contentType == XML_XSD10_SCHEMA_CONTENT_SIMPLE) || (item.contentType == XML_XSD10_SCHEMA_CONTENT_BASIC)) ? 1 : 0;
+        return ((item.content_type == XML_XSD10_SCHEMA_CONTENT_SIMPLE) || (item.content_type == XML_XSD10_SCHEMA_CONTENT_BASIC)) ? 1 : 0;
     }
     // XSD10_WXS_HAS_MIXED_CONTENT
     /** XSD10_WXS_HAS_MIXED_CONTENT(item). @param item type @return 1 or 0 */
-    static int wxsHasMixedContent(Xsd10Type item) { return (item.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) ? 1 : 0; }
+    static int wxsHasMixedContent(Xsd10Type item) { return (item.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) ? 1 : 0; }
     // XSD10_WXS_EMPTIABLE
     /** XSD10_WXS_EMPTIABLE(t). @param t type @return isParticleEmptiable of its content particle */
     static int wxsEmptiable(Xsd10Type t) { return isParticleEmptiable((Xsd10Particle) t.subtypes); }
@@ -250,11 +250,11 @@ public final class Xsd10Schemas
     /** XSD10_WXS_HAS_BUCKETS(ctx). @param ctx parser context @return 1 or 0 */
     static int wxsHasBuckets(Xsd10ParserCtxt ctx)
     {
-        return ((wxsConstructor(ctx).buckets != null) && (wxsConstructor(ctx).buckets.nbItems > 0)) ? 1 : 0;
+        return ((wxsConstructor(ctx).buckets != null) && (wxsConstructor(ctx).buckets.nb_items > 0)) ? 1 : 0;
     }
     // XSD10_WXS_SUBST_GROUPS
-    /** XSD10_WXS_SUBST_GROUPS(ctx). @param ctx parser context @return substGroups */
-    static Xsd10Hash wxsSubstGroups(Xsd10ParserCtxt ctx) { return wxsConstructor(ctx).substGroups; }
+    /** XSD10_WXS_SUBST_GROUPS(ctx). @param ctx parser context @return subst_groups */
+    static Xsd10Hash wxsSubstGroups(Xsd10ParserCtxt ctx) { return wxsConstructor(ctx).subst_groups; }
     // XSD10_WXS_BUCKET
     /** XSD10_WXS_BUCKET(ctx). @param ctx parser context @return the current bucket */
     static Xsd10Bucket wxsBucket(Xsd10ParserCtxt ctx) { return wxsConstructor(ctx).bucket; }
@@ -311,7 +311,7 @@ public final class Xsd10Schemas
     }
     // XSD10_WXS_ILIST_IS_EMPTY
     /** XSD10_WXS_ILIST_IS_EMPTY(l). @param l list @return 1 or 0 */
-    static int wxsIlistIsEmpty(Xsd10ItemList l) { return ((l == null) || (l.nbItems == 0)) ? 1 : 0; }
+    static int wxsIlistIsEmpty(Xsd10ItemList l) { return ((l == null) || (l.nb_items == 0)) ? 1 : 0; }
     // XSD10_IS_SCHEMA
     /** XSD10_IS_SCHEMA(node, type): an element named type in the xsd namespace. @param node node
         @param type local name @return 1 or 0 */
@@ -336,7 +336,7 @@ public final class Xsd10Schemas
     static String getQNameRefName(Object r) { return ((Xsd10QNameRef) r).name; }
     // xml_xsd10_get_q_name_ref_target_ns
     /** xml_xsd10_get_q_name_ref_target_ns(r) (a macro). @param r QName ref @return namespace */
-    static String getQNameRefTargetNs(Object r) { return ((Xsd10QNameRef) r).targetNamespace; }
+    static String getQNameRefTargetNs(Object r) { return ((Xsd10QNameRef) r).target_namespace; }
     // XSD10_VERROR
     /** XSD10_VERROR(err, type, msg) with the local vctxt passed explicitly. @param vctxt context
         @param err code @param type item @param msg message */
@@ -728,19 +728,19 @@ public final class Xsd10Schemas
     }
 
     // xsd10_schemas_vasprintf
-    /** Port of xmlStrVASPrintf with maxSize: the formatted message, truncated to maxSize - 1 bytes (and
+    /** Port of xmlStrVASPrintf with max_size: the formatted message, truncated to max_size - 1 bytes (and
         then without a trailing incomplete UTF-8 sequence) if longer. null if msg is null.
-        @param maxSize the maximum size incl. the C terminator @param msg the format @param ap the args
+        @param max_size the maximum size incl. the C terminator @param msg the format @param ap the args
         @return the message or null */
-    private static String vasprintf(int maxSize, String msg, Object[] ap)
+    private static String vasprintf(int max_size, String msg, Object[] ap)
     {
         if (msg == null) return null;
-        if (maxSize < 32) maxSize = 32;
+        if (max_size < 32) max_size = 32;
         String s = format(msg, ap);
         int len = utf8Length(s);
-        if (len < maxSize) return s;
+        if (len < max_size) return s;
         byte[] buf = s.getBytes(StandardCharsets.UTF_8);
-        int size = maxSize;
+        int size = max_size;
         int i = size - 1;
         while (i > 0)
         {
@@ -857,9 +857,9 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_grow_capacity
-    /** Port of xmlGrowCapacity. @param capacity current @param elemSize element size @param min initial
+    /** Port of xmlGrowCapacity. @param capacity current @param elem_size element size @param min initial
         @param max maximum @return the new capacity or -1 */
-    static int growCapacity(int capacity, long elemSize, int min, int max)
+    static int growCapacity(int capacity, long elem_size, int min, int max)
     {
         int extra;
 
@@ -867,7 +867,7 @@ public final class Xsd10Schemas
             return min;
 
         if ((capacity >= max) ||
-            ((elemSize > 0) && ((long) capacity > Long.MAX_VALUE / elemSize)))
+            ((elem_size > 0) && ((long) capacity > Long.MAX_VALUE / elem_size)))
             return -1;
 
         /* Grow by 50% */
@@ -1424,13 +1424,13 @@ public final class Xsd10Schemas
                     {
                         if (nbns >= maxns)
                         {
-                            int newSize;
+                            int new_size;
 
-                            newSize = growCapacity(maxns, 8, 10, XML_XSD10_MAX_ITEMS);
-                            if (newSize < 0)
+                            new_size = growCapacity(maxns, 8, 10, XML_XSD10_MAX_ITEMS);
+                            if (new_size < 0)
                                 return null;
-                            namespaces = (namespaces == null) ? new XmlNs[newSize + 1] : Arrays.copyOf(namespaces, newSize + 1);
-                            maxns = newSize;
+                            namespaces = (namespaces == null) ? new XmlNs[new_size + 1] : Arrays.copyOf(namespaces, new_size + 1);
+                            maxns = new_size;
                         }
                         namespaces[nbns++] = cur;
                         namespaces[nbns] = null;
@@ -2136,14 +2136,14 @@ public final class Xsd10Schemas
     }
 
     // xsd10_schemas_load_file
-    /* Load uri like xmlCtxtReadFile with XML_PARSE_NOENT. notLocated[0] is 1 if the file could not be read. */
-    private static XmlDocument loadFile(String uri, LoadReport rep, int[] notLocated)
+    /* Load uri like xmlCtxtReadFile with XML_PARSE_NOENT. not_located[0] is 1 if the file could not be read. */
+    private static XmlDocument loadFile(String uri, LoadReport rep, int[] not_located)
     {
         String path = uri;
         byte[] buf;
         XmlDocument dom;
 
-        if (notLocated != null) notLocated[0] = 0;
+        if (not_located != null) not_located[0] = 0;
         if (uri == null) return null;
         if (path.startsWith("file://"))
         {
@@ -2182,7 +2182,7 @@ public final class Xsd10Schemas
                 else
                     raiseErrorCtxt(null, GENERIC_ERROR, null, "\n^\n", null, XML_XSD10_FROM_IO, code, level,
                                    uri, 1, null, 0, 1, "%s\n", errstr);
-                if (notLocated != null) notLocated[0] = 1;
+                if (not_located != null) not_located[0] = 1;
                 return null;
             }
             if ((rep != null) && (rep.serror != null))
@@ -2191,7 +2191,7 @@ public final class Xsd10Schemas
             else
                 raiseError(null, GENERIC_ERROR, null, null, XML_XSD10_FROM_IO, code, level,
                            null, 0, uri, 0, 0, "failed to load \"%s\": %s\n", uri, errstr);
-            if (notLocated != null) notLocated[0] = 1;
+            if (not_located != null) not_located[0] = 1;
             return null;
         }
         dom = schemasParse(buf, uri, rep);
@@ -2210,40 +2210,40 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_read_file
     /** Port of xml_xsd10_p_read_file. @param pctxt parser context @param url url
-        @param notLocated out: 1 if not found, may be null @return the document or null */
-    static XmlDocument pReadFile(Xsd10ParserCtxt pctxt, String url, int[] notLocated)
+        @param not_located out: 1 if not found, may be null @return the document or null */
+    static XmlDocument pReadFile(Xsd10ParserCtxt pctxt, String url, int[] not_located)
     {
         LoadReport rep = new LoadReport();
         XmlDocument dom;
 
-        if (notLocated != null) notLocated[0] = 0;
+        if (not_located != null) not_located[0] = 0;
         if (url == null) return null;
-        if ((pctxt != null) && (pctxt.resourceLoader != null))
+        if ((pctxt != null) && (pctxt.resource_loader != null))
         {
-            dom = pctxt.resourceLoader.load(pctxt.resourceCtxt, url);
+            dom = pctxt.resource_loader.load(pctxt.resource_ctxt, url);
             /* A custom loader cannot tell why it failed, assume the resource was not found. */
-            if ((dom == null) && (notLocated != null)) notLocated[0] = 1;
+            if ((dom == null) && (not_located != null)) not_located[0] = 1;
             if ((dom != null) && (domUrl(dom) == null)) domSetUrl(dom, url);
             return dom;
         }
         rep.serror = pctxt != null ? pctxt.serror : null;
-        rep.data = pctxt != null ? pctxt.errCtxt : null;
-        return loadFile(url, rep, notLocated);
+        rep.data = pctxt != null ? pctxt.err_ctxt : null;
+        return loadFile(url, rep, not_located);
     }
 
     // xml_xsd10_p_read_memory
     /** Port of xml_xsd10_p_read_memory: parse the first size UTF-8 bytes of buffer.
         @param pctxt parser context @param buffer the text @param size its size in bytes
-        @param notLocated out, may be null @return the document or null */
-    static XmlDocument pReadMemory(Xsd10ParserCtxt pctxt, String buffer, int size, int[] notLocated)
+        @param not_located out, may be null @return the document or null */
+    static XmlDocument pReadMemory(Xsd10ParserCtxt pctxt, String buffer, int size, int[] not_located)
     {
         LoadReport rep = new LoadReport();
         XmlDocument dom;
 
-        if (notLocated != null) notLocated[0] = 0;
+        if (not_located != null) not_located[0] = 0;
         if ((buffer == null) || (size < 0)) return null;
         rep.serror = pctxt != null ? pctxt.serror : null;
-        rep.data = pctxt != null ? pctxt.errCtxt : null;
+        rep.data = pctxt != null ? pctxt.err_ctxt : null;
         byte[] b = buffer.getBytes(StandardCharsets.UTF_8);
         if (size < b.length) b = Arrays.copyOf(b, size);
         dom = schemasParse(b, null, rep);
@@ -2381,24 +2381,24 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_format_q_name
-    /** Port of xmlSchemaFormatQName: "{namespaceName}localName" or just "localName" if namespaceName
-        is null. @param buf the string buffer @param namespaceName the namespace name
-        @param localName the local name @return the localName if namespaceName is null, a formatted
+    /** Port of xmlSchemaFormatQName: "{namespace_name}localName" or just "localName" if namespace_name
+        is null. @param buf the string buffer @param namespace_name the namespace name
+        @param localName the local name @return the localName if namespace_name is null, a formatted
         string otherwise */
-    static String formatQName(String[] buf, String namespaceName, String localName)
+    static String formatQName(String[] buf, String namespace_name, String local_name)
     {
         buf[0] = null;
-        if (namespaceName != null)
+        if (namespace_name != null)
         {
             buf[0] = strdup("{");
-            buf[0] = strcat(buf[0], namespaceName);
+            buf[0] = strcat(buf[0], namespace_name);
             buf[0] = strcat(buf[0], "}");
         }
-        if (localName != null)
+        if (local_name != null)
         {
-            if (namespaceName == null)
-                return localName;
-            buf[0] = strcat(buf[0], localName);
+            if (namespace_name == null)
+                return local_name;
+            buf[0] = strcat(buf[0], local_name);
         }
         else
         {
@@ -2410,12 +2410,12 @@ public final class Xsd10Schemas
     // xml_xsd10_format_q_name_ns
     /** Port of xmlSchemaFormatQNameNs. @param buf buffer @param ns ns @param localName local name
         @return the formatted name */
-    static String formatQNameNs(String[] buf, XmlNs ns, String localName)
+    static String formatQNameNs(String[] buf, XmlNs ns, String local_name)
     {
         if (ns != null)
-            return formatQName(buf, nsHref(ns), localName);
+            return formatQName(buf, nsHref(ns), local_name);
         else
-            return formatQName(buf, null, localName);
+            return formatQName(buf, null, local_name);
     }
 
     // xml_xsd10_get_component_name
@@ -2475,22 +2475,22 @@ public final class Xsd10Schemas
         switch (item.type)
         {
         case XML_XSD10_SCHEMA_TYPE_ELEMENT:
-            return (item instanceof Xsd10Element e) ? e.targetNamespace : null;
+            return (item instanceof Xsd10Element e) ? e.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_ATTRIBUTE:
-            return (item instanceof Xsd10Attribute a) ? a.targetNamespace : null;
+            return (item instanceof Xsd10Attribute a) ? a.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP:
-            return (item instanceof Xsd10AttributeGroup g) ? g.targetNamespace : null;
+            return (item instanceof Xsd10AttributeGroup g) ? g.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_BASIC:
             return "http://www.w3.org/2001/XMLSchema";
         case XML_XSD10_SCHEMA_TYPE_SIMPLE:
         case XML_XSD10_SCHEMA_TYPE_COMPLEX:
-            return (item instanceof Xsd10Type t) ? t.targetNamespace : null;
+            return (item instanceof Xsd10Type t) ? t.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_GROUP:
-            return (item instanceof Xsd10ModelGroupDef g) ? g.targetNamespace : null;
+            return (item instanceof Xsd10ModelGroupDef g) ? g.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_IDC_KEY:
         case XML_XSD10_SCHEMA_TYPE_IDC_UNIQUE:
         case XML_XSD10_SCHEMA_TYPE_IDC_KEYREF:
-            return (item instanceof Xsd10IDC i) ? i.targetNamespace : null;
+            return (item instanceof Xsd10IDC i) ? i.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_ATTRIBUTE_USE:
             if ((item instanceof Xsd10AttributeUse) && (wxsAttruseDecl(item) != null))
             {
@@ -2499,9 +2499,9 @@ public final class Xsd10Schemas
             /* TODO: Will returning NULL break something? */
             break;
         case XML_XSD10_SCHEMA_EXTRA_QNAMEREF:
-            return (item instanceof Xsd10QNameRef q) ? q.targetNamespace : null;
+            return (item instanceof Xsd10QNameRef q) ? q.target_namespace : null;
         case XML_XSD10_SCHEMA_TYPE_NOTATION:
-            return (item instanceof Xsd10Notation n) ? n.targetNamespace : null;
+            return (item instanceof Xsd10Notation n) ? n.target_namespace : null;
         default:
             /*
              * Other components cannot have names.
@@ -2542,8 +2542,8 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_wildcard_pc_to_string
-    /** Port of xmlSchemaWildcardPCToString. @param pc the type of processContents
-        @return a string representation of the type of processContents */
+    /** Port of xmlSchemaWildcardPCToString. @param pc the type of process_contents
+        @return a string representation of the type of process_contents */
     static String wildcardPcToString(int pc)
     {
         switch (pc)
@@ -2562,25 +2562,25 @@ public final class Xsd10Schemas
     // xml_xsd10_get_canon_value_whtsp_ext_1
     /** Port of xmlSchemaGetCanonValueWhtspExt_1: the canonical representation of the value.
         @param val the precomputed value @param ws the whitespace type of the value
-        @param retValue out: the value @param for_hash non-zero if this is supposed to generate a
+        @param ret_value out: the value @param for_hash non-zero if this is supposed to generate a
         string for hashing @return 0 if the value could be built and -1 in case of API errors or if
         the value type is not supported yet */
-    static int getCanonValueWhtspExt1(Xsd10Val val, int ws, String[] retValue, int for_hash)
+    static int getCanonValueWhtspExt1(Xsd10Val val, int ws, String[] ret_value, int for_hash)
     {
         boolean list;
-        int valType;
+        int val_type;
         String value;
         String[] value2 = { null };
 
-        if ((retValue == null) || (val == null))
+        if ((ret_value == null) || (val == null))
             return -1;
         list = valueGetNext(val) != null;
-        retValue[0] = null;
+        ret_value[0] = null;
         do
         {
             value = null;
-            valType = getValType(val);
-            switch (valType)
+            val_type = getValType(val);
+            switch (val_type)
             {
             case XML_XSD10_SCHEMAS_STRING:
             case XML_XSD10_SCHEMAS_NORMSTRING:
@@ -2599,10 +2599,10 @@ public final class Xsd10Schemas
             default:
                 if (getCanonValue(val, value2) == -1)
                 {
-                    retValue[0] = null;
+                    ret_value[0] = null;
                     return -1;
                 }
-                if ((for_hash != 0) && valType == XML_XSD10_SCHEMAS_DECIMAL)
+                if ((for_hash != 0) && val_type == XML_XSD10_SCHEMAS_DECIMAL)
                 {
                     /* We can mostly use the canonical value for hashing,
                        except in the case of decimal.  There the canonical
@@ -2620,21 +2620,21 @@ public final class Xsd10Schemas
                 }
                 value = value2[0];
             }
-            if (retValue[0] == null)
+            if (ret_value[0] == null)
             {
                 if (value == null)
                 {
                     if (!list)
-                        retValue[0] = strdup("");
+                        ret_value[0] = strdup("");
                 }
                 else
-                    retValue[0] = strdup(value);
+                    ret_value[0] = strdup(value);
             }
             else if (value != null)
             {
                 /* List. */
-                retValue[0] = strcat(retValue[0], " ");
-                retValue[0] = strcat(retValue[0], value);
+                ret_value[0] = strcat(ret_value[0], " ");
+                ret_value[0] = strcat(ret_value[0], value);
             }
             value2[0] = null;
             val = valueGetNext(val);
@@ -2645,38 +2645,38 @@ public final class Xsd10Schemas
 
     // xml_xsd10_get_canon_value_whtsp_ext
     /** Port of xmlSchemaGetCanonValueWhtspExt. @param val value @param ws whitespace
-        @param retValue out @return 0 or -1 */
-    static int getCanonValueWhtspExt(Xsd10Val val, int ws, String[] retValue)
+        @param ret_value out @return 0 or -1 */
+    static int getCanonValueWhtspExt(Xsd10Val val, int ws, String[] ret_value)
     {
-        return getCanonValueWhtspExt1(val, ws, retValue, 0);
+        return getCanonValueWhtspExt1(val, ws, ret_value, 0);
     }
 
     // xml_xsd10_get_canon_value_hash
-    /** Port of xmlSchemaGetCanonValueHash. @param val value @param retValue out @return 0 or -1 */
-    static int getCanonValueHash(Xsd10Val val, String[] retValue)
+    /** Port of xmlSchemaGetCanonValueHash. @param val value @param ret_value out @return 0 or -1 */
+    static int getCanonValueHash(Xsd10Val val, String[] ret_value)
     {
         return getCanonValueWhtspExt1(val, XML_XSD10_SCHEMA_WHITESPACE_COLLAPSE,
-                                      retValue, 1);
+                                      ret_value, 1);
     }
 
     // xml_xsd10_format_item_for_report
     /** Port of xmlSchemaFormatItemForReport. The following order is used to build the resulting
-        designation if the arguments are not null: 1a. If itemDes not null -&gt; itemDes; 2. If the
-        preceding was null and (item not null) -&gt; item; 3. If the preceding was null and (itemNode
-        not null) -&gt; itemNode. If the itemNode is an attribute node, the name of the attribute will
+        designation if the arguments are not null: 1a. If item_des not null -&gt; item_des; 2. If the
+        preceding was null and (item not null) -&gt; item; 3. If the preceding was null and (item_node
+        not null) -&gt; item_node. If the item_node is an attribute node, the name of the attribute will
         be appended to the result.
-        @param buf the string buffer @param itemDes the designation of the item @param item the item
-        @param itemNode the node of the item @return the formatted (escaped) string, also in buf[0] */
-    static String formatItemForReport(String[] buf, String itemDes, Xsd10BasicItem item, XmlNode itemNode)
+        @param buf the string buffer @param item_des the designation of the item @param item the item
+        @param item_node the node of the item @return the formatted (escaped) string, also in buf[0] */
+    static String formatItemForReport(String[] buf, String item_des, Xsd10BasicItem item, XmlNode item_node)
     {
         String[] str = { null };
         int named = 1;
 
         buf[0] = null;
 
-        if (itemDes != null)
+        if (item_des != null)
         {
-            buf[0] = strdup(itemDes);
+            buf[0] = strdup(item_des);
         }
         else if (item != null)
         {
@@ -2769,7 +2769,7 @@ public final class Xsd10Schemas
                 attr = (Xsd10Attribute) item;
                 buf[0] = strdup("attribute decl.");
                 buf[0] = strcat(buf[0], " '");
-                buf[0] = strcat(buf[0], formatQName(str, attr.targetNamespace, attr.name));
+                buf[0] = strcat(buf[0], formatQName(str, attr.target_namespace, attr.name));
                 str[0] = null;
                 buf[0] = strcat(buf[0], "'");
             }
@@ -2784,7 +2784,7 @@ public final class Xsd10Schemas
                 elem = (Xsd10Element) item;
                 buf[0] = strdup("element decl.");
                 buf[0] = strcat(buf[0], " '");
-                buf[0] = strcat(buf[0], formatQName(str, elem.targetNamespace, elem.name));
+                buf[0] = strcat(buf[0], formatQName(str, elem.target_namespace, elem.name));
                 buf[0] = strcat(buf[0], "'");
             }
             break;
@@ -2802,7 +2802,7 @@ public final class Xsd10Schemas
                 break;
             case XML_XSD10_SCHEMA_TYPE_ANY:
             case XML_XSD10_SCHEMA_TYPE_ANY_ATTRIBUTE:
-                buf[0] = strdup(wildcardPcToString(((Xsd10Wildcard) item).processContents));
+                buf[0] = strdup(wildcardPcToString(((Xsd10Wildcard) item).process_contents));
                 buf[0] = strcat(buf[0], " wildcard");
                 break;
             case XML_XSD10_SCHEMA_FACET_MININCLUSIVE:
@@ -2854,14 +2854,14 @@ public final class Xsd10Schemas
         else
             named = 0;
 
-        if ((named == 0) && (itemNode != null))
+        if ((named == 0) && (item_node != null))
         {
             XmlNode elem;
 
-            if (nodeKind(itemNode) == ATTRIBUTE)
-                elem = nodeParent(itemNode);
+            if (nodeKind(item_node) == ATTRIBUTE)
+                elem = nodeParent(item_node);
             else
-                elem = itemNode;
+                elem = item_node;
             /* libxml2 overwrites (leaks) a notation designation here, the output is the same. */
             buf[0] = null;
             buf[0] = strdup("Element '");
@@ -2875,16 +2875,16 @@ public final class Xsd10Schemas
             buf[0] = strcat(buf[0], "'");
 
         }
-        if ((itemNode != null) && (nodeKind(itemNode) == ATTRIBUTE))
+        if ((item_node != null) && (nodeKind(item_node) == ATTRIBUTE))
         {
             buf[0] = strcat(buf[0], ", attribute '");
-            if (nsHrefOf(itemNode) != null)
+            if (nsHrefOf(item_node) != null)
             {
-                buf[0] = strcat(buf[0], formatQName(str, nsHrefOf(itemNode), nodeName(itemNode)));
+                buf[0] = strcat(buf[0], formatQName(str, nsHrefOf(item_node), nodeName(item_node)));
                 str[0] = null;
             }
             else
-                buf[0] = strcat(buf[0], nodeName(itemNode));
+                buf[0] = strcat(buf[0], nodeName(item_node));
             buf[0] = strcat(buf[0], "'");
         }
 
@@ -2910,7 +2910,7 @@ public final class Xsd10Schemas
             /*
              * Use the whitespace type of the base type.
              */
-            ws = getWhiteSpaceFacetValue(type.baseType);
+            ws = getWhiteSpaceFacetValue(type.base_type);
             for (facet = type.facets; facet != null; facet = facet.next)
             {
                 if (facet.type != XML_XSD10_SCHEMA_FACET_ENUMERATION)
@@ -2941,7 +2941,7 @@ public final class Xsd10Schemas
              */
             if (found)
                 break;
-            type = type.baseType;
+            type = type.base_type;
         } while ((type != null) && (type.type != XML_XSD10_SCHEMA_TYPE_BASIC));
 
         return buf[0];
@@ -2967,7 +2967,7 @@ public final class Xsd10Schemas
             ctxt.err = XML_XSD10_ERR_NO_MEMORY;
             channel = ctxt.error;
             schannel = ctxt.serror;
-            data = ctxt.errCtxt;
+            data = ctxt.err_ctxt;
         }
 
         raiseMemoryError(schannel, channel, data, XML_XSD10_FROM_SCHEMASP);
@@ -3000,7 +3000,7 @@ public final class Xsd10Schemas
                 ctxt.err = code;
                 channel = ctxt.error;
             }
-            data = ctxt.errCtxt;
+            data = ctxt.err_ctxt;
             schannel = ctxt.serror;
         }
 
@@ -3045,13 +3045,13 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_err_ext
     /** Port of xmlSchemaPErrExt: handle a parser error. @param ctxt the parsing context @param node the
-        context node @param code the error code @param strData1 extra data @param strData2 extra data
-        @param strData3 extra data @param msg the message @param str1 param @param str2 param
+        context node @param code the error code @param str_data1 extra data @param str_data2 extra data
+        @param str_data3 extra data @param msg the message @param str1 param @param str2 param
         @param str3 param @param str4 param @param str5 param */
-    static void pErrExt(Xsd10ParserCtxt ctxt, XmlNode node, int code, String strData1, String strData2, String strData3, String msg, String str1, String str2, String str3, String str4, String str5)
+    static void pErrExt(Xsd10ParserCtxt ctxt, XmlNode node, int code, String str_data1, String str_data2, String str_data3, String msg, String str1, String str2, String str3, String str4, String str5)
     {
         pErrFull(ctxt, node, code, XML_XSD10_ERR_ERROR, null, 0,
-                 strData1, strData2, strData3, 0,
+                 str_data1, str_data2, str_data3, 0,
                  msg, str1, str2, str3, str4, str5);
     }
 
@@ -3075,7 +3075,7 @@ public final class Xsd10Schemas
             ctxt.err = XML_XSD10_ERR_NO_MEMORY;
             channel = ctxt.error;
             schannel = ctxt.serror;
-            data = ctxt.errCtxt;
+            data = ctxt.err_ctxt;
         }
 
         raiseMemoryError(schannel, channel, data, XML_XSD10_FROM_SCHEMASV);
@@ -3108,7 +3108,7 @@ public final class Xsd10Schemas
                 ctxt.err = code;
                 channel = ctxt.error;
             }
-            data = ctxt.errCtxt;
+            data = ctxt.err_ctxt;
             schannel = ctxt.serror;
         }
 
@@ -3132,10 +3132,10 @@ public final class Xsd10Schemas
     // xml_xsd10_err4_line
     /** Port of xmlSchemaErr4Line: handle a validation error. The streaming branches (no node tree: the
         position of the parser input or of the locator) are not ported. @param ctxt the validation
-        context @param errorLevel the error level @param code the error code @param node the context
+        context @param error_level the error level @param code the error code @param node the context
         node @param line the line number @param msg the error message @param str1 extra data
         @param str2 extra data @param str3 extra data @param str4 extra data */
-    static void err4Line(Xsd10AbstractCtxt ctxt, int errorLevel, int code, XmlNode node, int line, String msg, String str1, String str2, String str3, String str4)
+    static void err4Line(Xsd10AbstractCtxt ctxt, int error_level, int code, XmlNode node, int line, String msg, String str1, String str2, String str3, String str4)
     {
         if (ctxt != null)
         {
@@ -3174,7 +3174,7 @@ public final class Xsd10Schemas
                 if ((file == null) && (vctxt.filename != null))
                     file = vctxt.filename;
 
-                vErrFull(vctxt, node, code, errorLevel,
+                vErrFull(vctxt, node, code, error_level,
                          file, line, str1, str2, str3, col,
                          msg, str1, str2, str3, str4);
             }
@@ -3182,7 +3182,7 @@ public final class Xsd10Schemas
             {
                 Xsd10ParserCtxt pctxt = (Xsd10ParserCtxt) ctxt;
 
-                pErrFull(pctxt, node, code, errorLevel,
+                pErrFull(pctxt, node, code, error_level,
                          null, 0, str1, str2, str3, 0,
                          msg, str1, str2, str3, str4);
             }
@@ -3271,12 +3271,12 @@ public final class Xsd10Schemas
             /*
              * Work on node infos.
              */
-            if (vctxt.inode.nodeType == ATTRIBUTE)
+            if (vctxt.inode.node_type == ATTRIBUTE)
             {
-                Xsd10NodeInfo ielem = vctxt.elemInfos[vctxt.depth];
+                Xsd10NodeInfo ielem = vctxt.elem_infos[vctxt.depth];
 
                 msg[0] = strdup("Element '");
-                msg[0] = strcat(msg[0], formatQName(str, ielem.nsName, ielem.localName));
+                msg[0] = strcat(msg[0], formatQName(str, ielem.ns_name, ielem.local_name));
                 str[0] = null;
                 msg[0] = strcat(msg[0], "', ");
                 msg[0] = strcat(msg[0], "attribute '");
@@ -3285,7 +3285,7 @@ public final class Xsd10Schemas
             {
                 msg[0] = strdup("Element '");
             }
-            msg[0] = strcat(msg[0], formatQName(str, vctxt.inode.nsName, vctxt.inode.localName));
+            msg[0] = strcat(msg[0], formatQName(str, vctxt.inode.ns_name, vctxt.inode.local_name));
             str[0] = null;
             msg[0] = strcat(msg[0], "': ");
         }
@@ -3317,9 +3317,9 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_internal_err2
-    /** Port of xmlSchemaInternalErr2. @param actxt context @param funcName function @param message
+    /** Port of xmlSchemaInternalErr2. @param actxt context @param func_name function @param message
         message @param str1 str1 @param str2 str2 */
-    static void internalErr2(Xsd10AbstractCtxt actxt, String funcName, String message, String str1, String str2)
+    static void internalErr2(Xsd10AbstractCtxt actxt, String func_name, String message, String str1, String str2)
     {
         String msg = null;
 
@@ -3331,17 +3331,17 @@ public final class Xsd10Schemas
 
         if (actxt.type == XML_XSD10_SCHEMA_CTXT_VALIDATOR)
             err3(actxt, XML_XSD10_SCHEMAV_INTERNAL, null,
-                 msg, funcName, str1, str2);
+                 msg, func_name, str1, str2);
         else if (actxt.type == XML_XSD10_SCHEMA_CTXT_PARSER)
             err3(actxt, XML_XSD10_SCHEMAP_INTERNAL, null,
-                 msg, funcName, str1, str2);
+                 msg, func_name, str1, str2);
     }
 
     // xml_xsd10_internal_err
-    /** Port of xmlSchemaInternalErr. @param actxt context @param funcName function @param message message */
-    static void internalErr(Xsd10AbstractCtxt actxt, String funcName, String message)
+    /** Port of xmlSchemaInternalErr. @param actxt context @param func_name function @param message message */
+    static void internalErr(Xsd10AbstractCtxt actxt, String func_name, String message)
     {
-        internalErr2(actxt, funcName, message, null, null);
+        internalErr2(actxt, func_name, message, null, null);
     }
 
     // xml_xsd10_custom_err4
@@ -3393,9 +3393,9 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_keyref_err
-    /** Port of xmlSchemaKeyrefErr. @param vctxt context @param error code @param idcNode the node
+    /** Port of xmlSchemaKeyrefErr. @param vctxt context @param error code @param idc_node the node
         @param type unused @param message message @param str1 str1 @param str2 str2 */
-    static void keyrefErr(Xsd10ValidCtxt vctxt, int error, Xsd10PSVIIDCNode idcNode, Xsd10BasicItem type, String message, String str1, String str2)
+    static void keyrefErr(Xsd10ValidCtxt vctxt, int error, Xsd10PSVIIDCNode idc_node, Xsd10BasicItem type, String message, String str1, String str2)
     {
         String msg;
         String[] qname = { null };
@@ -3404,10 +3404,10 @@ public final class Xsd10Schemas
         msg = strcat(msg, message);
         msg = strcat(msg, ".\n");
         err4Line(vctxt, XML_XSD10_ERR_ERROR,
-                 error, null, idcNode.nodeLine, msg,
+                 error, null, idc_node.node_line, msg,
                  formatQName(qname,
-                             (String) vctxt.nodeQNames.items[idcNode.nodeQNameID + 1],
-                             (String) vctxt.nodeQNames.items[idcNode.nodeQNameID]),
+                             (String) vctxt.node_q_names.items[idc_node.node_q_name_id + 1],
+                             (String) vctxt.node_q_names.items[idc_node.node_q_name_id]),
                  str1, str2, null);
     }
 
@@ -3419,7 +3419,7 @@ public final class Xsd10Schemas
             return nodeKind(node);
         if ((actxt.type == XML_XSD10_SCHEMA_CTXT_VALIDATOR) &&
             (((Xsd10ValidCtxt) actxt).inode != null))
-            return ((Xsd10ValidCtxt) actxt).inode.nodeType;
+            return ((Xsd10ValidCtxt) actxt).inode.node_type;
         return -1;
     }
 
@@ -3453,14 +3453,14 @@ public final class Xsd10Schemas
 
     // xml_xsd10_simple_type_err
     /** Port of xmlSchemaSimpleTypeErr. @param actxt context @param error code @param node node
-        @param value value @param type type @param displayValue display the value */
-    static void simpleTypeErr(Xsd10AbstractCtxt actxt, int error, XmlNode node, String value, Xsd10Type type, int displayValue)
+        @param value value @param type type @param display_value display the value */
+    static void simpleTypeErr(Xsd10AbstractCtxt actxt, int error, XmlNode node, String value, Xsd10Type type, int display_value)
     {
         String[] msg = { null };
 
         formatNodeForError(msg, actxt, node);
 
-        if ((displayValue != 0) || (evalErrorNodeType(actxt, node) ==
+        if ((display_value != 0) || (evalErrorNodeType(actxt, node) ==
                                     ATTRIBUTE))
             msg[0] = strcat(msg[0], "'%s' is not a valid value of ");
         else
@@ -3483,22 +3483,22 @@ public final class Xsd10Schemas
         {
             String[] str = { null };
             msg[0] = strcat(msg[0], " '");
-            if (type.builtInType != 0)
+            if (type.built_in_type != 0)
             {
                 msg[0] = strcat(msg[0], "xs:");
                 str[0] = strdup(type.name);
             }
             else
             {
-                String qName = formatQName(str, type.targetNamespace, type.name);
+                String q_name = formatQName(str, type.target_namespace, type.name);
                 if (str[0] == null)
-                    str[0] = strdup(qName);
+                    str[0] = strdup(q_name);
             }
             msg[0] = strcat(msg[0], escapeFormatString(str));
             msg[0] = strcat(msg[0], "'");
         }
         msg[0] = strcat(msg[0], ".\n");
-        if ((displayValue != 0) || (evalErrorNodeType(actxt, node) ==
+        if ((display_value != 0) || (evalErrorNodeType(actxt, node) ==
                                     ATTRIBUTE))
             err(actxt, error, node, msg[0], value, null);
         else
@@ -3518,7 +3518,7 @@ public final class Xsd10Schemas
                 return formatQName(str, null, nodeName(node));
         }
         else if (ni != null)
-            return formatQName(str, ni.nsName, ni.localName);
+            return formatQName(str, ni.ns_name, ni.local_name);
         return null;
     }
 
@@ -3545,9 +3545,9 @@ public final class Xsd10Schemas
     {
         String[] str = { null };
         String[] msg = { null };
-        String localName, nsName;
+        String local_name, ns_name;
         String cur;
-        int curPos, end;
+        int cur_pos, end;
         int i;
 
         formatNodeForError(msg, actxt, node);
@@ -3566,35 +3566,35 @@ public final class Xsd10Schemas
             }
             else
                 str[0] = strdup(" Expected is ( ");
-            nsName = null;
+            ns_name = null;
 
             for (i = 0; i < nbval + nbneg; i++)
             {
                 cur = values[i];
                 if (cur == null)
                     continue;
-                curPos = 0;
+                cur_pos = 0;
                 if (cur.startsWith("not "))
                 {
-                    curPos += 4;
+                    cur_pos += 4;
                     str[0] = strcat(str[0], "##other");
                 }
                 /*
                  * Get the local name.
                  */
-                localName = null;
+                local_name = null;
 
-                end = curPos;
+                end = cur_pos;
                 if (end < cur.length() && cur.charAt(end) == '*')
                 {
-                    localName = strdup("*");
+                    local_name = strdup("*");
                     end++;
                 }
                 else
                 {
                     while ((end < cur.length()) && (cur.charAt(end) != '|'))
                         end++;
-                    localName = (end - curPos == 0) ? localName : strcat(localName, cur.substring(curPos, end));
+                    local_name = (end - cur_pos == 0) ? local_name : strcat(local_name, cur.substring(cur_pos, end));
                 }
                 if (end < cur.length())
                 {
@@ -3603,39 +3603,39 @@ public final class Xsd10Schemas
                      * Skip "*|*" if they come with negated expressions, since
                      * they represent the same negated wildcard.
                      */
-                    boolean endStar = end < cur.length() && cur.charAt(end) == '*';
-                    boolean localStar = localName != null && localName.startsWith("*");
-                    if ((nbneg == 0) || !endStar || !localStar)
+                    boolean end_star = end < cur.length() && cur.charAt(end) == '*';
+                    boolean local_star = local_name != null && local_name.startsWith("*");
+                    if ((nbneg == 0) || !end_star || !local_star)
                     {
                         /*
                          * Get the namespace name.
                          */
-                        curPos = end;
-                        if (endStar)
+                        cur_pos = end;
+                        if (end_star)
                         {
-                            nsName = strdup("{*}");
+                            ns_name = strdup("{*}");
                         }
                         else
                         {
                             end = cur.length();
 
                             if (i >= nbval)
-                                nsName = strdup("{##other:");
+                                ns_name = strdup("{##other:");
                             else
-                                nsName = strdup("{");
+                                ns_name = strdup("{");
 
-                            nsName = strcat(nsName, cur.substring(curPos, end));
-                            nsName = strcat(nsName, "}");
+                            ns_name = strcat(ns_name, cur.substring(cur_pos, end));
+                            ns_name = strcat(ns_name, "}");
                         }
-                        str[0] = strcat(str[0], nsName);
-                        nsName = null;
+                        str[0] = strcat(str[0], ns_name);
+                        ns_name = null;
                     }
                     else
                     {
                         continue;
                     }
                 }
-                str[0] = strcat(str[0], localName);
+                str[0] = strcat(str[0], local_name);
 
                 if (i < nbval + nbneg - 1)
                     str[0] = strcat(str[0], ", ");
@@ -3656,121 +3656,121 @@ public final class Xsd10Schemas
     {
         String[] str = { null };
         String[] msg = { null };
-        int facetType;
-        int nodeType = evalErrorNodeType(actxt, node);
+        int facet_type;
+        int node_type = evalErrorNodeType(actxt, node);
 
         formatNodeForError(msg, actxt, node);
         if (error == XML_XSD10_SCHEMAV_CVC_ENUMERATION_VALID)
         {
-            facetType = XML_XSD10_SCHEMA_FACET_ENUMERATION;
+            facet_type = XML_XSD10_SCHEMA_FACET_ENUMERATION;
             /*
              * If enumerations are validated, one must not expect the
              * facet to be given.
              */
         }
         else
-            facetType = facet.type;
+            facet_type = facet.type;
         msg[0] = strcat(msg[0], "[");
         msg[0] = strcat(msg[0], "facet '");
-        msg[0] = strcat(msg[0], facetTypeToString(facetType));
+        msg[0] = strcat(msg[0], facetTypeToString(facet_type));
         msg[0] = strcat(msg[0], "'] ");
         if (message == null)
         {
             /*
              * Use a default message.
              */
-            if ((facetType == XML_XSD10_SCHEMA_FACET_LENGTH) ||
-                (facetType == XML_XSD10_SCHEMA_FACET_MINLENGTH) ||
-                (facetType == XML_XSD10_SCHEMA_FACET_MAXLENGTH))
+            if ((facet_type == XML_XSD10_SCHEMA_FACET_LENGTH) ||
+                (facet_type == XML_XSD10_SCHEMA_FACET_MINLENGTH) ||
+                (facet_type == XML_XSD10_SCHEMA_FACET_MAXLENGTH))
             {
-                String len, actLen;
+                String len, act_len;
 
                 /* FIXME, TODO: What is the max expected string length of the
                  * this value?
                  */
-                if (nodeType == ATTRIBUTE)
+                if (node_type == ATTRIBUTE)
                     msg[0] = strcat(msg[0], "The value '%s' has a length of '%s'; ");
                 else
                     msg[0] = strcat(msg[0], "The value has a length of '%s'; ");
 
                 len = format("%lu", getFacetValueAsUlong(facet));
-                actLen = format("%lu", length);
+                act_len = format("%lu", length);
 
-                if (facetType == XML_XSD10_SCHEMA_FACET_LENGTH)
+                if (facet_type == XML_XSD10_SCHEMA_FACET_LENGTH)
                     msg[0] = strcat(msg[0],
                                     "this differs from the allowed length of '%s'.\n");
-                else if (facetType == XML_XSD10_SCHEMA_FACET_MAXLENGTH)
+                else if (facet_type == XML_XSD10_SCHEMA_FACET_MAXLENGTH)
                     msg[0] = strcat(msg[0],
                                     "this exceeds the allowed maximum length of '%s'.\n");
-                else if (facetType == XML_XSD10_SCHEMA_FACET_MINLENGTH)
+                else if (facet_type == XML_XSD10_SCHEMA_FACET_MINLENGTH)
                     msg[0] = strcat(msg[0],
                                     "this underruns the allowed minimum length of '%s'.\n");
 
-                if (nodeType == ATTRIBUTE)
+                if (node_type == ATTRIBUTE)
                     err3(actxt, error, node, msg[0],
-                         value, actLen, len);
+                         value, act_len, len);
                 else
                     err(actxt, error, node, msg[0],
-                        actLen, len);
+                        act_len, len);
 
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_ENUMERATION)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_ENUMERATION)
             {
                 msg[0] = strcat(msg[0], "The value '%s' is not an element " +
                                 "of the set {%s}.\n");
                 err(actxt, error, node, msg[0], value,
                     formatFacetEnumSet(actxt, str, type));
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_PATTERN)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_PATTERN)
             {
                 msg[0] = strcat(msg[0], "The value '%s' is not accepted " +
                                 "by the pattern '%s'.\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_MININCLUSIVE)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_MININCLUSIVE)
             {
                 msg[0] = strcat(msg[0], "The value '%s' is less than the " +
                                 "minimum value allowed ('%s').\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_MAXINCLUSIVE)
             {
                 msg[0] = strcat(msg[0], "The value '%s' is greater than the " +
                                 "maximum value allowed ('%s').\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_MINEXCLUSIVE)
             {
                 msg[0] = strcat(msg[0], "The value '%s' must be greater than " +
                                 "'%s'.\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_MAXEXCLUSIVE)
             {
                 msg[0] = strcat(msg[0], "The value '%s' must be less than " +
                                 "'%s'.\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_TOTALDIGITS)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_TOTALDIGITS)
             {
                 msg[0] = strcat(msg[0], "The value '%s' has more " +
                                 "digits than are allowed ('%s').\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (facetType == XML_XSD10_SCHEMA_FACET_FRACTIONDIGITS)
+            else if (facet_type == XML_XSD10_SCHEMA_FACET_FRACTIONDIGITS)
             {
                 msg[0] = strcat(msg[0], "The value '%s' has more fractional " +
                                 "digits than are allowed ('%s').\n");
                 err(actxt, error, node, msg[0], value,
                     facet.value);
             }
-            else if (nodeType == ATTRIBUTE)
+            else if (node_type == ATTRIBUTE)
             {
                 msg[0] = strcat(msg[0], "The value '%s' is not facet-valid.\n");
                 err(actxt, error, node, msg[0], value, null);
@@ -3791,19 +3791,19 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_missing_attr_err
     /** Port of xmlSchemaPMissingAttrErr: reports an illegal attribute. @param ctxt the schema
-        validation context @param error the error code @param ownerItem the owner as a schema object
-        @param ownerElem the owner as an element node @param name name of the attribute
+        validation context @param error the error code @param owner_item the owner as a schema object
+        @param owner_elem the owner as an element node @param name name of the attribute
         @param message the error message */
-    static void pMissingAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerItem, XmlNode ownerElem, String name, String message)
+    static void pMissingAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_item, XmlNode owner_elem, String name, String message)
     {
         String[] des = { null };
 
-        formatItemForReport(des, null, ownerItem, ownerElem);
+        formatItemForReport(des, null, owner_item, owner_elem);
 
         if (message != null)
-            pErr(ctxt, ownerElem, error, "%s: %s.\n", des[0], message);
+            pErr(ctxt, owner_elem, error, "%s: %s.\n", des[0], message);
         else
-            pErr(ctxt, ownerElem, error,
+            pErr(ctxt, owner_elem, error,
                  "%s: The attribute '%s' is required but missing.\n",
                  des[0], name);
     }
@@ -3811,48 +3811,48 @@ public final class Xsd10Schemas
     // xml_xsd10_p_res_comp_attr_err
     /** Port of xmlSchemaPResCompAttrErr: used to report QName attribute values that failed to resolve
         to schema components. @param ctxt the schema validation context @param error the error code
-        @param ownerItem the owner as a schema object @param ownerElem the owner as an element node
-        @param name the name of the attribute holding the QName @param refName the referenced local
-        name @param refURI the referenced namespace URI @param refType the referenced type
-        @param refTypeStr the referenced type string */
-    static void pResCompAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerItem, XmlNode ownerElem, String name, String refName, String refURI, int refType, String refTypeStr)
+        @param owner_item the owner as a schema object @param owner_elem the owner as an element node
+        @param name the name of the attribute holding the QName @param ref_name the referenced local
+        name @param ref_uri the referenced namespace URI @param ref_type the referenced type
+        @param ref_type_str the referenced type string */
+    static void pResCompAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_item, XmlNode owner_elem, String name, String ref_name, String ref_uri, int ref_type, String ref_type_str)
     {
         String[] des = { null };
-        String[] strA = { null };
+        String[] str_a = { null };
 
-        formatItemForReport(des, null, ownerItem, ownerElem);
-        if (refTypeStr == null)
-            refTypeStr = itemTypeToStr(refType);
-        pErrExt(ctxt, ownerElem, error,
+        formatItemForReport(des, null, owner_item, owner_elem);
+        if (ref_type_str == null)
+            ref_type_str = itemTypeToStr(ref_type);
+        pErrExt(ctxt, owner_elem, error,
                 null, null, null,
                 "%s, attribute '%s': The QName value '%s' does not resolve to a(n) " +
                 "%s.\n", des[0], name,
-                formatQName(strA, refURI, refName),
-                refTypeStr, null);
+                formatQName(str_a, ref_uri, ref_name),
+                ref_type_str, null);
     }
 
     // xml_xsd10_p_custom_attr_err
     /** Port of xmlSchemaPCustomAttrErr: reports an illegal attribute during the parse.
-        @param ctxt the schema parser context @param error the error code @param ownerDes the
-        designation of the owner (in/out, may be null) @param ownerItem the owner as a schema object
+        @param ctxt the schema parser context @param error the error code @param owner_des the
+        designation of the owner (in/out, may be null) @param owner_item the owner as a schema object
         @param attr the illegal attribute node @param msg the error message */
-    static void pCustomAttrErr(Xsd10ParserCtxt ctxt, int error, String[] ownerDes, Xsd10BasicItem ownerItem, XmlNode attr, String msg)
+    static void pCustomAttrErr(Xsd10ParserCtxt ctxt, int error, String[] owner_des, Xsd10BasicItem owner_item, XmlNode attr, String msg)
     {
         String des = null;
 
-        if (ownerDes == null)
+        if (owner_des == null)
         {
             String[] d = { null };
-            formatItemForReport(d, null, ownerItem, attr != null ? nodeParent(attr) : null);
+            formatItemForReport(d, null, owner_item, attr != null ? nodeParent(attr) : null);
             des = d[0];
         }
-        else if (ownerDes[0] == null)
+        else if (owner_des[0] == null)
         {
-            formatItemForReport(ownerDes, null, ownerItem, attr != null ? nodeParent(attr) : null);
-            des = ownerDes[0];
+            formatItemForReport(owner_des, null, owner_item, attr != null ? nodeParent(attr) : null);
+            des = owner_des[0];
         }
         else
-            des = ownerDes[0];
+            des = owner_des[0];
         if (attr == null)
         {
             pErrExt(ctxt, null, error, null, null, null,
@@ -3870,62 +3870,62 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_illegal_attr_err
     /** Port of xmlSchemaPIllegalAttrErr: reports an illegal attribute during the parse.
-        @param ctxt the schema parser context @param error the error code @param ownerComp the
+        @param ctxt the schema parser context @param error the error code @param owner_comp the
         attribute's owner item (unused) @param attr the illegal attribute node */
-    static void pIllegalAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerComp, XmlNode attr)
+    static void pIllegalAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_comp, XmlNode attr)
     {
-        String[] strA = { null };
-        String[] strB = { null };
+        String[] str_a = { null };
+        String[] str_b = { null };
 
-        formatNodeForError(strA, ctxt, nodeParent(attr));
+        formatNodeForError(str_a, ctxt, nodeParent(attr));
         err4(ctxt, error, attr,
-             "%sThe attribute '%s' is not allowed.\n", strA[0],
-             formatQName(strB, nsHrefOf(attr), nodeName(attr)),
+             "%sThe attribute '%s' is not allowed.\n", str_a[0],
+             formatQName(str_b, nsHrefOf(attr), nodeName(attr)),
              null, null);
     }
 
     // xml_xsd10_p_custom_err_ext
     /** Port of xmlSchemaPCustomErrExt: reports an error during parsing. @param ctxt the schema parser
-        context @param error the error code @param item the schema item @param itemElem the node of the
+        context @param error the error code @param item the schema item @param item_elem the node of the
         schema item @param message the error message @param str1 optional param @param str2 optional
         param @param str3 optional param */
-    static void pCustomErrExt(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem item, XmlNode itemElem, String message, String str1, String str2, String str3)
+    static void pCustomErrExt(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem item, XmlNode item_elem, String message, String str1, String str2, String str3)
     {
         String[] des = { null };
         String msg;
 
-        formatItemForReport(des, null, item, itemElem);
+        formatItemForReport(des, null, item, item_elem);
         msg = strdup("%s: ");
         msg = strcat(msg, message);
         msg = strcat(msg, ".\n");
-        if ((itemElem == null) && (item != null))
-            itemElem = wxsItemNode(item);
-        pErrExt(ctxt, itemElem, error, null, null, null,
+        if ((item_elem == null) && (item != null))
+            item_elem = wxsItemNode(item);
+        pErrExt(ctxt, item_elem, error, null, null, null,
                 msg, des[0], str1, str2, str3, null);
     }
 
     // xml_xsd10_p_custom_err
     /** Port of xmlSchemaPCustomErr: reports an error during parsing. @param ctxt the schema parser
-        context @param error the error code @param item the schema item @param itemElem the node of the
+        context @param error the error code @param item the schema item @param item_elem the node of the
         schema item @param message the error message @param str1 the optional param */
-    static void pCustomErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem item, XmlNode itemElem, String message, String str1)
+    static void pCustomErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem item, XmlNode item_elem, String message, String str1)
     {
-        pCustomErrExt(ctxt, error, item, itemElem, message,
+        pCustomErrExt(ctxt, error, item, item_elem, message,
                       str1, null, null);
     }
 
     // xml_xsd10_p_attr_use_err4
     /** Port of xmlSchemaPAttrUseErr4: reports an attribute use error during parsing.
         @param ctxt the schema parser context @param error the error code @param node the context node
-        @param ownerItem the owner as a schema object @param attruse the invalid schema attribute
+        @param owner_item the owner as a schema object @param attruse the invalid schema attribute
         @param message the error message @param str1 param @param str2 param @param str3 param
         @param str4 param */
-    static void pAttrUseErr4(Xsd10ParserCtxt ctxt, int error, XmlNode node, Xsd10BasicItem ownerItem, Xsd10AttributeUse attruse, String message, String str1, String str2, String str3, String str4)
+    static void pAttrUseErr4(Xsd10ParserCtxt ctxt, int error, XmlNode node, Xsd10BasicItem owner_item, Xsd10AttributeUse attruse, String message, String str1, String str2, String str3, String str4)
     {
         String[] str = { null };
         String[] msg = { null };
 
-        formatItemForReport(msg, null, ownerItem, null);
+        formatItemForReport(msg, null, owner_item, null);
         msg[0] = strcat(msg[0], ", ");
         msg[0] = strcat(msg[0],
                         formatItemForReport(str, null,
@@ -3941,18 +3941,18 @@ public final class Xsd10Schemas
     // xml_xsd10_p_illegal_facet_atomic_err
     /** Port of xmlSchemaPIllegalFacetAtomicErr: reports an illegal facet for atomic simple types.
         @param ctxt the schema parser context @param error the error code @param type the schema type
-        @param baseType the base type of type @param facet the illegal facet */
-    static void pIllegalFacetAtomicErr(Xsd10ParserCtxt ctxt, int error, Xsd10Type type, Xsd10Type baseType, Xsd10Facet facet)
+        @param base_type the base type of type @param facet the illegal facet */
+    static void pIllegalFacetAtomicErr(Xsd10ParserCtxt ctxt, int error, Xsd10Type type, Xsd10Type base_type, Xsd10Facet facet)
     {
         String[] des = { null };
-        String[] strT = { null };
+        String[] str_t = { null };
 
         formatItemForReport(des, null, type, type.node);
         pErrExt(ctxt, type.node, error, null, null, null,
                 "%s: The facet '%s' is not allowed on types derived from the " +
                 "type %s.\n",
                 des[0], facetTypeToString(facet.type),
-                formatItemForReport(strT, null, baseType, null),
+                formatItemForReport(str_t, null, base_type, null),
                 null, null);
     }
 
@@ -3973,14 +3973,14 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_mutual_excl_attr_err
     /** Port of xmlSchemaPMutualExclAttrErr: reports an illegal attribute. @param ctxt the schema
-        validation context @param error the error code @param ownerItem the owner as a schema object
+        validation context @param error the error code @param owner_item the owner as a schema object
         @param attr the bad attribute node @param name1 first mutually exclusive name
         @param name2 second mutually exclusive name */
-    static void pMutualExclAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerItem, XmlNode attr, String name1, String name2)
+    static void pMutualExclAttrErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_item, XmlNode attr, String name1, String name2)
     {
         String[] des = { null };
 
-        formatItemForReport(des, null, ownerItem, nodeParent(attr));
+        formatItemForReport(des, null, owner_item, nodeParent(attr));
         pErrExt(ctxt, attr, error, null, null, null,
                 "%s: The attributes '%s' and '%s' are mutually exclusive.\n",
                 des[0], name1, name2, null, null);
@@ -3989,11 +3989,11 @@ public final class Xsd10Schemas
     // xml_xsd10_p_simple_type_err
     /** Port of xmlSchemaPSimpleTypeErr: reports a simple type validation error. TODO: Should this
         report the value of an element as well? @param ctxt the schema validation context
-        @param error the error code @param ownerItem the schema object if existent (unused)
+        @param error the error code @param owner_item the schema object if existent (unused)
         @param node the validated node @param type the type specifier @param expected the expected
         value @param value the validated value @param message error message @param str1 extra data
         @param str2 extra data */
-    static void pSimpleTypeErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerItem, XmlNode node, Xsd10Type type, String expected, String value, String message, String str1, String str2)
+    static void pSimpleTypeErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_item, XmlNode node, Xsd10Type type, String expected, String value, String message, String str1, String str2)
     {
         String[] msg = { null };
 
@@ -4026,16 +4026,16 @@ public final class Xsd10Schemas
                 {
                     String[] str = { null };
                     msg[0] = strcat(msg[0], " '");
-                    if (type.builtInType != 0)
+                    if (type.built_in_type != 0)
                     {
                         msg[0] = strcat(msg[0], "xs:");
                         str[0] = strdup(type.name);
                     }
                     else
                     {
-                        String qName = formatQName(str, type.targetNamespace, type.name);
+                        String q_name = formatQName(str, type.target_namespace, type.name);
                         if (str[0] == null)
-                            str[0] = strdup(qName);
+                            str[0] = strdup(q_name);
                     }
                     msg[0] = strcat(msg[0], escapeFormatString(str));
                     msg[0] = strcat(msg[0], "'.");
@@ -4051,9 +4051,9 @@ public final class Xsd10Schemas
             }
             if (expected != null)
             {
-                String[] expectedEscaped = { charStrdup(expected) };
+                String[] expected_escaped = { charStrdup(expected) };
                 msg[0] = strcat(msg[0], " Expected is '");
-                msg[0] = strcat(msg[0], escapeFormatString(expectedEscaped));
+                msg[0] = strcat(msg[0], escapeFormatString(expected_escaped));
                 msg[0] = strcat(msg[0], "'.\n");
             }
             else
@@ -4074,30 +4074,30 @@ public final class Xsd10Schemas
 
     // xml_xsd10_p_content_err
     /** Port of xmlSchemaPContentErr: reports an error concerning the content of a schema element.
-        @param ctxt the schema parser context @param error the error code @param ownerItem the owner
-        item of the holder of the content @param ownerElem the node of the holder of the content
+        @param ctxt the schema parser context @param error the error code @param owner_item the owner
+        item of the holder of the content @param owner_elem the node of the holder of the content
         @param child the invalid child node @param message the optional error message
         @param content the optional string describing the correct content */
-    static void pContentErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem ownerItem, XmlNode ownerElem, XmlNode child, String message, String content)
+    static void pContentErr(Xsd10ParserCtxt ctxt, int error, Xsd10BasicItem owner_item, XmlNode owner_elem, XmlNode child, String message, String content)
     {
         String[] des = { null };
 
-        formatItemForReport(des, null, ownerItem, ownerElem);
+        formatItemForReport(des, null, owner_item, owner_elem);
         if (message != null)
-            pErr2(ctxt, ownerElem, child, error,
+            pErr2(ctxt, owner_elem, child, error,
                   "%s: %s.\n",
                   des[0], message);
         else
         {
             if (content != null)
             {
-                pErr2(ctxt, ownerElem, child, error,
+                pErr2(ctxt, owner_elem, child, error,
                       "%s: The content is not valid. Expected is %s.\n",
                       des[0], content);
             }
             else
             {
-                pErr2(ctxt, ownerElem, child, error,
+                pErr2(ctxt, owner_elem, child, error,
                       "%s: The content is not valid.\n",
                       des[0], null);
             }
@@ -4165,42 +4165,42 @@ public final class Xsd10Schemas
         {
             list.items = null;
         }
-        list.nbItems = 0;
-        list.sizeItems = 0;
+        list.nb_items = 0;
+        list.size_items = 0;
     }
 
     // xml_xsd10_item_list_grow
-    /** Port of xmlSchemaItemListGrow. @param list list @param initialSize initial size @return 0 or -1 */
-    static int itemListGrow(Xsd10ItemList list, int initialSize)
+    /** Port of xmlSchemaItemListGrow. @param list list @param initial_size initial size @return 0 or -1 */
+    static int itemListGrow(Xsd10ItemList list, int initial_size)
     {
-        int newSize;
+        int new_size;
 
-        if (initialSize <= 0)
-            initialSize = 1;
-        newSize = growCapacity(list.sizeItems, 8,
-                               initialSize, XML_XSD10_MAX_ITEMS);
-        if (newSize < 0)
+        if (initial_size <= 0)
+            initial_size = 1;
+        new_size = growCapacity(list.size_items, 8,
+                               initial_size, XML_XSD10_MAX_ITEMS);
+        if (new_size < 0)
             return -1;
-        list.items = (list.items == null) ? new Object[newSize] : Arrays.copyOf(list.items, newSize);
-        list.sizeItems = newSize;
+        list.items = (list.items == null) ? new Object[new_size] : Arrays.copyOf(list.items, new_size);
+        list.size_items = new_size;
         return 0;
     }
 
     // xml_xsd10_item_list_add_size
-    /** Port of xmlSchemaItemListAddSize. @param list list @param initialSize initial size @param item
+    /** Port of xmlSchemaItemListAddSize. @param list list @param initial_size initial size @param item
         item @return 0 or -1 */
-    static int itemListAddSize(Xsd10ItemList list, int initialSize, Object item)
+    static int itemListAddSize(Xsd10ItemList list, int initial_size, Object item)
     {
-        if (list.sizeItems <= list.nbItems)
+        if (list.size_items <= list.nb_items)
         {
-            if (itemListGrow(list, initialSize) < 0)
+            if (itemListGrow(list, initial_size) < 0)
             {
                 pErrMemory(null);
                 return -1;
             }
         }
 
-        list.items[list.nbItems++] = item;
+        list.items[list.nb_items++] = item;
         return 0;
     }
 
@@ -4215,7 +4215,7 @@ public final class Xsd10Schemas
     /** Port of xmlSchemaItemListInsert. @param list list @param item item @param idx index @return 0 or -1 */
     static int itemListInsert(Xsd10ItemList list, Object item, int idx)
     {
-        if (list.sizeItems <= list.nbItems)
+        if (list.size_items <= list.nb_items)
         {
             if (itemListGrow(list, 20) < 0)
             {
@@ -4227,17 +4227,17 @@ public final class Xsd10Schemas
         /*
          * Just append if the index is greater/equal than the item count.
          */
-        if (idx >= list.nbItems)
+        if (idx >= list.nb_items)
         {
-            list.items[list.nbItems++] = item;
+            list.items[list.nb_items++] = item;
         }
         else
         {
             int i;
-            for (i = list.nbItems; i > idx; i--)
+            for (i = list.nb_items; i > idx; i--)
                 list.items[i] = list.items[i - 1];
             list.items[idx] = item;
-            list.nbItems++;
+            list.nb_items++;
         }
         return 0;
     }
@@ -4247,25 +4247,25 @@ public final class Xsd10Schemas
     static int itemListRemove(Xsd10ItemList list, int idx)
     {
         int i;
-        if ((list.items == null) || (idx >= list.nbItems))
+        if ((list.items == null) || (idx >= list.nb_items))
             return -1;
 
-        if (list.nbItems == 1)
+        if (list.nb_items == 1)
         {
             /* TODO: Really free the list? */
             list.items = null;
-            list.nbItems = 0;
-            list.sizeItems = 0;
+            list.nb_items = 0;
+            list.size_items = 0;
         }
-        else if (list.nbItems - 1 == idx)
+        else if (list.nb_items - 1 == idx)
         {
-            list.nbItems--;
+            list.nb_items--;
         }
         else
         {
-            for (i = idx; i < list.nbItems - 1; i++)
+            for (i = idx; i < list.nb_items - 1; i++)
                 list.items[i] = list.items[i + 1];
-            list.nbItems--;
+            list.nb_items--;
         }
         return 0;
     }
@@ -4315,25 +4315,25 @@ public final class Xsd10Schemas
 
     // xml_xsd10_bucket_create
     /** Port of xmlSchemaBucketCreate. @param pctxt parser context @param type bucket type
-        @param targetNamespace namespace @return the bucket or null */
-    static Xsd10Bucket bucketCreate(Xsd10ParserCtxt pctxt, int type, String targetNamespace)
+        @param target_namespace namespace @return the bucket or null */
+    static Xsd10Bucket bucketCreate(Xsd10ParserCtxt pctxt, int type, String target_namespace)
     {
         Xsd10Bucket ret;
-        Xsd10Schema mainSchema;
+        Xsd10Schema main_schema;
 
-        if (wxsConstructor(pctxt).mainSchema == null)
+        if (wxsConstructor(pctxt).main_schema == null)
         {
             perrorInt(pctxt, "xmlSchemaBucketCreate",
                       "no main schema on constructor");
             return null;
         }
-        mainSchema = wxsConstructor(pctxt).mainSchema;
+        main_schema = wxsConstructor(pctxt).main_schema;
         /* Create the schema bucket. */
         if (wxsIsBucketIncredef(type) != 0)
             ret = new Xsd10Include();
         else
             ret = new Xsd10Import();
-        ret.targetNamespace = targetNamespace;
+        ret.target_namespace = target_namespace;
         ret.type = type;
         ret.globals = itemListCreate();
         ret.locals = itemListCreate();
@@ -4341,8 +4341,8 @@ public final class Xsd10Schemas
          * The following will assure that only the first bucket is marked as
          * XML_SCHEMA_SCHEMA_MAIN and it points to the *main* schema.
          * For each following import buckets an xmlSchema will be created.
-         * An xmlSchema will be created for every distinct targetNamespace.
-         * We assign the targetNamespace to the schemata here.
+         * An xmlSchema will be created for every distinct target_namespace.
+         * We assign the target_namespace to the schemata here.
          */
         if (wxsHasBuckets(pctxt) == 0)
         {
@@ -4356,12 +4356,12 @@ public final class Xsd10Schemas
             /* Force the type to be XML_SCHEMA_SCHEMA_MAIN. */
             ret.type = XML_XSD10_SCHEMA_SCHEMA_MAIN;
             /* Point to the *main* schema. */
-            wxsConstructor(pctxt).mainBucket = ret;
-            wxsImpbucket(ret).schema = mainSchema;
+            wxsConstructor(pctxt).main_bucket = ret;
+            wxsImpbucket(ret).schema = main_schema;
             /*
-             * Ensure that the main schema gets a targetNamespace.
+             * Ensure that the main schema gets a target_namespace.
              */
-            mainSchema.targetNamespace = targetNamespace;
+            main_schema.target_namespace = target_namespace;
         }
         else
         {
@@ -4376,7 +4376,7 @@ public final class Xsd10Schemas
             {
                 /*
                  * Create a schema for imports and assign the
-                 * targetNamespace.
+                 * target_namespace.
                  */
                 wxsImpbucket(ret).schema = newSchema(pctxt);
                 if (wxsImpbucket(ret).schema == null)
@@ -4384,28 +4384,28 @@ public final class Xsd10Schemas
                     bucketFree(ret);
                     return null;
                 }
-                wxsImpbucket(ret).schema.targetNamespace = targetNamespace;
+                wxsImpbucket(ret).schema.target_namespace = target_namespace;
             }
         }
         if (wxsIsBucketImpmain(type) != 0)
         {
             int res;
             /*
-             * Imports go into the "schemasImports" slot of the main *schema*.
+             * Imports go into the "schemas_imports" slot of the main *schema*.
              * Note that we create an import entry for the main schema as well; i.e.,
              * even if there's only one schema, we'll get an import.
              */
-            if (mainSchema.schemasImports == null)
+            if (main_schema.schemas_imports == null)
             {
-                mainSchema.schemasImports = hashCreateDict(5,
+                main_schema.schemas_imports = hashCreateDict(5,
                                                            wxsConstructor(pctxt).dict);
             }
-            if (targetNamespace == null)
-                res = hashAddEntry(mainSchema.schemasImports,
+            if (target_namespace == null)
+                res = hashAddEntry(main_schema.schemas_imports,
                                    XML_XSD10_SCHEMAS_NO_NAMESPACE, ret);
             else
-                res = hashAddEntry(mainSchema.schemasImports,
-                                   targetNamespace, ret);
+                res = hashAddEntry(main_schema.schemas_imports,
+                                   target_namespace, ret);
             if (res != 0)
             {
                 perrorInt(pctxt, "xmlSchemaBucketCreate",
@@ -4416,19 +4416,19 @@ public final class Xsd10Schemas
         }
         else
         {
-            /* Set the @ownerImport of an include bucket. */
+            /* Set the @owner_import of an include bucket. */
             Xsd10Bucket cur = wxsConstructor(pctxt).bucket;
             if (wxsIsBucketImpmain(cur.type) != 0)
-                wxsIncbucket(ret).ownerImport = wxsImpbucket(cur);
+                wxsIncbucket(ret).owner_import = wxsImpbucket(cur);
             else
-                wxsIncbucket(ret).ownerImport = wxsIncbucket(cur).ownerImport;
+                wxsIncbucket(ret).owner_import = wxsIncbucket(cur).owner_import;
 
             /* Includes got into the "includes" slot of the *main* schema. */
-            if (mainSchema.includes == null)
+            if (main_schema.includes == null)
             {
-                mainSchema.includes = itemListCreate();
+                main_schema.includes = itemListCreate();
             }
-            if (itemListAdd((Xsd10ItemList) mainSchema.includes, ret) < 0)
+            if (itemListAdd((Xsd10ItemList) main_schema.includes, ret) < 0)
             {
                 bucketFree(ret);
                 return null;
@@ -4444,15 +4444,15 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_add_item_size
-    /** Port of xmlSchemaAddItemSize. @param list the list (in/out, created if null) @param initialSize
+    /** Port of xmlSchemaAddItemSize. @param list the list (in/out, created if null) @param initial_size
         initial size @param item item @return 0 or -1 */
-    static int addItemSize(Xsd10ItemList[] list, int initialSize, Object item)
+    static int addItemSize(Xsd10ItemList[] list, int initial_size, Object item)
     {
         if (list[0] == null)
         {
             list[0] = itemListCreate();
         }
-        return itemListAddSize(list[0], initialSize, item);
+        return itemListAddSize(list[0], initial_size, item);
     }
 
     // xml_xsd10_free_annot
@@ -4481,8 +4481,8 @@ public final class Xsd10Schemas
             return;
         if (attr.annot != null)
             freeAnnot(attr.annot);
-        if (attr.defVal != null)
-            freeValue(attr.defVal);
+        if (attr.def_val != null)
+            freeValue(attr.def_val);
     }
 
     // xml_xsd10_free_attribute_use
@@ -4493,8 +4493,8 @@ public final class Xsd10Schemas
             return;
         if (use.annot != null)
             freeAnnot(use.annot);
-        if (use.defVal != null)
-            freeValue(use.defVal);
+        if (use.def_val != null)
+            freeValue(use.def_val);
     }
 
     // xml_xsd10_free_attribute_use_prohib
@@ -4518,19 +4518,19 @@ public final class Xsd10Schemas
             return;
         if (wildcard.annot != null)
             freeAnnot(wildcard.annot);
-        if (wildcard.nsSet != null)
-            freeWildcardNsSet(wildcard.nsSet);
+        if (wildcard.ns_set != null)
+            freeWildcardNsSet(wildcard.ns_set);
     }
 
     // xml_xsd10_free_attribute_group
-    /** Port of xmlSchemaFreeAttributeGroup. @param attrGr a schema attribute group structure */
-    static void freeAttributeGroup(Xsd10AttributeGroup attrGr)
+    /** Port of xmlSchemaFreeAttributeGroup. @param attr_gr a schema attribute group structure */
+    static void freeAttributeGroup(Xsd10AttributeGroup attr_gr)
     {
-        if (attrGr == null)
+        if (attr_gr == null)
             return;
-        if (attrGr.annot != null)
-            freeAnnot(attrGr.annot);
-        if (attrGr.attrUses instanceof Xsd10ItemList l)
+        if (attr_gr.annot != null)
+            freeAnnot(attr_gr.annot);
+        if (attr_gr.attr_uses instanceof Xsd10ItemList l)
             itemListFree(l);
     }
 
@@ -4554,7 +4554,7 @@ public final class Xsd10Schemas
         while (sto != null)
         {
             next = sto.next;
-            if (sto.xpathCtxt instanceof XmlStreamCtxt x)
+            if (sto.xpath_ctxt instanceof XmlStreamCtxt x)
                 XmlPattern.streamCtxtFree(x);
             sto = next;
         }
@@ -4562,30 +4562,30 @@ public final class Xsd10Schemas
 
     // xml_xsd10_free_idc
     /** Port of xmlSchemaFreeIDC: deallocates an identity-constraint definition.
-        @param idcDef a identity-constraint definition */
-    static void freeIdc(Xsd10IDC idcDef)
+        @param idc_def a identity-constraint definition */
+    static void freeIdc(Xsd10IDC idc_def)
     {
         Xsd10IDCSelect cur, prev;
 
-        if (idcDef == null)
+        if (idc_def == null)
             return;
-        if (idcDef.annot != null)
-            freeAnnot(idcDef.annot);
+        if (idc_def.annot != null)
+            freeAnnot(idc_def.annot);
         /* Selector */
-        if (idcDef.selector != null)
+        if (idc_def.selector != null)
         {
-            if (idcDef.selector.xpathComp instanceof XmlPattern p)
+            if (idc_def.selector.xpath_comp instanceof XmlPattern p)
                 XmlPattern.patternFree(p);
         }
         /* Fields */
-        if (idcDef.fields != null)
+        if (idc_def.fields != null)
         {
-            cur = idcDef.fields;
+            cur = idc_def.fields;
             do
             {
                 prev = cur;
                 cur = cur.next;
-                if (prev.xpathComp instanceof XmlPattern p)
+                if (prev.xpath_comp instanceof XmlPattern p)
                     XmlPattern.patternFree(p);
             } while (cur != null);
         }
@@ -4599,10 +4599,10 @@ public final class Xsd10Schemas
             return;
         if (elem.annot != null)
             freeAnnot(elem.annot);
-        if (elem.contModel instanceof XmlRegexp r)
+        if (elem.cont_model instanceof XmlRegexp r)
             XmlRegexp.regexpFree(r);
-        if (elem.defVal != null)
-            freeValue(elem.defVal);
+        if (elem.def_val != null)
+            freeValue(elem.def_val);
     }
 
     /* xmlSchemaFreeFacet is xml_xsd10_free_facet of xml_xsd10_types (the regexp is
@@ -4628,12 +4628,12 @@ public final class Xsd10Schemas
                 facet = next;
             }
         }
-        if (type.attrUses instanceof Xsd10ItemList l)
+        if (type.attr_uses instanceof Xsd10ItemList l)
             itemListFree(l);
-        if (type.memberTypes != null)
-            freeTypeLinkList(type.memberTypes);
+        if (type.member_types != null)
+            freeTypeLinkList(type.member_types);
         /* The facetSet links are garbage collected. */
-        if (type.contModel instanceof XmlRegexp r)
+        if (type.cont_model instanceof XmlRegexp r)
             XmlRegexp.regexpFree(r);
     }
 
@@ -4657,14 +4657,14 @@ public final class Xsd10Schemas
     /** Port of xmlSchemaComponentListFree. @param list the components */
     static void componentListFree(Xsd10ItemList list)
     {
-        if ((list == null) || (list.nbItems == 0))
+        if ((list == null) || (list.nb_items == 0))
             return;
         {
             Object item;
             Object[] items = list.items;
             int i;
 
-            for (i = 0; i < list.nbItems; i++)
+            for (i = 0; i < list.nb_items; i++)
             {
                 item = items[i];
                 if (!(item instanceof Xsd10BasicItem))
@@ -4722,7 +4722,7 @@ public final class Xsd10Schemas
                     break;
                 }
             }
-            list.nbItems = 0;
+            list.nb_items = 0;
         }
     }
 
@@ -4737,28 +4737,28 @@ public final class Xsd10Schemas
          * schema components anymore; this will now be done by
          * the schema buckets.
          */
-        if (schema.notaDecl != null)
-            hashFree(schema.notaDecl, null);
-        if (schema.attrDecl != null)
-            hashFree(schema.attrDecl, null);
-        if (schema.attrgrpDecl != null)
-            hashFree(schema.attrgrpDecl, null);
-        if (schema.elemDecl != null)
-            hashFree(schema.elemDecl, null);
-        if (schema.typeDecl != null)
-            hashFree(schema.typeDecl, null);
-        if (schema.groupDecl != null)
-            hashFree(schema.groupDecl, null);
-        if (schema.idcDef != null)
-            hashFree(schema.idcDef, null);
+        if (schema.nota_decl != null)
+            hashFree(schema.nota_decl, null);
+        if (schema.attr_decl != null)
+            hashFree(schema.attr_decl, null);
+        if (schema.attrgrp_decl != null)
+            hashFree(schema.attrgrp_decl, null);
+        if (schema.elem_decl != null)
+            hashFree(schema.elem_decl, null);
+        if (schema.type_decl != null)
+            hashFree(schema.type_decl, null);
+        if (schema.group_decl != null)
+            hashFree(schema.group_decl, null);
+        if (schema.idc_def != null)
+            hashFree(schema.idc_def, null);
 
-        if (schema.schemasImports != null)
-            hashFree(schema.schemasImports, Xsd10Schemas::bucketFreeEntry);
+        if (schema.schemas_imports != null)
+            hashFree(schema.schemas_imports, Xsd10Schemas::bucketFreeEntry);
         if (schema.includes != null)
         {
             Xsd10ItemList list = (Xsd10ItemList) schema.includes;
             int i;
-            for (i = 0; i < list.nbItems; i++)
+            for (i = 0; i < list.nb_items; i++)
             {
                 bucketFree((Xsd10Bucket) list.items[i]);
             }
@@ -4889,15 +4889,15 @@ public final class Xsd10Schemas
         /*
          * After the construction context has been freed, there will be
          * no schema graph available any more. Only the schema buckets
-         * will stay alive, which are put into the "schemasImports" and
+         * will stay alive, which are put into the "schemas_imports" and
          * "includes" slots of the xmlSchema.
          */
         if (con.buckets != null)
             itemListFree(con.buckets);
         if (con.pending != null)
             itemListFree(con.pending);
-        if (con.substGroups != null)
-            hashFree(con.substGroups, Xsd10Schemas::substGroupFreeEntry);
+        if (con.subst_groups != null)
+            hashFree(con.subst_groups, Xsd10Schemas::substGroupFreeEntry);
         if (con.redefs != null)
             redefListFree(con.redefs);
         if (con.dict != null)
@@ -4928,7 +4928,7 @@ public final class Xsd10Schemas
         installRegexpHooks();
         ret = new Xsd10ParserCtxt();
         ret.type = XML_XSD10_SCHEMA_CTXT_PARSER;
-        ret.attrProhibs = itemListCreate();
+        ret.attr_prohibs = itemListCreate();
         return ret;
     }
 
@@ -4969,9 +4969,9 @@ public final class Xsd10Schemas
             }
             /* TODO: Pass user data. */
             setParserErrors(vctxt.pctxt, vctxt.error,
-                            vctxt.warning, vctxt.errCtxt);
+                            vctxt.warning, vctxt.err_ctxt);
             setParserStructuredErrors(vctxt.pctxt, vctxt.serror,
-                                      vctxt.errCtxt);
+                                      vctxt.err_ctxt);
         }
         return 0;
     }
@@ -5053,14 +5053,14 @@ public final class Xsd10Schemas
         {
             freeValidCtxt(ctxt.vctxt);
         }
-        if ((ctxt.ownsConstructor != 0) && (ctxt.constructor != null))
+        if ((ctxt.owns_constructor != 0) && (ctxt.constructor != null))
         {
             constructionCtxtFree(ctxt.constructor);
             ctxt.constructor = null;
-            ctxt.ownsConstructor = 0;
+            ctxt.owns_constructor = 0;
         }
-        if (ctxt.attrProhibs != null)
-            itemListFree(ctxt.attrProhibs);
+        if (ctxt.attr_prohibs != null)
+            itemListFree(ctxt.attr_prohibs);
         dictFree(ctxt.dict);
     }
 
@@ -5074,7 +5074,7 @@ public final class Xsd10Schemas
             return;
         ctxt.error = err;
         ctxt.warning = warn;
-        ctxt.errCtxt = ctx;
+        ctxt.err_ctxt = ctx;
         if (ctxt.vctxt != null)
             setValidErrors(ctxt.vctxt, err, warn, ctx);
     }
@@ -5088,7 +5088,7 @@ public final class Xsd10Schemas
         if (ctxt == null)
             return;
         ctxt.serror = serror;
-        ctxt.errCtxt = ctx;
+        ctxt.err_ctxt = ctx;
         if (ctxt.vctxt != null)
             setValidStructuredErrors(ctxt.vctxt, serror, ctx);
     }
@@ -5107,7 +5107,7 @@ public final class Xsd10Schemas
         if (warn != null)
             warn[0] = ctxt.warning;
         if (ctx != null)
-            ctx[0] = ctxt.errCtxt;
+            ctx[0] = ctxt.err_ctxt;
         return 0;
     }
 
@@ -5119,8 +5119,8 @@ public final class Xsd10Schemas
     {
         if (ctxt == null)
             return;
-        ctxt.resourceLoader = loader;
-        ctxt.resourceCtxt = data;
+        ctxt.resource_loader = loader;
+        ctxt.resource_ctxt = data;
     }
 
     // xml_xsd10_facet_type_to_string
@@ -5174,10 +5174,10 @@ public final class Xsd10Schemas
             /*
              * Note that we assume a whitespace of preserve for anySimpleType.
              */
-            if ((type.builtInType == XML_XSD10_SCHEMAS_STRING) ||
-                (type.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
+            if ((type.built_in_type == XML_XSD10_SCHEMAS_STRING) ||
+                (type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
                 return XML_XSD10_SCHEMA_WHITESPACE_PRESERVE;
-            else if (type.builtInType == XML_XSD10_SCHEMAS_NORMSTRING)
+            else if (type.built_in_type == XML_XSD10_SCHEMAS_NORMSTRING)
                 return XML_XSD10_SCHEMA_WHITESPACE_REPLACE;
             else
             {
@@ -5240,7 +5240,7 @@ public final class Xsd10Schemas
             return;
         ctxt.error = err;
         ctxt.warning = warn;
-        ctxt.errCtxt = ctx;
+        ctxt.err_ctxt = ctx;
         if (ctxt.pctxt != null)
             setParserErrors(ctxt.pctxt, err, warn, ctx);
     }
@@ -5256,7 +5256,7 @@ public final class Xsd10Schemas
         ctxt.serror = serror;
         ctxt.error = null;
         ctxt.warning = null;
-        ctxt.errCtxt = ctx;
+        ctxt.err_ctxt = ctx;
         if (ctxt.pctxt != null)
             setParserStructuredErrors(ctxt.pctxt, serror, ctx);
     }
@@ -5275,7 +5275,7 @@ public final class Xsd10Schemas
         if (warn != null)
             warn[0] = ctxt.warning;
         if (ctx != null)
-            ctx[0] = ctxt.errCtxt;
+            ctx[0] = ctxt.err_ctxt;
         return 0;
     }
 

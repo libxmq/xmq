@@ -58,12 +58,12 @@ public class Xsd10Bucket
     int type;
     /** C {@code int flags}. */
     int flags;
-    /** C {@code const char * schemaLocation}. */
-    String schemaLocation;
-    /** C {@code const char * origTargetNamespace}. */
-    String origTargetNamespace;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * schema_location}. */
+    String schema_location;
+    /** C {@code const char * orig_target_namespace}. */
+    String orig_target_namespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** C {@code XmlDom * doc}. */
     XmlDocument doc;
     /** C {@code XmlXsd10SchemaRelation * relations}. */
@@ -74,8 +74,8 @@ public class Xsd10Bucket
     int parsed;
     /** C {@code int imported}. */
     int imported;
-    /** C {@code int preserveDoc}. */
-    int preserveDoc;
+    /** C {@code int preserve_doc}. */
+    int preserve_doc;
     /** Global components. */
     Xsd10ItemList globals;
     /** Local components. */

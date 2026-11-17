@@ -60,14 +60,14 @@ public final class Xsd10IDC extends Xsd10AnnotItem
     XmlNode node;
     /** C {@code const char * name}. */
     String name;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** C {@code XmlXsd10IDCSelect * selector}. */
     Xsd10IDCSelect selector;
     /** C {@code XmlXsd10IDCSelect * fields}. */
     Xsd10IDCSelect fields;
-    /** C {@code int nbFields}. */
-    int nbFields;
+    /** C {@code int nb_fields}. */
+    int nb_fields;
     /** C {@code XmlXsd10QNameRef * ref}. */
     Xsd10QNameRef ref;
 }

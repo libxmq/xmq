@@ -33,8 +33,8 @@ import java.util.Map;
  */
 public class XmlDtd extends XmlNode
 {
-    String externalId_;
-    String systemId_;
+    String external_id_;
+    String system_id_;
     final Map<String, XmlEntityDecl> entities_ = new LinkedHashMap<>();
     final Map<String, XmlEntityDecl> pentities_ = new LinkedHashMap<>();
     final java.util.List<XmlDtdDecl> notations_ = new java.util.ArrayList<>();
@@ -49,11 +49,11 @@ public class XmlDtd extends XmlNode
      * @param externalId The public id or null.
      * @param systemId The system id or null.
      */
-    public XmlDtd(String name, String externalId, String systemId)
+    public XmlDtd(String name, String external_id, String system_id)
     {
         super(name);
-        externalId_ = externalId;
-        systemId_ = systemId;
+        external_id_ = external_id;
+        system_id_ = system_id;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class XmlDtd extends XmlNode
      */
     public String externalId()
     {
-        return externalId_;
+        return external_id_;
     }
 
     /**
@@ -77,7 +77,7 @@ public class XmlDtd extends XmlNode
      */
     public String systemId()
     {
-        return systemId_;
+        return system_id_;
     }
 
     /**

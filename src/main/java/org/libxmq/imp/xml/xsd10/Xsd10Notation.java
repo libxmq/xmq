@@ -58,6 +58,6 @@ public final class Xsd10Notation extends Xsd10BasicItem
     Xsd10Annot annot;
     /** C {@code const char * identifier}. */
     String identifier;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
 }

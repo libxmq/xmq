@@ -81,12 +81,12 @@ public final class Xsd10Build
     static int buildContentModelForSubstGroup(Xsd10ParserCtxt pctxt, Xsd10Particle particle, int counter, XmlAutomataState end)
     {
         XmlAutomataState start, tmp;
-        Xsd10Element elemDecl, member;
-        Xsd10SubstGroup substGroup;
+        Xsd10Element elem_decl, member;
+        Xsd10SubstGroup subst_group;
         int i;
         int ret = 0;
 
-        elemDecl = (Xsd10Element) particle.children;
+        elem_decl = (Xsd10Element) particle.children;
         /*
         * Wrap the substitution group with a CHOICE.
         */
@@ -95,14 +95,14 @@ public final class Xsd10Build
         {
             end = XmlRegexp.automataNewState(pctxt.am);
         }
-        substGroup = substGroupGet(pctxt, elemDecl);
-        if (substGroup == null)
+        subst_group = substGroupGet(pctxt, elem_decl);
+        if (subst_group == null)
         {
             pErr(pctxt, wxsItemNode(particle),
                 XML_XSD10_SCHEMAP_INTERNAL,
                 "Internal error: xmlSchemaBuildContentModelForSubstGroup, "
                 + "declaration is marked having a subst. group but none "
-                + "available.\n", elemDecl.name, null);
+                + "available.\n", elem_decl.name, null);
             return 0;
         }
         if (counter >= 0)
@@ -115,18 +115,18 @@ public final class Xsd10Build
             */
             tmp = XmlRegexp.automataNewCountedTrans(pctxt.am, start, null, counter);
             XmlRegexp.automataNewTransition2(pctxt.am, tmp, end,
-                elemDecl.name, elemDecl.targetNamespace, elemDecl);
+                elem_decl.name, elem_decl.target_namespace, elem_decl);
             /*
             * Add subst. group members.
             */
-            for (i = 0; i < substGroup.members.nbItems; i++)
+            for (i = 0; i < subst_group.members.nb_items; i++)
             {
-                member = (Xsd10Element) substGroup.members.items[i];
+                member = (Xsd10Element) subst_group.members.items[i];
                 XmlRegexp.automataNewTransition2(pctxt.am, tmp, end,
-                    member.name, member.targetNamespace, member);
+                    member.name, member.target_namespace, member);
             }
         }
-        else if (particle.maxOccurs == 1)
+        else if (particle.max_occurs == 1)
         {
             /*
             * NOTE that we put the declaration in, even if it's abstract,
@@ -134,53 +134,53 @@ public final class Xsd10Build
             XmlRegexp.automataNewEpsilon(pctxt.am,
                 XmlRegexp.automataNewTransition2(pctxt.am,
                     start, null,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl), end);
+                    elem_decl.name, elem_decl.target_namespace, elem_decl), end);
             /*
             * Add subst. group members.
             */
-            for (i = 0; i < substGroup.members.nbItems; i++)
+            for (i = 0; i < subst_group.members.nb_items; i++)
             {
-                member = (Xsd10Element) substGroup.members.items[i];
+                member = (Xsd10Element) subst_group.members.items[i];
                 /*
                 * NOTE: This fixes bug #341150. xmlAutomataNewOnceTrans2()
                 *  was incorrectly used instead of xmlAutomataNewTransition2()
                 */
                 tmp = XmlRegexp.automataNewTransition2(pctxt.am, start, null,
-                    member.name, member.targetNamespace, member);
+                    member.name, member.target_namespace, member);
                 XmlRegexp.automataNewEpsilon(pctxt.am, tmp, end);
             }
         }
         else
         {
             XmlAutomataState hop;
-            int maxOccurs = particle.maxOccurs == XML_XSD10_UNBOUNDED ?
-                XML_XSD10_UNBOUNDED : particle.maxOccurs - 1;
-            int minOccurs = particle.minOccurs < 1 ? 0 : particle.minOccurs - 1;
+            int max_occurs = particle.max_occurs == XML_XSD10_UNBOUNDED ?
+                XML_XSD10_UNBOUNDED : particle.max_occurs - 1;
+            int min_occurs = particle.min_occurs < 1 ? 0 : particle.min_occurs - 1;
 
-            counter = XmlRegexp.automataNewCounter(pctxt.am, minOccurs, maxOccurs);
+            counter = XmlRegexp.automataNewCounter(pctxt.am, min_occurs, max_occurs);
             hop = XmlRegexp.automataNewState(pctxt.am);
 
             XmlRegexp.automataNewEpsilon(pctxt.am,
                 XmlRegexp.automataNewTransition2(pctxt.am,
                     start, null,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl),
+                    elem_decl.name, elem_decl.target_namespace, elem_decl),
                 hop);
             /*
              * Add subst. group members.
              */
-            for (i = 0; i < substGroup.members.nbItems; i++)
+            for (i = 0; i < subst_group.members.nb_items; i++)
             {
-                member = (Xsd10Element) substGroup.members.items[i];
+                member = (Xsd10Element) subst_group.members.items[i];
                 XmlRegexp.automataNewEpsilon(pctxt.am,
                     XmlRegexp.automataNewTransition2(pctxt.am,
                         start, null,
-                        member.name, member.targetNamespace, member),
+                        member.name, member.target_namespace, member),
                     hop);
             }
             XmlRegexp.automataNewCountedTrans(pctxt.am, hop, start, counter);
             XmlRegexp.automataNewCounterTrans(pctxt.am, hop, end, counter);
         }
-        if (particle.minOccurs == 0)
+        if (particle.min_occurs == 0)
         {
             XmlRegexp.automataNewEpsilon(pctxt.am, start, end);
             ret = 1;
@@ -205,48 +205,48 @@ public final class Xsd10Build
         }
         else
         {
-            Xsd10Element elemDecl;
+            Xsd10Element elem_decl;
             XmlAutomataState start;
 
-            elemDecl = (Xsd10Element) particle.children;
+            elem_decl = (Xsd10Element) particle.children;
 
-            if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0)
+            if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0)
             {
                 return 0;
             }
-            if (particle.maxOccurs == 1)
+            if (particle.max_occurs == 1)
             {
                 start = ctxt.state;
                 ctxt.state = XmlRegexp.automataNewTransition2(ctxt.am, start, null,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl);
+                    elem_decl.name, elem_decl.target_namespace, elem_decl);
             }
-            else if ((particle.maxOccurs >= XML_XSD10_UNBOUNDED) &&
-                     (particle.minOccurs < 2))
+            else if ((particle.max_occurs >= XML_XSD10_UNBOUNDED) &&
+                     (particle.min_occurs < 2))
             {
                 /* Special case. */
                 start = ctxt.state;
                 ctxt.state = XmlRegexp.automataNewTransition2(ctxt.am, start, null,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl);
+                    elem_decl.name, elem_decl.target_namespace, elem_decl);
                 ctxt.state = XmlRegexp.automataNewTransition2(ctxt.am, ctxt.state, ctxt.state,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl);
+                    elem_decl.name, elem_decl.target_namespace, elem_decl);
             }
             else
             {
                 int counter;
-                int maxOccurs = particle.maxOccurs == XML_XSD10_UNBOUNDED ?
-                    XML_XSD10_UNBOUNDED : particle.maxOccurs - 1;
-                int minOccurs = particle.minOccurs < 1 ?
-                    0 : particle.minOccurs - 1;
+                int max_occurs = particle.max_occurs == XML_XSD10_UNBOUNDED ?
+                    XML_XSD10_UNBOUNDED : particle.max_occurs - 1;
+                int min_occurs = particle.min_occurs < 1 ?
+                    0 : particle.min_occurs - 1;
 
                 start = XmlRegexp.automataNewEpsilon(ctxt.am, ctxt.state, null);
-                counter = XmlRegexp.automataNewCounter(ctxt.am, minOccurs, maxOccurs);
+                counter = XmlRegexp.automataNewCounter(ctxt.am, min_occurs, max_occurs);
                 ctxt.state = XmlRegexp.automataNewTransition2(ctxt.am, start, null,
-                    elemDecl.name, elemDecl.targetNamespace, elemDecl);
+                    elem_decl.name, elem_decl.target_namespace, elem_decl);
                 XmlRegexp.automataNewCountedTrans(ctxt.am, ctxt.state, start, counter);
                 ctxt.state = XmlRegexp.automataNewCounterTrans(ctxt.am, ctxt.state,
                     null, counter);
             }
-            if (particle.minOccurs == 0)
+            if (particle.min_occurs == 0)
             {
                 XmlRegexp.automataNewEpsilon(ctxt.am, start, ctxt.state);
                 ret = 1;
@@ -294,7 +294,7 @@ public final class Xsd10Build
             start = pctxt.state;
             end = XmlRegexp.automataNewState(pctxt.am);
 
-            if (particle.maxOccurs == 1)
+            if (particle.max_occurs == 1)
             {
                 if (wild.any == 1)
                 {
@@ -316,9 +316,9 @@ public final class Xsd10Build
                     XmlRegexp.automataNewEpsilon(pctxt.am, pctxt.state, end);
 
                 }
-                else if (wild.nsSet != null)
+                else if (wild.ns_set != null)
                 {
-                    ns = wild.nsSet;
+                    ns = wild.ns_set;
                     do
                     {
                         pctxt.state = start;
@@ -329,10 +329,10 @@ public final class Xsd10Build
                     } while (ns != null);
 
                 }
-                else if (wild.negNsSet != null)
+                else if (wild.neg_ns_set != null)
                 {
                     pctxt.state = XmlRegexp.automataNewNegTrans(pctxt.am,
-                        start, end, "*", wild.negNsSet.value,
+                        start, end, "*", wild.neg_ns_set.value,
                         wild);
                 }
             }
@@ -340,13 +340,13 @@ public final class Xsd10Build
             {
                 int counter;
                 XmlAutomataState hop;
-                int maxOccurs =
-                    particle.maxOccurs == XML_XSD10_UNBOUNDED ? XML_XSD10_UNBOUNDED :
-                    particle.maxOccurs - 1;
-                int minOccurs =
-                    particle.minOccurs < 1 ? 0 : particle.minOccurs - 1;
+                int max_occurs =
+                    particle.max_occurs == XML_XSD10_UNBOUNDED ? XML_XSD10_UNBOUNDED :
+                    particle.max_occurs - 1;
+                int min_occurs =
+                    particle.min_occurs < 1 ? 0 : particle.min_occurs - 1;
 
-                counter = XmlRegexp.automataNewCounter(pctxt.am, minOccurs, maxOccurs);
+                counter = XmlRegexp.automataNewCounter(pctxt.am, min_occurs, max_occurs);
                 hop = XmlRegexp.automataNewState(pctxt.am);
                 if (wild.any == 1)
                 {
@@ -359,9 +359,9 @@ public final class Xsd10Build
                             start, null, "*", null, wild);
                     XmlRegexp.automataNewEpsilon(pctxt.am, pctxt.state, hop);
                 }
-                else if (wild.nsSet != null)
+                else if (wild.ns_set != null)
                 {
-                    ns = wild.nsSet;
+                    ns = wild.ns_set;
                     do
                     {
                         pctxt.state =
@@ -372,16 +372,16 @@ public final class Xsd10Build
                     } while (ns != null);
 
                 }
-                else if (wild.negNsSet != null)
+                else if (wild.neg_ns_set != null)
                 {
                     pctxt.state = XmlRegexp.automataNewNegTrans(pctxt.am,
-                        start, hop, "*", wild.negNsSet.value,
+                        start, hop, "*", wild.neg_ns_set.value,
                         wild);
                 }
                 XmlRegexp.automataNewCountedTrans(pctxt.am, hop, start, counter);
                 XmlRegexp.automataNewCounterTrans(pctxt.am, hop, end, counter);
             }
-            if (particle.minOccurs == 0)
+            if (particle.min_occurs == 0)
             {
                 XmlRegexp.automataNewEpsilon(pctxt.am, start, end);
                 ret = 1;
@@ -401,7 +401,7 @@ public final class Xsd10Build
              * If max and min occurrences are default (1) then
              * simply iterate over the particles of the <sequence>.
              */
-            if ((particle.minOccurs == 1) && (particle.maxOccurs == 1))
+            if ((particle.min_occurs == 1) && (particle.max_occurs == 1))
             {
                 sub = (Xsd10TreeItem) ((Xsd10TreeItem) particle.children).children;
 
@@ -416,9 +416,9 @@ public final class Xsd10Build
             {
                 XmlAutomataState oldstate = pctxt.state;
 
-                if (particle.maxOccurs >= XML_XSD10_UNBOUNDED)
+                if (particle.max_occurs >= XML_XSD10_UNBOUNDED)
                 {
-                    if (particle.minOccurs > 1)
+                    if (particle.min_occurs > 1)
                     {
                         XmlAutomataState tmp;
                         int counter;
@@ -428,7 +428,7 @@ public final class Xsd10Build
                         oldstate = pctxt.state;
 
                         counter = XmlRegexp.automataNewCounter(pctxt.am,
-                            particle.minOccurs - 1, XML_XSD10_UNBOUNDED);
+                            particle.min_occurs - 1, XML_XSD10_UNBOUNDED);
 
                         sub = (Xsd10TreeItem) ((Xsd10TreeItem) particle.children).children;
                         while (sub != null)
@@ -472,7 +472,7 @@ public final class Xsd10Build
                          */
                         pctxt.state = XmlRegexp.automataNewEpsilon(pctxt.am,
                             pctxt.state, null);
-                        if (particle.minOccurs == 0)
+                        if (particle.min_occurs == 0)
                         {
                             XmlRegexp.automataNewEpsilon(pctxt.am,
                                 oldstate, pctxt.state);
@@ -480,8 +480,8 @@ public final class Xsd10Build
                         }
                     }
                 }
-                else if ((particle.maxOccurs > 1)
-                         || (particle.minOccurs > 1))
+                else if ((particle.max_occurs > 1)
+                         || (particle.min_occurs > 1))
                 {
                     XmlAutomataState tmp;
                     int counter;
@@ -491,8 +491,8 @@ public final class Xsd10Build
                     oldstate = pctxt.state;
 
                     counter = XmlRegexp.automataNewCounter(pctxt.am,
-                        particle.minOccurs - 1,
-                        particle.maxOccurs - 1);
+                        particle.min_occurs - 1,
+                        particle.max_occurs - 1);
 
                     sub = (Xsd10TreeItem) ((Xsd10TreeItem) particle.children).children;
                     while (sub != null)
@@ -507,7 +507,7 @@ public final class Xsd10Build
                     pctxt.state =
                         XmlRegexp.automataNewCounterTrans(pctxt.am, tmp, null,
                             counter);
-                    if ((particle.minOccurs == 0) || (ret == 1))
+                    if ((particle.min_occurs == 0) || (ret == 1))
                     {
                         XmlRegexp.automataNewEpsilon(pctxt.am,
                             oldstate, pctxt.state);
@@ -532,7 +532,7 @@ public final class Xsd10Build
                     pctxt.state = XmlRegexp.automataNewEpsilon(pctxt.am,
                         pctxt.state, null);
 
-                    if (particle.minOccurs == 0)
+                    if (particle.min_occurs == 0)
                     {
                         XmlRegexp.automataNewEpsilon(pctxt.am, oldstate,
                             pctxt.state);
@@ -555,7 +555,7 @@ public final class Xsd10Build
              * iterate over the subtypes and remerge the end with an
              * epsilon transition
              */
-            if (particle.maxOccurs == 1)
+            if (particle.max_occurs == 1)
             {
                 sub = (Xsd10TreeItem) ((Xsd10TreeItem) particle.children).children;
                 while (sub != null)
@@ -571,17 +571,17 @@ public final class Xsd10Build
             {
                 int counter;
                 XmlAutomataState hop, base;
-                int maxOccurs = particle.maxOccurs == XML_XSD10_UNBOUNDED ?
-                    XML_XSD10_UNBOUNDED : particle.maxOccurs - 1;
-                int minOccurs =
-                    particle.minOccurs < 1 ? 0 : particle.minOccurs - 1;
+                int max_occurs = particle.max_occurs == XML_XSD10_UNBOUNDED ?
+                    XML_XSD10_UNBOUNDED : particle.max_occurs - 1;
+                int min_occurs =
+                    particle.min_occurs < 1 ? 0 : particle.min_occurs - 1;
 
                 /*
                  * use a counter to keep track of the number of transitions
                  * which went through the choice.
                  */
                 counter =
-                    XmlRegexp.automataNewCounter(pctxt.am, minOccurs, maxOccurs);
+                    XmlRegexp.automataNewCounter(pctxt.am, min_occurs, max_occurs);
                 hop = XmlRegexp.automataNewState(pctxt.am);
                 base = XmlRegexp.automataNewState(pctxt.am);
 
@@ -602,7 +602,7 @@ public final class Xsd10Build
                     XmlRegexp.automataNewEpsilon(pctxt.am, base, end);
                 }
             }
-            if (particle.minOccurs == 0)
+            if (particle.min_occurs == 0)
             {
                 XmlRegexp.automataNewEpsilon(pctxt.am, start, end);
                 ret = 1;
@@ -614,7 +614,7 @@ public final class Xsd10Build
         {
             XmlAutomataState start, tmp;
             Xsd10Particle sub;
-            Xsd10Element elemDecl;
+            Xsd10Element elem_decl;
 
             ret = 1;
 
@@ -634,8 +634,8 @@ public final class Xsd10Build
             {
                 pctxt.state = tmp;
 
-                elemDecl = (sub.children instanceof Xsd10Element) ? (Xsd10Element) sub.children : null;
-                if (elemDecl == null)
+                elem_decl = (sub.children instanceof Xsd10Element) ? (Xsd10Element) sub.children : null;
+                if (elem_decl == null)
                 {
                     perrorInt(pctxt, "xmlSchemaBuildAContentModel",
                         "<element> particle has no term");
@@ -647,7 +647,7 @@ public final class Xsd10Build
                 * already ensured during the parse of the content of
                 * <all>.
                 */
-                if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_SUBST_GROUP_HEAD) != 0)
+                if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_SUBST_GROUP_HEAD) != 0)
                 {
                     int counter;
 
@@ -657,39 +657,39 @@ public final class Xsd10Build
                      * derived from the group
                      */
                     counter = XmlRegexp.automataNewCounter(pctxt.am,
-                        sub.minOccurs, sub.maxOccurs);
+                        sub.min_occurs, sub.max_occurs);
                     buildContentModelForSubstGroup(pctxt,
                         sub, counter, pctxt.state);
                 }
                 else
                 {
-                    if ((sub.minOccurs == 1) &&
-                        (sub.maxOccurs == 1))
+                    if ((sub.min_occurs == 1) &&
+                        (sub.max_occurs == 1))
                     {
                         XmlRegexp.automataNewOnceTrans2(pctxt.am, pctxt.state,
                             pctxt.state,
-                            elemDecl.name,
-                            elemDecl.targetNamespace,
-                            1, 1, elemDecl);
+                            elem_decl.name,
+                            elem_decl.target_namespace,
+                            1, 1, elem_decl);
                     }
-                    else if ((sub.minOccurs == 0) &&
-                             (sub.maxOccurs == 1))
+                    else if ((sub.min_occurs == 0) &&
+                             (sub.max_occurs == 1))
                     {
 
                         XmlRegexp.automataNewCountTrans2(pctxt.am, pctxt.state,
                             pctxt.state,
-                            elemDecl.name,
-                            elemDecl.targetNamespace,
+                            elem_decl.name,
+                            elem_decl.target_namespace,
                             0,
                             1,
-                            elemDecl);
+                            elem_decl);
                     }
                 }
                 sub = (Xsd10Particle) sub.next;
             }
             pctxt.state =
                 XmlRegexp.automataNewAllTrans(pctxt.am, pctxt.state, null, 0);
-            if (particle.minOccurs == 0)
+            if (particle.min_occurs == 0)
             {
                 XmlRegexp.automataNewEpsilon(pctxt.am, start, pctxt.state);
                 ret = 1;
@@ -723,9 +723,9 @@ public final class Xsd10Build
     static void buildContentModel(Xsd10Type type, Xsd10ParserCtxt ctxt)
     {
         if ((type.type != XML_XSD10_SCHEMA_TYPE_COMPLEX) ||
-            (type.contModel != null) ||
-            ((type.contentType != XML_XSD10_SCHEMA_CONTENT_ELEMENTS) &&
-             (type.contentType != XML_XSD10_SCHEMA_CONTENT_MIXED)))
+            (type.cont_model != null) ||
+            ((type.content_type != XML_XSD10_SCHEMA_CONTENT_ELEMENTS) &&
+             (type.content_type != XML_XSD10_SCHEMA_CONTENT_MIXED)))
         {
             return;
         }
@@ -743,15 +743,15 @@ public final class Xsd10Build
         */
         buildAContentModel(ctxt, (type.subtypes instanceof Xsd10Particle) ? (Xsd10Particle) type.subtypes : null);
         XmlRegexp.automataSetFinalState(ctxt.am, ctxt.state);
-        type.contModel = XmlRegexp.automataCompile(ctxt.am);
-        if (type.contModel == null)
+        type.cont_model = XmlRegexp.automataCompile(ctxt.am);
+        if (type.cont_model == null)
         {
             pCustomErr(ctxt,
                 XML_XSD10_SCHEMAP_INTERNAL,
                 type, type.node,
                 "Failed to compile the content model", null);
         }
-        else if (XmlRegexp.regexpIsDeterminist((XmlRegexp) type.contModel) != 1)
+        else if (XmlRegexp.regexpIsDeterminist((XmlRegexp) type.cont_model) != 1)
         {
             pCustomErr(ctxt,
                 XML_XSD10_SCHEMAP_NOT_DETERMINISTIC,
@@ -768,87 +768,87 @@ public final class Xsd10Build
     /**
      * Port of xmlSchemaResolveElementReferences. Resolves the references of an element
      * declaration or particle, which has an element declaration as it's term.
-     * @param elemDecl the schema element context
+     * @param elem_decl the schema element context
      * @param ctxt the schema parser context
      */
-    static void resolveElementReferences(Xsd10Element elemDecl, Xsd10ParserCtxt ctxt)
+    static void resolveElementReferences(Xsd10Element elem_decl, Xsd10ParserCtxt ctxt)
     {
-        if ((ctxt == null) || (elemDecl == null) ||
-            ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_RESOLVED) != 0))
+        if ((ctxt == null) || (elem_decl == null) ||
+            ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_RESOLVED) != 0))
         {
             return;
         }
-        elemDecl.flags |= XML_XSD10_SCHEMAS_ELEM_INTERNAL_RESOLVED;
+        elem_decl.flags |= XML_XSD10_SCHEMAS_ELEM_INTERNAL_RESOLVED;
 
-        if ((elemDecl.subtypes == null) && (elemDecl.namedType != null))
+        if ((elem_decl.subtypes == null) && (elem_decl.named_type != null))
         {
             Xsd10Type type;
 
             /* (type definition) ... otherwise the type definition `resolved`
             * to by the `actual value` of the type [attribute] ...
             */
-            type = getType(ctxt.schema, elemDecl.namedType,
-                elemDecl.namedTypeNs);
+            type = getType(ctxt.schema, elem_decl.named_type,
+                elem_decl.named_type_ns);
             if (type == null)
             {
                 pResCompAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
-                    elemDecl, elemDecl.node,
-                    "type", elemDecl.namedType, elemDecl.namedTypeNs,
+                    elem_decl, elem_decl.node,
+                    "type", elem_decl.named_type, elem_decl.named_type_ns,
                     XML_XSD10_SCHEMA_TYPE_BASIC, "type definition");
             }
             else
             {
-                elemDecl.subtypes = type;
+                elem_decl.subtypes = type;
             }
         }
-        if (elemDecl.substGroup != null)
+        if (elem_decl.subst_group != null)
         {
-            Xsd10Element substHead;
+            Xsd10Element subst_head;
 
             /*
             * FIXME TODO: Do we need a new field in _xmlSchemaElement for
             * substitutionGroup?
             */
-            substHead = getElem(ctxt.schema, elemDecl.substGroup,
-                elemDecl.substGroupNs);
-            if (substHead == null)
+            subst_head = getElem(ctxt.schema, elem_decl.subst_group,
+                elem_decl.subst_group_ns);
+            if (subst_head == null)
             {
                 pResCompAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
-                    elemDecl, null,
-                    "substitutionGroup", elemDecl.substGroup,
-                    elemDecl.substGroupNs, XML_XSD10_SCHEMA_TYPE_ELEMENT, null);
+                    elem_decl, null,
+                    "substitutionGroup", elem_decl.subst_group,
+                    elem_decl.subst_group_ns, XML_XSD10_SCHEMA_TYPE_ELEMENT, null);
             }
             else
             {
-                resolveElementReferences(substHead, ctxt);
+                resolveElementReferences(subst_head, ctxt);
                 /*
                 * Set the "substitution group affiliation".
-                * NOTE that now we use the "refDecl" field for this.
+                * NOTE that now we use the "ref_decl" field for this.
                 */
-                elemDecl.refDecl = substHead;
+                elem_decl.ref_decl = subst_head;
                 /*
                 * The type definitions is set to:
                 * SPEC "...the {type definition} of the element
                 * declaration `resolved` to by the `actual value`
                 * of the substitutionGroup [attribute], if present"
                 */
-                if (elemDecl.subtypes == null)
+                if (elem_decl.subtypes == null)
                 {
-                    if (substHead.subtypes == null)
+                    if (subst_head.subtypes == null)
                     {
                         /*
                          * This can happen with self-referencing substitution
                          * groups. The cycle will be detected later, but we have
                          * to set subtypes to avoid null-pointer dereferences.
                          */
-                        elemDecl.subtypes = getBuiltInType(
+                        elem_decl.subtypes = getBuiltInType(
                             XML_XSD10_SCHEMAS_ANYTYPE);
                     }
                     else
                     {
-                        elemDecl.subtypes = substHead.subtypes;
+                        elem_decl.subtypes = subst_head.subtypes;
                     }
                 }
             }
@@ -857,11 +857,11 @@ public final class Xsd10Build
         * SPEC "The definition of anyType serves as the default type definition
         * for element declarations whose XML representation does not specify one."
         */
-        if ((elemDecl.subtypes == null) &&
-            (elemDecl.namedType == null) &&
-            (elemDecl.substGroup == null))
+        if ((elem_decl.subtypes == null) &&
+            (elem_decl.named_type == null) &&
+            (elem_decl.subst_group == null))
         {
-            elemDecl.subtypes = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
+            elem_decl.subtypes = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
         }
     }
 
@@ -876,73 +876,73 @@ public final class Xsd10Build
     static int resolveUnionMemberTypes(Xsd10ParserCtxt ctxt, Xsd10Type type)
     {
 
-        Xsd10TypeLink link, lastLink;
-        Xsd10Type memberType;
+        Xsd10TypeLink link, last_link;
+        Xsd10Type member_type;
 
         /*
         * Resolve references.
         */
-        link = type.memberTypes;
-        lastLink = null;
+        link = type.member_types;
+        last_link = null;
         while (link != null)
         {
-            String name, nsName;
+            String name, ns_name;
 
             if (!(link.type instanceof Xsd10QNameRef))
             {
                 /* Not reachable in C (only QName refs are here). */
-                lastLink = link;
+                last_link = link;
                 link = link.next;
                 continue;
             }
             name = ((Xsd10QNameRef) link.type).name;
-            nsName = ((Xsd10QNameRef) link.type).targetNamespace;
+            ns_name = ((Xsd10QNameRef) link.type).target_namespace;
 
-            memberType = getType(ctxt.schema, name, nsName);
-            if ((memberType == null) || (wxsIsSimple(memberType) == 0))
+            member_type = getType(ctxt.schema, name, ns_name);
+            if ((member_type == null) || (wxsIsSimple(member_type) == 0))
             {
                 pResCompAttrErr(ctxt, XML_XSD10_SCHEMAP_SRC_RESOLVE,
                     type, type.node, "memberTypes",
-                    name, nsName, XML_XSD10_SCHEMA_TYPE_SIMPLE, null);
+                    name, ns_name, XML_XSD10_SCHEMA_TYPE_SIMPLE, null);
                 /*
                 * Remove the member type link.
                 */
-                if (lastLink == null)
+                if (last_link == null)
                 {
-                    type.memberTypes = link.next;
+                    type.member_types = link.next;
                 }
                 else
                 {
-                    lastLink.next = link.next;
+                    last_link.next = link.next;
                 }
                 link = link.next;
             }
             else
             {
-                link.type = memberType;
-                lastLink = link;
+                link.type = member_type;
+                last_link = link;
                 link = link.next;
             }
         }
         /*
         * Add local simple types,
         */
-        memberType = asType(type.subtypes);
-        while (memberType != null)
+        member_type = asType(type.subtypes);
+        while (member_type != null)
         {
             link = new Xsd10TypeLink();
-            link.type = memberType;
+            link.type = member_type;
             link.next = null;
-            if (lastLink == null)
+            if (last_link == null)
             {
-                type.memberTypes = link;
+                type.member_types = link;
             }
             else
             {
-                lastLink.next = link;
+                last_link.next = link;
             }
-            lastLink = link;
-            memberType = memberType.next;
+            last_link = link;
+            member_type = member_type.next;
         }
         return 0;
     }
@@ -951,10 +951,10 @@ public final class Xsd10Build
     /**
      * Port of xmlSchemaIsDerivedFromBuiltInType.
      * @param type the type definition
-     * @param valType the value type
+     * @param val_type the value type
      * @return 1 if the type has the given value type, or is derived from such a type.
      */
-    static int isDerivedFromBuiltInType(Xsd10Type type, int valType)
+    static int isDerivedFromBuiltInType(Xsd10Type type, int val_type)
     {
         if (type == null)
         {
@@ -966,18 +966,18 @@ public final class Xsd10Build
         }
         if (type.type == XML_XSD10_SCHEMA_TYPE_BASIC)
         {
-            if (type.builtInType == valType)
+            if (type.built_in_type == val_type)
             {
                 return 1;
             }
-            if ((type.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
-                (type.builtInType == XML_XSD10_SCHEMAS_ANYTYPE))
+            if ((type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
+                (type.built_in_type == XML_XSD10_SCHEMAS_ANYTYPE))
             {
                 return 0;
             }
-            return isDerivedFromBuiltInType(asType(type.subtypes), valType);
+            return isDerivedFromBuiltInType(asType(type.subtypes), val_type);
         }
-        return isDerivedFromBuiltInType(asType(type.subtypes), valType);
+        return isDerivedFromBuiltInType(asType(type.subtypes), val_type);
     }
 
     // xml_xsd10_get_primitive_type
@@ -995,12 +995,12 @@ public final class Xsd10Build
             * Note that anySimpleType is actually not a primitive type
             * but we need that here.
             */
-            if ((type.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
+            if ((type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE) ||
                 ((type.flags & XML_XSD10_SCHEMAS_TYPE_BUILTIN_PRIMITIVE) != 0))
             {
                 return type;
             }
-            type = type.baseType;
+            type = type.base_type;
         }
 
         return null;
@@ -1024,7 +1024,7 @@ public final class Xsd10Build
             return -1;
         }
         dest.any = source.any;
-        cur = source.nsSet;
+        cur = source.ns_set;
         last = null;
         while (cur != null)
         {
@@ -1036,7 +1036,7 @@ public final class Xsd10Build
             tmp.value = cur.value;
             if (last == null)
             {
-                dest.nsSet = tmp;
+                dest.ns_set = tmp;
             }
             else
             {
@@ -1045,22 +1045,22 @@ public final class Xsd10Build
             last = tmp;
             cur = cur.next;
         }
-        if (dest.negNsSet != null)
+        if (dest.neg_ns_set != null)
         {
-            freeWildcardNsSet(dest.negNsSet);
+            freeWildcardNsSet(dest.neg_ns_set);
         }
-        if (source.negNsSet != null)
+        if (source.neg_ns_set != null)
         {
-            dest.negNsSet = newWildcardNsConstraint(ctxt);
-            if (dest.negNsSet == null)
+            dest.neg_ns_set = newWildcardNsConstraint(ctxt);
+            if (dest.neg_ns_set == null)
             {
                 return -1;
             }
-            dest.negNsSet.value = source.negNsSet.value;
+            dest.neg_ns_set.value = source.neg_ns_set.value;
         }
         else
         {
-            dest.negNsSet = null;
+            dest.neg_ns_set = null;
         }
         return 0;
     }
@@ -1068,49 +1068,49 @@ public final class Xsd10Build
     // xml_xsd10_union_wildcards
     /**
      * Port of xmlSchemaUnionWildcards. Unions the namespace constraints of the given
-     * wildcards. completeWild will hold the resulting union.
+     * wildcards. complete_wild will hold the resulting union.
      * @param ctxt the schema parser context
-     * @param completeWild the first wildcard
-     * @param curWild the second wildcard
+     * @param complete_wild the first wildcard
+     * @param cur_wild the second wildcard
      * @return a positive error code on failure, -1 in case of an internal error, 0 otherwise.
      */
-    static int unionWildcards(Xsd10ParserCtxt ctxt, Xsd10Wildcard completeWild, Xsd10Wildcard curWild)
+    static int unionWildcards(Xsd10ParserCtxt ctxt, Xsd10Wildcard complete_wild, Xsd10Wildcard cur_wild)
     {
-        Xsd10WildcardNs cur, curB, tmp;
+        Xsd10WildcardNs cur, cur_b, tmp;
 
         /*
         * 1 If O1 and O2 are the same value, then that value must be the
         * value.
         */
-        if ((completeWild.any == curWild.any) &&
-            ((completeWild.nsSet == null) == (curWild.nsSet == null)) &&
-            ((completeWild.negNsSet == null) == (curWild.negNsSet == null)))
+        if ((complete_wild.any == cur_wild.any) &&
+            ((complete_wild.ns_set == null) == (cur_wild.ns_set == null)) &&
+            ((complete_wild.neg_ns_set == null) == (cur_wild.neg_ns_set == null)))
         {
 
-            if ((completeWild.negNsSet == null) ||
-                Objects.equals(completeWild.negNsSet.value, curWild.negNsSet.value))
+            if ((complete_wild.neg_ns_set == null) ||
+                Objects.equals(complete_wild.neg_ns_set.value, cur_wild.neg_ns_set.value))
             {
 
-                if (completeWild.nsSet != null)
+                if (complete_wild.ns_set != null)
                 {
                     int found = 0;
 
                     /*
                     * Check equality of sets.
                     */
-                    cur = completeWild.nsSet;
+                    cur = complete_wild.ns_set;
                     while (cur != null)
                     {
                         found = 0;
-                        curB = curWild.nsSet;
-                        while (curB != null)
+                        cur_b = cur_wild.ns_set;
+                        while (cur_b != null)
                         {
-                            if (Objects.equals(cur.value, curB.value))
+                            if (Objects.equals(cur.value, cur_b.value))
                             {
                                 found = 1;
                                 break;
                             }
-                            curB = curB.next;
+                            cur_b = cur_b.next;
                         }
                         if (found == 0)
                         {
@@ -1132,19 +1132,19 @@ public final class Xsd10Build
         /*
         * 2 If either O1 or O2 is any, then any must be the value
         */
-        if (completeWild.any != curWild.any)
+        if (complete_wild.any != cur_wild.any)
         {
-            if (completeWild.any == 0)
+            if (complete_wild.any == 0)
             {
-                completeWild.any = 1;
-                if (completeWild.nsSet != null)
+                complete_wild.any = 1;
+                if (complete_wild.ns_set != null)
                 {
-                    freeWildcardNsSet(completeWild.nsSet);
-                    completeWild.nsSet = null;
+                    freeWildcardNsSet(complete_wild.ns_set);
+                    complete_wild.ns_set = null;
                 }
-                if (completeWild.negNsSet != null)
+                if (complete_wild.neg_ns_set != null)
                 {
-                    completeWild.negNsSet = null;
+                    complete_wild.neg_ns_set = null;
                 }
             }
             return 0;
@@ -1153,25 +1153,25 @@ public final class Xsd10Build
         * 3 If both O1 and O2 are sets of (namespace names or `absent`),
         * then the union of those sets must be the value.
         */
-        if ((completeWild.nsSet != null) && (curWild.nsSet != null))
+        if ((complete_wild.ns_set != null) && (cur_wild.ns_set != null))
         {
             int found;
             Xsd10WildcardNs start;
 
-            cur = curWild.nsSet;
-            start = completeWild.nsSet;
+            cur = cur_wild.ns_set;
+            start = complete_wild.ns_set;
             while (cur != null)
             {
                 found = 0;
-                curB = start;
-                while (curB != null)
+                cur_b = start;
+                while (cur_b != null)
                 {
-                    if (Objects.equals(cur.value, curB.value))
+                    if (Objects.equals(cur.value, cur_b.value))
                     {
                         found = 1;
                         break;
                     }
-                    curB = curB.next;
+                    cur_b = cur_b.next;
                 }
                 if (found == 0)
                 {
@@ -1181,8 +1181,8 @@ public final class Xsd10Build
                         return -1;
                     }
                     tmp.value = cur.value;
-                    tmp.next = completeWild.nsSet;
-                    completeWild.nsSet = tmp;
+                    tmp.next = complete_wild.ns_set;
+                    complete_wild.ns_set = tmp;
                 }
                 cur = cur.next;
             }
@@ -1193,126 +1193,126 @@ public final class Xsd10Build
         * 4 If the two are negations of different values (namespace names
         * or `absent`), then a pair of not and `absent` must be the value.
         */
-        if ((completeWild.negNsSet != null) &&
-            (curWild.negNsSet != null) &&
-            !Objects.equals(completeWild.negNsSet.value, curWild.negNsSet.value))
+        if ((complete_wild.neg_ns_set != null) &&
+            (cur_wild.neg_ns_set != null) &&
+            !Objects.equals(complete_wild.neg_ns_set.value, cur_wild.neg_ns_set.value))
         {
-            completeWild.negNsSet.value = null;
+            complete_wild.neg_ns_set.value = null;
 
             return 0;
         }
         /*
          * 5.
          */
-        if (((completeWild.negNsSet != null) &&
-             (completeWild.negNsSet.value != null) &&
-             (curWild.nsSet != null)) ||
-            ((curWild.negNsSet != null) &&
-             (curWild.negNsSet.value != null) &&
-             (completeWild.nsSet != null)))
+        if (((complete_wild.neg_ns_set != null) &&
+             (complete_wild.neg_ns_set.value != null) &&
+             (cur_wild.ns_set != null)) ||
+            ((cur_wild.neg_ns_set != null) &&
+             (cur_wild.neg_ns_set.value != null) &&
+             (complete_wild.ns_set != null)))
         {
 
-            int nsFound, absentFound = 0;
+            int ns_found, absent_found = 0;
 
-            if (completeWild.nsSet != null)
+            if (complete_wild.ns_set != null)
             {
-                cur = completeWild.nsSet;
-                curB = curWild.negNsSet;
+                cur = complete_wild.ns_set;
+                cur_b = cur_wild.neg_ns_set;
             }
             else
             {
-                cur = curWild.nsSet;
-                curB = completeWild.negNsSet;
+                cur = cur_wild.ns_set;
+                cur_b = complete_wild.neg_ns_set;
             }
-            nsFound = 0;
+            ns_found = 0;
             while (cur != null)
             {
                 if (cur.value == null)
                 {
-                    absentFound = 1;
+                    absent_found = 1;
                 }
-                else if (Objects.equals(cur.value, curB.value))
+                else if (Objects.equals(cur.value, cur_b.value))
                 {
-                    nsFound = 1;
+                    ns_found = 1;
                 }
-                if ((nsFound != 0) && (absentFound != 0))
+                if ((ns_found != 0) && (absent_found != 0))
                 {
                     break;
                 }
                 cur = cur.next;
             }
 
-            if ((nsFound != 0) && (absentFound != 0))
+            if ((ns_found != 0) && (absent_found != 0))
             {
                 /*
                 * 5.1 If the set S includes both the negated namespace
                 * name and `absent`, then any must be the value.
                 */
-                completeWild.any = 1;
-                if (completeWild.nsSet != null)
+                complete_wild.any = 1;
+                if (complete_wild.ns_set != null)
                 {
-                    freeWildcardNsSet(completeWild.nsSet);
-                    completeWild.nsSet = null;
+                    freeWildcardNsSet(complete_wild.ns_set);
+                    complete_wild.ns_set = null;
                 }
-                if (completeWild.negNsSet != null)
+                if (complete_wild.neg_ns_set != null)
                 {
-                    completeWild.negNsSet = null;
+                    complete_wild.neg_ns_set = null;
                 }
             }
-            else if ((nsFound != 0) && (absentFound == 0))
+            else if ((ns_found != 0) && (absent_found == 0))
             {
                 /*
                 * 5.2 If the set S includes the negated namespace name
                 * but not `absent`, then a pair of not and `absent` must
                 * be the value.
                 */
-                if (completeWild.nsSet != null)
+                if (complete_wild.ns_set != null)
                 {
-                    freeWildcardNsSet(completeWild.nsSet);
-                    completeWild.nsSet = null;
+                    freeWildcardNsSet(complete_wild.ns_set);
+                    complete_wild.ns_set = null;
                 }
-                if (completeWild.negNsSet == null)
+                if (complete_wild.neg_ns_set == null)
                 {
-                    completeWild.negNsSet = newWildcardNsConstraint(ctxt);
-                    if (completeWild.negNsSet == null)
+                    complete_wild.neg_ns_set = newWildcardNsConstraint(ctxt);
+                    if (complete_wild.neg_ns_set == null)
                     {
                         return -1;
                     }
                 }
-                completeWild.negNsSet.value = null;
+                complete_wild.neg_ns_set.value = null;
             }
-            else if ((nsFound == 0) && (absentFound != 0))
+            else if ((ns_found == 0) && (absent_found != 0))
             {
                 /*
                 * 5.3 If the set S includes `absent` but not the negated
                 * namespace name, then the union is not expressible.
                 */
-                pErr(ctxt, completeWild.node,
+                pErr(ctxt, complete_wild.node,
                     XML_XSD10_SCHEMAP_UNION_NOT_EXPRESSIBLE,
                     "The union of the wildcard is not expressible.\n",
                     null, null);
                 return XML_XSD10_SCHEMAP_UNION_NOT_EXPRESSIBLE;
             }
-            else if ((nsFound == 0) && (absentFound == 0))
+            else if ((ns_found == 0) && (absent_found == 0))
             {
                 /*
                 * 5.4 If the set S does not include either the negated namespace
                 * name or `absent`, then whichever of O1 or O2 is a pair of not
                 * and a namespace name must be the value.
                 */
-                if (completeWild.negNsSet == null)
+                if (complete_wild.neg_ns_set == null)
                 {
-                    if (completeWild.nsSet != null)
+                    if (complete_wild.ns_set != null)
                     {
-                        freeWildcardNsSet(completeWild.nsSet);
-                        completeWild.nsSet = null;
+                        freeWildcardNsSet(complete_wild.ns_set);
+                        complete_wild.ns_set = null;
                     }
-                    completeWild.negNsSet = newWildcardNsConstraint(ctxt);
-                    if (completeWild.negNsSet == null)
+                    complete_wild.neg_ns_set = newWildcardNsConstraint(ctxt);
+                    if (complete_wild.neg_ns_set == null)
                     {
                         return -1;
                     }
-                    completeWild.negNsSet.value = curWild.negNsSet.value;
+                    complete_wild.neg_ns_set.value = cur_wild.neg_ns_set.value;
                 }
             }
             return 0;
@@ -1320,21 +1320,21 @@ public final class Xsd10Build
         /*
          * 6.
          */
-        if (((completeWild.negNsSet != null) &&
-             (completeWild.negNsSet.value == null) &&
-             (curWild.nsSet != null)) ||
-            ((curWild.negNsSet != null) &&
-             (curWild.negNsSet.value == null) &&
-             (completeWild.nsSet != null)))
+        if (((complete_wild.neg_ns_set != null) &&
+             (complete_wild.neg_ns_set.value == null) &&
+             (cur_wild.ns_set != null)) ||
+            ((cur_wild.neg_ns_set != null) &&
+             (cur_wild.neg_ns_set.value == null) &&
+             (complete_wild.ns_set != null)))
         {
 
-            if (completeWild.nsSet != null)
+            if (complete_wild.ns_set != null)
             {
-                cur = completeWild.nsSet;
+                cur = complete_wild.ns_set;
             }
             else
             {
-                cur = curWild.nsSet;
+                cur = cur_wild.ns_set;
             }
             while (cur != null)
             {
@@ -1344,37 +1344,37 @@ public final class Xsd10Build
                     * 6.1 If the set S includes `absent`, then any must be the
                     * value.
                     */
-                    completeWild.any = 1;
-                    if (completeWild.nsSet != null)
+                    complete_wild.any = 1;
+                    if (complete_wild.ns_set != null)
                     {
-                        freeWildcardNsSet(completeWild.nsSet);
-                        completeWild.nsSet = null;
+                        freeWildcardNsSet(complete_wild.ns_set);
+                        complete_wild.ns_set = null;
                     }
-                    if (completeWild.negNsSet != null)
+                    if (complete_wild.neg_ns_set != null)
                     {
-                        completeWild.negNsSet = null;
+                        complete_wild.neg_ns_set = null;
                     }
                     return 0;
                 }
                 cur = cur.next;
             }
-            if (completeWild.negNsSet == null)
+            if (complete_wild.neg_ns_set == null)
             {
                 /*
                 * 6.2 If the set S does not include `absent`, then a pair of not
                 * and `absent` must be the value.
                 */
-                if (completeWild.nsSet != null)
+                if (complete_wild.ns_set != null)
                 {
-                    freeWildcardNsSet(completeWild.nsSet);
-                    completeWild.nsSet = null;
+                    freeWildcardNsSet(complete_wild.ns_set);
+                    complete_wild.ns_set = null;
                 }
-                completeWild.negNsSet = newWildcardNsConstraint(ctxt);
-                if (completeWild.negNsSet == null)
+                complete_wild.neg_ns_set = newWildcardNsConstraint(ctxt);
+                if (complete_wild.neg_ns_set == null)
                 {
                     return -1;
                 }
-                completeWild.negNsSet.value = null;
+                complete_wild.neg_ns_set.value = null;
             }
             return 0;
         }
@@ -1385,49 +1385,49 @@ public final class Xsd10Build
     // xml_xsd10_intersect_wildcards
     /**
      * Port of xmlSchemaIntersectWildcards. Intersects the namespace constraints of the
-     * given wildcards. completeWild will hold the resulting intersection.
+     * given wildcards. complete_wild will hold the resulting intersection.
      * @param ctxt the schema parser context
-     * @param completeWild the first wildcard
-     * @param curWild the second wildcard
+     * @param complete_wild the first wildcard
+     * @param cur_wild the second wildcard
      * @return a positive error code on failure, -1 in case of an internal error, 0 otherwise.
      */
-    static int intersectWildcards(Xsd10ParserCtxt ctxt, Xsd10Wildcard completeWild, Xsd10Wildcard curWild)
+    static int intersectWildcards(Xsd10ParserCtxt ctxt, Xsd10Wildcard complete_wild, Xsd10Wildcard cur_wild)
     {
-        Xsd10WildcardNs cur, curB, prev, tmp;
+        Xsd10WildcardNs cur, cur_b, prev, tmp;
 
         /*
         * 1 If O1 and O2 are the same value, then that value must be the
         * value.
         */
-        if ((completeWild.any == curWild.any) &&
-            ((completeWild.nsSet == null) == (curWild.nsSet == null)) &&
-            ((completeWild.negNsSet == null) == (curWild.negNsSet == null)))
+        if ((complete_wild.any == cur_wild.any) &&
+            ((complete_wild.ns_set == null) == (cur_wild.ns_set == null)) &&
+            ((complete_wild.neg_ns_set == null) == (cur_wild.neg_ns_set == null)))
         {
 
-            if ((completeWild.negNsSet == null) ||
-                Objects.equals(completeWild.negNsSet.value, curWild.negNsSet.value))
+            if ((complete_wild.neg_ns_set == null) ||
+                Objects.equals(complete_wild.neg_ns_set.value, cur_wild.neg_ns_set.value))
             {
 
-                if (completeWild.nsSet != null)
+                if (complete_wild.ns_set != null)
                 {
                     int found = 0;
 
                     /*
                     * Check equality of sets.
                     */
-                    cur = completeWild.nsSet;
+                    cur = complete_wild.ns_set;
                     while (cur != null)
                     {
                         found = 0;
-                        curB = curWild.nsSet;
-                        while (curB != null)
+                        cur_b = cur_wild.ns_set;
+                        while (cur_b != null)
                         {
-                            if (Objects.equals(cur.value, curB.value))
+                            if (Objects.equals(cur.value, cur_b.value))
                             {
                                 found = 1;
                                 break;
                             }
-                            curB = curB.next;
+                            cur_b = cur_b.next;
                         }
                         if (found == 0)
                         {
@@ -1449,9 +1449,9 @@ public final class Xsd10Build
         /*
         * 2 If either O1 or O2 is any, then the other must be the value.
         */
-        if ((completeWild.any != curWild.any) && (completeWild.any != 0))
+        if ((complete_wild.any != cur_wild.any) && (complete_wild.any != 0))
         {
-            if (cloneWildcardNsConstraints(ctxt, completeWild, curWild) == -1)
+            if (cloneWildcardNsConstraints(ctxt, complete_wild, cur_wild) == -1)
             {
                 return -1;
             }
@@ -1463,35 +1463,35 @@ public final class Xsd10Build
         * `absent`), then that set, minus the negated value if it was in
         * the set, minus `absent` if it was in the set, must be the value.
         */
-        if (((completeWild.negNsSet != null) && (curWild.nsSet != null)) ||
-            ((curWild.negNsSet != null) && (completeWild.nsSet != null)))
+        if (((complete_wild.neg_ns_set != null) && (cur_wild.ns_set != null)) ||
+            ((cur_wild.neg_ns_set != null) && (complete_wild.ns_set != null)))
         {
             String neg;
 
-            if (completeWild.nsSet == null)
+            if (complete_wild.ns_set == null)
             {
-                neg = completeWild.negNsSet.value;
-                if (cloneWildcardNsConstraints(ctxt, completeWild, curWild) == -1)
+                neg = complete_wild.neg_ns_set.value;
+                if (cloneWildcardNsConstraints(ctxt, complete_wild, cur_wild) == -1)
                 {
                     return -1;
                 }
             }
             else
             {
-                neg = curWild.negNsSet.value;
+                neg = cur_wild.neg_ns_set.value;
             }
             /*
             * Remove absent and negated.
             */
             prev = null;
-            cur = completeWild.nsSet;
+            cur = complete_wild.ns_set;
             while (cur != null)
             {
                 if (cur.value == null)
                 {
                     if (prev == null)
                     {
-                        completeWild.nsSet = cur.next;
+                        complete_wild.ns_set = cur.next;
                     }
                     else
                     {
@@ -1505,14 +1505,14 @@ public final class Xsd10Build
             if (neg != null)
             {
                 prev = null;
-                cur = completeWild.nsSet;
+                cur = complete_wild.ns_set;
                 while (cur != null)
                 {
                     if (Objects.equals(cur.value, neg))
                     {
                         if (prev == null)
                         {
-                            completeWild.nsSet = cur.next;
+                            complete_wild.ns_set = cur.next;
                         }
                         else
                         {
@@ -1531,30 +1531,30 @@ public final class Xsd10Build
         * 4 If both O1 and O2 are sets of (namespace names or `absent`),
         * then the intersection of those sets must be the value.
         */
-        if ((completeWild.nsSet != null) && (curWild.nsSet != null))
+        if ((complete_wild.ns_set != null) && (cur_wild.ns_set != null))
         {
             int found;
 
-            cur = completeWild.nsSet;
+            cur = complete_wild.ns_set;
             prev = null;
             while (cur != null)
             {
                 found = 0;
-                curB = curWild.nsSet;
-                while (curB != null)
+                cur_b = cur_wild.ns_set;
+                while (cur_b != null)
                 {
-                    if (Objects.equals(cur.value, curB.value))
+                    if (Objects.equals(cur.value, cur_b.value))
                     {
                         found = 1;
                         break;
                     }
-                    curB = curB.next;
+                    cur_b = cur_b.next;
                 }
                 if (found == 0)
                 {
                     if (prev == null)
                     {
-                        completeWild.nsSet = cur.next;
+                        complete_wild.ns_set = cur.next;
                     }
                     else
                     {
@@ -1573,14 +1573,14 @@ public final class Xsd10Build
         /* 5 If the two are negations of different namespace names,
         * then the intersection is not expressible
         */
-        if ((completeWild.negNsSet != null) &&
-            (curWild.negNsSet != null) &&
-            !Objects.equals(completeWild.negNsSet.value, curWild.negNsSet.value) &&
-            (completeWild.negNsSet.value != null) &&
-            (curWild.negNsSet.value != null))
+        if ((complete_wild.neg_ns_set != null) &&
+            (cur_wild.neg_ns_set != null) &&
+            !Objects.equals(complete_wild.neg_ns_set.value, cur_wild.neg_ns_set.value) &&
+            (complete_wild.neg_ns_set.value != null) &&
+            (cur_wild.neg_ns_set.value != null))
         {
 
-            pErr(ctxt, completeWild.node, XML_XSD10_SCHEMAP_INTERSECTION_NOT_EXPRESSIBLE,
+            pErr(ctxt, complete_wild.node, XML_XSD10_SCHEMAP_INTERSECTION_NOT_EXPRESSIBLE,
                 "The intersection of the wildcard is not expressible.\n",
                 null, null);
             return XML_XSD10_SCHEMAP_INTERSECTION_NOT_EXPRESSIBLE;
@@ -1590,11 +1590,11 @@ public final class Xsd10Build
         * is a negation of `absent`, then the one which is the negation
         * of a namespace name must be the value.
         */
-        if ((completeWild.negNsSet != null) && (curWild.negNsSet != null) &&
-            !Objects.equals(completeWild.negNsSet.value, curWild.negNsSet.value) &&
-            (completeWild.negNsSet.value == null))
+        if ((complete_wild.neg_ns_set != null) && (cur_wild.neg_ns_set != null) &&
+            !Objects.equals(complete_wild.neg_ns_set.value, cur_wild.neg_ns_set.value) &&
+            (complete_wild.neg_ns_set.value == null))
         {
-            completeWild.negNsSet.value = curWild.negNsSet.value;
+            complete_wild.neg_ns_set.value = cur_wild.neg_ns_set.value;
         }
         return 0;
     }
@@ -1620,38 +1620,38 @@ public final class Xsd10Build
         * 2.1 sub must be a pair of not and a namespace name or `absent`.
         * 2.2 super must be a pair of not and the same value.
         */
-        if ((sub.negNsSet != null) &&
-            (super_.negNsSet != null) &&
-            Objects.equals(sub.negNsSet.value, super_.negNsSet.value))
+        if ((sub.neg_ns_set != null) &&
+            (super_.neg_ns_set != null) &&
+            Objects.equals(sub.neg_ns_set.value, super_.neg_ns_set.value))
         {
             return 0;
         }
         /*
         * 3.1 sub must be a set whose members are either namespace names or `absent`.
         */
-        if (sub.nsSet != null)
+        if (sub.ns_set != null)
         {
             /*
             * 3.2.1 super must be the same set or a superset thereof.
             */
-            if (super_.nsSet != null)
+            if (super_.ns_set != null)
             {
-                Xsd10WildcardNs cur, curB;
+                Xsd10WildcardNs cur, cur_b;
                 int found = 0;
 
-                cur = sub.nsSet;
+                cur = sub.ns_set;
                 while (cur != null)
                 {
                     found = 0;
-                    curB = super_.nsSet;
-                    while (curB != null)
+                    cur_b = super_.ns_set;
+                    while (cur_b != null)
                     {
-                        if (Objects.equals(cur.value, curB.value))
+                        if (Objects.equals(cur.value, cur_b.value))
                         {
                             found = 1;
                             break;
                         }
-                        curB = curB.next;
+                        cur_b = cur_b.next;
                     }
                     if (found == 0)
                     {
@@ -1664,17 +1664,17 @@ public final class Xsd10Build
                     return 0;
                 }
             }
-            else if (super_.negNsSet != null)
+            else if (super_.neg_ns_set != null)
             {
                 Xsd10WildcardNs cur;
                 /*
                 * 3.2.2 super must be a pair of not and a namespace name or
                 * `absent` and that value must not be in sub's set.
                 */
-                cur = sub.nsSet;
+                cur = sub.ns_set;
                 while (cur != null)
                 {
-                    if (Objects.equals(cur.value, super_.negNsSet.value))
+                    if (Objects.equals(cur.value, super_.neg_ns_set.value))
                     {
                         return 1;
                     }
@@ -1697,12 +1697,12 @@ public final class Xsd10Build
             val[0] = null;
         }
 
-        if (attruse.defValue != null)
+        if (attruse.def_value != null)
         {
-            value[0] = attruse.defValue;
+            value[0] = attruse.def_value;
             if (val != null)
             {
-                val[0] = attruse.defVal;
+                val[0] = attruse.def_val;
             }
             if ((attruse.flags & XML_XSD10_SCHEMA_ATTR_USE_FIXED) != 0)
             {
@@ -1710,14 +1710,14 @@ public final class Xsd10Build
             }
             return 1;
         }
-        else if ((attruse.attrDecl instanceof Xsd10Attribute) &&
-                 (((Xsd10Attribute) attruse.attrDecl).defValue != null))
+        else if ((attruse.attr_decl instanceof Xsd10Attribute) &&
+                 (((Xsd10Attribute) attruse.attr_decl).def_value != null))
         {
-            Xsd10Attribute decl = (Xsd10Attribute) attruse.attrDecl;
-            value[0] = decl.defValue;
+            Xsd10Attribute decl = (Xsd10Attribute) attruse.attr_decl;
+            value[0] = decl.def_value;
             if (val != null)
             {
-                val[0] = decl.defVal;
+                val[0] = decl.def_val;
             }
             if ((decl.flags & XML_XSD10_SCHEMAS_ATTR_FIXED) != 0)
             {
@@ -1747,11 +1747,11 @@ public final class Xsd10Build
         {
             return 0;
         }
-        else if (wild.nsSet != null)
+        else if (wild.ns_set != null)
         {
             Xsd10WildcardNs cur;
 
-            cur = wild.nsSet;
+            cur = wild.ns_set;
             while (cur != null)
             {
                 if (strEqual(cur.value, ns) != 0)
@@ -1761,8 +1761,8 @@ public final class Xsd10Build
                 cur = cur.next;
             }
         }
-        else if ((wild.negNsSet != null) && (ns != null) &&
-                 (strEqual(wild.negNsSet.value, ns) == 0))
+        else if ((wild.neg_ns_set != null) && (ns != null) &&
+                 (strEqual(wild.neg_ns_set.value, ns) == 0))
         {
             return 0;
         }
@@ -1790,24 +1790,24 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckDerivationOKRestriction2to4. Schema Component Constraint:
      * Derivation Valid (Restriction, Complex) derivation-ok-restriction (2) - (4)
      */
-    static int checkDerivationOkRestriction2to4(Xsd10ParserCtxt pctxt, int action, Xsd10BasicItem item, Xsd10BasicItem baseItem, Xsd10ItemList uses, Xsd10ItemList baseUses, Xsd10Wildcard wild, Xsd10Wildcard baseWild)
+    static int checkDerivationOkRestriction2to4(Xsd10ParserCtxt pctxt, int action, Xsd10BasicItem item, Xsd10BasicItem base_item, Xsd10ItemList uses, Xsd10ItemList base_uses, Xsd10Wildcard wild, Xsd10Wildcard base_wild)
     {
         Xsd10AttributeUse cur = null, bcur;
         int i, j, found; /* err = 0; */
-        String bEffValue;
-        int effFixed;
+        String b_eff_value;
+        int eff_fixed;
 
         if (uses != null)
         {
-            for (i = 0; i < uses.nbItems; i++)
+            for (i = 0; i < uses.nb_items; i++)
             {
                 cur = (Xsd10AttributeUse) uses.items[i];
                 found = 0;
-                if (baseUses != null)
+                if (base_uses != null)
                 {
-                    for (j = 0; j < baseUses.nbItems; j++)
+                    for (j = 0; j < base_uses.nb_items; j++)
                     {
-                        bcur = (Xsd10AttributeUse) baseUses.items[j];
+                        bcur = (Xsd10AttributeUse) base_uses.items[j];
                         if (Objects.equals(wxsAttruseDeclName(cur),
                                 wxsAttruseDeclName(bcur)) &&
                             Objects.equals(wxsAttruseDeclTns(cur),
@@ -1837,7 +1837,7 @@ public final class Xsd10Build
                                     + "with the corresponding 'required' attribute use of "
                                     + "the %s %s",
                                     wxsActionStr(action),
-                                    getComponentDesignation(str, baseItem),
+                                    getComponentDesignation(str, base_item),
                                     null, null);
                                 /* err = pctxt->err; */
                             }
@@ -1845,7 +1845,7 @@ public final class Xsd10Build
                                          wxsAttruseTypedef(cur),
                                          wxsAttruseTypedef(bcur), 0) != 0)
                             {
-                                String[] strA = new String[1], strB = new String[1], strC = new String[1];
+                                String[] str_a = new String[1], str_b = new String[1], str_c = new String[1];
 
                                 /*
                                 * SPEC (2.1.2) "R's {attribute declaration}'s
@@ -1860,12 +1860,12 @@ public final class Xsd10Build
                                     + "is not validly derived from "
                                     + "the corresponding %s of the "
                                     + "attribute declaration in the %s %s",
-                                    getComponentDesignation(strA,
+                                    getComponentDesignation(str_a,
                                         wxsAttruseTypedef(cur)),
-                                    getComponentDesignation(strB,
+                                    getComponentDesignation(str_b,
                                         wxsAttruseTypedef(bcur)),
                                     wxsActionStr(action),
-                                    getComponentDesignation(strC, baseItem));
+                                    getComponentDesignation(str_c, base_item));
                                 /* err = pctxt->err; */
                             }
                             else
@@ -1880,29 +1880,29 @@ public final class Xsd10Build
                                 */
                                 getEffectiveValueConstraint(bcur,
                                     fx, sv, null);
-                                effFixed = fx[0];
-                                bEffValue = sv[0];
+                                eff_fixed = fx[0];
+                                b_eff_value = sv[0];
                                 /*
                                 * 2.1.3 ... one of the following must be true
                                 *
                                 * 2.1.3.1 B's `effective value constraint` is
                                 * `absent` or default.
                                 */
-                                if ((bEffValue != null) &&
-                                    (effFixed == 1))
+                                if ((b_eff_value != null) &&
+                                    (eff_fixed == 1))
                                 {
-                                    String rEffValue = null;
+                                    String r_eff_value = null;
 
                                     getEffectiveValueConstraint(bcur,
                                         fx, sv, null);
-                                    effFixed = fx[0];
-                                    rEffValue = sv[0];
+                                    eff_fixed = fx[0];
+                                    r_eff_value = sv[0];
                                     /*
                                     * 2.1.3.2 R's `effective value constraint` is
                                     * fixed with the same string as B's.
                                     */
-                                    if ((effFixed == 0) ||
-                                        (wxsAreDefaultStrEqual(rEffValue, bEffValue) == 0))
+                                    if ((eff_fixed == 0) ||
+                                        (wxsAreDefaultStrEqual(r_eff_value, b_eff_value) == 0))
                                     {
                                         String[] str = new String[1];
 
@@ -1914,7 +1914,7 @@ public final class Xsd10Build
                                             + "its correspondent in the %s %s",
                                             wxsActionStr(action),
                                             getComponentDesignation(str,
-                                                baseItem),
+                                                base_item),
                                             null, null);
                                         /* err = pctxt->err; */
                                     }
@@ -1934,9 +1934,9 @@ public final class Xsd10Build
                     * to that wildcard, as defined in Wildcard allows Namespace
                     * Name ($3.10.4)."
                     */
-                    if ((baseWild == null) ||
-                        (checkCvcWildcardNamespace(baseWild,
-                            (wxsAttruseDecl(cur)).targetNamespace) != 0))
+                    if ((base_wild == null) ||
+                        (checkCvcWildcardNamespace(base_wild,
+                            (wxsAttruseDecl(cur)).target_namespace) != 0))
                     {
                         String[] str = new String[1];
 
@@ -1946,7 +1946,7 @@ public final class Xsd10Build
                             "Neither a matching attribute use, "
                             + "nor a matching wildcard exists in the %s %s",
                             wxsActionStr(action),
-                            getComponentDesignation(str, baseItem),
+                            getComponentDesignation(str, base_item),
                             null, null);
                         /* err = pctxt->err; */
                     }
@@ -1961,11 +1961,11 @@ public final class Xsd10Build
         * {target namespace} as its {attribute declaration} in the {attribute
         * uses} of the complex type definition itself whose {required} is true.
         */
-        if (baseUses != null)
+        if (base_uses != null)
         {
-            for (j = 0; j < baseUses.nbItems; j++)
+            for (j = 0; j < base_uses.nb_items; j++)
             {
-                bcur = (Xsd10AttributeUse) baseUses.items[j];
+                bcur = (Xsd10AttributeUse) base_uses.items[j];
                 if (bcur.occurs != XML_XSD10_SCHEMAS_ATTR_USE_REQUIRED)
                 {
                     continue;
@@ -1973,7 +1973,7 @@ public final class Xsd10Build
                 found = 0;
                 if (uses != null)
                 {
-                    for (i = 0; i < uses.nbItems; i++)
+                    for (i = 0; i < uses.nb_items; i++)
                     {
                         cur = (Xsd10AttributeUse) uses.items[i];
                         if (Objects.equals(wxsAttruseDeclName(cur),
@@ -1988,16 +1988,16 @@ public final class Xsd10Build
                 }
                 if (found == 0)
                 {
-                    String[] strA = new String[1], strB = new String[1];
+                    String[] str_a = new String[1], str_b = new String[1];
 
                     customErr4(pctxt,
                         XML_XSD10_SCHEMAP_DERIVATION_OK_RESTRICTION_3,
                         null, item,
                         "A matching attribute use for the "
                         + "'required' %s of the %s %s is missing",
-                        getComponentDesignation(strA, bcur),
+                        getComponentDesignation(str_a, bcur),
                         wxsActionStr(action),
-                        getComponentDesignation(strB, baseItem),
+                        getComponentDesignation(str_b, base_item),
                         null);
                 }
             }
@@ -2011,7 +2011,7 @@ public final class Xsd10Build
             * (4) "If there is an {attribute wildcard}, all of the
             * following must be true:"
             */
-            if (baseWild == null)
+            if (base_wild == null)
             {
                 String[] str = new String[1];
 
@@ -2025,12 +2025,12 @@ public final class Xsd10Build
                     + "but the %s %s '%s' does not have one",
                     wxsItemTypeName(item),
                     wxsActionStr(action),
-                    wxsItemTypeName(baseItem),
-                    getComponentQName(str, baseItem));
+                    wxsItemTypeName(base_item),
+                    getComponentQName(str, base_item));
                 return pctxt.err;
             }
-            else if ((baseWild.any == 0) &&
-                     (checkCosnsSubset(wild, baseWild) != 0))
+            else if ((base_wild.any == 0) &&
+                     (checkCosnsSubset(wild, base_wild) != 0))
             {
                 String[] str = new String[1];
                 /*
@@ -2045,8 +2045,8 @@ public final class Xsd10Build
                     "The attribute wildcard is not a valid "
                     + "subset of the wildcard in the %s %s '%s'",
                     wxsActionStr(action),
-                    wxsItemTypeName(baseItem),
-                    getComponentQName(str, baseItem),
+                    wxsItemTypeName(base_item),
+                    getComponentQName(str, base_item),
                     null);
                 return pctxt.err;
             }
@@ -2057,18 +2057,18 @@ public final class Xsd10Build
             * wildcard}'s {process contents}, where strict is stronger
             * than lax is stronger than skip.
             */
-            if ((wxsIsAnytype(baseItem) == 0) &&
-                (wild.processContents < baseWild.processContents))
+            if ((wxsIsAnytype(base_item) == 0) &&
+                (wild.process_contents < base_wild.process_contents))
             {
                 String[] str = new String[1];
                 customErr4(pctxt,
                     XML_XSD10_SCHEMAP_DERIVATION_OK_RESTRICTION_4_3,
-                    null, baseItem,
+                    null, base_item,
                     "The {process contents} of the attribute wildcard is "
                     + "weaker than the one in the %s %s '%s'",
                     wxsActionStr(action),
-                    wxsItemTypeName(baseItem),
-                    getComponentQName(str, baseItem),
+                    wxsItemTypeName(base_item),
+                    getComponentQName(str, base_item),
                     null);
                 return pctxt.err;
             }
@@ -2086,27 +2086,27 @@ public final class Xsd10Build
      */
     static int fixupTypeAttributeUses(Xsd10ParserCtxt pctxt, Xsd10Type type)
     {
-        Xsd10Type baseType = null;
+        Xsd10Type base_type = null;
         Xsd10AttributeUse use;
-        Xsd10ItemList uses, baseUses, prohibs = null;
+        Xsd10ItemList uses, base_uses, prohibs = null;
 
-        if (type.baseType == null)
+        if (type.base_type == null)
         {
             perrorInt(pctxt, "xmlSchemaFixupTypeAttributeUses",
                 "no base type");
             return -1;
         }
-        baseType = type.baseType;
-        if (wxsIsTypeNotFixed(baseType) != 0)
+        base_type = type.base_type;
+        if (wxsIsTypeNotFixed(base_type) != 0)
         {
-            if (typeFixup(baseType, pctxt) == -1)
+            if (typeFixup(base_type, pctxt) == -1)
             {
                 return -1;
             }
         }
 
-        uses = (Xsd10ItemList) type.attrUses;
-        baseUses = (Xsd10ItemList) baseType.attrUses;
+        uses = (Xsd10ItemList) type.attr_uses;
+        base_uses = (Xsd10ItemList) base_type.attr_uses;
         /*
         * Expand attribute group references. And build the 'complete'
         * wildcard, i.e. intersect multiple wildcards.
@@ -2114,26 +2114,26 @@ public final class Xsd10Build
         */
         if (uses != null)
         {
-            Xsd10Wildcard[] wc = new Xsd10Wildcard[] { type.attributeWildcard };
+            Xsd10Wildcard[] wc = new Xsd10Wildcard[] { type.attribute_wildcard };
             if (wxsIsRestriction(type) != 0)
             {
                 /*
                 * This one will transfer all attr. prohibitions
-                * into pctxt->attrProhibs.
+                * into pctxt->attr_prohibs.
                 */
                 int r = expandAttributeGroupRefs(pctxt,
                     type, wc, uses,
-                    pctxt.attrProhibs);
-                type.attributeWildcard = wc[0];
+                    pctxt.attr_prohibs);
+                type.attribute_wildcard = wc[0];
                 if (r == -1)
                 {
                     perrorInt(pctxt, "xmlSchemaFixupTypeAttributeUses",
                         "failed to expand attributes");
                     return -1;
                 }
-                if (pctxt.attrProhibs.nbItems != 0)
+                if (pctxt.attr_prohibs.nb_items != 0)
                 {
-                    prohibs = pctxt.attrProhibs;
+                    prohibs = pctxt.attr_prohibs;
                 }
             }
             else
@@ -2141,7 +2141,7 @@ public final class Xsd10Build
                 int r = expandAttributeGroupRefs(pctxt,
                     type, wc, uses,
                     null);
-                type.attributeWildcard = wc[0];
+                type.attribute_wildcard = wc[0];
                 if (r == -1)
                 {
                     perrorInt(pctxt, "xmlSchemaFixupTypeAttributeUses",
@@ -2153,52 +2153,52 @@ public final class Xsd10Build
         /*
         * Inherit the attribute uses of the base type.
         */
-        if (baseUses != null)
+        if (base_uses != null)
         {
             int i, j;
             Xsd10AttributeUseProhib pro;
 
             if (wxsIsRestriction(type) != 0)
             {
-                int usesCount;
+                int uses_count;
                 Xsd10AttributeUse tmp;
 
                 if (uses != null)
                 {
-                    usesCount = uses.nbItems;
+                    uses_count = uses.nb_items;
                 }
                 else
                 {
-                    usesCount = 0;
+                    uses_count = 0;
                 }
 
                 /* Restriction. */
                 inherit:
-                for (i = 0; i < baseUses.nbItems; i++)
+                for (i = 0; i < base_uses.nb_items; i++)
                 {
-                    use = (Xsd10AttributeUse) baseUses.items[i];
+                    use = (Xsd10AttributeUse) base_uses.items[i];
                     if (prohibs != null)
                     {
                         /*
                         * Filter out prohibited uses.
                         */
-                        for (j = 0; j < prohibs.nbItems; j++)
+                        for (j = 0; j < prohibs.nb_items; j++)
                         {
                             pro = (Xsd10AttributeUseProhib) prohibs.items[j];
                             if (Objects.equals(wxsAttruseDeclName(use), pro.name) &&
                                 Objects.equals(wxsAttruseDeclTns(use),
-                                    pro.targetNamespace))
+                                    pro.target_namespace))
                             {
                                 continue inherit;
                             }
                         }
                     }
-                    if (usesCount != 0)
+                    if (uses_count != 0)
                     {
                         /*
                         * Filter out existing uses.
                         */
-                        for (j = 0; j < usesCount; j++)
+                        for (j = 0; j < uses_count; j++)
                         {
                             tmp = (Xsd10AttributeUse) uses.items[j];
                             if (Objects.equals(wxsAttruseDeclName(use),
@@ -2212,12 +2212,12 @@ public final class Xsd10Build
                     }
                     if (uses == null)
                     {
-                        type.attrUses = itemListCreate();
-                        if (type.attrUses == null)
+                        type.attr_uses = itemListCreate();
+                        if (type.attr_uses == null)
                         {
                             return -1;
                         }
-                        uses = (Xsd10ItemList) type.attrUses;
+                        uses = (Xsd10ItemList) type.attr_uses;
                     }
                     itemListAddSize(uses, 2, use);
                 }
@@ -2225,19 +2225,19 @@ public final class Xsd10Build
             else
             {
                 /* Extension. */
-                for (i = 0; i < baseUses.nbItems; i++)
+                for (i = 0; i < base_uses.nb_items; i++)
                 {
-                    use = (Xsd10AttributeUse) baseUses.items[i];
+                    use = (Xsd10AttributeUse) base_uses.items[i];
                     if (uses == null)
                     {
-                        type.attrUses = itemListCreate();
-                        if (type.attrUses == null)
+                        type.attr_uses = itemListCreate();
+                        if (type.attr_uses == null)
                         {
                             return -1;
                         }
-                        uses = (Xsd10ItemList) type.attrUses;
+                        uses = (Xsd10ItemList) type.attr_uses;
                     }
-                    itemListAddSize(uses, baseUses.nbItems, use);
+                    itemListAddSize(uses, base_uses.nb_items, use);
                 }
             }
         }
@@ -2246,10 +2246,10 @@ public final class Xsd10Build
         */
         if (uses != null)
         {
-            if (uses.nbItems == 0)
+            if (uses.nb_items == 0)
             {
                 itemListFree(uses);
-                type.attrUses = null;
+                type.attr_uses = null;
             }
         }
         /*
@@ -2257,19 +2257,19 @@ public final class Xsd10Build
         */
         if (wxsIsExtension(type) != 0)
         {
-            if (baseType.attributeWildcard != null)
+            if (base_type.attribute_wildcard != null)
             {
                 /*
                 * (3.2.2.1) "If the `base wildcard` is non-`absent`, then
                 * the appropriate case among the following:"
                 */
-                if (type.attributeWildcard != null)
+                if (type.attribute_wildcard != null)
                 {
                     /*
                     * Union the complete wildcard with the base wildcard.
                     */
-                    if (unionWildcards(pctxt, type.attributeWildcard,
-                            baseType.attributeWildcard) == -1)
+                    if (unionWildcards(pctxt, type.attribute_wildcard,
+                            base_type.attribute_wildcard) == -1)
                     {
                         return -1;
                     }
@@ -2280,7 +2280,7 @@ public final class Xsd10Build
                     * (3.2.2.1.1) "If the `complete wildcard` is `absent`,
                     * then the `base wildcard`."
                     */
-                    type.attributeWildcard = baseType.attributeWildcard;
+                    type.attribute_wildcard = base_type.attribute_wildcard;
                 }
             }
         }
@@ -2321,13 +2321,13 @@ public final class Xsd10Build
     {
         while ((type != null) && (type.type == XML_XSD10_SCHEMA_TYPE_SIMPLE))
         {
-            if (type.memberTypes != null)
+            if (type.member_types != null)
             {
-                return type.memberTypes;
+                return type.member_types;
             }
             else
             {
-                type = type.baseType;
+                type = type.base_type;
             }
         }
         return null;
@@ -2344,7 +2344,7 @@ public final class Xsd10Build
         Xsd10Particle part;
         int emptiable;
 
-        if ((particle.children == null) || (particle.minOccurs == 0))
+        if ((particle.children == null) || (particle.min_occurs == 0))
         {
             return 1;
         }
@@ -2360,7 +2360,7 @@ public final class Xsd10Build
             if ((part.children.type == XML_XSD10_SCHEMA_TYPE_ELEMENT) ||
                 (part.children.type == XML_XSD10_SCHEMA_TYPE_ANY))
             {
-                emptiable = (part.minOccurs == 0) ? 1 : 0;
+                emptiable = (part.min_occurs == 0) ? 1 : 0;
             }
             else
             {
@@ -2405,7 +2405,7 @@ public final class Xsd10Build
         /*
         * SPEC (1) "Its {min occurs} is 0."
         */
-        if ((particle == null) || (particle.minOccurs == 0) ||
+        if ((particle == null) || (particle.min_occurs == 0) ||
             (particle.children == null))
         {
             return 1;
@@ -2427,16 +2427,16 @@ public final class Xsd10Build
      * OK (Simple) (cos-st-derived-OK)
      * @param actxt a context
      * @param type the derived simple type definition
-     * @param baseType the base type definition
+     * @param base_type the base type definition
      * @param subset the subset of ('restriction', etc.)
      * @return 0 on success, an positive error code otherwise.
      */
-    static int checkCosstDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type baseType, int subset)
+    static int checkCosstDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type base_type, int subset)
     {
         /*
         * 1 They are the same type definition.
         */
-        if (type == baseType)
+        if (type == base_type)
         {
             return 0;
         }
@@ -2451,21 +2451,21 @@ public final class Xsd10Build
                 return -1;
             }
         }
-        if (wxsIsTypeNotFixed(baseType) != 0)
+        if (wxsIsTypeNotFixed(base_type) != 0)
         {
-            if (typeFixup(baseType, actxt) == -1)
+            if (typeFixup(base_type, actxt) == -1)
             {
                 return -1;
             }
         }
         if (((subset & XSD10_SUBSET_RESTRICTION) != 0) ||
-            (typeFinalContains(type.baseType,
+            (typeFinalContains(type.base_type,
                 XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION) != 0))
         {
             return XML_XSD10_SCHEMAP_COS_ST_DERIVED_OK_2_1;
         }
         /* 2.2 */
-        if (type.baseType == baseType)
+        if (type.base_type == base_type)
         {
             /*
             * 2.2.1 D's `base type definition` is B.
@@ -2477,9 +2477,9 @@ public final class Xsd10Build
         * and is validly derived from B given the subset, as defined by this
         * constraint.
         */
-        if ((wxsIsAnytype(type.baseType) == 0) &&
-            (checkCosstDerivedOk(actxt, type.baseType,
-                baseType, subset) == 0))
+        if ((wxsIsAnytype(type.base_type) == 0) &&
+            (checkCosstDerivedOk(actxt, type.base_type,
+                base_type, subset) == 0))
         {
             return 0;
         }
@@ -2487,7 +2487,7 @@ public final class Xsd10Build
         * 2.2.3 D's {variety} is list or union and B is the `simple ur-type
         * definition`.
         */
-        if ((wxsIsAnySimpleType(baseType) != 0) &&
+        if ((wxsIsAnySimpleType(base_type) != 0) &&
             ((wxsIsList(type) != 0) || (wxsIsUnion(type) != 0)))
         {
             return 0;
@@ -2497,11 +2497,11 @@ public final class Xsd10Build
         * definition in B's {member type definitions} given the subset, as
         * defined by this constraint.
         */
-        if (wxsIsUnion(baseType) != 0)
+        if (wxsIsUnion(base_type) != 0)
         {
             Xsd10TypeLink cur;
 
-            cur = baseType.memberTypes;
+            cur = base_type.member_types;
             while (cur != null)
             {
                 Xsd10Type ct = asType(cur.type);
@@ -2532,11 +2532,11 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckTypeDefCircularInternal. Checks st-props-correct (2) +
      * ct-props-correct (3).
      * @param pctxt the schema parser context
-     * @param ctxtType the type definition
-     * @param ancestor an ancestor of ctxtType
+     * @param ctxt_type the type definition
+     * @param ancestor an ancestor of ctxt_type
      * @return XML_SCHEMAP_ST_PROPS_CORRECT_2 if the given type is circular, 0 otherwise.
      */
-    static int checkTypeDefCircularInternal(Xsd10ParserCtxt pctxt, Xsd10Type ctxtType, Xsd10Type ancestor)
+    static int checkTypeDefCircularInternal(Xsd10ParserCtxt pctxt, Xsd10Type ctxt_type, Xsd10Type ancestor)
     {
         int ret;
 
@@ -2545,11 +2545,11 @@ public final class Xsd10Build
             return 0;
         }
 
-        if (ctxtType == ancestor)
+        if (ctxt_type == ancestor)
         {
             pCustomErr(pctxt,
                 XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_2,
-                ctxtType, wxsItemNode(ctxtType),
+                ctxt_type, wxsItemNode(ctxt_type),
                 "The definition is circular", null);
             return XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_2;
         }
@@ -2561,8 +2561,8 @@ public final class Xsd10Build
             return 0;
         }
         ancestor.flags |= XML_XSD10_SCHEMAS_TYPE_MARKED;
-        ret = checkTypeDefCircularInternal(pctxt, ctxtType,
-            ancestor.baseType);
+        ret = checkTypeDefCircularInternal(pctxt, ctxt_type,
+            ancestor.base_type);
         ancestor.flags ^= XML_XSD10_SCHEMAS_TYPE_MARKED;
         return ret;
     }
@@ -2577,12 +2577,12 @@ public final class Xsd10Build
     {
         if ((item == null) ||
             (item.type == XML_XSD10_SCHEMA_TYPE_BASIC) ||
-            (item.baseType == null))
+            (item.base_type == null))
         {
             return;
         }
         checkTypeDefCircularInternal(ctxt, item,
-            item.baseType);
+            item.base_type);
     }
 
     // xml_xsd10_check_union_type_def_circular_recur
@@ -2590,41 +2590,41 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckUnionTypeDefCircularRecur. Simple Type Definition
      * Representation OK (src-simple-type) 4.
      */
-    static int checkUnionTypeDefCircularRecur(Xsd10ParserCtxt pctxt, Xsd10Type ctxType, Xsd10TypeLink members)
+    static int checkUnionTypeDefCircularRecur(Xsd10ParserCtxt pctxt, Xsd10Type ctx_type, Xsd10TypeLink members)
     {
         Xsd10TypeLink member;
-        Xsd10Type memberType;
+        Xsd10Type member_type;
 
         member = members;
         while (member != null)
         {
-            memberType = asType(member.type);
-            while ((memberType != null) &&
-                   (memberType.type != XML_XSD10_SCHEMA_TYPE_BASIC))
+            member_type = asType(member.type);
+            while ((member_type != null) &&
+                   (member_type.type != XML_XSD10_SCHEMA_TYPE_BASIC))
             {
-                if (memberType == ctxType)
+                if (member_type == ctx_type)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_SRC_SIMPLE_TYPE_4,
-                        ctxType, null,
+                        ctx_type, null,
                         "The union type definition is circular", null);
                     return XML_XSD10_SCHEMAP_SRC_SIMPLE_TYPE_4;
                 }
-                if ((wxsIsUnion(memberType) != 0) &&
-                    ((memberType.flags & XML_XSD10_SCHEMAS_TYPE_MARKED) == 0))
+                if ((wxsIsUnion(member_type) != 0) &&
+                    ((member_type.flags & XML_XSD10_SCHEMAS_TYPE_MARKED) == 0))
                 {
                     int res;
-                    memberType.flags |= XML_XSD10_SCHEMAS_TYPE_MARKED;
+                    member_type.flags |= XML_XSD10_SCHEMAS_TYPE_MARKED;
                     res = checkUnionTypeDefCircularRecur(pctxt,
-                        ctxType,
-                        getUnionSimpleTypeMemberTypes(memberType));
-                    memberType.flags ^= XML_XSD10_SCHEMAS_TYPE_MARKED;
+                        ctx_type,
+                        getUnionSimpleTypeMemberTypes(member_type));
+                    member_type.flags ^= XML_XSD10_SCHEMAS_TYPE_MARKED;
                     if (res != 0)
                     {
                         return res;
                     }
                 }
-                memberType = memberType.baseType;
+                member_type = member_type.base_type;
             }
             member = member.next;
         }
@@ -2640,18 +2640,18 @@ public final class Xsd10Build
             return 0;
         }
         return checkUnionTypeDefCircularRecur(pctxt, type,
-            type.memberTypes);
+            type.member_types);
     }
 
     // xml_xsd10_resolve_type_references
     /**
      * Port of xmlSchemaResolveTypeReferences. Resolves type definition references.
-     * @param typeDef the complex/simple type definition
+     * @param type_def the complex/simple type definition
      * @param ctxt the parser context
      */
-    static void resolveTypeReferences(Xsd10Type typeDef, Xsd10ParserCtxt ctxt)
+    static void resolveTypeReferences(Xsd10Type type_def, Xsd10ParserCtxt ctxt)
     {
-        if (typeDef == null)
+        if (type_def == null)
         {
             return;
         }
@@ -2659,49 +2659,49 @@ public final class Xsd10Build
         /*
         * Resolve the base type.
         */
-        if (typeDef.baseType == null)
+        if (type_def.base_type == null)
         {
-            typeDef.baseType = getType(ctxt.schema,
-                typeDef.base, typeDef.baseNs);
-            if (typeDef.baseType == null)
+            type_def.base_type = getType(ctxt.schema,
+                type_def.base, type_def.base_ns);
+            if (type_def.base_type == null)
             {
                 pResCompAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
-                    typeDef, typeDef.node,
-                    "base", typeDef.base, typeDef.baseNs,
+                    type_def, type_def.node,
+                    "base", type_def.base, type_def.base_ns,
                     XML_XSD10_SCHEMA_TYPE_SIMPLE, null);
                 return;
             }
         }
-        if (wxsIsSimple(typeDef) != 0)
+        if (wxsIsSimple(type_def) != 0)
         {
-            if (wxsIsUnion(typeDef) != 0)
+            if (wxsIsUnion(type_def) != 0)
             {
                 /*
-                * Resolve the memberTypes.
+                * Resolve the member_types.
                 */
-                resolveUnionMemberTypes(ctxt, typeDef);
+                resolveUnionMemberTypes(ctxt, type_def);
                 return;
             }
-            else if (wxsIsList(typeDef) != 0)
+            else if (wxsIsList(type_def) != 0)
             {
                 /*
-                * Resolve the itemType.
+                * Resolve the item_type.
                 */
-                if ((typeDef.subtypes == null) && (typeDef.base != null))
+                if ((type_def.subtypes == null) && (type_def.base != null))
                 {
 
-                    typeDef.subtypes = getType(ctxt.schema,
-                        typeDef.base, typeDef.baseNs);
+                    type_def.subtypes = getType(ctxt.schema,
+                        type_def.base, type_def.base_ns);
 
-                    if ((typeDef.subtypes == null) ||
-                        (wxsIsSimple((Xsd10Type) typeDef.subtypes) == 0))
+                    if ((type_def.subtypes == null) ||
+                        (wxsIsSimple((Xsd10Type) type_def.subtypes) == 0))
                     {
-                        typeDef.subtypes = null;
+                        type_def.subtypes = null;
                         pResCompAttrErr(ctxt,
                             XML_XSD10_SCHEMAP_SRC_RESOLVE,
-                            typeDef, typeDef.node,
-                            "itemType", typeDef.base, typeDef.baseNs,
+                            type_def, type_def.node,
+                            "itemType", type_def.base, type_def.base_ns,
                             XML_XSD10_SCHEMA_TYPE_SIMPLE, null);
                     }
                 }
@@ -2713,41 +2713,41 @@ public final class Xsd10Build
         * which has a QName-helper component as its {term}, we want
         * to resolve it...
         */
-        else if ((wxsTypeContenttype(typeDef) != null) &&
-                 ((wxsTypeContenttype(typeDef)).type ==
+        else if ((wxsTypeContenttype(type_def) != null) &&
+                 ((wxsTypeContenttype(type_def)).type ==
                      XML_XSD10_SCHEMA_TYPE_PARTICLE) &&
-                 (wxsTypeParticleTerm(typeDef) != null) &&
-                 ((wxsTypeParticleTerm(typeDef)).type ==
+                 (wxsTypeParticleTerm(type_def) != null) &&
+                 ((wxsTypeParticleTerm(type_def)).type ==
                      XML_XSD10_SCHEMA_EXTRA_QNAMEREF))
         {
             Xsd10QNameRef ref =
-                (Xsd10QNameRef) wxsTypeParticleTerm(typeDef);
-            Xsd10ModelGroupDef groupDef;
+                (Xsd10QNameRef) wxsTypeParticleTerm(type_def);
+            Xsd10ModelGroupDef group_def;
             Xsd10BasicItem nc;
 
             /*
             * URGENT TODO: Test this.
             */
-            wxsTypeParticle(typeDef).children = null;
+            wxsTypeParticle(type_def).children = null;
             /*
             * Resolve the MG definition reference.
             */
             nc = getNamedComponent(ctxt.schema,
-                ref.itemType, ref.name, ref.targetNamespace);
-            groupDef = (nc instanceof Xsd10ModelGroupDef) ? (Xsd10ModelGroupDef) nc : null;
-            if (groupDef == null)
+                ref.item_type, ref.name, ref.target_namespace);
+            group_def = (nc instanceof Xsd10ModelGroupDef) ? (Xsd10ModelGroupDef) nc : null;
+            if (group_def == null)
             {
                 pResCompAttrErr(ctxt, XML_XSD10_SCHEMAP_SRC_RESOLVE,
-                    null, wxsItemNode(wxsTypeParticle(typeDef)),
-                    "ref", ref.name, ref.targetNamespace, ref.itemType,
+                    null, wxsItemNode(wxsTypeParticle(type_def)),
+                    "ref", ref.name, ref.target_namespace, ref.item_type,
                     null);
                 /* Remove the particle. */
-                typeDef.subtypes = null;
+                type_def.subtypes = null;
             }
-            else if (wxsModelgroupdefModel(groupDef) == null)
+            else if (wxsModelgroupdefModel(group_def) == null)
             {
                 /* Remove the particle. */
-                typeDef.subtypes = null;
+                type_def.subtypes = null;
             }
             else
             {
@@ -2755,9 +2755,9 @@ public final class Xsd10Build
                 * Assign the MG definition's {model group} to the
                 * particle's {term}.
                 */
-                wxsTypeParticle(typeDef).children = wxsModelgroupdefModel(groupDef);
+                wxsTypeParticle(type_def).children = wxsModelgroupdefModel(group_def);
 
-                if (wxsModelgroupdefModel(groupDef).type == XML_XSD10_SCHEMA_TYPE_ALL)
+                if (wxsModelgroupdefModel(group_def).type == XML_XSD10_SCHEMA_TYPE_ALL)
                 {
                     /*
                     * SPEC cos-all-limited (1.2)
@@ -2765,12 +2765,12 @@ public final class Xsd10Build
                     * {max occurs}=1 which is part of a pair which constitutes
                     * the {content type} of a complex type definition."
                     */
-                    if ((wxsTypeParticle(typeDef)).maxOccurs != 1)
+                    if ((wxsTypeParticle(type_def)).max_occurs != 1)
                     {
                         customErr(ctxt,
                             /* TODO: error code */
                             XML_XSD10_SCHEMAP_COS_ALL_LIMITED,
-                            wxsItemNode(wxsTypeParticle(typeDef)), null,
+                            wxsItemNode(wxsTypeParticle(type_def)), null,
                             "The particle's {max occurs} must be 1, since the "
                             + "reference resolves to an 'all' model group",
                             null, null);
@@ -2789,7 +2789,7 @@ public final class Xsd10Build
      */
     static int checkStPropsCorrect(Xsd10ParserCtxt ctxt, Xsd10Type type)
     {
-        Xsd10Type baseType = type.baseType;
+        Xsd10Type base_type = type.base_type;
         String[] str = new String[1];
 
         /* STATE: error funcs converted. */
@@ -2803,7 +2803,7 @@ public final class Xsd10Build
         * then the Simple Type Definition component from which it is `derived`,
         * otherwise the Simple Type Definition for anySimpleType ($4.1.6).
         */
-        if (baseType == null)
+        if (base_type == null)
         {
             /*
             * TODO: Think about: "modulo the impact of Missing
@@ -2816,26 +2816,26 @@ public final class Xsd10Build
             return XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_1;
 
         }
-        if (wxsIsSimple(baseType) == 0)
+        if (wxsIsSimple(base_type) == 0)
         {
             pCustomErr(ctxt,
                 XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_1,
                 type, null,
                 "The base type '%s' is not a simple type",
-                getComponentQName(str, baseType));
+                getComponentQName(str, base_type));
             return XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_1;
         }
         if (((wxsIsList(type) != 0) || (wxsIsUnion(type) != 0)) &&
             (wxsIsRestriction(type) == 0) &&
-            ((wxsIsAnySimpleType(baseType) == 0) &&
-             (baseType.type != XML_XSD10_SCHEMA_TYPE_SIMPLE)))
+            ((wxsIsAnySimpleType(base_type) == 0) &&
+             (base_type.type != XML_XSD10_SCHEMA_TYPE_SIMPLE)))
         {
             pCustomErr(ctxt,
                 XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_1,
                 type, null,
                 "A type, derived by list or union, must have "
                 + "the simple ur-type definition as base type, not '%s'",
-                getComponentQName(str, baseType));
+                getComponentQName(str, base_type));
             return XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_1;
         }
         /*
@@ -2855,7 +2855,7 @@ public final class Xsd10Build
         /*
         * 3 The {final} of the {base type definition} must not contain restriction.
         */
-        if (typeFinalContains(baseType,
+        if (typeFinalContains(base_type,
                 XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION) != 0)
         {
             pCustomErr(ctxt,
@@ -2863,7 +2863,7 @@ public final class Xsd10Build
                 type, null,
                 "The 'final' of its base type '%s' must not contain "
                 + "'restriction'",
-                getComponentQName(str, baseType));
+                getComponentQName(str, base_type));
             return XML_XSD10_SCHEMAP_ST_PROPS_CORRECT_3;
         }
 
@@ -2902,27 +2902,27 @@ public final class Xsd10Build
             * 1.1 The {base type definition} must be an atomic simple
             * type definition or a built-in primitive datatype.
             */
-            if (wxsIsAtomic(type.baseType) == 0)
+            if (wxsIsAtomic(type.base_type) == 0)
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_1_1,
                     type, null,
                     "The base type '%s' is not an atomic simple type",
-                    getComponentQName(str, type.baseType));
+                    getComponentQName(str, type.base_type));
                 return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_1_1;
             }
             /* 1.2 The {final} of the {base type definition} must not contain
             * restriction.
             */
             /* OPTIMIZE TODO : This is already done in xmlSchemaCheckStPropsCorrect */
-            if (typeFinalContains(type.baseType,
+            if (typeFinalContains(type.base_type,
                     XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION) != 0)
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_1_2,
                     type, null,
                     "The final of its base type '%s' must not contain 'restriction'",
-                    getComponentQName(str, type.baseType));
+                    getComponentQName(str, type.base_type));
                 return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_1_2;
             }
 
@@ -2967,39 +2967,39 @@ public final class Xsd10Build
         }
         else if (wxsIsList(type) != 0)
         {
-            Xsd10Type itemType = null;
+            Xsd10Type item_type = null;
 
-            itemType = asType(type.subtypes);
-            if ((itemType == null) || (wxsIsSimple(itemType) == 0))
+            item_type = asType(type.subtypes);
+            if ((item_type == null) || (wxsIsSimple(item_type) == 0))
             {
                 perrorInt(pctxt, "xmlSchemaCheckCOSSTRestricts",
                     "failed to evaluate the item type");
                 return -1;
             }
-            if (wxsIsTypeNotFixed(itemType) != 0)
+            if (wxsIsTypeNotFixed(item_type) != 0)
             {
-                typeFixup(itemType, pctxt);
+                typeFixup(item_type, pctxt);
             }
             /*
             * 2.1 The {item type definition} must have a {variety} of atomic or
             * union (in which case all the {member type definitions}
             * must be atomic).
             */
-            if ((wxsIsAtomic(itemType) == 0) &&
-                (wxsIsUnion(itemType) == 0))
+            if ((wxsIsAtomic(item_type) == 0) &&
+                (wxsIsUnion(item_type) == 0))
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_1,
                     type, null,
                     "The item type '%s' does not have a variety of atomic or union",
-                    getComponentQName(str, itemType));
+                    getComponentQName(str, item_type));
                 return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_1;
             }
-            else if (wxsIsUnion(itemType) != 0)
+            else if (wxsIsUnion(item_type) != 0)
             {
                 Xsd10TypeLink member;
 
-                member = itemType.memberTypes;
+                member = item_type.member_types;
                 while (member != null)
                 {
                     if (wxsIsAtomic(asType(member.type)) == 0)
@@ -3016,7 +3016,7 @@ public final class Xsd10Build
                 }
             }
 
-            if (wxsIsAnySimpleType(type.baseType) != 0)
+            if (wxsIsAnySimpleType(type.base_type) != 0)
             {
                 Xsd10Facet facet;
                 /*
@@ -3027,14 +3027,14 @@ public final class Xsd10Build
                 * 2.3.1.1 The {final} of the {item type definition} must not
                 * contain list.
                 */
-                if (typeFinalContains(itemType,
+                if (typeFinalContains(item_type,
                         XML_XSD10_SCHEMAS_TYPE_FINAL_LIST) != 0)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_1_1,
                         type, null,
                         "The final of its item type '%s' must not contain 'list'",
-                        getComponentQName(str, itemType));
+                        getComponentQName(str, item_type));
                     return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_1_1;
                 }
                 /*
@@ -3067,27 +3067,27 @@ public final class Xsd10Build
                 * 2.3.2
                 * 2.3.2.1 The {base type definition} must have a {variety} of list.
                 */
-                if (wxsIsList(type.baseType) == 0)
+                if (wxsIsList(type.base_type) == 0)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_1,
                         type, null,
                         "The base type '%s' must be a list type",
-                        getComponentQName(str, type.baseType));
+                        getComponentQName(str, type.base_type));
                     return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_1;
                 }
                 /*
                 * 2.3.2.2 The {final} of the {base type definition} must not
                 * contain restriction.
                 */
-                if (typeFinalContains(type.baseType,
+                if (typeFinalContains(type.base_type,
                         XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION) != 0)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_2,
                         type, null,
                         "The 'final' of the base type '%s' must not contain 'restriction'",
-                        getComponentQName(str, type.baseType));
+                        getComponentQName(str, type.base_type));
                     return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_2;
                 }
                 /*
@@ -3096,28 +3096,28 @@ public final class Xsd10Build
                 * the empty set, as defined in Type Derivation OK (Simple) ($3.14.6).
                 */
                 {
-                    Xsd10Type baseItemType;
+                    Xsd10Type base_item_type;
 
-                    baseItemType = asType(type.baseType.subtypes);
-                    if ((baseItemType == null) || (wxsIsSimple(baseItemType) == 0))
+                    base_item_type = asType(type.base_type.subtypes);
+                    if ((base_item_type == null) || (wxsIsSimple(base_item_type) == 0))
                     {
                         perrorInt(pctxt, "xmlSchemaCheckCOSSTRestricts",
                             "failed to eval the item type of a base type");
                         return -1;
                     }
-                    if ((itemType != baseItemType) &&
-                        (checkCosstDerivedOk(pctxt, itemType,
-                            baseItemType, 0) != 0))
+                    if ((item_type != base_item_type) &&
+                        (checkCosstDerivedOk(pctxt, item_type,
+                            base_item_type, 0) != 0))
                     {
-                        String[] strBIT = new String[1], strBT = new String[1];
+                        String[] str_bit = new String[1], str_bt = new String[1];
                         pCustomErrExt(pctxt,
                             XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_3,
                             type, null,
                             "The item type '%s' is not validly derived from "
                             + "the item type '%s' of the base type '%s'",
-                            getComponentQName(str, itemType),
-                            getComponentQName(strBIT, baseItemType),
-                            getComponentQName(strBT, type.baseType));
+                            getComponentQName(str, item_type),
+                            getComponentQName(str_bit, base_item_type),
+                            getComponentQName(str_bt, type.base_type));
 
                         return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_2_3_2_3;
                     }
@@ -3180,7 +3180,7 @@ public final class Xsd10Build
             */
             Xsd10TypeLink member;
 
-            member = type.memberTypes;
+            member = type.member_types;
             while (member != null)
             {
                 Xsd10Type mt = asType(member.type);
@@ -3205,13 +3205,13 @@ public final class Xsd10Build
             * 3.3.1 If the {base type definition} is the `simple ur-type
             * definition`
             */
-            if (type.baseType.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE)
+            if (type.base_type.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE)
             {
                 /*
                 * 3.3.1.1 All of the {member type definitions} must have a
                 * {final} which does not contain union.
                 */
-                member = type.memberTypes;
+                member = type.member_types;
                 while (member != null)
                 {
                     if (typeFinalContains(asType(member.type),
@@ -3229,7 +3229,7 @@ public final class Xsd10Build
                 /*
                 * 3.3.1.2 The {facets} must be empty.
                 */
-                if (type.facetSet != null)
+                if (type.facet_set != null)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_1_2,
@@ -3244,26 +3244,26 @@ public final class Xsd10Build
                 * 3.3.2.1 The {base type definition} must have a {variety} of union.
                 * I.e. the variety of "list" is inherited.
                 */
-                if (wxsIsUnion(type.baseType) == 0)
+                if (wxsIsUnion(type.base_type) == 0)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_1,
                         type, null,
                         "The base type '%s' is not a union type",
-                        getComponentQName(str, type.baseType));
+                        getComponentQName(str, type.base_type));
                     return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_1;
                 }
                 /*
                 * 3.3.2.2 The {final} of the {base type definition} must not contain restriction.
                 */
-                if (typeFinalContains(type.baseType,
+                if (typeFinalContains(type.base_type,
                         XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION) != 0)
                 {
                     pCustomErr(pctxt,
                         XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_2,
                         type, null,
                         "The 'final' of its base type '%s' must not contain 'restriction'",
-                        getComponentQName(str, type.baseType));
+                        getComponentQName(str, type.base_type));
                     return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_2;
                 }
                 /*
@@ -3273,29 +3273,29 @@ public final class Xsd10Build
                 * as defined in Type Derivation OK (Simple) ($3.14.6).
                 */
                 {
-                    Xsd10TypeLink baseMember;
+                    Xsd10TypeLink base_member;
 
-                    if (type.memberTypes != null)
+                    if (type.member_types != null)
                     {
-                        member = type.memberTypes;
-                        baseMember = getUnionSimpleTypeMemberTypes(type.baseType);
-                        if ((member == null) && (baseMember != null))
+                        member = type.member_types;
+                        base_member = getUnionSimpleTypeMemberTypes(type.base_type);
+                        if ((member == null) && (base_member != null))
                         {
                             perrorInt(pctxt, "xmlSchemaCheckCOSSTRestricts",
                                 "different number of member types in base");
                         }
                         while (member != null)
                         {
-                            if (baseMember == null)
+                            if (base_member == null)
                             {
                                 perrorInt(pctxt, "xmlSchemaCheckCOSSTRestricts",
                                     "different number of member types in base");
                             }
-                            else if ((member.type != baseMember.type) &&
+                            else if ((member.type != base_member.type) &&
                                      (checkCosstDerivedOk(pctxt,
-                                         asType(member.type), asType(baseMember.type), 0) != 0))
+                                         asType(member.type), asType(base_member.type), 0) != 0))
                             {
-                                String[] strBMT = new String[1], strBT = new String[1];
+                                String[] str_bmt = new String[1], str_bt = new String[1];
 
                                 pCustomErrExt(pctxt,
                                     XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_3,
@@ -3304,14 +3304,14 @@ public final class Xsd10Build
                                     + "derived from its corresponding member "
                                     + "type %s of the base type %s",
                                     getComponentQName(str, member.type),
-                                    getComponentQName(strBMT, baseMember.type),
-                                    getComponentQName(strBT, type.baseType));
+                                    getComponentQName(str_bmt, base_member.type),
+                                    getComponentQName(str_bt, type.base_type));
                                 return XML_XSD10_SCHEMAP_COS_ST_RESTRICTS_3_3_2_3;
                             }
                             member = member.next;
-                            if (baseMember != null)
+                            if (base_member != null)
                             {
-                                baseMember = baseMember.next;
+                                base_member = base_member.next;
                             }
                         }
                     }
@@ -3372,9 +3372,9 @@ public final class Xsd10Build
             }
             /* TODO: Pass user data. */
             setValidErrors(ctxt.vctxt,
-                ctxt.error, ctxt.warning, ctxt.errCtxt);
+                ctxt.error, ctxt.warning, ctxt.err_ctxt);
             setValidStructuredErrors(ctxt.vctxt,
-                ctxt.serror, ctxt.errCtxt);
+                ctxt.serror, ctxt.err_ctxt);
         }
         return 0;
     }
@@ -3443,7 +3443,7 @@ public final class Xsd10Build
         else if (wxsHasSimpleContent(type) != 0)
         {
             ret = vCheckCvcSimpleType(pctxt, node,
-                type.contentTypeDef, value, val, 1, 1, 0);
+                type.content_type_def, value, val, 1, 1, 0);
         }
         else
         {
@@ -3481,8 +3481,8 @@ public final class Xsd10Build
         * Schema Component ($3.4.1), modulo the impact of Missing
         * Sub-components ($5.3)."
         */
-        if ((type.baseType != null) &&
-            (wxsIsSimple(type.baseType) != 0) &&
+        if ((type.base_type != null) &&
+            (wxsIsSimple(type.base_type) != 0) &&
             (wxsIsExtension(type) == 0))
         {
             /*
@@ -3508,15 +3508,15 @@ public final class Xsd10Build
         *   - attribute group references need to be expanded already
         *   - simple types need to be typefixed already
         */
-        if ((type.attrUses != null) &&
-            (((Xsd10ItemList) type.attrUses).nbItems > 1))
+        if ((type.attr_uses != null) &&
+            (((Xsd10ItemList) type.attr_uses).nb_items > 1))
         {
-            Xsd10ItemList uses = (Xsd10ItemList) type.attrUses;
+            Xsd10ItemList uses = (Xsd10ItemList) type.attr_uses;
             Xsd10AttributeUse use, tmp;
-            int i, j, hasId = 0;
+            int i, j, has_id = 0;
 
             next_use:
-            for (i = uses.nbItems - 1; i >= 0; i--)
+            for (i = uses.nb_items - 1; i >= 0; i--)
             {
                 use = (Xsd10AttributeUse) uses.items[i];
 
@@ -3566,7 +3566,7 @@ public final class Xsd10Build
                     if (isDerivedFromBuiltInType(
                             wxsAttruseTypedef(use), XML_XSD10_SCHEMAS_ID) != 0)
                     {
-                        if (hasId != 0)
+                        if (has_id != 0)
                         {
                             String[] str = new String[1];
 
@@ -3585,7 +3585,7 @@ public final class Xsd10Build
                             }
                         }
 
-                        hasId = 1;
+                        has_id = 1;
                     }
                 }
             }
@@ -3595,17 +3595,17 @@ public final class Xsd10Build
 
     // xml_xsd10_are_equal_types
     /** Port of xmlSchemaAreEqualTypes. */
-    static int areEqualTypes(Xsd10Type typeA, Xsd10Type typeB)
+    static int areEqualTypes(Xsd10Type type_a, Xsd10Type type_b)
     {
         /*
         * TODO: This should implement component-identity
         * in the future.
         */
-        if ((typeA == null) || (typeB == null))
+        if ((type_a == null) || (type_b == null))
         {
             return 0;
         }
-        return (typeA == typeB) ? 1 : 0;
+        return (type_a == type_b) ? 1 : 0;
     }
 
     // xml_xsd10_check_cosct_derived_ok
@@ -3614,13 +3614,13 @@ public final class Xsd10Build
      * OK (Complex) (cos-ct-derived-ok)
      * @param actxt the schema parser context
      * @param type the to-be derived complex type definition
-     * @param baseType the base complex type definition
+     * @param base_type the base complex type definition
      * @param set the given set
      * @return 0 if the constraints are satisfied, or 1 if not.
      */
-    static int checkCosctDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type baseType, int set)
+    static int checkCosctDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type base_type, int set)
     {
-        int equal = areEqualTypes(type, baseType);
+        int equal = areEqualTypes(type, base_type);
         /* TODO: Error codes. */
         if (equal == 0)
         {
@@ -3644,7 +3644,7 @@ public final class Xsd10Build
         /*
         * SPEC (2.2) "B must be D's {base type definition}."
         */
-        if (type.baseType == baseType)
+        if (type.base_type == base_type)
         {
             return 0;
         }
@@ -3652,20 +3652,20 @@ public final class Xsd10Build
         * SPEC (2.3.1) "D's {base type definition} must not be the `ur-type
         * definition`."
         */
-        if (wxsIsAnytype(type.baseType) != 0)
+        if (wxsIsAnytype(type.base_type) != 0)
         {
             return 1;
         }
 
-        if (wxsIsComplex(type.baseType) != 0)
+        if (wxsIsComplex(type.base_type) != 0)
         {
             /*
             * SPEC (2.3.2.1) "If D's {base type definition} is complex, then it
             * must be validly derived from B given the subset as defined by this
             * constraint."
             */
-            return checkCosctDerivedOk(actxt, type.baseType,
-                baseType, set);
+            return checkCosctDerivedOk(actxt, type.base_type,
+                base_type, set);
         }
         else
         {
@@ -3674,8 +3674,8 @@ public final class Xsd10Build
             * must be validly derived from B given the subset as defined in Type
             * Derivation OK (Simple) ($3.14.6).
             */
-            return checkCosstDerivedOk(actxt, type.baseType,
-                baseType, set);
+            return checkCosstDerivedOk(actxt, type.base_type,
+                base_type, set);
         }
     }
 
@@ -3685,19 +3685,19 @@ public final class Xsd10Build
      * Derivation OK (Complex).
      * @param actxt the schema parser context
      * @param type the derived simple type definition
-     * @param baseType the base type definition
+     * @param base_type the base type definition
      * @param set the given set
      * @return 0 on success, an positive error code otherwise.
      */
-    static int checkCosDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type baseType, int set)
+    static int checkCosDerivedOk(Xsd10AbstractCtxt actxt, Xsd10Type type, Xsd10Type base_type, int set)
     {
         if (wxsIsSimple(type) != 0)
         {
-            return checkCosstDerivedOk(actxt, type, baseType, set);
+            return checkCosstDerivedOk(actxt, type, base_type, set);
         }
         else
         {
-            return checkCosctDerivedOk(actxt, type, baseType, set);
+            return checkCosctDerivedOk(actxt, type, base_type, set);
         }
     }
 
@@ -3711,7 +3711,7 @@ public final class Xsd10Build
      */
     static int checkCosctExtends(Xsd10ParserCtxt ctxt, Xsd10Type type)
     {
-        Xsd10Type base = type.baseType;
+        Xsd10Type base = type.base_type;
         /*
         * SPEC (1) "If the {base type definition} is a complex type definition,
         * then all of the following must be true:"
@@ -3740,15 +3740,15 @@ public final class Xsd10Build
             /*
             * SPEC (1.4) "One of the following must be true:"
             */
-            if ((type.contentTypeDef != null) &&
-                (type.contentTypeDef == base.contentTypeDef))
+            if ((type.content_type_def != null) &&
+                (type.content_type_def == base.content_type_def))
             {
                 /*
                 * SPEC (1.4.1) PASS
                 */
             }
-            else if ((type.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY) &&
-                     (base.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY))
+            else if ((type.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY) &&
+                     (base.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY))
             {
                 /*
                 * SPEC (1.4.2) PASS
@@ -3774,7 +3774,7 @@ public final class Xsd10Build
                 /*
                 * SPEC (1.4.3.2) "One of the following must be true:"
                 */
-                if (base.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+                if (base.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
                 {
                     /*
                     * SPEC (1.4.3.2.1) PASS
@@ -3785,9 +3785,9 @@ public final class Xsd10Build
                     /*
                     * SPEC (1.4.3.2.2) "All of the following must be true:"
                     */
-                    if ((type.contentType != base.contentType) ||
-                        ((type.contentType != XML_XSD10_SCHEMA_CONTENT_MIXED) &&
-                         (type.contentType != XML_XSD10_SCHEMA_CONTENT_ELEMENTS)))
+                    if ((type.content_type != base.content_type) ||
+                        ((type.content_type != XML_XSD10_SCHEMA_CONTENT_MIXED) &&
+                         (type.content_type != XML_XSD10_SCHEMA_CONTENT_ELEMENTS)))
                     {
                         /*
                         * SPEC (1.4.3.2.2.1) "Both {content type}s must be mixed
@@ -3815,7 +3815,7 @@ public final class Xsd10Build
             * SPEC (2) "If the {base type definition} is a simple type definition,
             * then all of the following must be true:"
             */
-            if (type.contentTypeDef != base)
+            if (type.content_type_def != base)
             {
                 /*
                 * SPEC (2.1) "The {content type} must be the same simple type
@@ -3857,7 +3857,7 @@ public final class Xsd10Build
     {
         Xsd10Type base;
 
-        base = type.baseType;
+        base = type.base_type;
         if (wxsIsComplex(base) == 0)
         {
             customErr(ctxt,
@@ -3888,23 +3888,23 @@ public final class Xsd10Build
         if (checkDerivationOkRestriction2to4(ctxt,
                 XML_XSD10_SCHEMA_ACTION_DERIVE,
                 type, base,
-                (Xsd10ItemList) type.attrUses, (Xsd10ItemList) base.attrUses,
-                type.attributeWildcard,
-                base.attributeWildcard) == -1)
+                (Xsd10ItemList) type.attr_uses, (Xsd10ItemList) base.attr_uses,
+                type.attribute_wildcard,
+                base.attribute_wildcard) == -1)
         {
             return -1;
         }
         /*
         * SPEC (5) "One of the following must be true:"
         */
-        if (base.builtInType == XML_XSD10_SCHEMAS_ANYTYPE)
+        if (base.built_in_type == XML_XSD10_SCHEMAS_ANYTYPE)
         {
             /*
             * SPEC (5.1) PASS
             */
         }
-        else if ((type.contentType == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
-                 (type.contentType == XML_XSD10_SCHEMA_CONTENT_BASIC))
+        else if ((type.content_type == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
+                 (type.content_type == XML_XSD10_SCHEMA_CONTENT_BASIC))
         {
             /*
             * SPEC (5.2.1) "The {content type} of the complex type definition
@@ -3912,18 +3912,18 @@ public final class Xsd10Build
             *
             * SPEC (5.2.2) "One of the following must be true:"
             */
-            if ((base.contentType == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
-                (base.contentType == XML_XSD10_SCHEMA_CONTENT_BASIC))
+            if ((base.content_type == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
+                (base.content_type == XML_XSD10_SCHEMA_CONTENT_BASIC))
             {
                 int err;
                 /*
                 * SPEC (5.2.2.1)
                 */
                 err = checkCosstDerivedOk(ctxt,
-                    type.contentTypeDef, base.contentTypeDef, 0);
+                    type.content_type_def, base.content_type_def, 0);
                 if (err != 0)
                 {
-                    String[] strA = new String[1], strB = new String[1];
+                    String[] str_a = new String[1], str_b = new String[1];
 
                     if (err == -1)
                     {
@@ -3934,14 +3934,14 @@ public final class Xsd10Build
                         null, type,
                         "The {content type} %s is not validly derived from the "
                         + "base type's {content type} %s",
-                        getComponentDesignation(strA,
-                            type.contentTypeDef),
-                        getComponentDesignation(strB,
-                            base.contentTypeDef));
+                        getComponentDesignation(str_a,
+                            type.content_type_def),
+                        getComponentDesignation(str_b,
+                            base.content_type_def));
                     return ctxt.err;
                 }
             }
-            else if ((base.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
+            else if ((base.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
                      (isParticleEmptiable(
                          asParticle(base.subtypes)) != 0))
             {
@@ -3959,20 +3959,20 @@ public final class Xsd10Build
                 return ctxt.err;
             }
         }
-        else if (type.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+        else if (type.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
         {
             /*
             * SPEC (5.3.1) "The {content type} of the complex type itself must
             * be empty"
             */
-            if (base.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+            if (base.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
             {
                 /*
                 * SPEC (5.3.2.1) PASS
                 */
             }
-            else if (((base.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS) ||
-                      (base.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED)) &&
+            else if (((base.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS) ||
+                      (base.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED)) &&
                      (isParticleEmptiable(
                          asParticle(base.subtypes)) != 0))
             {
@@ -3991,7 +3991,7 @@ public final class Xsd10Build
                 return ctxt.err;
             }
         }
-        else if ((type.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS) ||
+        else if ((type.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS) ||
                  (wxsHasMixedContent(type) != 0))
         {
             /*
@@ -4069,7 +4069,7 @@ public final class Xsd10Build
         Xsd10Type base;
         int ret = 0;
 
-        base = type.baseType;
+        base = type.base_type;
         if (wxsHasSimpleContent(type) == 0)
         {
             /*
@@ -4085,7 +4085,7 @@ public final class Xsd10Build
                     type, type.node,
                     "If using <complexContent>, the base type is expected to be "
                     + "a complex type. The base type '%s' is a simple type",
-                    formatQName(str, base.targetNamespace,
+                    formatQName(str, base.target_namespace,
                         base.name));
                 return XML_XSD10_SCHEMAP_SRC_CT_1;
             }
@@ -4115,7 +4115,7 @@ public final class Xsd10Build
                         "If using <simpleContent> and <restriction>, the base "
                         + "type must be a complex type. The base type '%s' is "
                         + "a simple type",
-                        formatQName(str, base.targetNamespace,
+                        formatQName(str, base.target_namespace,
                             base.name));
                     return XML_XSD10_SCHEMAP_SRC_CT_1;
                 }
@@ -4123,15 +4123,15 @@ public final class Xsd10Build
             else
             {
                 /* Base type is a complex type. */
-                if ((base.contentType == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
-                    (base.contentType == XML_XSD10_SCHEMA_CONTENT_BASIC))
+                if ((base.content_type == XML_XSD10_SCHEMA_CONTENT_SIMPLE) ||
+                    (base.content_type == XML_XSD10_SCHEMA_CONTENT_BASIC))
                 {
                     /*
                     * 2.1.1 a complex type definition whose {content type} is a
                     * simple type definition;
                     * PASS
                     */
-                    if (base.contentTypeDef == null)
+                    if (base.content_type_def == null)
                     {
                         pCustomErr(ctxt, XML_XSD10_SCHEMAP_INTERNAL,
                             type, null,
@@ -4141,7 +4141,7 @@ public final class Xsd10Build
                         return -1;
                     }
                 }
-                else if ((base.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
+                else if ((base.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
                          (wxsIsRestriction(type) != 0))
                 {
 
@@ -4158,9 +4158,9 @@ public final class Xsd10Build
                     else
                     /*
                     * Attention: at this point the <simpleType> child is in
-                    * ->contentTypeDef (put there during parsing).
+                    * ->content_type_def (put there during parsing).
                     */
-                    if (type.contentTypeDef == null)
+                    if (type.content_type_def == null)
                     {
                         String[] str = new String[1];
                         /*
@@ -4175,7 +4175,7 @@ public final class Xsd10Build
                             "A <simpleType> is expected among the children "
                             + "of <restriction>, if <simpleContent> is used and "
                             + "the base type '%s' is a complex type",
-                            formatQName(str, base.targetNamespace,
+                            formatQName(str, base.target_namespace,
                                 base.name));
                         return XML_XSD10_SCHEMAP_SRC_CT_1;
                     }
@@ -4197,7 +4197,7 @@ public final class Xsd10Build
                         + "base type must be a simple type or a complex type with "
                         + "mixed content and particle emptiable. The base type "
                         + "'%s' is none of those",
-                        formatQName(str, base.targetNamespace,
+                        formatQName(str, base.target_namespace,
                             base.name));
                 }
                 else
@@ -4208,7 +4208,7 @@ public final class Xsd10Build
                         "If <simpleContent> and <extension> is used, the "
                         + "base type must be a simple type. The base type '%s' "
                         + "is a complex type",
-                        formatQName(str, base.targetNamespace,
+                        formatQName(str, base.target_namespace,
                             base.name));
                 }
             }
@@ -4253,18 +4253,18 @@ public final class Xsd10Build
 
     // xml_xsd10_derive_facet_err
     /** Port of xmlSchemaDeriveFacetErr. */
-    static void deriveFacetErr(Xsd10ParserCtxt pctxt, Xsd10Facet facet1, Xsd10Facet facet2, int lessGreater, int orEqual, int ofBase)
+    static void deriveFacetErr(Xsd10ParserCtxt pctxt, Xsd10Facet facet1, Xsd10Facet facet2, int less_greater, int or_equal, int of_base)
     {
         String msg = null;
 
         msg = strdup("'");
         msg = strcat(msg, facetTypeToString(facet1.type));
         msg = strcat(msg, "' has to be");
-        if (lessGreater == 0)
+        if (less_greater == 0)
         {
             msg = strcat(msg, " equal to");
         }
-        if (lessGreater == 1)
+        if (less_greater == 1)
         {
             msg = strcat(msg, " greater than");
         }
@@ -4273,13 +4273,13 @@ public final class Xsd10Build
             msg = strcat(msg, " less than");
         }
 
-        if (orEqual != 0)
+        if (or_equal != 0)
         {
             msg = strcat(msg, " or equal to");
         }
         msg = strcat(msg, " '");
         msg = strcat(msg, facetTypeToString(facet2.type));
-        if (ofBase != 0)
+        if (of_base != 0)
         {
             msg = strcat(msg, "' of the base type");
         }
@@ -4301,7 +4301,7 @@ public final class Xsd10Build
      */
     static int deriveAndValidateFacets(Xsd10ParserCtxt pctxt, Xsd10Type type)
     {
-        Xsd10Type base = type.baseType;
+        Xsd10Type base = type.base_type;
         Xsd10FacetLink link, cur, last = null;
         Xsd10Facet facet, bfacet, flength = null, ftotdig = null, ffracdig = null, fmaxlen = null, fminlen = null, /* facets of the current type */
             fmininc = null, fmaxinc = null, fminexc = null, fmaxexc = null, bflength = null, bftotdig = null, bffracdig = null, bfmaxlen = null, bfminlen = null, /* facets of the base type */
@@ -4317,12 +4317,12 @@ public final class Xsd10Build
         * of B, eliminating duplicates. ..."
         */
 
-        if ((type.facetSet == null) && (base.facetSet == null))
+        if ((type.facet_set == null) && (base.facet_set == null))
         {
             return 0;
         }
 
-        last = type.facetSet;
+        last = type.facet_set;
         if (last != null)
         {
             while (last.next != null)
@@ -4331,7 +4331,7 @@ public final class Xsd10Build
             }
         }
 
-        for (cur = type.facetSet; cur != null; cur = cur.next)
+        for (cur = type.facet_set; cur != null; cur = cur.next)
         {
             facet = cur.facet;
             switch (facet.type)
@@ -4358,7 +4358,7 @@ public final class Xsd10Build
                 break;
             }
         }
-        for (cur = base.facetSet; cur != null; cur = cur.next)
+        for (cur = base.facet_set; cur != null; cur = cur.next)
         {
             facet = cur.facet;
             switch (facet.type)
@@ -4895,7 +4895,7 @@ public final class Xsd10Build
         /*
         * *Enumerations* and *Patterns* won't be added here.
         */
-        for (cur = base.facetSet; cur != null; cur = cur.next)
+        for (cur = base.facet_set; cur != null; cur = cur.next)
         {
             bfacet = cur.facet;
             /*
@@ -4909,7 +4909,7 @@ public final class Xsd10Build
             /*
             * Search for a duplicate facet in the current type.
             */
-            link = type.facetSet;
+            link = type.facet_set;
             while (link != null)
             {
                 facet = link.facet;
@@ -4953,7 +4953,7 @@ public final class Xsd10Build
                 link.next = null;
                 if (last == null)
                 {
-                    type.facetSet = link;
+                    type.facet_set = link;
                 }
                 else
                 {
@@ -4979,13 +4979,13 @@ public final class Xsd10Build
     /** Port of xmlSchemaFinishMemberTypeDefinitionsProperty. */
     static int finishMemberTypeDefinitionsProperty(Xsd10ParserCtxt pctxt, Xsd10Type type)
     {
-        Xsd10TypeLink link, lastLink, prevLink, subLink, newLink;
+        Xsd10TypeLink link, last_link, prev_link, sub_link, new_link;
         /*
         * The actual value is then formed by replacing any union type
         * definition in the `explicit members` with the members of their
         * {member type definitions}, in order.
         */
-        link = type.memberTypes;
+        link = type.member_types;
         while (link != null)
         {
             Xsd10Type lt = asType(link.type);
@@ -4997,24 +4997,24 @@ public final class Xsd10Build
 
             if (wxsIsUnion(lt) != 0)
             {
-                subLink = getUnionSimpleTypeMemberTypes(lt);
-                if (subLink != null)
+                sub_link = getUnionSimpleTypeMemberTypes(lt);
+                if (sub_link != null)
                 {
-                    link.type = subLink.type;
-                    if (subLink.next != null)
+                    link.type = sub_link.type;
+                    if (sub_link.next != null)
                     {
-                        lastLink = link.next;
-                        subLink = subLink.next;
-                        prevLink = link;
-                        while (subLink != null)
+                        last_link = link.next;
+                        sub_link = sub_link.next;
+                        prev_link = link;
+                        while (sub_link != null)
                         {
-                            newLink = new Xsd10TypeLink();
-                            newLink.type = subLink.type;
-                            prevLink.next = newLink;
-                            prevLink = newLink;
-                            newLink.next = lastLink;
+                            new_link = new Xsd10TypeLink();
+                            new_link.type = sub_link.type;
+                            prev_link.next = new_link;
+                            prev_link = new_link;
+                            new_link.next = last_link;
 
-                            subLink = subLink.next;
+                            sub_link = sub_link.next;
                         }
                     }
                 }
@@ -5028,14 +5028,14 @@ public final class Xsd10Build
     /** Port of xmlSchemaTypeFixupOptimFacets. */
     static void typeFixupOptimFacets(Xsd10Type type)
     {
-        int has = 0, needVal = 0, normVal = 0;
+        int has = 0, need_val = 0, norm_val = 0;
 
-        has = ((type.baseType.flags & XML_XSD10_SCHEMAS_TYPE_HAS_FACETS) != 0) ? 1 : 0;
+        has = ((type.base_type.flags & XML_XSD10_SCHEMAS_TYPE_HAS_FACETS) != 0) ? 1 : 0;
         if (has != 0)
         {
-            needVal = ((type.baseType.flags &
+            need_val = ((type.base_type.flags &
                 XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE) != 0) ? 1 : 0;
-            normVal = ((type.baseType.flags &
+            norm_val = ((type.base_type.flags &
                 XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0) ? 1 : 0;
         }
         if (type.facets != null)
@@ -5049,12 +5049,12 @@ public final class Xsd10Build
                 case XML_XSD10_SCHEMA_FACET_WHITESPACE:
                     break;
                 case XML_XSD10_SCHEMA_FACET_PATTERN:
-                    normVal = 1;
+                    norm_val = 1;
                     has = 1;
                     break;
                 case XML_XSD10_SCHEMA_FACET_ENUMERATION:
-                    needVal = 1;
-                    normVal = 1;
+                    need_val = 1;
+                    norm_val = 1;
                     has = 1;
                     break;
                 default:
@@ -5063,11 +5063,11 @@ public final class Xsd10Build
                 }
             }
         }
-        if (normVal != 0)
+        if (norm_val != 0)
         {
             type.flags |= XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED;
         }
-        if (needVal != 0)
+        if (need_val != 0)
         {
             type.flags |= XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE;
         }
@@ -5076,15 +5076,15 @@ public final class Xsd10Build
             type.flags |= XML_XSD10_SCHEMAS_TYPE_HAS_FACETS;
         }
 
-        if ((has != 0) && (needVal == 0) && (wxsIsAtomic(type) != 0))
+        if ((has != 0) && (need_val == 0) && (wxsIsAtomic(type) != 0))
         {
             Xsd10Type prim = getPrimitiveType(type);
             /*
             * OPTIMIZE VAL TODO: Some facets need a computed value.
             */
             if ((prim != null) &&
-                (prim.builtInType != XML_XSD10_SCHEMAS_ANYSIMPLETYPE) &&
-                (prim.builtInType != XML_XSD10_SCHEMAS_STRING))
+                (prim.built_in_type != XML_XSD10_SCHEMAS_ANYSIMPLETYPE) &&
+                (prim.built_in_type != XML_XSD10_SCHEMAS_STRING))
             {
                 type.flags |= XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE;
             }
@@ -5108,11 +5108,11 @@ public final class Xsd10Build
             return 0;
         }
 
-        if (type.facetSet != null)
+        if (type.facet_set != null)
         {
             Xsd10FacetLink lin;
 
-            for (lin = type.facetSet; lin != null; lin = lin.next)
+            for (lin = type.facet_set; lin != null; lin = lin.next)
             {
                 if (lin.facet.type == XML_XSD10_SCHEMA_FACET_WHITESPACE)
                 {
@@ -5142,20 +5142,20 @@ public final class Xsd10Build
         {
             Xsd10Type anc;
 
-            for (anc = type.baseType; (anc != null) &&
-                     (anc.builtInType != XML_XSD10_SCHEMAS_ANYTYPE);
-                 anc = anc.baseType)
+            for (anc = type.base_type; (anc != null) &&
+                     (anc.built_in_type != XML_XSD10_SCHEMAS_ANYTYPE);
+                 anc = anc.base_type)
             {
 
                 if (anc.type == XML_XSD10_SCHEMA_TYPE_BASIC)
                 {
-                    if (anc.builtInType == XML_XSD10_SCHEMAS_NORMSTRING)
+                    if (anc.built_in_type == XML_XSD10_SCHEMAS_NORMSTRING)
                     {
                         type.flags |= XML_XSD10_SCHEMAS_TYPE_WHITESPACE_REPLACE;
 
                     }
-                    else if ((anc.builtInType == XML_XSD10_SCHEMAS_STRING) ||
-                             (anc.builtInType == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
+                    else if ((anc.built_in_type == XML_XSD10_SCHEMAS_STRING) ||
+                             (anc.built_in_type == XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
                     {
                         type.flags |= XML_XSD10_SCHEMAS_TYPE_WHITESPACE_PRESERVE;
 
@@ -5205,7 +5205,7 @@ public final class Xsd10Build
             /*
             * Corresponds to <simpleType><union>...
             */
-            if (type.memberTypes == null)
+            if (type.member_types == null)
             {
                 /*
                 * This one is really needed, so get out.
@@ -5220,15 +5220,15 @@ public final class Xsd10Build
             /*
             * Corresponds to <simpleType><restriction>...
             */
-            if (type.baseType == null)
+            if (type.base_type == null)
             {
                 perrorInt(pctxt, "xmlSchemaFixupSimpleTypeStageOne",
                     "type has no base-type assigned");
                 return -1;
             }
-            if (wxsIsTypeNotFixed1(type.baseType) != 0)
+            if (wxsIsTypeNotFixed1(type.base_type) != 0)
             {
-                if (fixupSimpleTypeStageOne(pctxt, type.baseType) == -1)
+                if (fixupSimpleTypeStageOne(pctxt, type.base_type) == -1)
                 {
                     return -1;
                 }
@@ -5238,23 +5238,23 @@ public final class Xsd10Build
             * If the <restriction> alternative is chosen, then the
             * {variety} of the {base type definition}.
             */
-            if (wxsIsAtomic(type.baseType) != 0)
+            if (wxsIsAtomic(type.base_type) != 0)
             {
                 type.flags |= XML_XSD10_SCHEMAS_TYPE_VARIETY_ATOMIC;
             }
-            else if (wxsIsList(type.baseType) != 0)
+            else if (wxsIsList(type.base_type) != 0)
             {
                 type.flags |= XML_XSD10_SCHEMAS_TYPE_VARIETY_LIST;
                 /*
-                * Inherit the itemType.
+                * Inherit the item_type.
                 */
-                type.subtypes = type.baseType.subtypes;
+                type.subtypes = type.base_type.subtypes;
             }
-            else if (wxsIsUnion(type.baseType) != 0)
+            else if (wxsIsUnion(type.base_type) != 0)
             {
                 type.flags |= XML_XSD10_SCHEMAS_TYPE_VARIETY_UNION;
                 /*
-                * NOTE that we won't assign the memberTypes of the base,
+                * NOTE that we won't assign the member_types of the base,
                 * since this will make trouble when freeing them; we will
                 * use a lookup function to access them instead.
                 */
@@ -5280,23 +5280,23 @@ public final class Xsd10Build
         }
 
         type.flags |= XML_XSD10_SCHEMAS_TYPE_INTERNAL_RESOLVED;
-        type.contentType = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
+        type.content_type = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
 
-        if (type.baseType == null)
+        if (type.base_type == null)
         {
             perrorInt(pctxt, "xmlSchemaFixupSimpleTypeStageTwo",
                 "missing baseType");
             return -1;
         }
-        if (wxsIsTypeNotFixed(type.baseType) != 0)
+        if (wxsIsTypeNotFixed(type.base_type) != 0)
         {
-            typeFixup(type.baseType, pctxt);
+            typeFixup(type.base_type, pctxt);
         }
         /*
         * If a member type of a union is a union itself, we need to substitute
         * that member type for its member types.
         */
-        if ((type.memberTypes != null) &&
+        if ((type.member_types != null) &&
             (finishMemberTypeDefinitionsProperty(pctxt, type) == -1))
         {
             return -1;
@@ -5324,8 +5324,8 @@ public final class Xsd10Build
             res = checkFacetValues(type, pctxt);
             if (res == -1) return -1;
             if (res != 0) break exit_error;
-            if ((type.facetSet != null) ||
-                (type.baseType.facetSet != null))
+            if ((type.facet_set != null) ||
+                (type.base_type.facet_set != null))
             {
                 res = deriveAndValidateFacets(pctxt, type);
                 if (res == -1) return -1;
@@ -5353,14 +5353,14 @@ public final class Xsd10Build
     static int fixupComplexType(Xsd10ParserCtxt pctxt, Xsd10Type type)
     {
         int res = 0, olderrs = pctxt.nberrors;
-        Xsd10Type baseType = type.baseType;
+        Xsd10Type base_type = type.base_type;
 
         if (wxsIsTypeNotFixed(type) == 0)
         {
             return 0;
         }
         type.flags |= XML_XSD10_SCHEMAS_TYPE_INTERNAL_RESOLVED;
-        if (baseType == null)
+        if (base_type == null)
         {
             perrorInt(pctxt, "xmlSchemaFixupComplexType",
                 "missing baseType");
@@ -5370,11 +5370,11 @@ public final class Xsd10Build
         /*
         * Fixup the base type.
         */
-        if (wxsIsTypeNotFixed(baseType) != 0)
+        if (wxsIsTypeNotFixed(base_type) != 0)
         {
-            typeFixup(baseType, pctxt);
+            typeFixup(base_type, pctxt);
         }
-        if ((baseType.flags & XML_XSD10_SCHEMAS_TYPE_INTERNAL_INVALID) != 0)
+        if ((base_type.flags & XML_XSD10_SCHEMAS_TYPE_INTERNAL_INVALID) != 0)
         {
             /*
             * Skip fixup if the base type is invalid.
@@ -5382,7 +5382,7 @@ public final class Xsd10Build
             */
             return 0;
         }
-        res = fixupComplexTypeBody(pctxt, type, baseType);
+        res = fixupComplexTypeBody(pctxt, type, base_type);
         if (res == -1)
         {
             /* exit_failure: */
@@ -5410,7 +5410,7 @@ public final class Xsd10Build
      * Body of xml_xsd10_fixup_complex_type after the base type checks.
      * @return -1 for goto exit_failure, a non zero value for goto exit_error, 0 otherwise.
      */
-    private static int fixupComplexTypeBody(Xsd10ParserCtxt pctxt, Xsd10Type type, Xsd10Type baseType)
+    private static int fixupComplexTypeBody(Xsd10ParserCtxt pctxt, Xsd10Type type, Xsd10Type base_type)
     {
         int res;
         /*
@@ -5421,29 +5421,29 @@ public final class Xsd10Build
         /*
         * Fixup the content type.
         */
-        if (type.contentType == XML_XSD10_SCHEMA_CONTENT_SIMPLE)
+        if (type.content_type == XML_XSD10_SCHEMA_CONTENT_SIMPLE)
         {
             /*
             * Corresponds to <complexType><simpleContent>...
             */
-            if ((wxsIsComplex(baseType) != 0) &&
-                (baseType.contentTypeDef != null) &&
+            if ((wxsIsComplex(base_type) != 0) &&
+                (base_type.content_type_def != null) &&
                 (wxsIsRestriction(type) != 0))
             {
-                Xsd10Type contentBase, content;
+                Xsd10Type content_base, content;
                 /*
                 * SPEC (1) If <restriction> + base type is <complexType>,
                 * "whose own {content type} is a simple type..."
                 */
-                if (type.contentTypeDef != null)
+                if (type.content_type_def != null)
                 {
                     /*
                     * SPEC (1.1) "the simple type definition corresponding to the
                     * <simpleType> among the [children] of <restriction> if there
                     * is one;"
                     */
-                    contentBase = type.contentTypeDef;
-                    type.contentTypeDef = null;
+                    content_base = type.content_type_def;
+                    type.content_type_def = null;
                 }
                 else
                 {
@@ -5452,14 +5452,14 @@ public final class Xsd10Build
                     * among its [children]), the simple type definition which
                     * is the {content type} of the ... base type."
                     */
-                    contentBase = baseType.contentTypeDef;
+                    content_base = base_type.content_type_def;
                 }
                 /*
                 * Create the anonymous simple type, which will be the content
                 * type of the complex type.
                 */
                 content = addType(pctxt, pctxt.schema,
-                    XML_XSD10_SCHEMA_TYPE_SIMPLE, null, type.targetNamespace,
+                    XML_XSD10_SCHEMA_TYPE_SIMPLE, null, type.target_namespace,
                     type.node, 0);
                 if (content == null)
                 {
@@ -5470,20 +5470,20 @@ public final class Xsd10Build
                 * to have it somehow anchored in the schema doc.
                 */
                 content.type = XML_XSD10_SCHEMA_TYPE_SIMPLE;
-                content.baseType = contentBase;
+                content.base_type = content_base;
                 /*
                 * Move the facets, previously anchored on the
                 * complexType during parsing.
                 */
                 content.facets = type.facets;
                 type.facets = null;
-                content.facetSet = type.facetSet;
-                type.facetSet = null;
+                content.facet_set = type.facet_set;
+                type.facet_set = null;
 
-                type.contentTypeDef = content;
-                if (wxsIsTypeNotFixed(contentBase) != 0)
+                type.content_type_def = content;
+                if (wxsIsTypeNotFixed(content_base) != 0)
                 {
-                    typeFixup(contentBase, pctxt);
+                    typeFixup(content_base, pctxt);
                 }
                 /*
                 * Fixup the newly created type. We don't need to check
@@ -5495,8 +5495,8 @@ public final class Xsd10Build
                 if (res != 0) return res;
 
             }
-            else if ((wxsIsComplex(baseType) != 0) &&
-                     (baseType.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
+            else if ((wxsIsComplex(base_type) != 0) &&
+                     (base_type.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
                      (wxsIsRestriction(type) != 0))
             {
                 /*
@@ -5504,8 +5504,8 @@ public final class Xsd10Build
                 * an emptiable particle, then a simple type definition which
                 * restricts the <restriction>'s <simpleType> child.
                 */
-                if ((type.contentTypeDef == null) ||
-                    (type.contentTypeDef.baseType == null))
+                if ((type.content_type_def == null) ||
+                    (type.content_type_def.base_type == null))
                 {
                     /*
                     * TODO: Check if this ever happens.
@@ -5520,14 +5520,14 @@ public final class Xsd10Build
                     return -1;
                 }
             }
-            else if ((wxsIsComplex(baseType) != 0) && (wxsIsExtension(type) != 0))
+            else if ((wxsIsComplex(base_type) != 0) && (wxsIsExtension(type) != 0))
             {
                 /*
                 * SPEC (3) If <extension> + base is <complexType> with
                 * <simpleType> content, "...then the {content type} of that
                 * complex type definition"
                 */
-                if (baseType.contentTypeDef == null)
+                if (base_type.content_type_def == null)
                 {
                     /*
                     * TODO: Check if this ever happens. xmlSchemaCheckSRCCT
@@ -5542,15 +5542,15 @@ public final class Xsd10Build
                         type.name);
                     return -1;
                 }
-                type.contentTypeDef = baseType.contentTypeDef;
+                type.content_type_def = base_type.content_type_def;
             }
-            else if ((wxsIsSimple(baseType) != 0) && (wxsIsExtension(type) != 0))
+            else if ((wxsIsSimple(base_type) != 0) && (wxsIsExtension(type) != 0))
             {
                 /*
                 * SPEC (4) <extension> + base is <simpleType>
                 * "... then that simple type definition"
                 */
-                type.contentTypeDef = baseType;
+                type.content_type_def = base_type;
             }
             else
             {
@@ -5568,7 +5568,7 @@ public final class Xsd10Build
         }
         else
         {
-            int dummySequence = 0;
+            int dummy_sequence = 0;
             Xsd10Particle particle = asParticle(type.subtypes);
             /*
             * Corresponds to <complexType><complexContent>...
@@ -5581,7 +5581,7 @@ public final class Xsd10Build
                  ((particle.children.type == XML_XSD10_SCHEMA_TYPE_ALL) ||
                   (particle.children.type == XML_XSD10_SCHEMA_TYPE_SEQUENCE) ||
                   ((particle.children.type == XML_XSD10_SCHEMA_TYPE_CHOICE) &&
-                   (particle.minOccurs == 0))) &&
+                   (particle.min_occurs == 0))) &&
                  (((Xsd10TreeItem) particle.children).children == null)))
             {
                 if ((type.flags & XML_XSD10_SCHEMAS_TYPE_MIXED) != 0)
@@ -5615,15 +5615,15 @@ public final class Xsd10Build
 
                         type.subtypes = particle;
                     }
-                    dummySequence = 1;
-                    type.contentType = XML_XSD10_SCHEMA_CONTENT_ELEMENTS;
+                    dummy_sequence = 1;
+                    type.content_type = XML_XSD10_SCHEMA_CONTENT_ELEMENTS;
                 }
                 else
                 {
                     /*
                     * SPEC (2.1.5) "otherwise empty"
                     */
-                    type.contentType = XML_XSD10_SCHEMA_CONTENT_EMPTY;
+                    type.content_type = XML_XSD10_SCHEMA_CONTENT_EMPTY;
                 }
             }
             else
@@ -5633,7 +5633,7 @@ public final class Xsd10Build
                 * <all>, <choice>, <group> or <sequence> among the
                 * [children]."
                 */
-                type.contentType = XML_XSD10_SCHEMA_CONTENT_ELEMENTS;
+                type.content_type = XML_XSD10_SCHEMA_CONTENT_ELEMENTS;
             }
             /*
             * Compute the "content type".
@@ -5643,11 +5643,11 @@ public final class Xsd10Build
                 /*
                 * SPEC (3.1) "If <restriction>..."
                 * (3.1.1) + (3.1.2) */
-                if (type.contentType != XML_XSD10_SCHEMA_CONTENT_EMPTY)
+                if (type.content_type != XML_XSD10_SCHEMA_CONTENT_EMPTY)
                 {
                     if ((type.flags & XML_XSD10_SCHEMAS_TYPE_MIXED) != 0)
                     {
-                        type.contentType = XML_XSD10_SCHEMA_CONTENT_MIXED;
+                        type.content_type = XML_XSD10_SCHEMA_CONTENT_MIXED;
                     }
                 }
             }
@@ -5656,33 +5656,33 @@ public final class Xsd10Build
                 /*
                 * SPEC (3.2) "If <extension>..."
                 */
-                if (type.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+                if (type.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
                 {
                     /*
                     * SPEC (3.2.1)
                     * "If the `effective content` is empty, then the
                     *  {content type} of the [...] base ..."
                     */
-                    type.contentType = baseType.contentType;
-                    type.subtypes = baseType.subtypes;
+                    type.content_type = base_type.content_type;
+                    type.subtypes = base_type.subtypes;
                     /*
                     * Fixes bug #347316:
                     * This is the case when the base type has a simple
                     * type definition as content.
                     */
-                    type.contentTypeDef = baseType.contentTypeDef;
+                    type.content_type_def = base_type.content_type_def;
                     /*
                     * NOTE that the effective mixed is ignored here.
                     */
                 }
-                else if (baseType.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+                else if (base_type.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
                 {
                     /*
                     * SPEC (3.2.2)
                     */
                     if ((type.flags & XML_XSD10_SCHEMAS_TYPE_MIXED) != 0)
                     {
-                        type.contentType = XML_XSD10_SCHEMA_CONTENT_MIXED;
+                        type.content_type = XML_XSD10_SCHEMA_CONTENT_MIXED;
                     }
                 }
                 else
@@ -5692,7 +5692,7 @@ public final class Xsd10Build
                     */
                     if ((type.flags & XML_XSD10_SCHEMAS_TYPE_MIXED) != 0)
                     {
-                        type.contentType = XML_XSD10_SCHEMA_CONTENT_MIXED;
+                        type.content_type = XML_XSD10_SCHEMA_CONTENT_MIXED;
                     }
                     /*
                     * "A model group whose {compositor} is sequence and whose
@@ -5719,9 +5719,9 @@ public final class Xsd10Build
                             null, null);
 
                     }
-                    else if ((asParticle(baseType.subtypes) != null) &&
-                             (wxsTypeParticleTerm(baseType) != null) &&
-                             ((wxsTypeParticleTerm(baseType)).type ==
+                    else if ((asParticle(base_type.subtypes) != null) &&
+                             (wxsTypeParticleTerm(base_type) != null) &&
+                             ((wxsTypeParticleTerm(base_type)).type ==
                                  XML_XSD10_SCHEMA_TYPE_ALL))
                     {
                         /*
@@ -5740,11 +5740,11 @@ public final class Xsd10Build
                             null, null);
 
                     }
-                    else if ((dummySequence == 0) && (baseType.subtypes != null))
+                    else if ((dummy_sequence == 0) && (base_type.subtypes != null))
                     {
-                        Xsd10TreeItem effectiveContent =
+                        Xsd10TreeItem effective_content =
                             (Xsd10TreeItem) type.subtypes;
-                        Xsd10Particle baseParticle = (Xsd10Particle) baseType.subtypes;
+                        Xsd10Particle base_particle = (Xsd10Particle) base_type.subtypes;
                         /*
                         * Create the particle.
                         */
@@ -5774,8 +5774,8 @@ public final class Xsd10Build
                         ((Xsd10TreeItem) particle.children).children =
                             addParticle(pctxt,
                                 type.node,
-                                baseParticle.minOccurs,
-                                baseParticle.maxOccurs);
+                                base_particle.min_occurs,
+                                base_particle.max_occurs);
                         if (((Xsd10TreeItem) particle.children).children == null)
                         {
                             return -1;
@@ -5783,11 +5783,11 @@ public final class Xsd10Build
                         particle = (Xsd10Particle)
                             ((Xsd10TreeItem) particle.children).children;
                         particle.children =
-                            baseParticle.children;
+                            base_particle.children;
                         /*
                         * SPEC "followed by the `effective content`."
                         */
-                        particle.next = effectiveContent;
+                        particle.next = effective_content;
                         /*
                         * This all will result in:
                         * new-particle
@@ -5803,11 +5803,11 @@ public final class Xsd10Build
                     {
                         /*
                         * This is the case when there is already an empty
-                        * <sequence> with minOccurs==maxOccurs==1.
+                        * <sequence> with min_occurs==max_occurs==1.
                         * Just add the base types's content type.
                         */
                         ((Xsd10TreeItem) particle.children).children =
-                            baseType.subtypes;
+                            base_type.subtypes;
                     }
                 }
             }
@@ -5870,16 +5870,16 @@ public final class Xsd10Build
     /**
      * Port of xmlSchemaCheckFacet. Checks and computes the values of facets.
      * @param facet the facet
-     * @param typeDecl the schema type definition
+     * @param type_decl the schema type definition
      * @param pctxt the schema parser context or null
      * @param name the optional name of the type
      * @return 0 if valid, a positive error code if not valid and -1 in case of an internal or API error.
      */
-    static int checkFacetCtxt(Xsd10Facet facet, Xsd10Type typeDecl, Xsd10ParserCtxt pctxt, String name)
+    static int checkFacetCtxt(Xsd10Facet facet, Xsd10Type type_decl, Xsd10ParserCtxt pctxt, String name)
     {
-        int ret = 0, ctxtGiven;
+        int ret = 0, ctxt_given;
 
-        if ((facet == null) || (typeDecl == null))
+        if ((facet == null) || (type_decl == null))
         {
             return -1;
         }
@@ -5889,11 +5889,11 @@ public final class Xsd10Build
         */
         if (pctxt == null)
         {
-            ctxtGiven = 0;
+            ctxt_given = 0;
         }
         else
         {
-            ctxtGiven = 1;
+            ctxt_given = 1;
         }
 
         switch (facet.type)
@@ -5919,9 +5919,9 @@ public final class Xsd10Build
             * The value `must` be in the
             * `value space` of the `base type`.
             */
-            if (typeDecl.type != XML_XSD10_SCHEMA_TYPE_BASIC)
+            if (type_decl.type != XML_XSD10_SCHEMA_TYPE_BASIC)
             {
-                base = typeDecl.baseType;
+                base = type_decl.base_type;
                 if (base == null)
                 {
                     perrorInt(pctxt, "xmlSchemaCheckFacet",
@@ -5931,10 +5931,10 @@ public final class Xsd10Build
             }
             else
             {
-                base = typeDecl;
+                base = type_decl;
             }
 
-            if (ctxtGiven == 0)
+            if (ctxt_given == 0)
             {
                 /*
                 * A context is needed if called from RelaxNG.
@@ -5964,7 +5964,7 @@ public final class Xsd10Build
                 if (ret < 0)
                 {
                     /* No error message for RelaxNG. */
-                    if (ctxtGiven != 0)
+                    if (ctxt_given != 0)
                     {
                         customErr(pctxt,
                             XML_XSD10_SCHEMAP_INTERNAL, facet.node, null,
@@ -5974,7 +5974,7 @@ public final class Xsd10Build
                             facet.value, facetTypeToString(facet.type));
                     }
                     /* internal_error: */
-                    if ((ctxtGiven == 0) && (pctxt != null))
+                    if ((ctxt_given == 0) && (pctxt != null))
                     {
                         freeParserCtxt(pctxt);
                     }
@@ -5982,7 +5982,7 @@ public final class Xsd10Build
                 }
                 ret = XML_XSD10_SCHEMAP_INVALID_FACET_VALUE;
                 /* No error message for RelaxNG. */
-                if (ctxtGiven != 0)
+                if (ctxt_given != 0)
                 {
                     String[] str = new String[1];
 
@@ -5992,14 +5992,14 @@ public final class Xsd10Build
                         + "against the base type '%s'",
                         facet.value,
                         formatQName(str,
-                            base.targetNamespace, base.name));
+                            base.target_namespace, base.name));
                 }
                 /* goto exit; */
                 break;
             }
             else if (facet.val == null)
             {
-                if (ctxtGiven != 0)
+                if (ctxt_given != 0)
                 {
                     perrorInt(pctxt, "xmlSchemaCheckFacet",
                         "value was not computed");
@@ -6014,10 +6014,10 @@ public final class Xsd10Build
             {
                 ret = XML_XSD10_SCHEMAP_REGEXP_INVALID;
                 /* No error message for RelaxNG. */
-                if (ctxtGiven != 0)
+                if (ctxt_given != 0)
                 {
                     customErr(pctxt,
-                        ret, facet.node, typeDecl,
+                        ret, facet.node, type_decl,
                         "The value '%s' of the facet 'pattern' is not a "
                         + "valid regular expression",
                         facet.value, null);
@@ -6049,13 +6049,13 @@ public final class Xsd10Build
                 if (ret < 0)
                 {
                     /* No error message for RelaxNG. */
-                    if (ctxtGiven != 0)
+                    if (ctxt_given != 0)
                     {
                         perrorInt(pctxt, "xmlSchemaCheckFacet",
                             "validating facet value");
                     }
                     /* internal_error: */
-                    if ((ctxtGiven == 0) && (pctxt != null))
+                    if ((ctxt_given == 0) && (pctxt != null))
                     {
                         freeParserCtxt(pctxt);
                     }
@@ -6063,11 +6063,11 @@ public final class Xsd10Build
                 }
                 ret = XML_XSD10_SCHEMAP_INVALID_FACET_VALUE;
                 /* No error message for RelaxNG. */
-                if (ctxtGiven != 0)
+                if (ctxt_given != 0)
                 {
                     /* error code */
                     customErr4(pctxt,
-                        ret, facet.node, typeDecl,
+                        ret, facet.node, type_decl,
                         "The value '%s' of the facet '%s' is not a valid '%s'",
                         facet.value,
                         facetTypeToString(facet.type),
@@ -6098,11 +6098,11 @@ public final class Xsd10Build
             {
                 ret = XML_XSD10_SCHEMAP_INVALID_FACET_VALUE;
                 /* No error message for RelaxNG. */
-                if (ctxtGiven != 0)
+                if (ctxt_given != 0)
                 {
                     /* error was previously: XML_SCHEMAP_INVALID_WHITE_SPACE */
                     customErr(pctxt,
-                        ret, facet.node, typeDecl,
+                        ret, facet.node, type_decl,
                         "The value '%s' of the facet 'whitespace' is not "
                         + "valid", facet.value, null);
                 }
@@ -6113,7 +6113,7 @@ public final class Xsd10Build
             break;
         }
         /* exit: */
-        if ((ctxtGiven == 0) && (pctxt != null))
+        if ((ctxt_given == 0) && (pctxt != null))
         {
             freeParserCtxt(pctxt);
         }
@@ -6123,21 +6123,21 @@ public final class Xsd10Build
     // xml_xsd10_check_facet_values
     /**
      * Port of xmlSchemaCheckFacetValues. Checks the default values types, especially for facets.
-     * @param typeDecl the schema type definition
+     * @param type_decl the schema type definition
      * @param pctxt the schema parser context
      * @return 0, the last error code or -1
      */
-    static int checkFacetValues(Xsd10Type typeDecl, Xsd10ParserCtxt pctxt)
+    static int checkFacetValues(Xsd10Type type_decl, Xsd10ParserCtxt pctxt)
     {
         int res, olderrs = pctxt.nberrors;
-        String name = typeDecl.name;
+        String name = type_decl.name;
         /*
         * NOTE: It is intended to use the facets list, instead
-        * of facetSet.
+        * of facet_set.
         */
-        if (typeDecl.facets != null)
+        if (type_decl.facets != null)
         {
-            Xsd10Facet facet = typeDecl.facets;
+            Xsd10Facet facet = type_decl.facets;
 
             /*
             * Temporarily assign the "schema" to the validation context
@@ -6153,7 +6153,7 @@ public final class Xsd10Build
             pctxt.vctxt.schema = pctxt.schema;
             while (facet != null)
             {
-                res = checkFacetCtxt(facet, typeDecl, pctxt, name);
+                res = checkFacetCtxt(facet, type_decl, pctxt, name);
                 if (res == -1)
                 {
                     return -1;
@@ -6173,11 +6173,11 @@ public final class Xsd10Build
     /**
      * Port of xmlSchemaGetCircModelGrDefRef. Intended to be used by
      * xmlSchemaCheckGroupDefCircular only.
-     * @param groupDef the searched model group
+     * @param group_def the searched model group
      * @param particle the first particle
      * @return the particle with the circular model group definition reference, otherwise null.
      */
-    static Xsd10TreeItem getCircModelGrDefRef(Xsd10ModelGroupDef groupDef, Xsd10TreeItem particle)
+    static Xsd10TreeItem getCircModelGrDefRef(Xsd10ModelGroupDef group_def, Xsd10TreeItem particle)
     {
         Xsd10TreeItem circ = null;
         Xsd10BasicItem term;
@@ -6194,7 +6194,7 @@ public final class Xsd10Build
             {
             case XML_XSD10_SCHEMA_TYPE_GROUP:
                 gdef = (Xsd10ModelGroupDef) term;
-                if (gdef == groupDef)
+                if (gdef == group_def)
                 {
                     return particle;
                 }
@@ -6209,7 +6209,7 @@ public final class Xsd10Build
                 if (gdef.children != null)
                 {
                     gdef.flags |= XML_XSD10_SCHEMA_MODEL_GROUP_DEF_MARKED;
-                    circ = getCircModelGrDefRef(groupDef,
+                    circ = getCircModelGrDefRef(group_def,
                         (Xsd10TreeItem) ((Xsd10TreeItem) gdef.children).children);
                     gdef.flags ^= XML_XSD10_SCHEMA_MODEL_GROUP_DEF_MARKED;
                     if (circ != null)
@@ -6221,7 +6221,7 @@ public final class Xsd10Build
             case XML_XSD10_SCHEMA_TYPE_SEQUENCE:
             case XML_XSD10_SCHEMA_TYPE_CHOICE:
             case XML_XSD10_SCHEMA_TYPE_ALL:
-                circ = getCircModelGrDefRef(groupDef, (Xsd10TreeItem) ((Xsd10TreeItem) term).children);
+                circ = getCircModelGrDefRef(group_def, (Xsd10TreeItem) ((Xsd10TreeItem) term).children);
                 if (circ != null)
                 {
                     return circ;
@@ -6274,7 +6274,7 @@ public final class Xsd10Build
                     null, wxsItemNode(circ),
                     "Circular reference to the model group definition '%s' "
                     + "defined", formatQName(str,
-                        item.targetNamespace, item.name));
+                        item.target_namespace, item.name));
                 /*
                 * NOTE: We will cut the reference to avoid further
                 * confusion of the processor. This is a fatal error.
@@ -6326,11 +6326,11 @@ public final class Xsd10Build
     // xml_xsd10_check_attr_group_circular_recur
     /**
      * Port of xmlSchemaCheckAttrGroupCircularRecur.
-     * @param ctxtGr the searched attribute group
+     * @param ctxt_gr the searched attribute group
      * @param list the current attribute list to be processed
      * @return the circular attribute group reference, otherwise null.
      */
-    static Xsd10QNameRef checkAttrGroupCircularRecur(Xsd10AttributeGroup ctxtGr, Xsd10ItemList list)
+    static Xsd10QNameRef checkAttrGroupCircularRecur(Xsd10AttributeGroup ctxt_gr, Xsd10ItemList list)
     {
         Xsd10AttributeGroup gr;
         Xsd10QNameRef ref, circ;
@@ -6339,7 +6339,7 @@ public final class Xsd10Build
         * We will search for an attribute group reference which
         * references the context attribute group.
         */
-        for (i = 0; i < list.nbItems; i++)
+        for (i = 0; i < list.nb_items; i++)
         {
             if (!(list.items[i] instanceof Xsd10QNameRef))
             {
@@ -6347,11 +6347,11 @@ public final class Xsd10Build
             }
             ref = (Xsd10QNameRef) list.items[i];
             if ((ref.type == XML_XSD10_SCHEMA_EXTRA_QNAMEREF) &&
-                (ref.itemType == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP) &&
+                (ref.item_type == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP) &&
                 (ref.item != null))
             {
                 gr = (Xsd10AttributeGroup) ref.item;
-                if (gr == ctxtGr)
+                if (gr == ctxt_gr)
                 {
                     return ref;
                 }
@@ -6363,12 +6363,12 @@ public final class Xsd10Build
                 * Mark as visited to avoid infinite recursion on
                 * circular references not yet examined.
                 */
-                if ((gr.attrUses != null) &&
+                if ((gr.attr_uses != null) &&
                     ((gr.flags & XML_XSD10_SCHEMAS_ATTRGROUP_HAS_REFS) != 0))
                 {
                     gr.flags |= XML_XSD10_SCHEMAS_ATTRGROUP_MARKED;
-                    circ = checkAttrGroupCircularRecur(ctxtGr,
-                        (Xsd10ItemList) gr.attrUses);
+                    circ = checkAttrGroupCircularRecur(ctxt_gr,
+                        (Xsd10ItemList) gr.attr_uses);
                     gr.flags ^= XML_XSD10_SCHEMAS_ATTRGROUP_MARKED;
                     if (circ != null)
                     {
@@ -6384,22 +6384,22 @@ public final class Xsd10Build
     // xml_xsd10_check_attr_group_circular
     /**
      * Port of xmlSchemaCheckAttrGroupCircular. Checks for circular references of attribute groups.
-     * @param attrGr the attribute group definition
+     * @param attr_gr the attribute group definition
      * @param ctxt the parser context
      * @return 0 or the error code
      */
-    static int checkAttrGroupCircular(Xsd10AttributeGroup attrGr, Xsd10ParserCtxt ctxt)
+    static int checkAttrGroupCircular(Xsd10AttributeGroup attr_gr, Xsd10ParserCtxt ctxt)
     {
         /*
         * Schema Representation Constraint:
         * Attribute Group Definition Representation OK
         * 3 Circular group reference is disallowed outside <redefine>.
         */
-        if (attrGr.attrUses == null)
+        if (attr_gr.attr_uses == null)
         {
             return 0;
         }
-        else if ((attrGr.flags & XML_XSD10_SCHEMAS_ATTRGROUP_HAS_REFS) == 0)
+        else if ((attr_gr.flags & XML_XSD10_SCHEMAS_ATTRGROUP_HAS_REFS) == 0)
         {
             return 0;
         }
@@ -6407,8 +6407,8 @@ public final class Xsd10Build
         {
             Xsd10QNameRef circ;
 
-            circ = checkAttrGroupCircularRecur(attrGr,
-                (Xsd10ItemList) attrGr.attrUses);
+            circ = checkAttrGroupCircularRecur(attr_gr,
+                (Xsd10ItemList) attr_gr.attr_uses);
             if (circ != null)
             {
                 String[] str = new String[1];
@@ -6419,7 +6419,7 @@ public final class Xsd10Build
                     XML_XSD10_SCHEMAP_SRC_ATTRIBUTE_GROUP_3,
                     null, wxsItemNode(circ),
                     "Circular reference to the attribute group '%s' "
-                    + "defined", getComponentQName(str, attrGr));
+                    + "defined", getComponentQName(str, attr_gr));
                 /*
                 * NOTE: We will cut the reference to avoid further
                 * confusion of the processor.
@@ -6437,25 +6437,25 @@ public final class Xsd10Build
      * references for their attribute uses. Wildcards are intersected.
      * @param pctxt the parser context
      * @param item the schema item
-     * @param completeWild the intersected wildcard to be returned
+     * @param complete_wild the intersected wildcard to be returned
      * @param list the attribute uses
      * @param prohibs the attribute prohibitions
      * @return 0 or -1
      */
-    static int expandAttributeGroupRefs(Xsd10ParserCtxt pctxt, Xsd10BasicItem item, Xsd10Wildcard[] completeWild, Xsd10ItemList list, Xsd10ItemList prohibs)
+    static int expandAttributeGroupRefs(Xsd10ParserCtxt pctxt, Xsd10BasicItem item, Xsd10Wildcard[] complete_wild, Xsd10ItemList list, Xsd10ItemList prohibs)
     {
         Xsd10AttributeGroup gr;
         Xsd10BasicItem use;
         Xsd10ItemList sublist;
         int i, j;
-        int created = (completeWild[0] == null) ? 0 : 1;
+        int created = (complete_wild[0] == null) ? 0 : 1;
 
         if (prohibs != null)
         {
-            prohibs.nbItems = 0;
+            prohibs.nb_items = 0;
         }
 
-        for (i = 0; i < list.nbItems; i++)
+        for (i = 0; i < list.nb_items; i++)
         {
             use = (Xsd10BasicItem) list.items[i];
 
@@ -6486,7 +6486,7 @@ public final class Xsd10Build
                 continue;
             }
             if ((use.type == XML_XSD10_SCHEMA_EXTRA_QNAMEREF) &&
-                (((Xsd10QNameRef) use).itemType == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP))
+                (((Xsd10QNameRef) use).item_type == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP))
             {
                 if (((Xsd10QNameRef) use).item == null)
                 {
@@ -6509,17 +6509,17 @@ public final class Xsd10Build
                 * Build the 'complete' wildcard; i.e. intersect multiple
                 * wildcards.
                 */
-                if (gr.attributeWildcard != null)
+                if (gr.attribute_wildcard != null)
                 {
-                    if (completeWild[0] == null)
+                    if (complete_wild[0] == null)
                     {
-                        completeWild[0] = gr.attributeWildcard;
+                        complete_wild[0] = gr.attribute_wildcard;
                     }
                     else
                     {
                         if (created == 0)
                         {
-                            Xsd10Wildcard tmpWild;
+                            Xsd10Wildcard tmp_wild;
 
                             /*
                             * Copy the first encountered wildcard as context,
@@ -6529,25 +6529,25 @@ public final class Xsd10Build
                             * to any node in the schema, we will anchor it on
                             * the node of the owner component.
                             */
-                            tmpWild = addWildcard(pctxt, pctxt.schema,
+                            tmp_wild = addWildcard(pctxt, pctxt.schema,
                                 XML_XSD10_SCHEMA_TYPE_ANY_ATTRIBUTE,
                                 wxsItemNode(item));
-                            if (tmpWild == null)
+                            if (tmp_wild == null)
                             {
                                 return -1;
                             }
                             if (cloneWildcardNsConstraints(pctxt,
-                                    tmpWild, completeWild[0]) == -1)
+                                    tmp_wild, complete_wild[0]) == -1)
                             {
                                 return -1;
                             }
-                            tmpWild.processContents = (completeWild[0]).processContents;
-                            completeWild[0] = tmpWild;
+                            tmp_wild.process_contents = (complete_wild[0]).process_contents;
+                            complete_wild[0] = tmp_wild;
                             created = 1;
                         }
 
-                        if (intersectWildcards(pctxt, completeWild[0],
-                                gr.attributeWildcard) == -1)
+                        if (intersectWildcards(pctxt, complete_wild[0],
+                                gr.attribute_wildcard) == -1)
                         {
                             return -1;
                         }
@@ -6557,8 +6557,8 @@ public final class Xsd10Build
                 * Just remove the reference if the referenced group does not
                 * contain any attribute uses.
                 */
-                sublist = ((Xsd10ItemList) gr.attrUses);
-                if ((sublist == null) || (sublist.nbItems == 0))
+                sublist = ((Xsd10ItemList) gr.attr_uses);
+                if ((sublist == null) || (sublist.nb_items == 0))
                 {
                     if (itemListRemove(list, i) == -1)
                     {
@@ -6571,9 +6571,9 @@ public final class Xsd10Build
                 * Add the attribute uses.
                 */
                 list.items[i] = sublist.items[0];
-                if (sublist.nbItems != 1)
+                if (sublist.nb_items != 1)
                 {
-                    for (j = 1; j < sublist.nbItems; j++)
+                    for (j = 1; j < sublist.nb_items; j++)
                     {
                         i++;
                         if (itemListInsert(list,
@@ -6589,19 +6589,19 @@ public final class Xsd10Build
         /*
         * Handle pointless prohibitions of declared attributes.
         */
-        if ((prohibs != null) && (prohibs.nbItems != 0) && (list.nbItems != 0))
+        if ((prohibs != null) && (prohibs.nb_items != 0) && (list.nb_items != 0))
         {
             Xsd10AttributeUseProhib prohib;
 
-            for (i = prohibs.nbItems - 1; i >= 0; i--)
+            for (i = prohibs.nb_items - 1; i >= 0; i--)
             {
                 prohib = (Xsd10AttributeUseProhib) prohibs.items[i];
-                for (j = 0; j < list.nbItems; j++)
+                for (j = 0; j < list.nb_items; j++)
                 {
                     use = (Xsd10BasicItem) list.items[j];
 
                     if (Objects.equals(prohib.name, wxsAttruseDeclName(use)) &&
-                        Objects.equals(prohib.targetNamespace, wxsAttruseDeclTns(use)))
+                        Objects.equals(prohib.target_namespace, wxsAttruseDeclTns(use)))
                     {
                         String[] str = new String[1];
 
@@ -6612,7 +6612,7 @@ public final class Xsd10Build
                             + "'%s', since a corresponding attribute use "
                             + "exists already in the type definition",
                             formatQName(str,
-                                prohib.targetNamespace, prohib.name),
+                                prohib.target_namespace, prohib.name),
                             null, null);
                         /*
                         * Remove the prohibition.
@@ -6634,22 +6634,22 @@ public final class Xsd10Build
      * Port of xmlSchemaAttributeGroupExpandRefs. Computation of {attribute uses} and
      * {attribute wildcard} properties.
      * @param pctxt the parser context
-     * @param attrGr the attribute group definition
+     * @param attr_gr the attribute group definition
      * @return 0 or -1
      */
-    static int attributeGroupExpandRefs(Xsd10ParserCtxt pctxt, Xsd10AttributeGroup attrGr)
+    static int attributeGroupExpandRefs(Xsd10ParserCtxt pctxt, Xsd10AttributeGroup attr_gr)
     {
-        if ((attrGr.attrUses == null) ||
-            ((attrGr.flags & XML_XSD10_SCHEMAS_ATTRGROUP_WILDCARD_BUILDED) != 0))
+        if ((attr_gr.attr_uses == null) ||
+            ((attr_gr.flags & XML_XSD10_SCHEMAS_ATTRGROUP_WILDCARD_BUILDED) != 0))
         {
             return 0;
         }
 
-        attrGr.flags |= XML_XSD10_SCHEMAS_ATTRGROUP_WILDCARD_BUILDED;
-        Xsd10Wildcard[] wc = new Xsd10Wildcard[] { attrGr.attributeWildcard };
-        int r = expandAttributeGroupRefs(pctxt, attrGr,
-            wc, (Xsd10ItemList) attrGr.attrUses, null);
-        attrGr.attributeWildcard = wc[0];
+        attr_gr.flags |= XML_XSD10_SCHEMAS_ATTRGROUP_WILDCARD_BUILDED;
+        Xsd10Wildcard[] wc = new Xsd10Wildcard[] { attr_gr.attribute_wildcard };
+        int r = expandAttributeGroupRefs(pctxt, attr_gr,
+            wc, (Xsd10ItemList) attr_gr.attr_uses, null);
+        attr_gr.attribute_wildcard = wc[0];
         if (r == -1)
         {
             return -1;
@@ -6662,10 +6662,10 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckAGPropsCorrect. Schema Component Constraint: Attribute Group
      * Definition Properties Correct (ag-props-correct)
      * @param pctxt the parser context
-     * @param attrGr the attribute group definition
+     * @param attr_gr the attribute group definition
      * @return 0 or -1
      */
-    static int checkAgPropsCorrect(Xsd10ParserCtxt pctxt, Xsd10AttributeGroup attrGr)
+    static int checkAgPropsCorrect(Xsd10ParserCtxt pctxt, Xsd10AttributeGroup attr_gr)
     {
         /*
         * SPEC ag-props-correct
@@ -6673,15 +6673,15 @@ public final class Xsd10Build
         * must be as described in the property tableau ..."
         */
 
-        if ((attrGr.attrUses != null) &&
-            (((Xsd10ItemList) attrGr.attrUses).nbItems > 1))
+        if ((attr_gr.attr_uses != null) &&
+            (((Xsd10ItemList) attr_gr.attr_uses).nb_items > 1))
         {
-            Xsd10ItemList uses = (Xsd10ItemList) attrGr.attrUses;
+            Xsd10ItemList uses = (Xsd10ItemList) attr_gr.attr_uses;
             Xsd10AttributeUse use, tmp;
-            int i, j, hasId = 0;
+            int i, j, has_id = 0;
 
             next_use:
-            for (i = uses.nbItems - 1; i >= 0; i--)
+            for (i = uses.nb_items - 1; i >= 0; i--)
             {
                 use = (Xsd10AttributeUse) uses.items[i];
                 /*
@@ -6704,7 +6704,7 @@ public final class Xsd10Build
 
                             customErr(pctxt,
                                 XML_XSD10_SCHEMAP_AG_PROPS_CORRECT,
-                                attrGr.node, attrGr,
+                                attr_gr.node, attr_gr,
                                 "Duplicate %s",
                                 getComponentDesignation(str, use),
                                 null);
@@ -6730,13 +6730,13 @@ public final class Xsd10Build
                     if (isDerivedFromBuiltInType(
                             wxsAttruseTypedef(use), XML_XSD10_SCHEMAS_ID) != 0)
                     {
-                        if (hasId != 0)
+                        if (has_id != 0)
                         {
                             String[] str = new String[1];
 
                             customErr(pctxt,
                                 XML_XSD10_SCHEMAP_AG_PROPS_CORRECT,
-                                attrGr.node, attrGr,
+                                attr_gr.node, attr_gr,
                                 "There must not exist more than one attribute "
                                 + "declaration of type 'xs:ID' "
                                 + "(or derived from 'xs:ID'). The %s violates this "
@@ -6748,7 +6748,7 @@ public final class Xsd10Build
                                 return -1;
                             }
                         }
-                        hasId = 1;
+                        has_id = 1;
                     }
                 }
             }
@@ -6773,14 +6773,14 @@ public final class Xsd10Build
         }
         group = getAttributeGroup(ctxt.schema,
             ref.name,
-            ref.targetNamespace);
+            ref.target_namespace);
         if (group == null)
         {
             pResCompAttrErr(ctxt,
                 XML_XSD10_SCHEMAP_SRC_RESOLVE,
                 null, ref.node,
-                "ref", ref.name, ref.targetNamespace,
-                ref.itemType, null);
+                "ref", ref.name, ref.target_namespace,
+                ref.item_type, null);
             return ctxt.err;
         }
         ref.item = group;
@@ -6807,7 +6807,7 @@ public final class Xsd10Build
             return 0;
         }
 
-        if (attr.defValue != null)
+        if (attr.def_value != null)
         {
             int ret;
 
@@ -6833,12 +6833,12 @@ public final class Xsd10Build
             * representation of its value must be `valid` with respect
             * to the {type definition} as defined in String Valid ($3.14.4)."
             */
-            Xsd10Val[] dv = new Xsd10Val[] { attr.defVal };
+            Xsd10Val[] dv = new Xsd10Val[] { attr.def_val };
             ret = vCheckCvcSimpleType(pctxt,
                 attr.node, wxsAttrTypedef(attr),
-                attr.defValue, dv,
+                attr.def_value, dv,
                 1, 1, 0);
-            attr.defVal = dv[0];
+            attr.def_val = dv[0];
             if (ret != 0)
             {
                 if (ret < 0)
@@ -6861,7 +6861,7 @@ public final class Xsd10Build
 
     // xml_xsd10_check_subst_group_circular
     /** Port of xmlSchemaCheckSubstGroupCircular. */
-    static Xsd10Element checkSubstGroupCircular(Xsd10Element elemDecl, Xsd10Element ancestor)
+    static Xsd10Element checkSubstGroupCircular(Xsd10Element elem_decl, Xsd10Element ancestor)
     {
         Xsd10Element ret;
 
@@ -6869,7 +6869,7 @@ public final class Xsd10Build
         {
             return null;
         }
-        if (wxsSubstHead(ancestor) == elemDecl)
+        if (wxsSubstHead(ancestor) == elem_decl)
         {
             return ancestor;
         }
@@ -6879,7 +6879,7 @@ public final class Xsd10Build
             return null;
         }
         wxsSubstHead(ancestor).flags |= XML_XSD10_SCHEMAS_ELEM_CIRCULAR;
-        ret = checkSubstGroupCircular(elemDecl,
+        ret = checkSubstGroupCircular(elem_decl,
             wxsSubstHead(ancestor));
         wxsSubstHead(ancestor).flags ^= XML_XSD10_SCHEMAS_ELEM_CIRCULAR;
 
@@ -6891,33 +6891,33 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckElemPropsCorrect. Schema Component Constraint: Element
      * Declaration Properties Correct (e-props-correct)
      * @param pctxt a schema parser context
-     * @param elemDecl the element declaration
+     * @param elem_decl the element declaration
      * @return 0, an error code or -1
      */
-    static int checkElemPropsCorrect(Xsd10ParserCtxt pctxt, Xsd10Element elemDecl)
+    static int checkElemPropsCorrect(Xsd10ParserCtxt pctxt, Xsd10Element elem_decl)
     {
         int ret = 0;
-        Xsd10Type typeDef = wxsElemTypedef(elemDecl);
+        Xsd10Type type_def = wxsElemTypedef(elem_decl);
         /*
         * SPEC (1) "The values of the properties of an element declaration
         * must be as described in the property tableau in The Element
         * Declaration Schema Component ($3.3.1), modulo the impact of Missing
         * Sub-components ($5.3)."
         */
-        if (wxsSubstHead(elemDecl) != null)
+        if (wxsSubstHead(elem_decl) != null)
         {
-            Xsd10Element head = wxsSubstHead(elemDecl), circ;
+            Xsd10Element head = wxsSubstHead(elem_decl), circ;
 
             checkElementDeclComponent(head, pctxt);
             /*
             * SPEC (3) "If there is a non-`absent` {substitution group
             * affiliation}, then {scope} must be global."
             */
-            if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_GLOBAL) == 0)
+            if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_GLOBAL) == 0)
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_E_PROPS_CORRECT_3,
-                    elemDecl, null,
+                    elem_decl, null,
                     "Only global element declarations can have a "
                     + "substitution group affiliation", null);
                 ret = XML_XSD10_SCHEMAP_E_PROPS_CORRECT_3;
@@ -6925,7 +6925,7 @@ public final class Xsd10Build
             /*
             * TODO: SPEC (6) "Circular substitution groups are disallowed."
             */
-            if (head == elemDecl)
+            if (head == elem_decl)
             {
                 circ = head;
             }
@@ -6939,15 +6939,15 @@ public final class Xsd10Build
             }
             if (circ != null)
             {
-                String[] strA = new String[1], strB = new String[1];
+                String[] str_a = new String[1], str_b = new String[1];
 
                 pCustomErrExt(pctxt,
                     XML_XSD10_SCHEMAP_E_PROPS_CORRECT_6,
                     circ, null,
                     "The element declaration '%s' defines a circular "
                     + "substitution group to element declaration '%s'",
-                    getComponentQName(strA, circ),
-                    getComponentQName(strB, head),
+                    getComponentQName(str_a, circ),
+                    getComponentQName(str_b, head),
                     null);
                 ret = XML_XSD10_SCHEMAP_E_PROPS_CORRECT_6;
             }
@@ -6962,7 +6962,7 @@ public final class Xsd10Build
             * attribute "final".
             */
 
-            if (typeDef != wxsElemTypedef(wxsSubstHead(elemDecl)))
+            if (type_def != wxsElemTypedef(wxsSubstHead(elem_decl)))
             {
                 int set = 0;
 
@@ -6975,22 +6975,22 @@ public final class Xsd10Build
                     set |= XSD10_SUBSET_RESTRICTION;
                 }
 
-                if (checkCosDerivedOk(pctxt, typeDef,
+                if (checkCosDerivedOk(pctxt, type_def,
                         wxsElemTypedef(head), set) != 0)
                 {
-                    String[] strA = new String[1], strB = new String[1], strC = new String[1];
+                    String[] str_a = new String[1], str_b = new String[1], str_c = new String[1];
 
                     ret = XML_XSD10_SCHEMAP_E_PROPS_CORRECT_4;
                     pCustomErrExt(pctxt,
                         XML_XSD10_SCHEMAP_E_PROPS_CORRECT_4,
-                        elemDecl, null,
+                        elem_decl, null,
                         "The type definition '%s' was "
                         + "either rejected by the substitution group "
                         + "affiliation '%s', or not validly derived from its type "
                         + "definition '%s'",
-                        getComponentQName(strA, typeDef),
-                        getComponentQName(strB, head),
-                        getComponentQName(strC, wxsElemTypedef(head)));
+                        getComponentQName(str_a, type_def),
+                        getComponentQName(str_b, head),
+                        getComponentQName(str_c, wxsElemTypedef(head)));
                 }
             }
         }
@@ -6999,24 +6999,24 @@ public final class Xsd10Build
         * {content type} is or is derived from ID then there must not be a
         * {value constraint}."
         */
-        if ((elemDecl.value != null) &&
-            (((wxsIsSimple(typeDef) != 0) &&
-              (isDerivedFromBuiltInType(typeDef, XML_XSD10_SCHEMAS_ID) != 0)) ||
-             ((wxsIsComplex(typeDef) != 0) &&
-              (wxsHasSimpleContent(typeDef) != 0) &&
-              (isDerivedFromBuiltInType(typeDef.contentTypeDef,
+        if ((elem_decl.value != null) &&
+            (((wxsIsSimple(type_def) != 0) &&
+              (isDerivedFromBuiltInType(type_def, XML_XSD10_SCHEMAS_ID) != 0)) ||
+             ((wxsIsComplex(type_def) != 0) &&
+              (wxsHasSimpleContent(type_def) != 0) &&
+              (isDerivedFromBuiltInType(type_def.content_type_def,
                   XML_XSD10_SCHEMAS_ID) != 0))))
         {
 
             ret = XML_XSD10_SCHEMAP_E_PROPS_CORRECT_5;
             pCustomErr(pctxt,
                 XML_XSD10_SCHEMAP_E_PROPS_CORRECT_5,
-                elemDecl, null,
+                elem_decl, null,
                 "The type definition (or type definition's content type) is or "
                 + "is derived from ID; value constraints are not allowed in "
                 + "conjunction with such a type definition", null);
         }
-        else if (elemDecl.value != null)
+        else if (elem_decl.value != null)
         {
             int vcret;
             XmlNode node = null;
@@ -7027,32 +7027,32 @@ public final class Xsd10Build
             * {type definition} as defined in Element Default Valid (Immediate)
             * ($3.3.6)."
             */
-            if (typeDef == null)
+            if (type_def == null)
             {
-                pErr(pctxt, elemDecl.node,
+                pErr(pctxt, elem_decl.node,
                     XML_XSD10_SCHEMAP_INTERNAL,
                     "Internal error: xmlSchemaCheckElemPropsCorrect, "
                     + "type is missing... skipping validation of "
                     + "the value constraint", null, null);
                 return -1;
             }
-            if (elemDecl.node != null)
+            if (elem_decl.node != null)
             {
-                if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_FIXED) != 0)
+                if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_FIXED) != 0)
                 {
-                    node = treeHasProp(elemDecl.node,
+                    node = treeHasProp(elem_decl.node,
                         "fixed");
                 }
                 else
                 {
-                    node = treeHasProp(elemDecl.node,
+                    node = treeHasProp(elem_decl.node,
                         "default");
                 }
             }
-            Xsd10Val[] dv = new Xsd10Val[] { elemDecl.defVal };
+            Xsd10Val[] dv = new Xsd10Val[] { elem_decl.def_val };
             vcret = parseCheckCosValidDefault(pctxt, node,
-                typeDef, elemDecl.value, dv);
-            elemDecl.defVal = dv[0];
+                type_def, elem_decl.value, dv);
+            elem_decl.def_val = dv[0];
             if (vcret != 0)
             {
                 if (vcret < 0)
@@ -7074,30 +7074,30 @@ public final class Xsd10Build
      * Port of xmlSchemaCheckElemSubstGroup. Schema Component Constraint: Substitution
      * Group (cos-equiv-class)
      * @param ctxt a schema parser context
-     * @param elemDecl the element declaration
+     * @param elem_decl the element declaration
      */
-    static void checkElemSubstGroup(Xsd10ParserCtxt ctxt, Xsd10Element elemDecl)
+    static void checkElemSubstGroup(Xsd10ParserCtxt ctxt, Xsd10Element elem_decl)
     {
-        if ((wxsSubstHead(elemDecl) == null) ||
+        if ((wxsSubstHead(elem_decl) == null) ||
             /* SPEC (1) "Its {abstract} is false." */
-            ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0))
+            ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0))
         {
             return;
         }
         {
             Xsd10Element head;
-            Xsd10Type headType, type;
-            int set, methSet;
+            Xsd10Type head_type, type;
+            int set, meth_set;
             /*
             * SPEC (2) "It is validly substitutable for HEAD subject to HEAD's
             * {disallowed substitutions} as the blocking constraint, as defined in
             * Substitution Group OK (Transitive) ($3.3.6)."
             */
-            for (head = wxsSubstHead(elemDecl); head != null;
+            for (head = wxsSubstHead(elem_decl); head != null;
                  head = wxsSubstHead(head))
             {
                 set = 0;
-                methSet = 0;
+                meth_set = 0;
                 /*
                 * The blocking constraints.
                 */
@@ -7105,9 +7105,9 @@ public final class Xsd10Build
                 {
                     continue;
                 }
-                headType = head.subtypes;
-                type = elemDecl.subtypes;
-                if (headType != type)
+                head_type = head.subtypes;
+                type = elem_decl.subtypes;
+                if (head_type != type)
                 {
                     if ((head.flags & XML_XSD10_SCHEMAS_ELEM_BLOCK_RESTRICTION) != 0)
                     {
@@ -7123,28 +7123,28 @@ public final class Xsd10Build
                     /*
                     * The set of all {derivation method}s involved in the derivation
                     */
-                    while ((type != null) && (type != headType) &&
-                           (type != type.baseType))
+                    while ((type != null) && (type != head_type) &&
+                           (type != type.base_type))
                     {
                         if ((wxsIsExtension(type) != 0) &&
-                            ((methSet & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) == 0))
+                            ((meth_set & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) == 0))
                         {
-                            methSet |= XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION;
+                            meth_set |= XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION;
                         }
 
                         if ((wxsIsRestriction(type) != 0) &&
-                            ((methSet & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) == 0))
+                            ((meth_set & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) == 0))
                         {
-                            methSet |= XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION;
+                            meth_set |= XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION;
                         }
 
-                        type = type.baseType;
+                        type = type.base_type;
                     }
                     /*
                     * The {prohibited substitutions} of all intermediate types +
                     * the head's type.
                     */
-                    type = elemDecl.subtypes.baseType;
+                    type = elem_decl.subtypes.base_type;
                     while (type != null)
                     {
                         if (wxsIsComplex(type) != 0)
@@ -7166,23 +7166,23 @@ public final class Xsd10Build
                         {
                             break;
                         }
-                        if (type == headType)
+                        if (type == head_type)
                         {
                             break;
                         }
-                        type = type.baseType;
+                        type = type.base_type;
                     }
                     if ((set != 0) &&
                         ((((set & XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION) != 0) &&
-                          ((methSet & XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION) != 0)) ||
+                          ((meth_set & XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION) != 0)) ||
                          (((set & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) != 0) &&
-                          ((methSet & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) != 0))))
+                          ((meth_set & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) != 0))))
                     {
                         continue;
                     }
                 }
                 /* add_member: */
-                addElementSubstitutionMember(ctxt, head, elemDecl);
+                addElementSubstitutionMember(ctxt, head, elem_decl);
                 if ((head.flags & XML_XSD10_SCHEMAS_ELEM_SUBST_GROUP_HEAD) == 0)
                 {
                     head.flags |= XML_XSD10_SCHEMAS_ELEM_SUBST_GROUP_HEAD;
@@ -7195,26 +7195,26 @@ public final class Xsd10Build
     /**
      * Port of xmlSchemaCheckElementDeclComponent. Validates the value constraints of an
      * element declaration. Adds substitution group members.
-     * @param elemDecl an schema element declaration/particle
+     * @param elem_decl an schema element declaration/particle
      * @param ctxt a schema parser context
      */
-    static void checkElementDeclComponent(Xsd10Element elemDecl, Xsd10ParserCtxt ctxt)
+    static void checkElementDeclComponent(Xsd10Element elem_decl, Xsd10ParserCtxt ctxt)
     {
-        if (elemDecl == null)
+        if (elem_decl == null)
         {
             return;
         }
-        if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED) != 0)
+        if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED) != 0)
         {
             return;
         }
-        elemDecl.flags |= XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED;
-        if (checkElemPropsCorrect(ctxt, elemDecl) == 0)
+        elem_decl.flags |= XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED;
+        if (checkElemPropsCorrect(ctxt, elem_decl) == 0)
         {
             /*
             * Adds substitution group members.
             */
-            checkElemSubstGroup(ctxt, elemDecl);
+            checkElemSubstGroup(ctxt, elem_decl);
         }
     }
 
@@ -7229,7 +7229,7 @@ public final class Xsd10Build
     {
         Xsd10Particle particle = wxsModelgroupParticle(mg);
         Xsd10QNameRef ref;
-        Xsd10BasicItem refItem;
+        Xsd10BasicItem ref_item;
 
         /*
         * URGENT TODO: Test this.
@@ -7250,20 +7250,20 @@ public final class Xsd10Build
             */
             particle.children = null;
 
-            refItem = getNamedComponent(ctxt.schema,
-                ref.itemType, ref.name, ref.targetNamespace);
-            if (refItem == null)
+            ref_item = getNamedComponent(ctxt.schema,
+                ref.item_type, ref.name, ref.target_namespace);
+            if (ref_item == null)
             {
                 pResCompAttrErr(ctxt, XML_XSD10_SCHEMAP_SRC_RESOLVE,
                     null, wxsItemNode(particle), "ref", ref.name,
-                    ref.targetNamespace, ref.itemType, null);
+                    ref.target_namespace, ref.item_type, null);
                 /* TODO: remove the particle. */
                 particle = (Xsd10Particle) particle.next;
                 continue;
             }
-            if (refItem.type == XML_XSD10_SCHEMA_TYPE_GROUP)
+            if (ref_item.type == XML_XSD10_SCHEMA_TYPE_GROUP)
             {
-                if (wxsModelgroupdefModel(refItem) == null)
+                if (wxsModelgroupdefModel(ref_item) == null)
                 {
                     /* TODO: remove the particle. */
                     particle = (Xsd10Particle) particle.next;
@@ -7273,7 +7273,7 @@ public final class Xsd10Build
                 * NOTE that we will assign the model group definition
                 * itself to the "term" of the particle.
                 */
-                if ((wxsModelgroupdefModel(refItem)).type ==
+                if ((wxsModelgroupdefModel(ref_item)).type ==
                     XML_XSD10_SCHEMA_TYPE_ALL)
                 {
                     /*
@@ -7292,7 +7292,7 @@ public final class Xsd10Build
                     particle = (Xsd10Particle) particle.next;
                     continue;
                 }
-                particle.children = refItem;
+                particle.children = ref_item;
             }
             else
             {
@@ -7300,7 +7300,7 @@ public final class Xsd10Build
                 * TODO: Are referenced element declarations the only
                 * other components we expect here?
                 */
-                particle.children = refItem;
+                particle.children = ref_item;
             }
             /* next_particle: */
             particle = (Xsd10Particle) particle.next;
@@ -7343,7 +7343,7 @@ public final class Xsd10Build
             * We assume computed values to be normalized, so do a fast
             * string comparison for string based types.
             */
-            if ((ptx.builtInType == XML_XSD10_SCHEMAS_STRING) ||
+            if ((ptx.built_in_type == XML_XSD10_SCHEMAS_STRING) ||
                 (wxsIsAnySimpleType(ptx) != 0))
             {
                 if (strEqual(
@@ -7404,27 +7404,27 @@ public final class Xsd10Build
         {
             return -1;
         }
-        if ((ause.attrDecl == null) ||
-            (ause.attrDecl.type != XML_XSD10_SCHEMA_EXTRA_QNAMEREF))
+        if ((ause.attr_decl == null) ||
+            (ause.attr_decl.type != XML_XSD10_SCHEMA_EXTRA_QNAMEREF))
         {
             return 0;
         }
 
         {
-            Xsd10QNameRef ref = (Xsd10QNameRef) ause.attrDecl;
+            Xsd10QNameRef ref = (Xsd10QNameRef) ause.attr_decl;
 
             /*
             * TODO: Evaluate, what errors could occur if the declaration is not
             * found.
             */
-            ause.attrDecl = getAttributeDecl(ctxt.schema,
-                ref.name, ref.targetNamespace);
-            if (ause.attrDecl == null)
+            ause.attr_decl = getAttributeDecl(ctxt.schema,
+                ref.name, ref.target_namespace);
+            if (ause.attr_decl == null)
             {
                 pResCompAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
                     ause, ause.node,
-                    "ref", ref.name, ref.targetNamespace,
+                    "ref", ref.name, ref.target_namespace,
                     XML_XSD10_SCHEMA_TYPE_ATTRIBUTE, null);
                 return ctxt.err;
             }
@@ -7446,7 +7446,7 @@ public final class Xsd10Build
         {
             return -1;
         }
-        if ((use.defValue == null) || (wxsAttruseDecl(use) == null) ||
+        if ((use.def_value == null) || (wxsAttruseDecl(use) == null) ||
             ((wxsAttruseDecl(use)).type != XML_XSD10_SCHEMA_TYPE_ATTRIBUTE))
         {
             return 0;
@@ -7456,7 +7456,7 @@ public final class Xsd10Build
         * SPEC au-props-correct (1)
         */
 
-        if (((wxsAttruseDecl(use)).defValue != null) &&
+        if (((wxsAttruseDecl(use)).def_value != null) &&
             (((wxsAttruseDecl(use)).flags & XML_XSD10_SCHEMAS_ATTR_FIXED) != 0) &&
             ((use.flags & XML_XSD10_SCHEMA_ATTR_USE_FIXED) == 0))
         {
@@ -7472,7 +7472,7 @@ public final class Xsd10Build
         /*
         * Compute and check the value constraint's value.
         */
-        if ((use.defVal != null) && (wxsAttruseTypedef(use) != null))
+        if ((use.def_val != null) && (wxsAttruseTypedef(use) != null))
         {
             int ret;
             /*
@@ -7494,12 +7494,12 @@ public final class Xsd10Build
                 return ctxt.err;
             }
 
-            Xsd10Val[] dv = new Xsd10Val[] { use.defVal };
+            Xsd10Val[] dv = new Xsd10Val[] { use.def_val };
             ret = vCheckCvcSimpleType(ctxt,
                 use.node, wxsAttruseTypedef(use),
-                use.defValue, dv,
+                use.def_value, dv,
                 1, 1, 0);
-            use.defVal = dv[0];
+            use.def_val = dv[0];
             if (ret != 0)
             {
                 if (ret < 0)
@@ -7523,11 +7523,11 @@ public final class Xsd10Build
         * {value constraint}, it must also be fixed and its value must match
         * that of the {attribute declaration}'s {value constraint}."
         */
-        if (((wxsAttruseDecl(use)).defVal != null) &&
+        if (((wxsAttruseDecl(use)).def_val != null) &&
             (((wxsAttruseDecl(use)).flags & XML_XSD10_SCHEMA_ATTR_USE_FIXED) == 0))
         {
-            if (areValuesEqual(use.defVal,
-                    (wxsAttruseDecl(use)).defVal) == 0)
+            if (areValuesEqual(use.def_val,
+                    (wxsAttruseDecl(use)).def_val) == 0)
             {
                 pCustomErr(ctxt,
                     XML_XSD10_SCHEMAP_AU_PROPS_CORRECT_2,
@@ -7535,7 +7535,7 @@ public final class Xsd10Build
                     "The 'fixed' value constraint of the attribute use "
                     + "must match the attribute declaration's value "
                     + "constraint '%s'",
-                    (wxsAttruseDecl(use)).defValue);
+                    (wxsAttruseDecl(use)).def_value);
             }
             return ctxt.err;
         }
@@ -7566,18 +7566,18 @@ public final class Xsd10Build
         {
             return 0;
         }
-        if (item.typeName != null)
+        if (item.type_name != null)
         {
             Xsd10Type type;
 
-            type = getType(ctxt.schema, item.typeName,
-                item.typeNs);
+            type = getType(ctxt.schema, item.type_name,
+                item.type_ns);
             if ((type == null) || (wxsIsSimple(type) == 0))
             {
                 pResCompAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
                     item, item.node,
-                    "type", item.typeName, item.typeNs,
+                    "type", item.type_name, item.type_ns,
                     XML_XSD10_SCHEMA_TYPE_SIMPLE, null);
                 return ctxt.err;
             }
@@ -7614,7 +7614,7 @@ public final class Xsd10Build
         {
             idc.ref.item =
                 getIdc(pctxt.schema, idc.ref.name,
-                    idc.ref.targetNamespace);
+                    idc.ref.target_namespace);
             if (idc.ref.item == null)
             {
                 /*
@@ -7625,7 +7625,7 @@ public final class Xsd10Build
                     XML_XSD10_SCHEMAP_SRC_RESOLVE,
                     idc, idc.node,
                     "refer", idc.ref.name,
-                    idc.ref.targetNamespace,
+                    idc.ref.target_namespace,
                     XML_XSD10_SCHEMA_TYPE_IDC_KEY, null);
                 return pctxt.err;
             }
@@ -7644,8 +7644,8 @@ public final class Xsd10Build
             }
             else
             {
-                if (idc.nbFields !=
-                    ((Xsd10IDC) idc.ref.item).nbFields)
+                if (idc.nb_fields !=
+                    ((Xsd10IDC) idc.ref.item).nb_fields)
                 {
                     String[] str = new String[1];
                     Xsd10IDC refer;
@@ -7662,7 +7662,7 @@ public final class Xsd10Build
                         null, idc,
                         "The cardinality of the keyref differs from the "
                         + "cardinality of the referenced key/unique '%s'",
-                        formatQName(str, refer.targetNamespace,
+                        formatQName(str, refer.target_namespace,
                             refer.name),
                         null);
                     return pctxt.err;
@@ -7677,13 +7677,13 @@ public final class Xsd10Build
     static int resolveAttrUseProhibReferences(Xsd10AttributeUseProhib prohib, Xsd10ParserCtxt pctxt)
     {
         if (getAttributeDecl(pctxt.schema, prohib.name,
-                prohib.targetNamespace) == null)
+                prohib.target_namespace) == null)
         {
 
             pResCompAttrErr(pctxt,
                 XML_XSD10_SCHEMAP_SRC_RESOLVE,
                 null, prohib.node,
-                "ref", prohib.name, prohib.targetNamespace,
+                "ref", prohib.name, prohib.target_namespace,
                 XML_XSD10_SCHEMA_TYPE_ATTRIBUTE, null);
             return XML_XSD10_SCHEMAP_SRC_RESOLVE;
         }
@@ -7715,7 +7715,7 @@ public final class Xsd10Build
         int err = 0;
         Xsd10Redef redef = wxsConstructor(pctxt).redefs;
         Xsd10BasicItem prev, item;
-        int wasRedefined;
+        int was_redefined;
 
         if (redef == null)
         {
@@ -7736,8 +7736,8 @@ public final class Xsd10Build
             *   <redefine>d schema. Currently the latter approach is used.
             */
             prev = findRedefCompInGraph(
-                redef.targetBucket, item.type,
-                redef.refName, redef.refTargetNs);
+                redef.target_bucket, item.type,
+                redef.ref_name, redef.ref_target_ns);
             if (prev == null)
             {
                 String[] str = new String[1];
@@ -7768,8 +7768,8 @@ public final class Xsd10Build
                     "The %s '%s' to be redefined could not be found in "
                     + "the redefined schema",
                     wxsItemTypeName(item),
-                    formatQName(str, redef.refTargetNs,
-                        redef.refName));
+                    formatQName(str, redef.ref_target_ns,
+                        redef.ref_name));
                 err = pctxt.err;
                 redef = redef.next;
                 continue;
@@ -7778,7 +7778,7 @@ public final class Xsd10Build
             * TODO: Obtaining and setting the redefinition state is really
             * clumsy.
             */
-            wasRedefined = 0;
+            was_redefined = 0;
             switch (item.type)
             {
             case XML_XSD10_SCHEMA_TYPE_COMPLEX:
@@ -7786,7 +7786,7 @@ public final class Xsd10Build
                 if ((((Xsd10Type) prev).flags &
                      XML_XSD10_SCHEMAS_TYPE_REDEFINED) != 0)
                 {
-                    wasRedefined = 1;
+                    was_redefined = 1;
                     break;
                 }
                 /* Mark it as redefined. */
@@ -7796,14 +7796,14 @@ public final class Xsd10Build
                 * base type of the redefining type.
                 * TODO: How
                 */
-                ((Xsd10Type) item).baseType =
+                ((Xsd10Type) item).base_type =
                     (Xsd10Type) prev;
                 break;
             case XML_XSD10_SCHEMA_TYPE_GROUP:
                 if ((((Xsd10ModelGroupDef) prev).flags &
                      XML_XSD10_SCHEMA_MODEL_GROUP_DEF_REDEFINED) != 0)
                 {
-                    wasRedefined = 1;
+                    was_redefined = 1;
                     break;
                 }
                 /* Mark it as redefined. */
@@ -7824,7 +7824,7 @@ public final class Xsd10Build
                 if ((((Xsd10AttributeGroup) prev).flags &
                      XML_XSD10_SCHEMAS_ATTRGROUP_REDEFINED) != 0)
                 {
-                    wasRedefined = 1;
+                    was_redefined = 1;
                     break;
                 }
                 ((Xsd10AttributeGroup) prev).flags |=
@@ -7857,7 +7857,7 @@ public final class Xsd10Build
                     "Unexpected redefined component type");
                 return -1;
             }
-            if (wasRedefined != 0)
+            if (was_redefined != 0)
             {
                 String[] str = new String[1];
                 XmlNode node;
@@ -7949,10 +7949,10 @@ public final class Xsd10Build
                 err = checkDerivationOkRestriction2to4(pctxt,
                     XML_XSD10_SCHEMA_ACTION_REDEFINE,
                     item, redef.target,
-                    (Xsd10ItemList) ((Xsd10AttributeGroup) item).attrUses,
-                    (Xsd10ItemList) ((Xsd10AttributeGroup) redef.target).attrUses,
-                    ((Xsd10AttributeGroup) item).attributeWildcard,
-                    ((Xsd10AttributeGroup) redef.target).attributeWildcard);
+                    (Xsd10ItemList) ((Xsd10AttributeGroup) item).attr_uses,
+                    (Xsd10ItemList) ((Xsd10AttributeGroup) redef.target).attr_uses,
+                    ((Xsd10AttributeGroup) item).attribute_wildcard,
+                    ((Xsd10AttributeGroup) redef.target).attribute_wildcard);
                 if (err == -1)
                 {
                     return -1;
@@ -7983,7 +7983,7 @@ public final class Xsd10Build
         }
         else
         {
-            return wxsIncbucket(c).ownerImport.schema;
+            return wxsIncbucket(c).owner_import.schema;
         }
     }
 
@@ -7991,13 +7991,13 @@ public final class Xsd10Build
     {
         switch (slot)
         {
-        case SLOT_TYPE: return s.typeDecl;
-        case SLOT_ELEM: return s.elemDecl;
-        case SLOT_ATTR: return s.attrDecl;
-        case SLOT_GROUP: return s.groupDecl;
-        case SLOT_ATTRGRP: return s.attrgrpDecl;
-        case SLOT_IDC: return s.idcDef;
-        default: return s.notaDecl;
+        case SLOT_TYPE: return s.type_decl;
+        case SLOT_ELEM: return s.elem_decl;
+        case SLOT_ATTR: return s.attr_decl;
+        case SLOT_GROUP: return s.group_decl;
+        case SLOT_ATTRGRP: return s.attrgrp_decl;
+        case SLOT_IDC: return s.idc_def;
+        default: return s.nota_decl;
         }
     }
 
@@ -8005,13 +8005,13 @@ public final class Xsd10Build
     {
         switch (slot)
         {
-        case SLOT_TYPE: s.typeDecl = h; break;
-        case SLOT_ELEM: s.elemDecl = h; break;
-        case SLOT_ATTR: s.attrDecl = h; break;
-        case SLOT_GROUP: s.groupDecl = h; break;
-        case SLOT_ATTRGRP: s.attrgrpDecl = h; break;
-        case SLOT_IDC: s.idcDef = h; break;
-        default: s.notaDecl = h; break;
+        case SLOT_TYPE: s.type_decl = h; break;
+        case SLOT_ELEM: s.elem_decl = h; break;
+        case SLOT_ATTR: s.attr_decl = h; break;
+        case SLOT_GROUP: s.group_decl = h; break;
+        case SLOT_ATTRGRP: s.attrgrp_decl = h; break;
+        case SLOT_IDC: s.idc_def = h; break;
+        default: s.nota_decl = h; break;
         }
     }
 
@@ -8040,7 +8040,7 @@ public final class Xsd10Build
         }
         bucket.flags |= XML_XSD10_SCHEMA_BUCKET_COMPS_ADDED;
 
-        for (i = 0; i < bucket.globals.nbItems; i++)
+        for (i = 0; i < bucket.globals.nb_items; i++)
         {
             item = (Xsd10BasicItem) bucket.globals.items[i];
             switch (item.type)
@@ -8154,14 +8154,14 @@ public final class Xsd10Build
 
     // xml_xsd10_fixup_components
     /** Port of xmlSchemaFixupComponents. */
-    static int fixupComponents(Xsd10ParserCtxt pctxt, Xsd10Bucket rootBucket)
+    static int fixupComponents(Xsd10ParserCtxt pctxt, Xsd10Bucket root_bucket)
     {
         Xsd10ConstructionCtxt con = pctxt.constructor;
         int ret = 0;
         Xsd10Bucket oldbucket = con.bucket;
 
         if ((con.pending == null) ||
-            (con.pending.nbItems == 0))
+            (con.pending.nb_items == 0))
         {
             return 0;
         }
@@ -8175,10 +8175,10 @@ public final class Xsd10Build
         */
         if (con.bucket == null)
         {
-            con.bucket = rootBucket;
+            con.bucket = root_bucket;
         }
 
-        int how = fixupComponentsBody(pctxt, con, rootBucket);
+        int how = fixupComponentsBody(pctxt, con, root_bucket);
         if (how == FIX_EXIT_ERROR)
         {
             ret = pctxt.err;
@@ -8195,11 +8195,11 @@ public final class Xsd10Build
         * if not cleared here.
         */
         con.bucket = oldbucket;
-        con.pending.nbItems = 0;
-        if (con.substGroups != null)
+        con.pending.nb_items = 0;
+        if (con.subst_groups != null)
         {
-            hashFree(con.substGroups, Xsd10Schemas::substGroupFreeEntry);
-            con.substGroups = null;
+            hashFree(con.subst_groups, Xsd10Schemas::substGroupFreeEntry);
+            con.subst_groups = null;
         }
         if (con.redefs != null)
         {
@@ -8210,12 +8210,12 @@ public final class Xsd10Build
     }
 
     /** The body of xml_xsd10_fixup_components up to the exit labels. */
-    private static int fixupComponentsBody(Xsd10ParserCtxt pctxt, Xsd10ConstructionCtxt con, Xsd10Bucket rootBucket)
+    private static int fixupComponentsBody(Xsd10ParserCtxt pctxt, Xsd10ConstructionCtxt con, Xsd10Bucket root_bucket)
     {
         Xsd10BasicItem item;
         Object[] items;
-        int nbItems, i;
-        Xsd10Element elemDecl;
+        int nb_items, i;
+        Xsd10Element elem_decl;
 
         /* TODO:
         * SPEC (src-redefine):
@@ -8232,11 +8232,11 @@ public final class Xsd10Build
         /*
         * Add global components to the schemata's hash tables.
         */
-        addComponents(pctxt, rootBucket);
+        addComponents(pctxt, root_bucket);
 
-        pctxt.ctxtType = null;
+        pctxt.ctxt_type = null;
         items = con.pending.items;
-        nbItems = con.pending.nbItems;
+        nb_items = con.pending.nb_items;
         /*
         * Now that we have parsed *all* the schema document(s) and converted
         * them to schema components, we can resolve references, apply component
@@ -8250,8 +8250,8 @@ public final class Xsd10Build
         *   - the substitution group affiliation
         * 2. simple/complex types:
         *   - the base type definition
-        *   - the memberTypes of union types
-        *   - the itemType of list types
+        *   - the member_types of union types
+        *   - the item_type of list types
         * 3. attributes declarations and attribute uses:
         *   - the type definition
         *   - if an attribute use, then the attribute declaration
@@ -8263,7 +8263,7 @@ public final class Xsd10Build
         *   - the referenced IDC 'key' or 'unique' definition
         * 7. Attribute prohibitions which had a "ref" attribute.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8290,7 +8290,7 @@ public final class Xsd10Build
                 if (fixHFailure(pctxt)) return FIX_EXIT_FAILURE;
                 break;
             case XML_XSD10_SCHEMA_EXTRA_QNAMEREF:
-                if (((Xsd10QNameRef) item).itemType ==
+                if (((Xsd10QNameRef) item).item_type ==
                     XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP)
                 {
                     resolveAttrGroupReferences(
@@ -8338,7 +8338,7 @@ public final class Xsd10Build
         * 3. nested attribute group definitions
         * TODO: check for circular substitution groups.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             /*
@@ -8390,7 +8390,7 @@ public final class Xsd10Build
         * ease circularity checks. Now we need to set the 'term' of
         * such particles to the model group of the model group definition.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8411,7 +8411,7 @@ public final class Xsd10Build
         /*
         * Expand attribute group references of attribute group definitions.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8438,7 +8438,7 @@ public final class Xsd10Build
         * a separate step, since otherwise we won't be able to detect
         * circular union types in all cases.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8463,13 +8463,13 @@ public final class Xsd10Build
         * Detect circular union types. Note that this needs the variety to
         * be already computed.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
             {
             case XML_XSD10_SCHEMA_TYPE_SIMPLE:
-                if (((Xsd10Type) item).memberTypes != null)
+                if (((Xsd10Type) item).member_types != null)
                 {
                     checkUnionTypeDefCircular(pctxt,
                         (Xsd10Type) item);
@@ -8488,7 +8488,7 @@ public final class Xsd10Build
         /*
         * Do the complete type fixup for simple types.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8514,7 +8514,7 @@ public final class Xsd10Build
         /*
         * Apply constraints for attribute declarations.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8534,13 +8534,13 @@ public final class Xsd10Build
         /*
         * Apply constraints for attribute uses.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
             {
             case XML_XSD10_SCHEMA_TYPE_ATTRIBUTE_USE:
-                if (((Xsd10AttributeUse) item).defValue != null)
+                if (((Xsd10AttributeUse) item).def_value != null)
                 {
                     checkAttrUsePropsCorrect(pctxt,
                         (Xsd10AttributeUse) item);
@@ -8559,14 +8559,14 @@ public final class Xsd10Build
         /*
         * Apply constraints for attribute group definitions.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
             {
             case XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP:
-                if ((((Xsd10AttributeGroup) item).attrUses != null) &&
-                    (((Xsd10ItemList) ((Xsd10AttributeGroup) item).attrUses).nbItems > 1))
+                if ((((Xsd10AttributeGroup) item).attr_uses != null) &&
+                    (((Xsd10ItemList) ((Xsd10AttributeGroup) item).attr_uses).nb_items > 1))
                 {
                     checkAgPropsCorrect(pctxt, (Xsd10AttributeGroup) item);
                     if (fixHFailure(pctxt)) return FIX_EXIT_FAILURE;
@@ -8596,7 +8596,7 @@ public final class Xsd10Build
         /*
         * Complex types are built and checked.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) con.pending.items[i];
             switch (item.type)
@@ -8622,23 +8622,23 @@ public final class Xsd10Build
         * will create particles and model groups in some cases.
         */
         items = con.pending.items;
-        nbItems = con.pending.nbItems;
+        nb_items = con.pending.nb_items;
 
         /*
         * Apply some constraints for element declarations.
         */
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
             {
             case XML_XSD10_SCHEMA_TYPE_ELEMENT:
-                elemDecl = (Xsd10Element) item;
+                elem_decl = (Xsd10Element) item;
 
-                if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED) == 0)
+                if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_INTERNAL_CHECKED) == 0)
                 {
                     checkElementDeclComponent(
-                        elemDecl, pctxt);
+                        elem_decl, pctxt);
                     if (fixHFailure(pctxt)) return FIX_EXIT_FAILURE;
                 }
 
@@ -8657,7 +8657,7 @@ public final class Xsd10Build
         * complex types.
         */
 
-        for (i = 0; i < nbItems; i++)
+        for (i = 0; i < nb_items; i++)
         {
             item = (Xsd10BasicItem) items[i];
             switch (item.type)
@@ -8689,7 +8689,7 @@ public final class Xsd10Build
      */
     public static Xsd10Schema parse(Xsd10ParserCtxt ctxt)
     {
-        Xsd10Schema mainSchema = null;
+        Xsd10Schema main_schema = null;
         Xsd10Bucket[] bucket = new Xsd10Bucket[1];
         int res;
 
@@ -8716,8 +8716,8 @@ public final class Xsd10Build
         failure:
         {
             /* Create the *main* schema. */
-            mainSchema = newSchema(ctxt);
-            if (mainSchema == null)
+            main_schema = newSchema(ctxt);
+            if (main_schema == null)
             {
                 break failure;
             }
@@ -8732,9 +8732,9 @@ public final class Xsd10Build
                     break failure;
                 }
                 /* Take ownership of the constructor to be able to free it. */
-                ctxt.ownsConstructor = 1;
+                ctxt.owns_constructor = 1;
             }
-            ctxt.constructor.mainSchema = mainSchema;
+            ctxt.constructor.main_schema = main_schema;
             exit:
             {
                 /*
@@ -8772,7 +8772,7 @@ public final class Xsd10Build
                     break exit;
                 }
                 /* Then do the parsing for good. */
-                if (parseNewDocWithContext(ctxt, mainSchema, bucket[0]) == -1)
+                if (parseNewDocWithContext(ctxt, main_schema, bucket[0]) == -1)
                 {
                     break failure;
                 }
@@ -8781,12 +8781,12 @@ public final class Xsd10Build
                     break exit;
                 }
 
-                mainSchema.doc = bucket[0].doc;
-                mainSchema.preserve = ctxt.preserve;
+                main_schema.doc = bucket[0].doc;
+                main_schema.preserve = ctxt.preserve;
 
-                ctxt.schema = mainSchema;
+                ctxt.schema = main_schema;
 
-                if (fixupComponents(ctxt, wxsConstructor(ctxt).mainBucket) == -1)
+                if (fixupComponents(ctxt, wxsConstructor(ctxt).main_bucket) == -1)
                 {
                     break failure;
                 }
@@ -8798,36 +8798,36 @@ public final class Xsd10Build
             /* exit: */
             if (ctxt.nberrors != 0)
             {
-                if (mainSchema != null)
+                if (main_schema != null)
                 {
-                    free(mainSchema);
-                    mainSchema = null;
+                    free(main_schema);
+                    main_schema = null;
                 }
                 if (ctxt.constructor != null)
                 {
                     constructionCtxtFree(ctxt.constructor);
                     ctxt.constructor = null;
-                    ctxt.ownsConstructor = 0;
+                    ctxt.owns_constructor = 0;
                 }
             }
             ctxt.schema = null;
-            return mainSchema;
+            return main_schema;
         }
         /* exit_failure: */
         /*
         * Quite verbose, but should catch internal errors, which were
         * not communicated.
         */
-        if (mainSchema != null)
+        if (main_schema != null)
         {
-            free(mainSchema);
-            mainSchema = null;
+            free(main_schema);
+            main_schema = null;
         }
         if (ctxt.constructor != null)
         {
             constructionCtxtFree(ctxt.constructor);
             ctxt.constructor = null;
-            ctxt.ownsConstructor = 0;
+            ctxt.owns_constructor = 0;
         }
         perrorInt2(ctxt, "xmlSchemaParse",
             "An internal error occurred");

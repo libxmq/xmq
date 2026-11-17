@@ -57,11 +57,11 @@ public final class Xsd10PSVIIDCBinding
     /** the IDC definition */
     Xsd10IDC definition;
     /** array of key-sequences */
-    Xsd10PSVIIDCNode[] nodeTable;
+    Xsd10PSVIIDCNode[] node_table;
     /** number of entries in the node table */
-    int nbNodes;
+    int nb_nodes;
     /** size of the node table */
-    int sizeNodes;
+    int size_nodes;
     /** C {@code XmlXsd10ItemList * dupls}. */
     Xsd10ItemList dupls;
 }

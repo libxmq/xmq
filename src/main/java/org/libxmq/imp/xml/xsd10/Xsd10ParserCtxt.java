@@ -59,7 +59,7 @@ import static org.libxmq.imp.xml.xsd10.Xsd10Const.*;
 public final class Xsd10ParserCtxt extends Xsd10AbstractCtxt
 {
     /** user specific error context */
-    Object errCtxt;
+    Object err_ctxt;
     /** the callback in case of errors */
     ValidityErrorFunc error;
     /** the callback in case of warning */
@@ -73,7 +73,7 @@ public final class Xsd10ParserCtxt extends Xsd10AbstractCtxt
     /** C {@code XmlXsd10ConstructionCtxt * constructor}. */
     Xsd10ConstructionCtxt constructor;
     /** TODO: Move this to parser *flags*. */
-    int ownsConstructor;
+    int owns_constructor;
     /** The main schema in use */
     Xsd10Schema schema;
     /** C {@code int counter}. */
@@ -99,31 +99,31 @@ public final class Xsd10ParserCtxt extends Xsd10AbstractCtxt
     /** dictionary for interned string names */
     Xsd10Dict dict;
     /** The current context simple/complex type */
-    Xsd10Type ctxtType;
+    Xsd10Type ctxt_type;
     /** C {@code int options}. */
     int options;
     /** C {@code XmlXsd10ValidCtxt * vctxt}. */
     Xsd10ValidCtxt vctxt;
-    /** C {@code int isS4S}. */
-    int isS4S;
-    /** C {@code int isRedefine}. */
-    int isRedefine;
-    /** C {@code int xsiAssemble}. */
-    int xsiAssemble;
+    /** C {@code int is_s4_s}. */
+    int is_s4_s;
+    /** C {@code int is_redefine}. */
+    int is_redefine;
+    /** C {@code int xsi_assemble}. */
+    int xsi_assemble;
     /** If the parser should stop; i.e. a critical error. */
     int stop;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** The schema to be redefined. */
     Xsd10Bucket redefined;
     /** Used for redefinitions. */
     Xsd10Redef redef;
     /** Used for redefinitions. */
-    int redefCounter;
-    /** C {@code XmlXsd10ItemList * attrProhibs}. */
-    Xsd10ItemList attrProhibs;
+    int redef_counter;
+    /** C {@code XmlXsd10ItemList * attr_prohibs}. */
+    Xsd10ItemList attr_prohibs;
     /** NULL: xml_xsd10_default_loader */
-    Loader resourceLoader;
-    /** C {@code void * resourceCtxt}. */
-    Object resourceCtxt;
+    Loader resource_loader;
+    /** C {@code void * resource_ctxt}. */
+    Object resource_ctxt;
 }

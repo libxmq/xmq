@@ -63,11 +63,11 @@ public final class Xsd10Attribute extends Xsd10BasicItem
     /** Deprecated; not used */
     String ref;
     /** Deprecated; not used */
-    String refNs;
+    String ref_ns;
     /** the local name of the type definition */
-    String typeName;
+    String type_name;
     /** the ns URI of the type definition */
-    String typeNs;
+    String type_ns;
     /** C {@code XmlXsd10Annot * annot}. */
     Xsd10Annot annot;
     /** Deprecated; not used */
@@ -75,19 +75,19 @@ public final class Xsd10Attribute extends Xsd10BasicItem
     /** Deprecated; not used */
     int occurs;
     /** The initial value of the value constraint */
-    String defValue;
+    String def_value;
     /** the type definition */
     Xsd10Type subtypes;
     /** C {@code XMQNode * node}. */
     XmlNode node;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** C {@code int flags}. */
     int flags;
     /** Deprecated; not used */
-    String refPrefix;
+    String ref_prefix;
     /** The compiled value constraint */
-    Xsd10Val defVal;
+    Xsd10Val def_val;
     /** Deprecated; not used */
-    Xsd10Attribute refDecl;
+    Xsd10Attribute ref_decl;
 }

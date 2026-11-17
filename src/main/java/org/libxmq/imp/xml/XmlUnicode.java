@@ -65,17 +65,17 @@ public final class XmlUnicode
     // XmlUnicodeRangeGroup
     private static final class RangeGroup
     {
-        final int nbShortRange;
-        final int nbLongRange;
-        final int[] shortRange;
-        final int[] longRange;
+        final int nb_short_range;
+        final int nb_long_range;
+        final int[] short_range;
+        final int[] long_range;
 
-        RangeGroup(int nbShortRange, int nbLongRange, int[] shortRange, int[] longRange)
+        RangeGroup(int nb_short_range, int nb_long_range, int[] short_range, int[] long_range)
         {
-            this.nbShortRange = nbShortRange;
-            this.nbLongRange = nbLongRange;
-            this.shortRange = shortRange;
-            this.longRange = longRange;
+            this.nb_short_range = nb_short_range;
+            this.nb_long_range = nb_long_range;
+            this.short_range = short_range;
+            this.long_range = long_range;
         }
     }
 
@@ -104,10 +104,10 @@ public final class XmlUnicode
         if (rptr == null) return 0;
         if (val < 0x10000)
         {
-            if (rptr.nbShortRange == 0) return 0;
+            if (rptr.nb_short_range == 0) return 0;
             low = 0;
-            high = rptr.nbShortRange - 1;
-            int[] sptr = rptr.shortRange;
+            high = rptr.nb_short_range - 1;
+            int[] sptr = rptr.short_range;
             while (low <= high)
             {
                 mid = (low + high) / 2;
@@ -130,10 +130,10 @@ public final class XmlUnicode
         }
         else
         {
-            if (rptr.nbLongRange == 0) return 0;
+            if (rptr.nb_long_range == 0) return 0;
             low = 0;
-            high = rptr.nbLongRange - 1;
-            int[] lptr = rptr.longRange;
+            high = rptr.nb_long_range - 1;
+            int[] lptr = rptr.long_range;
             while (low <= high)
             {
                 mid = (low + high) / 2;
@@ -157,22 +157,22 @@ public final class XmlUnicode
         return 0;
     }
 
-    private static final int[] xml_unicode_CS = {
+    private static final int[] xml_unicode_cs = {
         0x0, 0x1f, 0x7f, 0x9f, 0xad, 0xad, 0x600, 0x603,
         0x6dd, 0x6dd, 0x70f, 0x70f, 0x17b4, 0x17b5, 0x200b, 0x200f,
         0x202a, 0x202e, 0x2060, 0x2063, 0x206a, 0x206f, 0xd800, 0xd800,
         0xdb7f, 0xdb80, 0xdbff, 0xdc00, 0xdfff, 0xe000, 0xf8ff, 0xf8ff,
         0xfeff, 0xfeff, 0xfff9, 0xfffb};
-    private static final int[] xml_unicode_CL = {
+    private static final int[] xml_unicode_cl = {
         0x1d173, 0x1d17a, 0xe0001, 0xe0001, 0xe0020, 0xe007f, 0xf0000, 0xf0000,
         0xffffd, 0xffffd, 0x100000, 0x100000, 0x10fffd, 0x10fffd};
-    private static final int[] xml_unicode_CfS = {
+    private static final int[] xml_unicode_cf_s = {
         0xad, 0xad, 0x600, 0x603, 0x6dd, 0x6dd, 0x70f, 0x70f,
         0x17b4, 0x17b5, 0x200b, 0x200f, 0x202a, 0x202e, 0x2060, 0x2063,
         0x206a, 0x206f, 0xfeff, 0xfeff, 0xfff9, 0xfffb};
-    private static final int[] xml_unicode_CfL = {
+    private static final int[] xml_unicode_cf_l = {
         0x1d173, 0x1d17a, 0xe0001, 0xe0001, 0xe0020, 0xe007f};
-    private static final int[] xml_unicode_LS = {
+    private static final int[] xml_unicode_ls = {
         0x41, 0x5a, 0x61, 0x7a, 0xaa, 0xaa, 0xb5, 0xb5,
         0xba, 0xba, 0xc0, 0xd6, 0xd8, 0xf6, 0xf8, 0x236,
         0x250, 0x2c1, 0x2c6, 0x2d1, 0x2e0, 0x2e4, 0x2ee, 0x2ee,
@@ -243,7 +243,7 @@ public final class XmlUnicode
         0xfd92, 0xfdc7, 0xfdf0, 0xfdfb, 0xfe70, 0xfe74, 0xfe76, 0xfefc,
         0xff21, 0xff3a, 0xff41, 0xff5a, 0xff66, 0xffbe, 0xffc2, 0xffc7,
         0xffca, 0xffcf, 0xffd2, 0xffd7, 0xffda, 0xffdc};
-    private static final int[] xml_unicode_LL = {
+    private static final int[] xml_unicode_ll = {
         0x10000, 0x1000b, 0x1000d, 0x10026, 0x10028, 0x1003a, 0x1003c, 0x1003d,
         0x1003f, 0x1004d, 0x10050, 0x1005d, 0x10080, 0x100fa, 0x10300, 0x1031e,
         0x10330, 0x10349, 0x10380, 0x1039d, 0x10400, 0x1049d, 0x10800, 0x10805,
@@ -257,7 +257,7 @@ public final class XmlUnicode
         0x1d716, 0x1d734, 0x1d736, 0x1d74e, 0x1d750, 0x1d76e, 0x1d770, 0x1d788,
         0x1d78a, 0x1d7a8, 0x1d7aa, 0x1d7c2, 0x1d7c4, 0x1d7c9, 0x20000, 0x20000,
         0x2a6d6, 0x2a6d6, 0x2f800, 0x2fa1d};
-    private static final int[] xml_unicode_LlS = {
+    private static final int[] xml_unicode_ll_s = {
         0x61, 0x7a, 0xaa, 0xaa, 0xb5, 0xb5, 0xba, 0xba,
         0xdf, 0xf6, 0xf8, 0xff, 0x101, 0x101, 0x103, 0x103,
         0x105, 0x105, 0x107, 0x107, 0x109, 0x109, 0x10b, 0x10b,
@@ -357,7 +357,7 @@ public final class XmlUnicode
         0x207f, 0x207f, 0x210a, 0x210a, 0x210e, 0x210f, 0x2113, 0x2113,
         0x212f, 0x212f, 0x2134, 0x2134, 0x2139, 0x2139, 0x213d, 0x213d,
         0x2146, 0x2149, 0xfb00, 0xfb06, 0xfb13, 0xfb17, 0xff41, 0xff5a};
-    private static final int[] xml_unicode_LlL = {
+    private static final int[] xml_unicode_ll_l = {
         0x10428, 0x1044f, 0x1d41a, 0x1d433, 0x1d44e, 0x1d454, 0x1d456, 0x1d467,
         0x1d482, 0x1d49b, 0x1d4b6, 0x1d4b9, 0x1d4bb, 0x1d4bb, 0x1d4bd, 0x1d4c3,
         0x1d4c5, 0x1d4cf, 0x1d4ea, 0x1d503, 0x1d51e, 0x1d537, 0x1d552, 0x1d56b,
@@ -365,13 +365,13 @@ public final class XmlUnicode
         0x1d656, 0x1d66f, 0x1d68a, 0x1d6a3, 0x1d6c2, 0x1d6da, 0x1d6dc, 0x1d6e1,
         0x1d6fc, 0x1d714, 0x1d716, 0x1d71b, 0x1d736, 0x1d74e, 0x1d750, 0x1d755,
         0x1d770, 0x1d788, 0x1d78a, 0x1d78f, 0x1d7aa, 0x1d7c2, 0x1d7c4, 0x1d7c9};
-    private static final int[] xml_unicode_LmS = {
+    private static final int[] xml_unicode_lm_s = {
         0x2b0, 0x2c1, 0x2c6, 0x2d1, 0x2e0, 0x2e4, 0x2ee, 0x2ee,
         0x37a, 0x37a, 0x559, 0x559, 0x640, 0x640, 0x6e5, 0x6e6,
         0xe46, 0xe46, 0xec6, 0xec6, 0x17d7, 0x17d7, 0x1843, 0x1843,
         0x1d2c, 0x1d61, 0x3005, 0x3005, 0x3031, 0x3035, 0x303b, 0x303b,
         0x309d, 0x309e, 0x30fc, 0x30fe, 0xff70, 0xff70, 0xff9e, 0xff9f};
-    private static final int[] xml_unicode_LoS = {
+    private static final int[] xml_unicode_lo_s = {
         0x1bb, 0x1bb, 0x1c0, 0x1c3, 0x5d0, 0x5ea, 0x5f0, 0x5f2,
         0x621, 0x63a, 0x641, 0x64a, 0x66e, 0x66f, 0x671, 0x6d3,
         0x6d5, 0x6d5, 0x6ee, 0x6ef, 0x6fa, 0x6fc, 0x6ff, 0x6ff,
@@ -425,17 +425,17 @@ public final class XmlUnicode
         0xfd92, 0xfdc7, 0xfdf0, 0xfdfb, 0xfe70, 0xfe74, 0xfe76, 0xfefc,
         0xff66, 0xff6f, 0xff71, 0xff9d, 0xffa0, 0xffbe, 0xffc2, 0xffc7,
         0xffca, 0xffcf, 0xffd2, 0xffd7, 0xffda, 0xffdc};
-    private static final int[] xml_unicode_LoL = {
+    private static final int[] xml_unicode_lo_l = {
         0x10000, 0x1000b, 0x1000d, 0x10026, 0x10028, 0x1003a, 0x1003c, 0x1003d,
         0x1003f, 0x1004d, 0x10050, 0x1005d, 0x10080, 0x100fa, 0x10300, 0x1031e,
         0x10330, 0x10349, 0x10380, 0x1039d, 0x10450, 0x1049d, 0x10800, 0x10805,
         0x10808, 0x10808, 0x1080a, 0x10835, 0x10837, 0x10838, 0x1083c, 0x1083c,
         0x1083f, 0x1083f, 0x20000, 0x20000, 0x2a6d6, 0x2a6d6, 0x2f800, 0x2fa1d};
-    private static final int[] xml_unicode_LtS = {
+    private static final int[] xml_unicode_lt_s = {
         0x1c5, 0x1c5, 0x1c8, 0x1c8, 0x1cb, 0x1cb, 0x1f2, 0x1f2,
         0x1f88, 0x1f8f, 0x1f98, 0x1f9f, 0x1fa8, 0x1faf, 0x1fbc, 0x1fbc,
         0x1fcc, 0x1fcc, 0x1ffc, 0x1ffc};
-    private static final int[] xml_unicode_LuS = {
+    private static final int[] xml_unicode_lu_s = {
         0x41, 0x5a, 0xc0, 0xd6, 0xd8, 0xde, 0x100, 0x100,
         0x102, 0x102, 0x104, 0x104, 0x106, 0x106, 0x108, 0x108,
         0x10a, 0x10a, 0x10c, 0x10c, 0x10e, 0x10e, 0x110, 0x110,
@@ -534,7 +534,7 @@ public final class XmlUnicode
         0x2119, 0x211d, 0x2124, 0x2124, 0x2126, 0x2126, 0x2128, 0x2128,
         0x212a, 0x212d, 0x2130, 0x2131, 0x2133, 0x2133, 0x213e, 0x213f,
         0x2145, 0x2145, 0xff21, 0xff3a};
-    private static final int[] xml_unicode_LuL = {
+    private static final int[] xml_unicode_lu_l = {
         0x10400, 0x10427, 0x1d400, 0x1d419, 0x1d434, 0x1d44d, 0x1d468, 0x1d481,
         0x1d49c, 0x1d49c, 0x1d49e, 0x1d49f, 0x1d4a2, 0x1d4a2, 0x1d4a5, 0x1d4a6,
         0x1d4a9, 0x1d4ac, 0x1d4ae, 0x1d4b5, 0x1d4d0, 0x1d4e9, 0x1d504, 0x1d505,
@@ -543,7 +543,7 @@ public final class XmlUnicode
         0x1d56c, 0x1d585, 0x1d5a0, 0x1d5b9, 0x1d5d4, 0x1d5ed, 0x1d608, 0x1d621,
         0x1d63c, 0x1d655, 0x1d670, 0x1d689, 0x1d6a8, 0x1d6c0, 0x1d6e2, 0x1d6fa,
         0x1d71c, 0x1d734, 0x1d756, 0x1d76e, 0x1d790, 0x1d7a8};
-    private static final int[] xml_unicode_MS = {
+    private static final int[] xml_unicode_ms = {
         0x300, 0x357, 0x35d, 0x36f, 0x483, 0x486, 0x488, 0x489,
         0x591, 0x5a1, 0x5a3, 0x5b9, 0x5bb, 0x5bd, 0x5bf, 0x5bf,
         0x5c1, 0x5c2, 0x5c4, 0x5c4, 0x610, 0x615, 0x64b, 0x658,
@@ -573,10 +573,10 @@ public final class XmlUnicode
         0x18a9, 0x18a9, 0x1920, 0x192b, 0x1930, 0x193b, 0x20d0, 0x20ea,
         0x302a, 0x302f, 0x3099, 0x309a, 0xfb1e, 0xfb1e, 0xfe00, 0xfe0f,
         0xfe20, 0xfe23};
-    private static final int[] xml_unicode_ML = {
+    private static final int[] xml_unicode_ml = {
         0x1d165, 0x1d169, 0x1d16d, 0x1d172, 0x1d17b, 0x1d182, 0x1d185, 0x1d18b,
         0x1d1aa, 0x1d1ad, 0xe0100, 0xe01ef};
-    private static final int[] xml_unicode_McS = {
+    private static final int[] xml_unicode_mc_s = {
         0x903, 0x903, 0x93e, 0x940, 0x949, 0x94c, 0x982, 0x983,
         0x9be, 0x9c0, 0x9c7, 0x9c8, 0x9cb, 0x9cc, 0x9d7, 0x9d7,
         0xa03, 0xa03, 0xa3e, 0xa40, 0xa83, 0xa83, 0xabe, 0xac0,
@@ -591,9 +591,9 @@ public final class XmlUnicode
         0x102c, 0x102c, 0x1031, 0x1031, 0x1038, 0x1038, 0x1056, 0x1057,
         0x17b6, 0x17b6, 0x17be, 0x17c5, 0x17c7, 0x17c8, 0x1923, 0x1926,
         0x1929, 0x192b, 0x1930, 0x1931, 0x1933, 0x1938};
-    private static final int[] xml_unicode_McL = {
+    private static final int[] xml_unicode_mc_l = {
         0x1d165, 0x1d166, 0x1d16d, 0x1d172};
-    private static final int[] xml_unicode_MnS = {
+    private static final int[] xml_unicode_mn_s = {
         0x300, 0x357, 0x35d, 0x36f, 0x483, 0x486, 0x591, 0x5a1,
         0x5a3, 0x5b9, 0x5bb, 0x5bd, 0x5bf, 0x5bf, 0x5c1, 0x5c2,
         0x5c4, 0x5c4, 0x610, 0x615, 0x64b, 0x658, 0x670, 0x670,
@@ -621,10 +621,10 @@ public final class XmlUnicode
         0x1920, 0x1922, 0x1927, 0x1928, 0x1932, 0x1932, 0x1939, 0x193b,
         0x20d0, 0x20dc, 0x20e1, 0x20e1, 0x20e5, 0x20ea, 0x302a, 0x302f,
         0x3099, 0x309a, 0xfb1e, 0xfb1e, 0xfe00, 0xfe0f, 0xfe20, 0xfe23};
-    private static final int[] xml_unicode_MnL = {
+    private static final int[] xml_unicode_mn_l = {
         0x1d167, 0x1d169, 0x1d17b, 0x1d182, 0x1d185, 0x1d18b, 0x1d1aa, 0x1d1ad,
         0xe0100, 0xe01ef};
-    private static final int[] xml_unicode_NS = {
+    private static final int[] xml_unicode_ns = {
         0x30, 0x39, 0xb2, 0xb3, 0xb9, 0xb9, 0xbc, 0xbe,
         0x660, 0x669, 0x6f0, 0x6f9, 0x966, 0x96f, 0x9e6, 0x9ef,
         0x9f4, 0x9f9, 0xa66, 0xa6f, 0xae6, 0xaef, 0xb66, 0xb6f,
@@ -636,27 +636,27 @@ public final class XmlUnicode
         0x2776, 0x2793, 0x3007, 0x3007, 0x3021, 0x3029, 0x3038, 0x303a,
         0x3192, 0x3195, 0x3220, 0x3229, 0x3251, 0x325f, 0x3280, 0x3289,
         0x32b1, 0x32bf, 0xff10, 0xff19};
-    private static final int[] xml_unicode_NL = {
+    private static final int[] xml_unicode_nl = {
         0x10107, 0x10133, 0x10320, 0x10323, 0x1034a, 0x1034a, 0x104a0, 0x104a9,
         0x1d7ce, 0x1d7ff};
-    private static final int[] xml_unicode_NdS = {
+    private static final int[] xml_unicode_nd_s = {
         0x30, 0x39, 0x660, 0x669, 0x6f0, 0x6f9, 0x966, 0x96f,
         0x9e6, 0x9ef, 0xa66, 0xa6f, 0xae6, 0xaef, 0xb66, 0xb6f,
         0xbe7, 0xbef, 0xc66, 0xc6f, 0xce6, 0xcef, 0xd66, 0xd6f,
         0xe50, 0xe59, 0xed0, 0xed9, 0xf20, 0xf29, 0x1040, 0x1049,
         0x1369, 0x1371, 0x17e0, 0x17e9, 0x1810, 0x1819, 0x1946, 0x194f,
         0xff10, 0xff19};
-    private static final int[] xml_unicode_NdL = {
+    private static final int[] xml_unicode_nd_l = {
         0x104a0, 0x104a9, 0x1d7ce, 0x1d7ff};
-    private static final int[] xml_unicode_NoS = {
+    private static final int[] xml_unicode_no_s = {
         0xb2, 0xb3, 0xb9, 0xb9, 0xbc, 0xbe, 0x9f4, 0x9f9,
         0xbf0, 0xbf2, 0xf2a, 0xf33, 0x1372, 0x137c, 0x17f0, 0x17f9,
         0x2070, 0x2070, 0x2074, 0x2079, 0x2080, 0x2089, 0x2153, 0x215f,
         0x2460, 0x249b, 0x24ea, 0x24ff, 0x2776, 0x2793, 0x3192, 0x3195,
         0x3220, 0x3229, 0x3251, 0x325f, 0x3280, 0x3289, 0x32b1, 0x32bf};
-    private static final int[] xml_unicode_NoL = {
+    private static final int[] xml_unicode_no_l = {
         0x10107, 0x10133, 0x10320, 0x10323};
-    private static final int[] xml_unicode_PS = {
+    private static final int[] xml_unicode_ps = {
         0x21, 0x23, 0x25, 0x2a, 0x2c, 0x2f, 0x3a, 0x3b,
         0x3f, 0x40, 0x5b, 0x5d, 0x5f, 0x5f, 0x7b, 0x7b,
         0x7d, 0x7d, 0xa1, 0xa1, 0xab, 0xab, 0xb7, 0xb7,
@@ -678,13 +678,13 @@ public final class XmlUnicode
         0xfe68, 0xfe68, 0xfe6a, 0xfe6b, 0xff01, 0xff03, 0xff05, 0xff0a,
         0xff0c, 0xff0f, 0xff1a, 0xff1b, 0xff1f, 0xff20, 0xff3b, 0xff3d,
         0xff3f, 0xff3f, 0xff5b, 0xff5b, 0xff5d, 0xff5d, 0xff5f, 0xff65};
-    private static final int[] xml_unicode_PL = {
+    private static final int[] xml_unicode_pl = {
         0x10100, 0x10101, 0x1039f, 0x1039f};
-    private static final int[] xml_unicode_PdS = {
+    private static final int[] xml_unicode_pd_s = {
         0x2d, 0x2d, 0x58a, 0x58a, 0x1806, 0x1806, 0x2010, 0x2015,
         0x301c, 0x301c, 0x3030, 0x3030, 0x30a0, 0x30a0, 0xfe31, 0xfe32,
         0xfe58, 0xfe58, 0xfe63, 0xfe63, 0xff0d, 0xff0d};
-    private static final int[] xml_unicode_PeS = {
+    private static final int[] xml_unicode_pe_s = {
         0x29, 0x29, 0x5d, 0x5d, 0x7d, 0x7d, 0xf3b, 0xf3b,
         0xf3d, 0xf3d, 0x169c, 0x169c, 0x2046, 0x2046, 0x207e, 0x207e,
         0x208e, 0x208e, 0x232a, 0x232a, 0x23b5, 0x23b5, 0x2769, 0x2769,
@@ -701,7 +701,7 @@ public final class XmlUnicode
         0xfe42, 0xfe42, 0xfe44, 0xfe44, 0xfe48, 0xfe48, 0xfe5a, 0xfe5a,
         0xfe5c, 0xfe5c, 0xfe5e, 0xfe5e, 0xff09, 0xff09, 0xff3d, 0xff3d,
         0xff5d, 0xff5d, 0xff60, 0xff60, 0xff63, 0xff63};
-    private static final int[] xml_unicode_PoS = {
+    private static final int[] xml_unicode_po_s = {
         0x21, 0x23, 0x25, 0x27, 0x2a, 0x2a, 0x2c, 0x2c,
         0x2e, 0x2f, 0x3a, 0x3b, 0x3f, 0x40, 0x5c, 0x5c,
         0xa1, 0xa1, 0xb7, 0xb7, 0xbf, 0xbf, 0x37e, 0x37e,
@@ -720,9 +720,9 @@ public final class XmlUnicode
         0xfe68, 0xfe68, 0xfe6a, 0xfe6b, 0xff01, 0xff03, 0xff05, 0xff07,
         0xff0a, 0xff0a, 0xff0c, 0xff0c, 0xff0e, 0xff0f, 0xff1a, 0xff1b,
         0xff1f, 0xff20, 0xff3c, 0xff3c, 0xff61, 0xff61, 0xff64, 0xff64};
-    private static final int[] xml_unicode_PoL = {
+    private static final int[] xml_unicode_po_l = {
         0x10100, 0x10101, 0x1039f, 0x1039f};
-    private static final int[] xml_unicode_PsS = {
+    private static final int[] xml_unicode_ps_s = {
         0x28, 0x28, 0x5b, 0x5b, 0x7b, 0x7b, 0xf3a, 0xf3a,
         0xf3c, 0xf3c, 0x169b, 0x169b, 0x201a, 0x201a, 0x201e, 0x201e,
         0x2045, 0x2045, 0x207d, 0x207d, 0x208d, 0x208d, 0x2329, 0x2329,
@@ -740,7 +740,7 @@ public final class XmlUnicode
         0xfe47, 0xfe47, 0xfe59, 0xfe59, 0xfe5b, 0xfe5b, 0xfe5d, 0xfe5d,
         0xff08, 0xff08, 0xff3b, 0xff3b, 0xff5b, 0xff5b, 0xff5f, 0xff5f,
         0xff62, 0xff62};
-    private static final int[] xml_unicode_SS = {
+    private static final int[] xml_unicode_ss = {
         0x24, 0x24, 0x2b, 0x2b, 0x3c, 0x3e, 0x5e, 0x5e,
         0x60, 0x60, 0x7c, 0x7c, 0x7e, 0x7e, 0xa2, 0xa9,
         0xac, 0xac, 0xae, 0xb1, 0xb4, 0xb4, 0xb6, 0xb6,
@@ -775,25 +775,25 @@ public final class XmlUnicode
         0xff0b, 0xff0b, 0xff1c, 0xff1e, 0xff3e, 0xff3e, 0xff40, 0xff40,
         0xff5c, 0xff5c, 0xff5e, 0xff5e, 0xffe0, 0xffe6, 0xffe8, 0xffee,
         0xfffc, 0xfffd};
-    private static final int[] xml_unicode_SL = {
+    private static final int[] xml_unicode_sl = {
         0x10102, 0x10102, 0x10137, 0x1013f, 0x1d000, 0x1d0f5, 0x1d100, 0x1d126,
         0x1d12a, 0x1d164, 0x1d16a, 0x1d16c, 0x1d183, 0x1d184, 0x1d18c, 0x1d1a9,
         0x1d1ae, 0x1d1dd, 0x1d300, 0x1d356, 0x1d6c1, 0x1d6c1, 0x1d6db, 0x1d6db,
         0x1d6fb, 0x1d6fb, 0x1d715, 0x1d715, 0x1d735, 0x1d735, 0x1d74f, 0x1d74f,
         0x1d76f, 0x1d76f, 0x1d789, 0x1d789, 0x1d7a9, 0x1d7a9, 0x1d7c3, 0x1d7c3};
-    private static final int[] xml_unicode_ScS = {
+    private static final int[] xml_unicode_sc_s = {
         0x24, 0x24, 0xa2, 0xa5, 0x9f2, 0x9f3, 0xaf1, 0xaf1,
         0xbf9, 0xbf9, 0xe3f, 0xe3f, 0x17db, 0x17db, 0x20a0, 0x20b1,
         0xfdfc, 0xfdfc, 0xfe69, 0xfe69, 0xff04, 0xff04, 0xffe0, 0xffe1,
         0xffe5, 0xffe6};
-    private static final int[] xml_unicode_SkS = {
+    private static final int[] xml_unicode_sk_s = {
         0x5e, 0x5e, 0x60, 0x60, 0xa8, 0xa8, 0xaf, 0xaf,
         0xb4, 0xb4, 0xb8, 0xb8, 0x2c2, 0x2c5, 0x2d2, 0x2df,
         0x2e5, 0x2ed, 0x2ef, 0x2ff, 0x374, 0x375, 0x384, 0x385,
         0x1fbd, 0x1fbd, 0x1fbf, 0x1fc1, 0x1fcd, 0x1fcf, 0x1fdd, 0x1fdf,
         0x1fed, 0x1fef, 0x1ffd, 0x1ffe, 0x309b, 0x309c, 0xff3e, 0xff3e,
         0xff40, 0xff40, 0xffe3, 0xffe3};
-    private static final int[] xml_unicode_SmS = {
+    private static final int[] xml_unicode_sm_s = {
         0x2b, 0x2b, 0x3c, 0x3e, 0x7c, 0x7c, 0x7e, 0x7e,
         0xac, 0xac, 0xb1, 0xb1, 0xd7, 0xd7, 0xf7, 0xf7,
         0x3f6, 0x3f6, 0x2044, 0x2044, 0x2052, 0x2052, 0x207a, 0x207c,
@@ -806,11 +806,11 @@ public final class XmlUnicode
         0x2999, 0x29d7, 0x29dc, 0x29fb, 0x29fe, 0x2aff, 0xfb29, 0xfb29,
         0xfe62, 0xfe62, 0xfe64, 0xfe66, 0xff0b, 0xff0b, 0xff1c, 0xff1e,
         0xff5c, 0xff5c, 0xff5e, 0xff5e, 0xffe2, 0xffe2, 0xffe9, 0xffec};
-    private static final int[] xml_unicode_SmL = {
+    private static final int[] xml_unicode_sm_l = {
         0x1d6c1, 0x1d6c1, 0x1d6db, 0x1d6db, 0x1d6fb, 0x1d6fb, 0x1d715, 0x1d715,
         0x1d735, 0x1d735, 0x1d74f, 0x1d74f, 0x1d76f, 0x1d76f, 0x1d789, 0x1d789,
         0x1d7a9, 0x1d7a9, 0x1d7c3, 0x1d7c3};
-    private static final int[] xml_unicode_SoS = {
+    private static final int[] xml_unicode_so_s = {
         0xa6, 0xa7, 0xa9, 0xa9, 0xae, 0xae, 0xb0, 0xb0,
         0xb6, 0xb6, 0x482, 0x482, 0x60e, 0x60f, 0x6e9, 0x6e9,
         0x6fd, 0x6fe, 0x9fa, 0x9fa, 0xb70, 0xb70, 0xbf3, 0xbf8,
@@ -837,298 +837,298 @@ public final class XmlUnicode
         0x327f, 0x327f, 0x328a, 0x32b0, 0x32c0, 0x32fe, 0x3300, 0x33ff,
         0x4dc0, 0x4dff, 0xa490, 0xa4c6, 0xfdfd, 0xfdfd, 0xffe4, 0xffe4,
         0xffe8, 0xffe8, 0xffed, 0xffee, 0xfffc, 0xfffd};
-    private static final int[] xml_unicode_SoL = {
+    private static final int[] xml_unicode_so_l = {
         0x10102, 0x10102, 0x10137, 0x1013f, 0x1d000, 0x1d0f5, 0x1d100, 0x1d126,
         0x1d12a, 0x1d164, 0x1d16a, 0x1d16c, 0x1d183, 0x1d184, 0x1d18c, 0x1d1a9,
         0x1d1ae, 0x1d1dd, 0x1d300, 0x1d356};
-    private static final int[] xml_unicode_ZS = {
+    private static final int[] xml_unicode_zs = {
         0x20, 0x20, 0xa0, 0xa0, 0x1680, 0x1680, 0x180e, 0x180e,
         0x2000, 0x200a, 0x2028, 0x2029, 0x202f, 0x202f, 0x205f, 0x205f,
         0x3000, 0x3000};
-    private static final int[] xml_unicode_AegeanNumbersL = {
+    private static final int[] xml_unicode_aegean_numbers_l = {
         0x10100, 0x1013f};
-    private static final int[] xml_unicode_AlphabeticPresentationFormsS = {
+    private static final int[] xml_unicode_alphabetic_presentation_forms_s = {
         0xfb00, 0xfb4f};
-    private static final int[] xml_unicode_ArabicS = {
+    private static final int[] xml_unicode_arabic_s = {
         0x600, 0x6ff};
-    private static final int[] xml_unicode_ArabicPresentationFormsAS = {
+    private static final int[] xml_unicode_arabic_presentation_forms_as = {
         0xfb50, 0xfdff};
-    private static final int[] xml_unicode_ArabicPresentationFormsBS = {
+    private static final int[] xml_unicode_arabic_presentation_forms_bs = {
         0xfe70, 0xfeff};
-    private static final int[] xml_unicode_ArmenianS = {
+    private static final int[] xml_unicode_armenian_s = {
         0x530, 0x58f};
-    private static final int[] xml_unicode_ArrowsS = {
+    private static final int[] xml_unicode_arrows_s = {
         0x2190, 0x21ff};
-    private static final int[] xml_unicode_BasicLatinS = {
+    private static final int[] xml_unicode_basic_latin_s = {
         0x0, 0x7f};
-    private static final int[] xml_unicode_BengaliS = {
+    private static final int[] xml_unicode_bengali_s = {
         0x980, 0x9ff};
-    private static final int[] xml_unicode_BlockElementsS = {
+    private static final int[] xml_unicode_block_elements_s = {
         0x2580, 0x259f};
-    private static final int[] xml_unicode_BopomofoS = {
+    private static final int[] xml_unicode_bopomofo_s = {
         0x3100, 0x312f};
-    private static final int[] xml_unicode_BopomofoExtendedS = {
+    private static final int[] xml_unicode_bopomofo_extended_s = {
         0x31a0, 0x31bf};
-    private static final int[] xml_unicode_BoxDrawingS = {
+    private static final int[] xml_unicode_box_drawing_s = {
         0x2500, 0x257f};
-    private static final int[] xml_unicode_BraillePatternsS = {
+    private static final int[] xml_unicode_braille_patterns_s = {
         0x2800, 0x28ff};
-    private static final int[] xml_unicode_BuhidS = {
+    private static final int[] xml_unicode_buhid_s = {
         0x1740, 0x175f};
-    private static final int[] xml_unicode_ByzantineMusicalSymbolsL = {
+    private static final int[] xml_unicode_byzantine_musical_symbols_l = {
         0x1d000, 0x1d0ff};
-    private static final int[] xml_unicode_CJKCompatibilityS = {
+    private static final int[] xml_unicode_cjk_compatibility_s = {
         0x3300, 0x33ff};
-    private static final int[] xml_unicode_CJKCompatibilityFormsS = {
+    private static final int[] xml_unicode_cjk_compatibility_forms_s = {
         0xfe30, 0xfe4f};
-    private static final int[] xml_unicode_CJKCompatibilityIdeographsS = {
+    private static final int[] xml_unicode_cjk_compatibility_ideographs_s = {
         0xf900, 0xfaff};
-    private static final int[] xml_unicode_CJKCompatibilityIdeographsSupplementL = {
+    private static final int[] xml_unicode_cjk_compatibility_ideographs_supplement_l = {
         0x2f800, 0x2fa1f};
-    private static final int[] xml_unicode_CJKRadicalsSupplementS = {
+    private static final int[] xml_unicode_cjk_radicals_supplement_s = {
         0x2e80, 0x2eff};
-    private static final int[] xml_unicode_CJKSymbolsandPunctuationS = {
+    private static final int[] xml_unicode_cjk_symbolsand_punctuation_s = {
         0x3000, 0x303f};
-    private static final int[] xml_unicode_CJKUnifiedIdeographsS = {
+    private static final int[] xml_unicode_cjk_unified_ideographs_s = {
         0x4e00, 0x9fff};
-    private static final int[] xml_unicode_CJKUnifiedIdeographsExtensionAS = {
+    private static final int[] xml_unicode_cjk_unified_ideographs_extension_as = {
         0x3400, 0x4dbf};
-    private static final int[] xml_unicode_CJKUnifiedIdeographsExtensionBL = {
+    private static final int[] xml_unicode_cjk_unified_ideographs_extension_bl = {
         0x20000, 0x2a6df};
-    private static final int[] xml_unicode_CherokeeS = {
+    private static final int[] xml_unicode_cherokee_s = {
         0x13a0, 0x13ff};
-    private static final int[] xml_unicode_CombiningDiacriticalMarksS = {
+    private static final int[] xml_unicode_combining_diacritical_marks_s = {
         0x300, 0x36f};
-    private static final int[] xml_unicode_CombiningDiacriticalMarksforSymbolsS = {
+    private static final int[] xml_unicode_combining_diacritical_marksfor_symbols_s = {
         0x20d0, 0x20ff};
-    private static final int[] xml_unicode_CombiningHalfMarksS = {
+    private static final int[] xml_unicode_combining_half_marks_s = {
         0xfe20, 0xfe2f};
-    private static final int[] xml_unicode_CombiningMarksforSymbolsS = {
+    private static final int[] xml_unicode_combining_marksfor_symbols_s = {
         0x20d0, 0x20ff};
-    private static final int[] xml_unicode_ControlPicturesS = {
+    private static final int[] xml_unicode_control_pictures_s = {
         0x2400, 0x243f};
-    private static final int[] xml_unicode_CurrencySymbolsS = {
+    private static final int[] xml_unicode_currency_symbols_s = {
         0x20a0, 0x20cf};
-    private static final int[] xml_unicode_CypriotSyllabaryL = {
+    private static final int[] xml_unicode_cypriot_syllabary_l = {
         0x10800, 0x1083f};
-    private static final int[] xml_unicode_CyrillicS = {
+    private static final int[] xml_unicode_cyrillic_s = {
         0x400, 0x4ff};
-    private static final int[] xml_unicode_CyrillicSupplementS = {
+    private static final int[] xml_unicode_cyrillic_supplement_s = {
         0x500, 0x52f};
-    private static final int[] xml_unicode_DeseretL = {
+    private static final int[] xml_unicode_deseret_l = {
         0x10400, 0x1044f};
-    private static final int[] xml_unicode_DevanagariS = {
+    private static final int[] xml_unicode_devanagari_s = {
         0x900, 0x97f};
-    private static final int[] xml_unicode_DingbatsS = {
+    private static final int[] xml_unicode_dingbats_s = {
         0x2700, 0x27bf};
-    private static final int[] xml_unicode_EnclosedAlphanumericsS = {
+    private static final int[] xml_unicode_enclosed_alphanumerics_s = {
         0x2460, 0x24ff};
-    private static final int[] xml_unicode_EnclosedCJKLettersandMonthsS = {
+    private static final int[] xml_unicode_enclosed_cjk_lettersand_months_s = {
         0x3200, 0x32ff};
-    private static final int[] xml_unicode_EthiopicS = {
+    private static final int[] xml_unicode_ethiopic_s = {
         0x1200, 0x137f};
-    private static final int[] xml_unicode_GeneralPunctuationS = {
+    private static final int[] xml_unicode_general_punctuation_s = {
         0x2000, 0x206f};
-    private static final int[] xml_unicode_GeometricShapesS = {
+    private static final int[] xml_unicode_geometric_shapes_s = {
         0x25a0, 0x25ff};
-    private static final int[] xml_unicode_GeorgianS = {
+    private static final int[] xml_unicode_georgian_s = {
         0x10a0, 0x10ff};
-    private static final int[] xml_unicode_GothicL = {
+    private static final int[] xml_unicode_gothic_l = {
         0x10330, 0x1034f};
-    private static final int[] xml_unicode_GreekS = {
+    private static final int[] xml_unicode_greek_s = {
         0x370, 0x3ff};
-    private static final int[] xml_unicode_GreekExtendedS = {
+    private static final int[] xml_unicode_greek_extended_s = {
         0x1f00, 0x1fff};
-    private static final int[] xml_unicode_GreekandCopticS = {
+    private static final int[] xml_unicode_greekand_coptic_s = {
         0x370, 0x3ff};
-    private static final int[] xml_unicode_GujaratiS = {
+    private static final int[] xml_unicode_gujarati_s = {
         0xa80, 0xaff};
-    private static final int[] xml_unicode_GurmukhiS = {
+    private static final int[] xml_unicode_gurmukhi_s = {
         0xa00, 0xa7f};
-    private static final int[] xml_unicode_HalfwidthandFullwidthFormsS = {
+    private static final int[] xml_unicode_halfwidthand_fullwidth_forms_s = {
         0xff00, 0xffef};
-    private static final int[] xml_unicode_HangulCompatibilityJamoS = {
+    private static final int[] xml_unicode_hangul_compatibility_jamo_s = {
         0x3130, 0x318f};
-    private static final int[] xml_unicode_HangulJamoS = {
+    private static final int[] xml_unicode_hangul_jamo_s = {
         0x1100, 0x11ff};
-    private static final int[] xml_unicode_HangulSyllablesS = {
+    private static final int[] xml_unicode_hangul_syllables_s = {
         0xac00, 0xd7af};
-    private static final int[] xml_unicode_HanunooS = {
+    private static final int[] xml_unicode_hanunoo_s = {
         0x1720, 0x173f};
-    private static final int[] xml_unicode_HebrewS = {
+    private static final int[] xml_unicode_hebrew_s = {
         0x590, 0x5ff};
-    private static final int[] xml_unicode_HighPrivateUseSurrogatesS = {
+    private static final int[] xml_unicode_high_private_use_surrogates_s = {
         0xdb80, 0xdbff};
-    private static final int[] xml_unicode_HighSurrogatesS = {
+    private static final int[] xml_unicode_high_surrogates_s = {
         0xd800, 0xdb7f};
-    private static final int[] xml_unicode_HiraganaS = {
+    private static final int[] xml_unicode_hiragana_s = {
         0x3040, 0x309f};
-    private static final int[] xml_unicode_IPAExtensionsS = {
+    private static final int[] xml_unicode_ipa_extensions_s = {
         0x250, 0x2af};
-    private static final int[] xml_unicode_IdeographicDescriptionCharactersS = {
+    private static final int[] xml_unicode_ideographic_description_characters_s = {
         0x2ff0, 0x2fff};
-    private static final int[] xml_unicode_KanbunS = {
+    private static final int[] xml_unicode_kanbun_s = {
         0x3190, 0x319f};
-    private static final int[] xml_unicode_KangxiRadicalsS = {
+    private static final int[] xml_unicode_kangxi_radicals_s = {
         0x2f00, 0x2fdf};
-    private static final int[] xml_unicode_KannadaS = {
+    private static final int[] xml_unicode_kannada_s = {
         0xc80, 0xcff};
-    private static final int[] xml_unicode_KatakanaS = {
+    private static final int[] xml_unicode_katakana_s = {
         0x30a0, 0x30ff};
-    private static final int[] xml_unicode_KatakanaPhoneticExtensionsS = {
+    private static final int[] xml_unicode_katakana_phonetic_extensions_s = {
         0x31f0, 0x31ff};
-    private static final int[] xml_unicode_KhmerS = {
+    private static final int[] xml_unicode_khmer_s = {
         0x1780, 0x17ff};
-    private static final int[] xml_unicode_KhmerSymbolsS = {
+    private static final int[] xml_unicode_khmer_symbols_s = {
         0x19e0, 0x19ff};
-    private static final int[] xml_unicode_LaoS = {
+    private static final int[] xml_unicode_lao_s = {
         0xe80, 0xeff};
-    private static final int[] xml_unicode_Latin1SupplementS = {
+    private static final int[] xml_unicode_latin1_supplement_s = {
         0x80, 0xff};
-    private static final int[] xml_unicode_LatinExtendedAS = {
+    private static final int[] xml_unicode_latin_extended_as = {
         0x100, 0x17f};
-    private static final int[] xml_unicode_LatinExtendedBS = {
+    private static final int[] xml_unicode_latin_extended_bs = {
         0x180, 0x24f};
-    private static final int[] xml_unicode_LatinExtendedAdditionalS = {
+    private static final int[] xml_unicode_latin_extended_additional_s = {
         0x1e00, 0x1eff};
-    private static final int[] xml_unicode_LetterlikeSymbolsS = {
+    private static final int[] xml_unicode_letterlike_symbols_s = {
         0x2100, 0x214f};
-    private static final int[] xml_unicode_LimbuS = {
+    private static final int[] xml_unicode_limbu_s = {
         0x1900, 0x194f};
-    private static final int[] xml_unicode_LinearBIdeogramsL = {
+    private static final int[] xml_unicode_linear_b_ideograms_l = {
         0x10080, 0x100ff};
-    private static final int[] xml_unicode_LinearBSyllabaryL = {
+    private static final int[] xml_unicode_linear_b_syllabary_l = {
         0x10000, 0x1007f};
-    private static final int[] xml_unicode_LowSurrogatesS = {
+    private static final int[] xml_unicode_low_surrogates_s = {
         0xdc00, 0xdfff};
-    private static final int[] xml_unicode_MalayalamS = {
+    private static final int[] xml_unicode_malayalam_s = {
         0xd00, 0xd7f};
-    private static final int[] xml_unicode_MathematicalAlphanumericSymbolsL = {
+    private static final int[] xml_unicode_mathematical_alphanumeric_symbols_l = {
         0x1d400, 0x1d7ff};
-    private static final int[] xml_unicode_MathematicalOperatorsS = {
+    private static final int[] xml_unicode_mathematical_operators_s = {
         0x2200, 0x22ff};
-    private static final int[] xml_unicode_MiscellaneousMathematicalSymbolsAS = {
+    private static final int[] xml_unicode_miscellaneous_mathematical_symbols_as = {
         0x27c0, 0x27ef};
-    private static final int[] xml_unicode_MiscellaneousMathematicalSymbolsBS = {
+    private static final int[] xml_unicode_miscellaneous_mathematical_symbols_bs = {
         0x2980, 0x29ff};
-    private static final int[] xml_unicode_MiscellaneousSymbolsS = {
+    private static final int[] xml_unicode_miscellaneous_symbols_s = {
         0x2600, 0x26ff};
-    private static final int[] xml_unicode_MiscellaneousSymbolsandArrowsS = {
+    private static final int[] xml_unicode_miscellaneous_symbolsand_arrows_s = {
         0x2b00, 0x2bff};
-    private static final int[] xml_unicode_MiscellaneousTechnicalS = {
+    private static final int[] xml_unicode_miscellaneous_technical_s = {
         0x2300, 0x23ff};
-    private static final int[] xml_unicode_MongolianS = {
+    private static final int[] xml_unicode_mongolian_s = {
         0x1800, 0x18af};
-    private static final int[] xml_unicode_MusicalSymbolsL = {
+    private static final int[] xml_unicode_musical_symbols_l = {
         0x1d100, 0x1d1ff};
-    private static final int[] xml_unicode_MyanmarS = {
+    private static final int[] xml_unicode_myanmar_s = {
         0x1000, 0x109f};
-    private static final int[] xml_unicode_NumberFormsS = {
+    private static final int[] xml_unicode_number_forms_s = {
         0x2150, 0x218f};
-    private static final int[] xml_unicode_OghamS = {
+    private static final int[] xml_unicode_ogham_s = {
         0x1680, 0x169f};
-    private static final int[] xml_unicode_OldItalicL = {
+    private static final int[] xml_unicode_old_italic_l = {
         0x10300, 0x1032f};
-    private static final int[] xml_unicode_OpticalCharacterRecognitionS = {
+    private static final int[] xml_unicode_optical_character_recognition_s = {
         0x2440, 0x245f};
-    private static final int[] xml_unicode_OriyaS = {
+    private static final int[] xml_unicode_oriya_s = {
         0xb00, 0xb7f};
-    private static final int[] xml_unicode_OsmanyaL = {
+    private static final int[] xml_unicode_osmanya_l = {
         0x10480, 0x104af};
-    private static final int[] xml_unicode_PhoneticExtensionsS = {
+    private static final int[] xml_unicode_phonetic_extensions_s = {
         0x1d00, 0x1d7f};
-    private static final int[] xml_unicode_PrivateUseS = {
+    private static final int[] xml_unicode_private_use_s = {
         0xe000, 0xf8ff};
-    private static final int[] xml_unicode_PrivateUseL = {
+    private static final int[] xml_unicode_private_use_l = {
         0xf0000, 0xfffff, 0x100000, 0x10ffff};
-    private static final int[] xml_unicode_PrivateUseAreaS = {
+    private static final int[] xml_unicode_private_use_area_s = {
         0xe000, 0xf8ff};
-    private static final int[] xml_unicode_RunicS = {
+    private static final int[] xml_unicode_runic_s = {
         0x16a0, 0x16ff};
-    private static final int[] xml_unicode_ShavianL = {
+    private static final int[] xml_unicode_shavian_l = {
         0x10450, 0x1047f};
-    private static final int[] xml_unicode_SinhalaS = {
+    private static final int[] xml_unicode_sinhala_s = {
         0xd80, 0xdff};
-    private static final int[] xml_unicode_SmallFormVariantsS = {
+    private static final int[] xml_unicode_small_form_variants_s = {
         0xfe50, 0xfe6f};
-    private static final int[] xml_unicode_SpacingModifierLettersS = {
+    private static final int[] xml_unicode_spacing_modifier_letters_s = {
         0x2b0, 0x2ff};
-    private static final int[] xml_unicode_SpecialsS = {
+    private static final int[] xml_unicode_specials_s = {
         0xfff0, 0xffff};
-    private static final int[] xml_unicode_SuperscriptsandSubscriptsS = {
+    private static final int[] xml_unicode_superscriptsand_subscripts_s = {
         0x2070, 0x209f};
-    private static final int[] xml_unicode_SupplementalArrowsAS = {
+    private static final int[] xml_unicode_supplemental_arrows_as = {
         0x27f0, 0x27ff};
-    private static final int[] xml_unicode_SupplementalArrowsBS = {
+    private static final int[] xml_unicode_supplemental_arrows_bs = {
         0x2900, 0x297f};
-    private static final int[] xml_unicode_SupplementalMathematicalOperatorsS = {
+    private static final int[] xml_unicode_supplemental_mathematical_operators_s = {
         0x2a00, 0x2aff};
-    private static final int[] xml_unicode_SupplementaryPrivateUseAreaAL = {
+    private static final int[] xml_unicode_supplementary_private_use_area_al = {
         0xf0000, 0xfffff};
-    private static final int[] xml_unicode_SupplementaryPrivateUseAreaBL = {
+    private static final int[] xml_unicode_supplementary_private_use_area_bl = {
         0x100000, 0x10ffff};
-    private static final int[] xml_unicode_SyriacS = {
+    private static final int[] xml_unicode_syriac_s = {
         0x700, 0x74f};
-    private static final int[] xml_unicode_TagalogS = {
+    private static final int[] xml_unicode_tagalog_s = {
         0x1700, 0x171f};
-    private static final int[] xml_unicode_TagbanwaS = {
+    private static final int[] xml_unicode_tagbanwa_s = {
         0x1760, 0x177f};
-    private static final int[] xml_unicode_TagsL = {
+    private static final int[] xml_unicode_tags_l = {
         0xe0000, 0xe007f};
-    private static final int[] xml_unicode_TaiLeS = {
+    private static final int[] xml_unicode_tai_le_s = {
         0x1950, 0x197f};
-    private static final int[] xml_unicode_TaiXuanJingSymbolsL = {
+    private static final int[] xml_unicode_tai_xuan_jing_symbols_l = {
         0x1d300, 0x1d35f};
-    private static final int[] xml_unicode_TamilS = {
+    private static final int[] xml_unicode_tamil_s = {
         0xb80, 0xbff};
-    private static final int[] xml_unicode_TeluguS = {
+    private static final int[] xml_unicode_telugu_s = {
         0xc00, 0xc7f};
-    private static final int[] xml_unicode_ThaanaS = {
+    private static final int[] xml_unicode_thaana_s = {
         0x780, 0x7bf};
-    private static final int[] xml_unicode_ThaiS = {
+    private static final int[] xml_unicode_thai_s = {
         0xe00, 0xe7f};
-    private static final int[] xml_unicode_TibetanS = {
+    private static final int[] xml_unicode_tibetan_s = {
         0xf00, 0xfff};
-    private static final int[] xml_unicode_UgariticL = {
+    private static final int[] xml_unicode_ugaritic_l = {
         0x10380, 0x1039f};
-    private static final int[] xml_unicode_UnifiedCanadianAboriginalSyllabicsS = {
+    private static final int[] xml_unicode_unified_canadian_aboriginal_syllabics_s = {
         0x1400, 0x167f};
-    private static final int[] xml_unicode_VariationSelectorsS = {
+    private static final int[] xml_unicode_variation_selectors_s = {
         0xfe00, 0xfe0f};
-    private static final int[] xml_unicode_VariationSelectorsSupplementL = {
+    private static final int[] xml_unicode_variation_selectors_supplement_l = {
         0xe0100, 0xe01ef};
-    private static final int[] xml_unicode_YiRadicalsS = {
+    private static final int[] xml_unicode_yi_radicals_s = {
         0xa490, 0xa4cf};
-    private static final int[] xml_unicode_YiSyllablesS = {
+    private static final int[] xml_unicode_yi_syllables_s = {
         0xa000, 0xa48f};
-    private static final int[] xml_unicode_YijingHexagramSymbolsS = {
+    private static final int[] xml_unicode_yijing_hexagram_symbols_s = {
         0x4dc0, 0x4dff};
 
-    private static final RangeGroup xml_unicode_CG = new RangeGroup(18, 7, xml_unicode_CS, xml_unicode_CL);
-    private static final RangeGroup xml_unicode_CfG = new RangeGroup(11, 3, xml_unicode_CfS, xml_unicode_CfL);
-    private static final RangeGroup xml_unicode_LG = new RangeGroup(279, 50, xml_unicode_LS, xml_unicode_LL);
-    private static final RangeGroup xml_unicode_LlG = new RangeGroup(396, 28, xml_unicode_LlS, xml_unicode_LlL);
-    private static final RangeGroup xml_unicode_LmG = new RangeGroup(20, 0, xml_unicode_LmS, null);
-    private static final RangeGroup xml_unicode_LoG = new RangeGroup(211, 20, xml_unicode_LoS, xml_unicode_LoL);
-    private static final RangeGroup xml_unicode_LtG = new RangeGroup(10, 0, xml_unicode_LtS, null);
-    private static final RangeGroup xml_unicode_LuG = new RangeGroup(390, 31, xml_unicode_LuS, xml_unicode_LuL);
-    private static final RangeGroup xml_unicode_MG = new RangeGroup(113, 6, xml_unicode_MS, xml_unicode_ML);
-    private static final RangeGroup xml_unicode_McG = new RangeGroup(55, 2, xml_unicode_McS, xml_unicode_McL);
-    private static final RangeGroup xml_unicode_MnG = new RangeGroup(108, 5, xml_unicode_MnS, xml_unicode_MnL);
-    private static final RangeGroup xml_unicode_NG = new RangeGroup(42, 5, xml_unicode_NS, xml_unicode_NL);
-    private static final RangeGroup xml_unicode_NdG = new RangeGroup(21, 2, xml_unicode_NdS, xml_unicode_NdL);
-    private static final RangeGroup xml_unicode_NoG = new RangeGroup(20, 2, xml_unicode_NoS, xml_unicode_NoL);
-    private static final RangeGroup xml_unicode_PG = new RangeGroup(84, 2, xml_unicode_PS, xml_unicode_PL);
-    private static final RangeGroup xml_unicode_PdG = new RangeGroup(11, 0, xml_unicode_PdS, null);
-    private static final RangeGroup xml_unicode_PeG = new RangeGroup(63, 0, xml_unicode_PeS, null);
-    private static final RangeGroup xml_unicode_PoG = new RangeGroup(72, 2, xml_unicode_PoS, xml_unicode_PoL);
-    private static final RangeGroup xml_unicode_PsG = new RangeGroup(65, 0, xml_unicode_PsS, null);
-    private static final RangeGroup xml_unicode_SG = new RangeGroup(133, 20, xml_unicode_SS, xml_unicode_SL);
-    private static final RangeGroup xml_unicode_ScG = new RangeGroup(13, 0, xml_unicode_ScS, null);
-    private static final RangeGroup xml_unicode_SkG = new RangeGroup(22, 0, xml_unicode_SkS, null);
-    private static final RangeGroup xml_unicode_SmG = new RangeGroup(48, 10, xml_unicode_SmS, xml_unicode_SmL);
-    private static final RangeGroup xml_unicode_SoG = new RangeGroup(103, 10, xml_unicode_SoS, xml_unicode_SoL);
-    private static final RangeGroup xml_unicode_ZG = new RangeGroup(9, 0, xml_unicode_ZS, null);
+    private static final RangeGroup xml_unicode_cg = new RangeGroup(18, 7, xml_unicode_cs, xml_unicode_cl);
+    private static final RangeGroup xml_unicode_cf_g = new RangeGroup(11, 3, xml_unicode_cf_s, xml_unicode_cf_l);
+    private static final RangeGroup xml_unicode_lg = new RangeGroup(279, 50, xml_unicode_ls, xml_unicode_ll);
+    private static final RangeGroup xml_unicode_ll_g = new RangeGroup(396, 28, xml_unicode_ll_s, xml_unicode_ll_l);
+    private static final RangeGroup xml_unicode_lm_g = new RangeGroup(20, 0, xml_unicode_lm_s, null);
+    private static final RangeGroup xml_unicode_lo_g = new RangeGroup(211, 20, xml_unicode_lo_s, xml_unicode_lo_l);
+    private static final RangeGroup xml_unicode_lt_g = new RangeGroup(10, 0, xml_unicode_lt_s, null);
+    private static final RangeGroup xml_unicode_lu_g = new RangeGroup(390, 31, xml_unicode_lu_s, xml_unicode_lu_l);
+    private static final RangeGroup xml_unicode_mg = new RangeGroup(113, 6, xml_unicode_ms, xml_unicode_ml);
+    private static final RangeGroup xml_unicode_mc_g = new RangeGroup(55, 2, xml_unicode_mc_s, xml_unicode_mc_l);
+    private static final RangeGroup xml_unicode_mn_g = new RangeGroup(108, 5, xml_unicode_mn_s, xml_unicode_mn_l);
+    private static final RangeGroup xml_unicode_ng = new RangeGroup(42, 5, xml_unicode_ns, xml_unicode_nl);
+    private static final RangeGroup xml_unicode_nd_g = new RangeGroup(21, 2, xml_unicode_nd_s, xml_unicode_nd_l);
+    private static final RangeGroup xml_unicode_no_g = new RangeGroup(20, 2, xml_unicode_no_s, xml_unicode_no_l);
+    private static final RangeGroup xml_unicode_pg = new RangeGroup(84, 2, xml_unicode_ps, xml_unicode_pl);
+    private static final RangeGroup xml_unicode_pd_g = new RangeGroup(11, 0, xml_unicode_pd_s, null);
+    private static final RangeGroup xml_unicode_pe_g = new RangeGroup(63, 0, xml_unicode_pe_s, null);
+    private static final RangeGroup xml_unicode_po_g = new RangeGroup(72, 2, xml_unicode_po_s, xml_unicode_po_l);
+    private static final RangeGroup xml_unicode_ps_g = new RangeGroup(65, 0, xml_unicode_ps_s, null);
+    private static final RangeGroup xml_unicode_sg = new RangeGroup(133, 20, xml_unicode_ss, xml_unicode_sl);
+    private static final RangeGroup xml_unicode_sc_g = new RangeGroup(13, 0, xml_unicode_sc_s, null);
+    private static final RangeGroup xml_unicode_sk_g = new RangeGroup(22, 0, xml_unicode_sk_s, null);
+    private static final RangeGroup xml_unicode_sm_g = new RangeGroup(48, 10, xml_unicode_sm_s, xml_unicode_sm_l);
+    private static final RangeGroup xml_unicode_so_g = new RangeGroup(103, 10, xml_unicode_so_s, xml_unicode_so_l);
+    private static final RangeGroup xml_unicode_zg = new RangeGroup(9, 0, xml_unicode_zs, null);
 
     /**
      * Is the code point in the Unicode general category C.
@@ -1138,7 +1138,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_c
     public static int ucsIsCatC(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_CG);
+        return unicodeCharInRange(code, xml_unicode_cg);
     }
 
     /**
@@ -1160,7 +1160,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_cf
     public static int ucsIsCatCf(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_CfG);
+        return unicodeCharInRange(code, xml_unicode_cf_g);
     }
 
     /**
@@ -1182,7 +1182,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_l
     public static int ucsIsCatL(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LG);
+        return unicodeCharInRange(code, xml_unicode_lg);
     }
 
     /**
@@ -1193,7 +1193,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_ll
     public static int ucsIsCatLl(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LlG);
+        return unicodeCharInRange(code, xml_unicode_ll_g);
     }
 
     /**
@@ -1204,7 +1204,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_lm
     public static int ucsIsCatLm(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LmG);
+        return unicodeCharInRange(code, xml_unicode_lm_g);
     }
 
     /**
@@ -1215,7 +1215,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_lo
     public static int ucsIsCatLo(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LoG);
+        return unicodeCharInRange(code, xml_unicode_lo_g);
     }
 
     /**
@@ -1226,7 +1226,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_lt
     public static int ucsIsCatLt(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LtG);
+        return unicodeCharInRange(code, xml_unicode_lt_g);
     }
 
     /**
@@ -1237,7 +1237,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_lu
     public static int ucsIsCatLu(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_LuG);
+        return unicodeCharInRange(code, xml_unicode_lu_g);
     }
 
     /**
@@ -1248,7 +1248,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_m
     public static int ucsIsCatM(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_MG);
+        return unicodeCharInRange(code, xml_unicode_mg);
     }
 
     /**
@@ -1259,7 +1259,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_mc
     public static int ucsIsCatMc(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_McG);
+        return unicodeCharInRange(code, xml_unicode_mc_g);
     }
 
     /**
@@ -1281,7 +1281,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_mn
     public static int ucsIsCatMn(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_MnG);
+        return unicodeCharInRange(code, xml_unicode_mn_g);
     }
 
     /**
@@ -1292,7 +1292,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_n
     public static int ucsIsCatN(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_NG);
+        return unicodeCharInRange(code, xml_unicode_ng);
     }
 
     /**
@@ -1303,7 +1303,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_nd
     public static int ucsIsCatNd(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_NdG);
+        return unicodeCharInRange(code, xml_unicode_nd_g);
     }
 
     /**
@@ -1325,7 +1325,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_no
     public static int ucsIsCatNo(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_NoG);
+        return unicodeCharInRange(code, xml_unicode_no_g);
     }
 
     /**
@@ -1336,7 +1336,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_p
     public static int ucsIsCatP(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_PG);
+        return unicodeCharInRange(code, xml_unicode_pg);
     }
 
     /**
@@ -1358,7 +1358,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_pd
     public static int ucsIsCatPd(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_PdG);
+        return unicodeCharInRange(code, xml_unicode_pd_g);
     }
 
     /**
@@ -1369,7 +1369,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_pe
     public static int ucsIsCatPe(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_PeG);
+        return unicodeCharInRange(code, xml_unicode_pe_g);
     }
 
     /**
@@ -1402,7 +1402,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_po
     public static int ucsIsCatPo(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_PoG);
+        return unicodeCharInRange(code, xml_unicode_po_g);
     }
 
     /**
@@ -1413,7 +1413,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_ps
     public static int ucsIsCatPs(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_PsG);
+        return unicodeCharInRange(code, xml_unicode_ps_g);
     }
 
     /**
@@ -1424,7 +1424,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_s
     public static int ucsIsCatS(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_SG);
+        return unicodeCharInRange(code, xml_unicode_sg);
     }
 
     /**
@@ -1435,7 +1435,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_sc
     public static int ucsIsCatSc(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_ScG);
+        return unicodeCharInRange(code, xml_unicode_sc_g);
     }
 
     /**
@@ -1446,7 +1446,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_sk
     public static int ucsIsCatSk(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_SkG);
+        return unicodeCharInRange(code, xml_unicode_sk_g);
     }
 
     /**
@@ -1457,7 +1457,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_sm
     public static int ucsIsCatSm(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_SmG);
+        return unicodeCharInRange(code, xml_unicode_sm_g);
     }
 
     /**
@@ -1468,7 +1468,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_so
     public static int ucsIsCatSo(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_SoG);
+        return unicodeCharInRange(code, xml_unicode_so_g);
     }
 
     /**
@@ -1479,7 +1479,7 @@ public final class XmlUnicode
     // xml_ucs_is_cat_z
     public static int ucsIsCatZ(int code)
     {
-        return unicodeCharInRange(code, xml_unicode_ZG);
+        return unicodeCharInRange(code, xml_unicode_zg);
     }
 
     /**
@@ -1516,134 +1516,134 @@ public final class XmlUnicode
     }
 
     private static final UnicodeRange[] xml_unicode_blocks = {
-        new UnicodeRange("AegeanNumbers", new RangeGroup(0, 1, null, xml_unicode_AegeanNumbersL)),
-        new UnicodeRange("AlphabeticPresentationForms", new RangeGroup(1, 0, xml_unicode_AlphabeticPresentationFormsS, null)),
-        new UnicodeRange("Arabic", new RangeGroup(1, 0, xml_unicode_ArabicS, null)),
-        new UnicodeRange("ArabicPresentationForms-A", new RangeGroup(1, 0, xml_unicode_ArabicPresentationFormsAS, null)),
-        new UnicodeRange("ArabicPresentationForms-B", new RangeGroup(1, 0, xml_unicode_ArabicPresentationFormsBS, null)),
-        new UnicodeRange("Armenian", new RangeGroup(1, 0, xml_unicode_ArmenianS, null)),
-        new UnicodeRange("Arrows", new RangeGroup(1, 0, xml_unicode_ArrowsS, null)),
-        new UnicodeRange("BasicLatin", new RangeGroup(1, 0, xml_unicode_BasicLatinS, null)),
-        new UnicodeRange("Bengali", new RangeGroup(1, 0, xml_unicode_BengaliS, null)),
-        new UnicodeRange("BlockElements", new RangeGroup(1, 0, xml_unicode_BlockElementsS, null)),
-        new UnicodeRange("Bopomofo", new RangeGroup(1, 0, xml_unicode_BopomofoS, null)),
-        new UnicodeRange("BopomofoExtended", new RangeGroup(1, 0, xml_unicode_BopomofoExtendedS, null)),
-        new UnicodeRange("BoxDrawing", new RangeGroup(1, 0, xml_unicode_BoxDrawingS, null)),
-        new UnicodeRange("BraillePatterns", new RangeGroup(1, 0, xml_unicode_BraillePatternsS, null)),
-        new UnicodeRange("Buhid", new RangeGroup(1, 0, xml_unicode_BuhidS, null)),
-        new UnicodeRange("ByzantineMusicalSymbols", new RangeGroup(0, 1, null, xml_unicode_ByzantineMusicalSymbolsL)),
-        new UnicodeRange("CJKCompatibility", new RangeGroup(1, 0, xml_unicode_CJKCompatibilityS, null)),
-        new UnicodeRange("CJKCompatibilityForms", new RangeGroup(1, 0, xml_unicode_CJKCompatibilityFormsS, null)),
-        new UnicodeRange("CJKCompatibilityIdeographs", new RangeGroup(1, 0, xml_unicode_CJKCompatibilityIdeographsS, null)),
-        new UnicodeRange("CJKCompatibilityIdeographsSupplement", new RangeGroup(0, 1, null, xml_unicode_CJKCompatibilityIdeographsSupplementL)),
-        new UnicodeRange("CJKRadicalsSupplement", new RangeGroup(1, 0, xml_unicode_CJKRadicalsSupplementS, null)),
-        new UnicodeRange("CJKSymbolsandPunctuation", new RangeGroup(1, 0, xml_unicode_CJKSymbolsandPunctuationS, null)),
-        new UnicodeRange("CJKUnifiedIdeographs", new RangeGroup(1, 0, xml_unicode_CJKUnifiedIdeographsS, null)),
-        new UnicodeRange("CJKUnifiedIdeographsExtensionA", new RangeGroup(1, 0, xml_unicode_CJKUnifiedIdeographsExtensionAS, null)),
-        new UnicodeRange("CJKUnifiedIdeographsExtensionB", new RangeGroup(0, 1, null, xml_unicode_CJKUnifiedIdeographsExtensionBL)),
-        new UnicodeRange("Cherokee", new RangeGroup(1, 0, xml_unicode_CherokeeS, null)),
-        new UnicodeRange("CombiningDiacriticalMarks", new RangeGroup(1, 0, xml_unicode_CombiningDiacriticalMarksS, null)),
-        new UnicodeRange("CombiningDiacriticalMarksforSymbols", new RangeGroup(1, 0, xml_unicode_CombiningDiacriticalMarksforSymbolsS, null)),
-        new UnicodeRange("CombiningHalfMarks", new RangeGroup(1, 0, xml_unicode_CombiningHalfMarksS, null)),
-        new UnicodeRange("CombiningMarksforSymbols", new RangeGroup(1, 0, xml_unicode_CombiningMarksforSymbolsS, null)),
-        new UnicodeRange("ControlPictures", new RangeGroup(1, 0, xml_unicode_ControlPicturesS, null)),
-        new UnicodeRange("CurrencySymbols", new RangeGroup(1, 0, xml_unicode_CurrencySymbolsS, null)),
-        new UnicodeRange("CypriotSyllabary", new RangeGroup(0, 1, null, xml_unicode_CypriotSyllabaryL)),
-        new UnicodeRange("Cyrillic", new RangeGroup(1, 0, xml_unicode_CyrillicS, null)),
-        new UnicodeRange("CyrillicSupplement", new RangeGroup(1, 0, xml_unicode_CyrillicSupplementS, null)),
-        new UnicodeRange("Deseret", new RangeGroup(0, 1, null, xml_unicode_DeseretL)),
-        new UnicodeRange("Devanagari", new RangeGroup(1, 0, xml_unicode_DevanagariS, null)),
-        new UnicodeRange("Dingbats", new RangeGroup(1, 0, xml_unicode_DingbatsS, null)),
-        new UnicodeRange("EnclosedAlphanumerics", new RangeGroup(1, 0, xml_unicode_EnclosedAlphanumericsS, null)),
-        new UnicodeRange("EnclosedCJKLettersandMonths", new RangeGroup(1, 0, xml_unicode_EnclosedCJKLettersandMonthsS, null)),
-        new UnicodeRange("Ethiopic", new RangeGroup(1, 0, xml_unicode_EthiopicS, null)),
-        new UnicodeRange("GeneralPunctuation", new RangeGroup(1, 0, xml_unicode_GeneralPunctuationS, null)),
-        new UnicodeRange("GeometricShapes", new RangeGroup(1, 0, xml_unicode_GeometricShapesS, null)),
-        new UnicodeRange("Georgian", new RangeGroup(1, 0, xml_unicode_GeorgianS, null)),
-        new UnicodeRange("Gothic", new RangeGroup(0, 1, null, xml_unicode_GothicL)),
-        new UnicodeRange("Greek", new RangeGroup(1, 0, xml_unicode_GreekS, null)),
-        new UnicodeRange("GreekExtended", new RangeGroup(1, 0, xml_unicode_GreekExtendedS, null)),
-        new UnicodeRange("GreekandCoptic", new RangeGroup(1, 0, xml_unicode_GreekandCopticS, null)),
-        new UnicodeRange("Gujarati", new RangeGroup(1, 0, xml_unicode_GujaratiS, null)),
-        new UnicodeRange("Gurmukhi", new RangeGroup(1, 0, xml_unicode_GurmukhiS, null)),
-        new UnicodeRange("HalfwidthandFullwidthForms", new RangeGroup(1, 0, xml_unicode_HalfwidthandFullwidthFormsS, null)),
-        new UnicodeRange("HangulCompatibilityJamo", new RangeGroup(1, 0, xml_unicode_HangulCompatibilityJamoS, null)),
-        new UnicodeRange("HangulJamo", new RangeGroup(1, 0, xml_unicode_HangulJamoS, null)),
-        new UnicodeRange("HangulSyllables", new RangeGroup(1, 0, xml_unicode_HangulSyllablesS, null)),
-        new UnicodeRange("Hanunoo", new RangeGroup(1, 0, xml_unicode_HanunooS, null)),
-        new UnicodeRange("Hebrew", new RangeGroup(1, 0, xml_unicode_HebrewS, null)),
-        new UnicodeRange("HighPrivateUseSurrogates", new RangeGroup(1, 0, xml_unicode_HighPrivateUseSurrogatesS, null)),
-        new UnicodeRange("HighSurrogates", new RangeGroup(1, 0, xml_unicode_HighSurrogatesS, null)),
-        new UnicodeRange("Hiragana", new RangeGroup(1, 0, xml_unicode_HiraganaS, null)),
-        new UnicodeRange("IPAExtensions", new RangeGroup(1, 0, xml_unicode_IPAExtensionsS, null)),
-        new UnicodeRange("IdeographicDescriptionCharacters", new RangeGroup(1, 0, xml_unicode_IdeographicDescriptionCharactersS, null)),
-        new UnicodeRange("Kanbun", new RangeGroup(1, 0, xml_unicode_KanbunS, null)),
-        new UnicodeRange("KangxiRadicals", new RangeGroup(1, 0, xml_unicode_KangxiRadicalsS, null)),
-        new UnicodeRange("Kannada", new RangeGroup(1, 0, xml_unicode_KannadaS, null)),
-        new UnicodeRange("Katakana", new RangeGroup(1, 0, xml_unicode_KatakanaS, null)),
-        new UnicodeRange("KatakanaPhoneticExtensions", new RangeGroup(1, 0, xml_unicode_KatakanaPhoneticExtensionsS, null)),
-        new UnicodeRange("Khmer", new RangeGroup(1, 0, xml_unicode_KhmerS, null)),
-        new UnicodeRange("KhmerSymbols", new RangeGroup(1, 0, xml_unicode_KhmerSymbolsS, null)),
-        new UnicodeRange("Lao", new RangeGroup(1, 0, xml_unicode_LaoS, null)),
-        new UnicodeRange("Latin-1Supplement", new RangeGroup(1, 0, xml_unicode_Latin1SupplementS, null)),
-        new UnicodeRange("LatinExtended-A", new RangeGroup(1, 0, xml_unicode_LatinExtendedAS, null)),
-        new UnicodeRange("LatinExtended-B", new RangeGroup(1, 0, xml_unicode_LatinExtendedBS, null)),
-        new UnicodeRange("LatinExtendedAdditional", new RangeGroup(1, 0, xml_unicode_LatinExtendedAdditionalS, null)),
-        new UnicodeRange("LetterlikeSymbols", new RangeGroup(1, 0, xml_unicode_LetterlikeSymbolsS, null)),
-        new UnicodeRange("Limbu", new RangeGroup(1, 0, xml_unicode_LimbuS, null)),
-        new UnicodeRange("LinearBIdeograms", new RangeGroup(0, 1, null, xml_unicode_LinearBIdeogramsL)),
-        new UnicodeRange("LinearBSyllabary", new RangeGroup(0, 1, null, xml_unicode_LinearBSyllabaryL)),
-        new UnicodeRange("LowSurrogates", new RangeGroup(1, 0, xml_unicode_LowSurrogatesS, null)),
-        new UnicodeRange("Malayalam", new RangeGroup(1, 0, xml_unicode_MalayalamS, null)),
-        new UnicodeRange("MathematicalAlphanumericSymbols", new RangeGroup(0, 1, null, xml_unicode_MathematicalAlphanumericSymbolsL)),
-        new UnicodeRange("MathematicalOperators", new RangeGroup(1, 0, xml_unicode_MathematicalOperatorsS, null)),
-        new UnicodeRange("MiscellaneousMathematicalSymbols-A", new RangeGroup(1, 0, xml_unicode_MiscellaneousMathematicalSymbolsAS, null)),
-        new UnicodeRange("MiscellaneousMathematicalSymbols-B", new RangeGroup(1, 0, xml_unicode_MiscellaneousMathematicalSymbolsBS, null)),
-        new UnicodeRange("MiscellaneousSymbols", new RangeGroup(1, 0, xml_unicode_MiscellaneousSymbolsS, null)),
-        new UnicodeRange("MiscellaneousSymbolsandArrows", new RangeGroup(1, 0, xml_unicode_MiscellaneousSymbolsandArrowsS, null)),
-        new UnicodeRange("MiscellaneousTechnical", new RangeGroup(1, 0, xml_unicode_MiscellaneousTechnicalS, null)),
-        new UnicodeRange("Mongolian", new RangeGroup(1, 0, xml_unicode_MongolianS, null)),
-        new UnicodeRange("MusicalSymbols", new RangeGroup(0, 1, null, xml_unicode_MusicalSymbolsL)),
-        new UnicodeRange("Myanmar", new RangeGroup(1, 0, xml_unicode_MyanmarS, null)),
-        new UnicodeRange("NumberForms", new RangeGroup(1, 0, xml_unicode_NumberFormsS, null)),
-        new UnicodeRange("Ogham", new RangeGroup(1, 0, xml_unicode_OghamS, null)),
-        new UnicodeRange("OldItalic", new RangeGroup(0, 1, null, xml_unicode_OldItalicL)),
-        new UnicodeRange("OpticalCharacterRecognition", new RangeGroup(1, 0, xml_unicode_OpticalCharacterRecognitionS, null)),
-        new UnicodeRange("Oriya", new RangeGroup(1, 0, xml_unicode_OriyaS, null)),
-        new UnicodeRange("Osmanya", new RangeGroup(0, 1, null, xml_unicode_OsmanyaL)),
-        new UnicodeRange("PhoneticExtensions", new RangeGroup(1, 0, xml_unicode_PhoneticExtensionsS, null)),
-        new UnicodeRange("PrivateUse", new RangeGroup(1, 2, xml_unicode_PrivateUseS, xml_unicode_PrivateUseL)),
-        new UnicodeRange("PrivateUseArea", new RangeGroup(1, 0, xml_unicode_PrivateUseAreaS, null)),
-        new UnicodeRange("Runic", new RangeGroup(1, 0, xml_unicode_RunicS, null)),
-        new UnicodeRange("Shavian", new RangeGroup(0, 1, null, xml_unicode_ShavianL)),
-        new UnicodeRange("Sinhala", new RangeGroup(1, 0, xml_unicode_SinhalaS, null)),
-        new UnicodeRange("SmallFormVariants", new RangeGroup(1, 0, xml_unicode_SmallFormVariantsS, null)),
-        new UnicodeRange("SpacingModifierLetters", new RangeGroup(1, 0, xml_unicode_SpacingModifierLettersS, null)),
-        new UnicodeRange("Specials", new RangeGroup(1, 0, xml_unicode_SpecialsS, null)),
-        new UnicodeRange("SuperscriptsandSubscripts", new RangeGroup(1, 0, xml_unicode_SuperscriptsandSubscriptsS, null)),
-        new UnicodeRange("SupplementalArrows-A", new RangeGroup(1, 0, xml_unicode_SupplementalArrowsAS, null)),
-        new UnicodeRange("SupplementalArrows-B", new RangeGroup(1, 0, xml_unicode_SupplementalArrowsBS, null)),
-        new UnicodeRange("SupplementalMathematicalOperators", new RangeGroup(1, 0, xml_unicode_SupplementalMathematicalOperatorsS, null)),
-        new UnicodeRange("SupplementaryPrivateUseArea-A", new RangeGroup(0, 1, null, xml_unicode_SupplementaryPrivateUseAreaAL)),
-        new UnicodeRange("SupplementaryPrivateUseArea-B", new RangeGroup(0, 1, null, xml_unicode_SupplementaryPrivateUseAreaBL)),
-        new UnicodeRange("Syriac", new RangeGroup(1, 0, xml_unicode_SyriacS, null)),
-        new UnicodeRange("Tagalog", new RangeGroup(1, 0, xml_unicode_TagalogS, null)),
-        new UnicodeRange("Tagbanwa", new RangeGroup(1, 0, xml_unicode_TagbanwaS, null)),
-        new UnicodeRange("Tags", new RangeGroup(0, 1, null, xml_unicode_TagsL)),
-        new UnicodeRange("TaiLe", new RangeGroup(1, 0, xml_unicode_TaiLeS, null)),
-        new UnicodeRange("TaiXuanJingSymbols", new RangeGroup(0, 1, null, xml_unicode_TaiXuanJingSymbolsL)),
-        new UnicodeRange("Tamil", new RangeGroup(1, 0, xml_unicode_TamilS, null)),
-        new UnicodeRange("Telugu", new RangeGroup(1, 0, xml_unicode_TeluguS, null)),
-        new UnicodeRange("Thaana", new RangeGroup(1, 0, xml_unicode_ThaanaS, null)),
-        new UnicodeRange("Thai", new RangeGroup(1, 0, xml_unicode_ThaiS, null)),
-        new UnicodeRange("Tibetan", new RangeGroup(1, 0, xml_unicode_TibetanS, null)),
-        new UnicodeRange("Ugaritic", new RangeGroup(0, 1, null, xml_unicode_UgariticL)),
-        new UnicodeRange("UnifiedCanadianAboriginalSyllabics", new RangeGroup(1, 0, xml_unicode_UnifiedCanadianAboriginalSyllabicsS, null)),
-        new UnicodeRange("VariationSelectors", new RangeGroup(1, 0, xml_unicode_VariationSelectorsS, null)),
-        new UnicodeRange("VariationSelectorsSupplement", new RangeGroup(0, 1, null, xml_unicode_VariationSelectorsSupplementL)),
-        new UnicodeRange("YiRadicals", new RangeGroup(1, 0, xml_unicode_YiRadicalsS, null)),
-        new UnicodeRange("YiSyllables", new RangeGroup(1, 0, xml_unicode_YiSyllablesS, null)),
-        new UnicodeRange("YijingHexagramSymbols", new RangeGroup(1, 0, xml_unicode_YijingHexagramSymbolsS, null))
+        new UnicodeRange("AegeanNumbers", new RangeGroup(0, 1, null, xml_unicode_aegean_numbers_l)),
+        new UnicodeRange("AlphabeticPresentationForms", new RangeGroup(1, 0, xml_unicode_alphabetic_presentation_forms_s, null)),
+        new UnicodeRange("Arabic", new RangeGroup(1, 0, xml_unicode_arabic_s, null)),
+        new UnicodeRange("ArabicPresentationForms-A", new RangeGroup(1, 0, xml_unicode_arabic_presentation_forms_as, null)),
+        new UnicodeRange("ArabicPresentationForms-B", new RangeGroup(1, 0, xml_unicode_arabic_presentation_forms_bs, null)),
+        new UnicodeRange("Armenian", new RangeGroup(1, 0, xml_unicode_armenian_s, null)),
+        new UnicodeRange("Arrows", new RangeGroup(1, 0, xml_unicode_arrows_s, null)),
+        new UnicodeRange("BasicLatin", new RangeGroup(1, 0, xml_unicode_basic_latin_s, null)),
+        new UnicodeRange("Bengali", new RangeGroup(1, 0, xml_unicode_bengali_s, null)),
+        new UnicodeRange("BlockElements", new RangeGroup(1, 0, xml_unicode_block_elements_s, null)),
+        new UnicodeRange("Bopomofo", new RangeGroup(1, 0, xml_unicode_bopomofo_s, null)),
+        new UnicodeRange("BopomofoExtended", new RangeGroup(1, 0, xml_unicode_bopomofo_extended_s, null)),
+        new UnicodeRange("BoxDrawing", new RangeGroup(1, 0, xml_unicode_box_drawing_s, null)),
+        new UnicodeRange("BraillePatterns", new RangeGroup(1, 0, xml_unicode_braille_patterns_s, null)),
+        new UnicodeRange("Buhid", new RangeGroup(1, 0, xml_unicode_buhid_s, null)),
+        new UnicodeRange("ByzantineMusicalSymbols", new RangeGroup(0, 1, null, xml_unicode_byzantine_musical_symbols_l)),
+        new UnicodeRange("CJKCompatibility", new RangeGroup(1, 0, xml_unicode_cjk_compatibility_s, null)),
+        new UnicodeRange("CJKCompatibilityForms", new RangeGroup(1, 0, xml_unicode_cjk_compatibility_forms_s, null)),
+        new UnicodeRange("CJKCompatibilityIdeographs", new RangeGroup(1, 0, xml_unicode_cjk_compatibility_ideographs_s, null)),
+        new UnicodeRange("CJKCompatibilityIdeographsSupplement", new RangeGroup(0, 1, null, xml_unicode_cjk_compatibility_ideographs_supplement_l)),
+        new UnicodeRange("CJKRadicalsSupplement", new RangeGroup(1, 0, xml_unicode_cjk_radicals_supplement_s, null)),
+        new UnicodeRange("CJKSymbolsandPunctuation", new RangeGroup(1, 0, xml_unicode_cjk_symbolsand_punctuation_s, null)),
+        new UnicodeRange("CJKUnifiedIdeographs", new RangeGroup(1, 0, xml_unicode_cjk_unified_ideographs_s, null)),
+        new UnicodeRange("CJKUnifiedIdeographsExtensionA", new RangeGroup(1, 0, xml_unicode_cjk_unified_ideographs_extension_as, null)),
+        new UnicodeRange("CJKUnifiedIdeographsExtensionB", new RangeGroup(0, 1, null, xml_unicode_cjk_unified_ideographs_extension_bl)),
+        new UnicodeRange("Cherokee", new RangeGroup(1, 0, xml_unicode_cherokee_s, null)),
+        new UnicodeRange("CombiningDiacriticalMarks", new RangeGroup(1, 0, xml_unicode_combining_diacritical_marks_s, null)),
+        new UnicodeRange("CombiningDiacriticalMarksforSymbols", new RangeGroup(1, 0, xml_unicode_combining_diacritical_marksfor_symbols_s, null)),
+        new UnicodeRange("CombiningHalfMarks", new RangeGroup(1, 0, xml_unicode_combining_half_marks_s, null)),
+        new UnicodeRange("CombiningMarksforSymbols", new RangeGroup(1, 0, xml_unicode_combining_marksfor_symbols_s, null)),
+        new UnicodeRange("ControlPictures", new RangeGroup(1, 0, xml_unicode_control_pictures_s, null)),
+        new UnicodeRange("CurrencySymbols", new RangeGroup(1, 0, xml_unicode_currency_symbols_s, null)),
+        new UnicodeRange("CypriotSyllabary", new RangeGroup(0, 1, null, xml_unicode_cypriot_syllabary_l)),
+        new UnicodeRange("Cyrillic", new RangeGroup(1, 0, xml_unicode_cyrillic_s, null)),
+        new UnicodeRange("CyrillicSupplement", new RangeGroup(1, 0, xml_unicode_cyrillic_supplement_s, null)),
+        new UnicodeRange("Deseret", new RangeGroup(0, 1, null, xml_unicode_deseret_l)),
+        new UnicodeRange("Devanagari", new RangeGroup(1, 0, xml_unicode_devanagari_s, null)),
+        new UnicodeRange("Dingbats", new RangeGroup(1, 0, xml_unicode_dingbats_s, null)),
+        new UnicodeRange("EnclosedAlphanumerics", new RangeGroup(1, 0, xml_unicode_enclosed_alphanumerics_s, null)),
+        new UnicodeRange("EnclosedCJKLettersandMonths", new RangeGroup(1, 0, xml_unicode_enclosed_cjk_lettersand_months_s, null)),
+        new UnicodeRange("Ethiopic", new RangeGroup(1, 0, xml_unicode_ethiopic_s, null)),
+        new UnicodeRange("GeneralPunctuation", new RangeGroup(1, 0, xml_unicode_general_punctuation_s, null)),
+        new UnicodeRange("GeometricShapes", new RangeGroup(1, 0, xml_unicode_geometric_shapes_s, null)),
+        new UnicodeRange("Georgian", new RangeGroup(1, 0, xml_unicode_georgian_s, null)),
+        new UnicodeRange("Gothic", new RangeGroup(0, 1, null, xml_unicode_gothic_l)),
+        new UnicodeRange("Greek", new RangeGroup(1, 0, xml_unicode_greek_s, null)),
+        new UnicodeRange("GreekExtended", new RangeGroup(1, 0, xml_unicode_greek_extended_s, null)),
+        new UnicodeRange("GreekandCoptic", new RangeGroup(1, 0, xml_unicode_greekand_coptic_s, null)),
+        new UnicodeRange("Gujarati", new RangeGroup(1, 0, xml_unicode_gujarati_s, null)),
+        new UnicodeRange("Gurmukhi", new RangeGroup(1, 0, xml_unicode_gurmukhi_s, null)),
+        new UnicodeRange("HalfwidthandFullwidthForms", new RangeGroup(1, 0, xml_unicode_halfwidthand_fullwidth_forms_s, null)),
+        new UnicodeRange("HangulCompatibilityJamo", new RangeGroup(1, 0, xml_unicode_hangul_compatibility_jamo_s, null)),
+        new UnicodeRange("HangulJamo", new RangeGroup(1, 0, xml_unicode_hangul_jamo_s, null)),
+        new UnicodeRange("HangulSyllables", new RangeGroup(1, 0, xml_unicode_hangul_syllables_s, null)),
+        new UnicodeRange("Hanunoo", new RangeGroup(1, 0, xml_unicode_hanunoo_s, null)),
+        new UnicodeRange("Hebrew", new RangeGroup(1, 0, xml_unicode_hebrew_s, null)),
+        new UnicodeRange("HighPrivateUseSurrogates", new RangeGroup(1, 0, xml_unicode_high_private_use_surrogates_s, null)),
+        new UnicodeRange("HighSurrogates", new RangeGroup(1, 0, xml_unicode_high_surrogates_s, null)),
+        new UnicodeRange("Hiragana", new RangeGroup(1, 0, xml_unicode_hiragana_s, null)),
+        new UnicodeRange("IPAExtensions", new RangeGroup(1, 0, xml_unicode_ipa_extensions_s, null)),
+        new UnicodeRange("IdeographicDescriptionCharacters", new RangeGroup(1, 0, xml_unicode_ideographic_description_characters_s, null)),
+        new UnicodeRange("Kanbun", new RangeGroup(1, 0, xml_unicode_kanbun_s, null)),
+        new UnicodeRange("KangxiRadicals", new RangeGroup(1, 0, xml_unicode_kangxi_radicals_s, null)),
+        new UnicodeRange("Kannada", new RangeGroup(1, 0, xml_unicode_kannada_s, null)),
+        new UnicodeRange("Katakana", new RangeGroup(1, 0, xml_unicode_katakana_s, null)),
+        new UnicodeRange("KatakanaPhoneticExtensions", new RangeGroup(1, 0, xml_unicode_katakana_phonetic_extensions_s, null)),
+        new UnicodeRange("Khmer", new RangeGroup(1, 0, xml_unicode_khmer_s, null)),
+        new UnicodeRange("KhmerSymbols", new RangeGroup(1, 0, xml_unicode_khmer_symbols_s, null)),
+        new UnicodeRange("Lao", new RangeGroup(1, 0, xml_unicode_lao_s, null)),
+        new UnicodeRange("Latin-1Supplement", new RangeGroup(1, 0, xml_unicode_latin1_supplement_s, null)),
+        new UnicodeRange("LatinExtended-A", new RangeGroup(1, 0, xml_unicode_latin_extended_as, null)),
+        new UnicodeRange("LatinExtended-B", new RangeGroup(1, 0, xml_unicode_latin_extended_bs, null)),
+        new UnicodeRange("LatinExtendedAdditional", new RangeGroup(1, 0, xml_unicode_latin_extended_additional_s, null)),
+        new UnicodeRange("LetterlikeSymbols", new RangeGroup(1, 0, xml_unicode_letterlike_symbols_s, null)),
+        new UnicodeRange("Limbu", new RangeGroup(1, 0, xml_unicode_limbu_s, null)),
+        new UnicodeRange("LinearBIdeograms", new RangeGroup(0, 1, null, xml_unicode_linear_b_ideograms_l)),
+        new UnicodeRange("LinearBSyllabary", new RangeGroup(0, 1, null, xml_unicode_linear_b_syllabary_l)),
+        new UnicodeRange("LowSurrogates", new RangeGroup(1, 0, xml_unicode_low_surrogates_s, null)),
+        new UnicodeRange("Malayalam", new RangeGroup(1, 0, xml_unicode_malayalam_s, null)),
+        new UnicodeRange("MathematicalAlphanumericSymbols", new RangeGroup(0, 1, null, xml_unicode_mathematical_alphanumeric_symbols_l)),
+        new UnicodeRange("MathematicalOperators", new RangeGroup(1, 0, xml_unicode_mathematical_operators_s, null)),
+        new UnicodeRange("MiscellaneousMathematicalSymbols-A", new RangeGroup(1, 0, xml_unicode_miscellaneous_mathematical_symbols_as, null)),
+        new UnicodeRange("MiscellaneousMathematicalSymbols-B", new RangeGroup(1, 0, xml_unicode_miscellaneous_mathematical_symbols_bs, null)),
+        new UnicodeRange("MiscellaneousSymbols", new RangeGroup(1, 0, xml_unicode_miscellaneous_symbols_s, null)),
+        new UnicodeRange("MiscellaneousSymbolsandArrows", new RangeGroup(1, 0, xml_unicode_miscellaneous_symbolsand_arrows_s, null)),
+        new UnicodeRange("MiscellaneousTechnical", new RangeGroup(1, 0, xml_unicode_miscellaneous_technical_s, null)),
+        new UnicodeRange("Mongolian", new RangeGroup(1, 0, xml_unicode_mongolian_s, null)),
+        new UnicodeRange("MusicalSymbols", new RangeGroup(0, 1, null, xml_unicode_musical_symbols_l)),
+        new UnicodeRange("Myanmar", new RangeGroup(1, 0, xml_unicode_myanmar_s, null)),
+        new UnicodeRange("NumberForms", new RangeGroup(1, 0, xml_unicode_number_forms_s, null)),
+        new UnicodeRange("Ogham", new RangeGroup(1, 0, xml_unicode_ogham_s, null)),
+        new UnicodeRange("OldItalic", new RangeGroup(0, 1, null, xml_unicode_old_italic_l)),
+        new UnicodeRange("OpticalCharacterRecognition", new RangeGroup(1, 0, xml_unicode_optical_character_recognition_s, null)),
+        new UnicodeRange("Oriya", new RangeGroup(1, 0, xml_unicode_oriya_s, null)),
+        new UnicodeRange("Osmanya", new RangeGroup(0, 1, null, xml_unicode_osmanya_l)),
+        new UnicodeRange("PhoneticExtensions", new RangeGroup(1, 0, xml_unicode_phonetic_extensions_s, null)),
+        new UnicodeRange("PrivateUse", new RangeGroup(1, 2, xml_unicode_private_use_s, xml_unicode_private_use_l)),
+        new UnicodeRange("PrivateUseArea", new RangeGroup(1, 0, xml_unicode_private_use_area_s, null)),
+        new UnicodeRange("Runic", new RangeGroup(1, 0, xml_unicode_runic_s, null)),
+        new UnicodeRange("Shavian", new RangeGroup(0, 1, null, xml_unicode_shavian_l)),
+        new UnicodeRange("Sinhala", new RangeGroup(1, 0, xml_unicode_sinhala_s, null)),
+        new UnicodeRange("SmallFormVariants", new RangeGroup(1, 0, xml_unicode_small_form_variants_s, null)),
+        new UnicodeRange("SpacingModifierLetters", new RangeGroup(1, 0, xml_unicode_spacing_modifier_letters_s, null)),
+        new UnicodeRange("Specials", new RangeGroup(1, 0, xml_unicode_specials_s, null)),
+        new UnicodeRange("SuperscriptsandSubscripts", new RangeGroup(1, 0, xml_unicode_superscriptsand_subscripts_s, null)),
+        new UnicodeRange("SupplementalArrows-A", new RangeGroup(1, 0, xml_unicode_supplemental_arrows_as, null)),
+        new UnicodeRange("SupplementalArrows-B", new RangeGroup(1, 0, xml_unicode_supplemental_arrows_bs, null)),
+        new UnicodeRange("SupplementalMathematicalOperators", new RangeGroup(1, 0, xml_unicode_supplemental_mathematical_operators_s, null)),
+        new UnicodeRange("SupplementaryPrivateUseArea-A", new RangeGroup(0, 1, null, xml_unicode_supplementary_private_use_area_al)),
+        new UnicodeRange("SupplementaryPrivateUseArea-B", new RangeGroup(0, 1, null, xml_unicode_supplementary_private_use_area_bl)),
+        new UnicodeRange("Syriac", new RangeGroup(1, 0, xml_unicode_syriac_s, null)),
+        new UnicodeRange("Tagalog", new RangeGroup(1, 0, xml_unicode_tagalog_s, null)),
+        new UnicodeRange("Tagbanwa", new RangeGroup(1, 0, xml_unicode_tagbanwa_s, null)),
+        new UnicodeRange("Tags", new RangeGroup(0, 1, null, xml_unicode_tags_l)),
+        new UnicodeRange("TaiLe", new RangeGroup(1, 0, xml_unicode_tai_le_s, null)),
+        new UnicodeRange("TaiXuanJingSymbols", new RangeGroup(0, 1, null, xml_unicode_tai_xuan_jing_symbols_l)),
+        new UnicodeRange("Tamil", new RangeGroup(1, 0, xml_unicode_tamil_s, null)),
+        new UnicodeRange("Telugu", new RangeGroup(1, 0, xml_unicode_telugu_s, null)),
+        new UnicodeRange("Thaana", new RangeGroup(1, 0, xml_unicode_thaana_s, null)),
+        new UnicodeRange("Thai", new RangeGroup(1, 0, xml_unicode_thai_s, null)),
+        new UnicodeRange("Tibetan", new RangeGroup(1, 0, xml_unicode_tibetan_s, null)),
+        new UnicodeRange("Ugaritic", new RangeGroup(0, 1, null, xml_unicode_ugaritic_l)),
+        new UnicodeRange("UnifiedCanadianAboriginalSyllabics", new RangeGroup(1, 0, xml_unicode_unified_canadian_aboriginal_syllabics_s, null)),
+        new UnicodeRange("VariationSelectors", new RangeGroup(1, 0, xml_unicode_variation_selectors_s, null)),
+        new UnicodeRange("VariationSelectorsSupplement", new RangeGroup(0, 1, null, xml_unicode_variation_selectors_supplement_l)),
+        new UnicodeRange("YiRadicals", new RangeGroup(1, 0, xml_unicode_yi_radicals_s, null)),
+        new UnicodeRange("YiSyllables", new RangeGroup(1, 0, xml_unicode_yi_syllables_s, null)),
+        new UnicodeRange("YijingHexagramSymbols", new RangeGroup(1, 0, xml_unicode_yijing_hexagram_symbols_s, null))
     };
 
     /*

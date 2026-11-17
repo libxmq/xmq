@@ -56,12 +56,12 @@ public final class Xsd10QNameRef extends Xsd10BasicItem
 {
     /** The resolved referenced item. */
     Xsd10BasicItem item;
-    /** C {@code XmlXsd10TypeType itemType}. */
-    int itemType;
+    /** C {@code XmlXsd10TypeType item_type}. */
+    int item_type;
     /** C {@code const char * name}. */
     String name;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** C {@code XMQNode * node}. */
     XmlNode node;
 }

@@ -60,14 +60,14 @@ public final class Xsd10IDCStateObj
     int depth;
     /** list of (depth, state-id) tuples */
     int[] history;
-    /** C {@code int nbHistory}. */
-    int nbHistory;
-    /** C {@code int sizeHistory}. */
-    int sizeHistory;
+    /** C {@code int nb_history}. */
+    int nb_history;
+    /** C {@code int size_history}. */
+    int size_history;
     /** C {@code XmlXsd10IDCMatcher * matcher}. */
     Xsd10IDCMatcher matcher;
     /** C {@code XmlXsd10IDCSelect * sel}. */
     Xsd10IDCSelect sel;
     /** an XmlStreamCtxt */
-    Object xpathCtxt;
+    Object xpath_ctxt;
 }

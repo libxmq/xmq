@@ -72,11 +72,11 @@ public final class HtmlElementTable
         /** The element name. */
         public final String name;
         /** 1 if the start tag can be implied. */
-        public final int startTag;
+        public final int start_tag;
         /** 1 if the end tag can be implied, 2 if it is forbidden, 3 if it is stylistic. */
-        public final int endTag;
+        public final int end_tag;
         /** 1 if the end tag should be saved when there is no content. */
-        public final int saveEndTag;
+        public final int save_end_tag;
         /** 1 if the element is empty. */
         public final int empty;
         /** 1 if the element is deprecated. */
@@ -86,12 +86,12 @@ public final class HtmlElementTable
         /** 1 if the element is inline, 2 if it is both inline and block. */
         public final int isinline;
 
-        Desc(String name, int startTag, int endTag, int saveEndTag, int empty, int depr, int dtd, int isinline)
+        Desc(String name, int start_tag, int end_tag, int save_end_tag, int empty, int depr, int dtd, int isinline)
         {
             this.name = name;
-            this.startTag = startTag;
-            this.endTag = endTag;
-            this.saveEndTag = saveEndTag;
+            this.start_tag = start_tag;
+            this.end_tag = end_tag;
+            this.save_end_tag = save_end_tag;
             this.empty = empty;
             this.depr = depr;
             this.dtd = dtd;

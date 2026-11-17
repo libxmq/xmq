@@ -51,7 +51,7 @@ final class IXMLLookahead {
     private boolean dynamic;
     // Runtime SLL: a conflict with an exact stack is resolved like LL would, only
     // a conflict with an UNKNOWN bottom is a failure (fall back to LL).
-    private boolean sllRuntime;
+    private boolean sll_runtime;
 
     // ------------------------------------------------------------ char sets
 
@@ -89,10 +89,10 @@ final class IXMLLookahead {
     final Map<String, Integer> index = new HashMap<>();
     final Term[][][] alts;                // rule, alt, term
     final Ranges[][][] sets;              // match terms as ranges (null for others)
-    final List<int[]>[] callSites;        // rule -> list of {rule, alt, idx} calling it
+    final List<int[]>[] call_sites;        // rule -> list of {rule, alt, idx} calling it
     final int start;
     final int[] costs;                    // rule -> cost
-    final int[][][] predIds;              // rule, alt, term -> predicate id, -1 if not a predicate
+    final int[][][] pred_ids;              // rule, alt, term -> predicate id, -1 if not a predicate
     final List<Ranges[]> preds = new ArrayList<>(); // predicate id -> the sets to not match, in order
 
     @SuppressWarnings("unchecked")
@@ -102,29 +102,29 @@ final class IXMLLookahead {
         names = new String[n];
         alts = new Term[n][][];
         sets = new Ranges[n][][];
-        predIds = new int[n][][];
-        callSites = new List[n];
+        pred_ids = new int[n][][];
+        call_sites = new List[n];
         int k = 0;
         costs = new int[n];
         for (Rule r : g.rules.values()) { names[k] = r.name; costs[k] = r.cost; index.put(r.name, k); k++; }
         for (Rule r : g.rules.values()) {
             int ri = index.get(r.name);
-            callSites[ri] = new ArrayList<>();
+            call_sites[ri] = new ArrayList<>();
             alts[ri] = new Term[r.alternatives.size()][];
             sets[ri] = new Ranges[r.alternatives.size()][];
-            predIds[ri] = new int[r.alternatives.size()][];
+            pred_ids[ri] = new int[r.alternatives.size()][];
             for (int a = 0; a < r.alternatives.size(); a++) {
                 List<Term> terms = r.alternatives.get(a);
                 alts[ri][a] = terms.toArray(new Term[0]);
                 sets[ri][a] = new Ranges[terms.size()];
-                predIds[ri][a] = new int[terms.size()];
+                pred_ids[ri][a] = new int[terms.size()];
                 for (int t = 0; t < terms.size(); t++) {
-                    predIds[ri][a][t] = -1;
+                    pred_ids[ri][a][t] = -1;
                     if (terms.get(t).chars != null) sets[ri][a][t] = Ranges.of(terms.get(t).chars);
                     if (terms.get(t).not != null) {
                         Ranges[] p = new Ranges[terms.get(t).not.size()];
                         for (int q = 0; q < p.length; q++) p[q] = Ranges.of(terms.get(t).not.get(q));
-                        predIds[ri][a][t] = preds.size();
+                        pred_ids[ri][a][t] = preds.size();
                         preds.add(p);
                     }
                 }
@@ -133,7 +133,7 @@ final class IXMLLookahead {
         for (int ri = 0; ri < n; ri++)
             for (int a = 0; a < alts[ri].length; a++)
                 for (int t = 0; t < alts[ri][a].length; t++)
-                    if (alts[ri][a][t].ref != null) callSites[index.get(alts[ri][a][t].ref)].add(new int[]{ri, a, t});
+                    if (alts[ri][a][t].ref != null) call_sites[index.get(alts[ri][a][t].ref)].add(new int[]{ri, a, t});
         start = index.get(g.start);
     }
 
@@ -181,7 +181,7 @@ final class IXMLLookahead {
         final int[] pairs;
         Neg(int[] pairs) { this.pairs = pairs; }
     }
-    private final Map<List<Integer>, Neg> internedNeg = new HashMap<>();
+    private final Map<List<Integer>, Neg> interned_neg = new HashMap<>();
 
     Neg neg(List<int[]> pairs) {
         if (pairs.isEmpty()) return null;
@@ -192,12 +192,12 @@ final class IXMLLookahead {
             if (n >= 2 && key.get(n - 2) == q[0] && key.get(n - 1) == q[1]) continue; // duplicate
             key.add(q[0]); key.add(q[1]);
         }
-        Neg r = internedNeg.get(key);
+        Neg r = interned_neg.get(key);
         if (r == null) {
             int[] a = new int[key.size()];
             for (int i = 0; i < a.length; i++) a[i] = key.get(i);
             r = new Neg(a);
-            internedNeg.put(key, r);
+            interned_neg.put(key, r);
         }
         return r;
     }
@@ -258,7 +258,7 @@ final class IXMLLookahead {
         while (!todo.isEmpty()) {
             Config c = todo.pop();
             if (!seen.add(c)) continue;
-            if (++steps > STEP_LIMIT && !dynamic && !sllRuntime)
+            if (++steps > STEP_LIMIT && !dynamic && !sll_runtime)
                 throw new Failure("too-large", "The lookahead analysis needs too much work, more than "
                                   + STEP_LIMIT + " steps.");
             if (isTransition(c)) { result.add(c); continue; }
@@ -271,7 +271,7 @@ final class IXMLLookahead {
                 } else if (c.stack == UNKNOWN) {
                     // SLL: continue into every call site of this rule.
                     if (c.rule == start) todo.push(new Config(WAIT_EOF, 0, 0, c.predicted, null, c.cost, c.neg));
-                    for (int[] site : callSites[c.rule])
+                    for (int[] site : call_sites[c.rule])
                         todo.push(new Config(site[0], site[1], site[2] + 1, c.predicted, UNKNOWN, c.cost, c.neg));
                 } else {
                     todo.push(new Config(c.stack.rule, c.stack.alt, c.stack.idx, c.predicted, c.stack.next, c.cost, c.neg));
@@ -284,7 +284,7 @@ final class IXMLLookahead {
                 Stack s = c.stack;
                 if (c.idx + 1 < terms.length) {
                     s = push(c.rule, c.alt, c.idx + 1, c.stack);
-                    if (s.depth > STACK_LIMIT && !dynamic && !sllRuntime)
+                    if (s.depth > STACK_LIMIT && !dynamic && !sll_runtime)
                         throw new Failure("non-regular", "The lookahead needs a recursion deeper than "
                                           + STACK_LIMIT + ", it is not a regular language. The recursion: "
                                           + recursion(s) + ".");
@@ -293,7 +293,7 @@ final class IXMLLookahead {
                     todo.push(new Config(callee, a, 0, c.predicted, s, c.cost + costs[callee], c.neg));
             } else if (t.not != null) {
                 // A negative lookahead consumes nothing, but constrains the following input.
-                int p = predIds[c.rule][c.alt][c.idx];
+                int p = pred_ids[c.rule][c.alt][c.idx];
                 if (preds.get(p).length == 0) continue; // !'' never succeeds.
                 todo.push(new Config(c.rule, c.alt, c.idx + 1, c.predicted, c.stack, c.cost, addNeg(c.neg, p)));
             } else {
@@ -363,21 +363,21 @@ final class IXMLLookahead {
         /** Max number of symbols needed to decide, -1 if unbounded. */
         int maxLookahead() {
             Map<State, Integer> memo = new HashMap<>();
-            Set<State> onPath = new HashSet<>();
-            return depth(states.get(0), memo, onPath);
+            Set<State> on_path = new HashSet<>();
+            return depth(states.get(0), memo, on_path);
         }
-        private int depth(State s, Map<State, Integer> memo, Set<State> onPath) {
+        private int depth(State s, Map<State, Integer> memo, Set<State> on_path) {
             if (s.predict >= 0) return 0;
             Integer m = memo.get(s);
             if (m != null) return m;
-            if (!onPath.add(s)) return -1;
+            if (!on_path.add(s)) return -1;
             int max = 0;
             for (Edge e : s.edges) {
-                int d = depth(e.target, memo, onPath);
-                if (d < 0) { onPath.remove(s); memo.put(s, -1); return -1; }
+                int d = depth(e.target, memo, on_path);
+                if (d < 0) { on_path.remove(s); memo.put(s, -1); return -1; }
                 max = Math.max(max, d + 1);
             }
-            onPath.remove(s);
+            on_path.remove(s);
             memo.put(s, max);
             return max;
         }
@@ -404,14 +404,14 @@ final class IXMLLookahead {
      * sites) for that context.
      */
     Set<Stack> contexts(int rule) {
-        Set<Stack> memo = contextMemo.get(rule);
+        Set<Stack> memo = context_memo.get(rule);
         if (memo != null) return memo;
         Set<Stack> result = new LinkedHashSet<>();
         contexts(rule, null, new HashSet<>(), result, 0);
-        contextMemo.put(rule, result);
+        context_memo.put(rule, result);
         return result;
     }
-    private final Map<Integer, Set<Stack>> contextMemo = new HashMap<>();
+    private final Map<Integer, Set<Stack>> context_memo = new HashMap<>();
 
     // Walk the callers of rule, with suffix being the stack collected so far
     // (innermost return first). The stack is built outermost-last.
@@ -427,7 +427,7 @@ final class IXMLLookahead {
             out.add(withBottom(inner));
             return;
         }
-        for (int[] site : callSites[rule]) {
+        for (int[] site : call_sites[rule]) {
             boolean tail = site[2] + 1 == alts[site[0]][site[1]].length;
             Stack s = tail ? inner : append(inner, site[0], site[1], site[2] + 1);
             contexts(site[0], s, visiting, out, steps + 1);
@@ -517,15 +517,15 @@ final class IXMLLookahead {
             Config[] cs = configs.toArray(new Config[0]);
             // Many configurations share the same symbol set (the same term), so
             // the sweep is done over the distinct sets of the state.
-            Map<Ranges, Integer> setIds = new IdentityHashMap<>();
+            Map<Ranges, Integer> set_ids = new IdentityHashMap<>();
             List<Ranges> distinct = new ArrayList<>();
             List<List<Integer>> members = new ArrayList<>();
             for (int ci = 0; ci < cs.length; ci++) {
                 Config c = cs[ci];
                 Ranges r = c.rule == WAIT_EOF ? EOF_RANGES : c.rule >= 0 ? sets[c.rule][c.alt][c.idx] : null;
                 if (r == null) continue;
-                Integer id = setIds.get(r);
-                if (id == null) { id = distinct.size(); setIds.put(r, id); distinct.add(r); members.add(new ArrayList<>()); }
+                Integer id = set_ids.get(r);
+                if (id == null) { id = distinct.size(); set_ids.put(r, id); distinct.add(r); members.add(new ArrayList<>()); }
                 members.get(id).add(ci);
             }
             // The sets of the pending negative lookaheads split the symbol
@@ -535,8 +535,8 @@ final class IXMLLookahead {
                 if (c.neg == null) continue;
                 for (int i = 0; i < c.neg.pairs.length; i += 2) {
                     Ranges r = preds.get(c.neg.pairs[i])[c.neg.pairs[i + 1]];
-                    if (setIds.containsKey(r)) continue;
-                    setIds.put(r, distinct.size()); distinct.add(r); members.add(new ArrayList<>());
+                    if (set_ids.containsKey(r)) continue;
+                    set_ids.put(r, distinct.size()); distinct.add(r); members.add(new ArrayList<>());
                 }
             }
             List<long[]> events = new ArrayList<>(); // {position, set id, +1 start / -1 end}
@@ -551,9 +551,9 @@ final class IXMLLookahead {
             // Compute the closure only once for each set of moving symbol sets.
             Map<BitSet, Set<Config>> closures = new HashMap<>();
             BitSet active = new BitSet(distinct.size());
-            Set<Config> prevTarget = null;
-            State prevState = null;
-            int prevLo = 0, prevHi = -2;
+            Set<Config> prev_target = null;
+            State prev_state = null;
+            int prev_lo = 0, prev_hi = -2;
             int ei = 0;
             while (ei < events.size()) {
                 long pos = events.get(ei)[0];
@@ -594,16 +594,16 @@ final class IXMLLookahead {
                         throw new Failure("too-large", "The lookahead analysis needs too much work, more than "
                                           + WORK_LIMIT + " configurations.");
                 }
-                if (target == prevTarget && lo == prevHi + 1) {
-                    prevHi = hi;
+                if (target == prev_target && lo == prev_hi + 1) {
+                    prev_hi = hi;
                     continue;
                 }
-                if (prevTarget != null) state.edges.add(new Edge(prevLo, prevHi, prevState));
+                if (prev_target != null) state.edges.add(new Edge(prev_lo, prev_hi, prev_state));
                 State ts = known.get(target);
                 if (ts == null) ts = newState(dfa, known, todo, target, state, lo);
-                prevTarget = target; prevState = ts; prevLo = lo; prevHi = hi;
+                prev_target = target; prev_state = ts; prev_lo = lo; prev_hi = hi;
             }
-            if (prevTarget != null) state.edges.add(new Edge(prevLo, prevHi, prevState));
+            if (prev_target != null) state.edges.add(new Edge(prev_lo, prev_hi, prev_state));
             if (dfa.states.size() > STATE_LIMIT)
                 throw new Failure("too-large", "The lookahead DFA needs more than " + STATE_LIMIT + " states.");
         }
@@ -644,7 +644,7 @@ final class IXMLLookahead {
             if (cheapest.size() > 1 && !dynamic) {
                 boolean exact = true;
                 for (Stack i = (Stack)e.getKey().get(3); i != null; i = i.next) if (i == UNKNOWN) exact = false;
-                if (!(sllRuntime && exact)) checkConflict(rule, state, cheapest, e.getKey());
+                if (!(sll_runtime && exact)) checkConflict(rule, state, cheapest, e.getKey());
             }
             for (Integer a : m.keySet()) if (a != cheapest.get(0)) dropped.add(withAlt(e.getKey(), a));
         }
@@ -752,10 +752,10 @@ final class IXMLLookahead {
         final Map<Integer, DState> edges = new HashMap<>();
         DState(Set<Config> configs) { this.configs = configs; }
     }
-    private final Map<Integer, Map<Set<Config>, DState>> sllStates = new HashMap<>();
+    private final Map<Integer, Map<Set<Config>, DState>> sll_states = new HashMap<>();
     // The start state per decision and truncated context (rule, stack identity).
-    private final Map<Integer, Map<Stack, DState>> sllStart = new HashMap<>();
-    private final Map<Integer, DState> sllStartNull = new HashMap<>();
+    private final Map<Integer, Map<Stack, DState>> sll_start = new HashMap<>();
+    private final Map<Integer, DState> sll_start_null = new HashMap<>();
     static final int CTX_K = System.getenv("XMQ_CTX_K") != null ? Integer.parseInt(System.getenv("XMQ_CTX_K")) : 4;
 
     // The top k return positions of the stack with an UNKNOWN bottom (exact if shallower).
@@ -764,17 +764,17 @@ final class IXMLLookahead {
         if (k == 0) return UNKNOWN;
         return push(ctx.rule, ctx.alt, ctx.idx, truncate(ctx.next, k - 1));
     }
-    static long sllHits, llFallbacks, sllStatesBuilt, sllStateConfigs;
+    static long sll_hits, ll_fallbacks, sll_states_built, sll_state_configs;
 
     // Resolve and classify a set of SLL configurations as a DFA state.
     private DState sllState(int ri, Set<Config> configs) {
-        Map<Set<Config>, DState> known = sllStates.computeIfAbsent(ri, k -> new HashMap<>());
+        Map<Set<Config>, DState> known = sll_states.computeIfAbsent(ri, k -> new HashMap<>());
         DState d = known.get(configs);
         if (d != null) return d;
         d = new DState(configs);
         known.put(configs, d);
-        sllStatesBuilt++;
-        sllStateConfigs += configs.size();
+        sll_states_built++;
+        sll_state_configs += configs.size();
         Set<Config> resolved;
         try {
             resolved = resolve(names[ri], null, configs);
@@ -804,11 +804,11 @@ final class IXMLLookahead {
      * @return The alternative, or -1 if no alternative matches.
      */
     int predictAdaptive(int ri, Stack ctx, int[] input, int pos) {
-        sllRuntime = true;
+        sll_runtime = true;
         try {
             return predictAdaptiveInternal(ri, ctx, input, pos);
         } finally {
-            sllRuntime = false;
+            sll_runtime = false;
         }
     }
 
@@ -817,18 +817,18 @@ final class IXMLLookahead {
             // The DFA is cached per decision and the top CTX_K frames of the real
             // stack, which removes most conflicts that come from merging call sites.
             Stack tctx = truncate(ctx, CTX_K);
-            DState d = tctx == null ? sllStartNull.get(ri) : sllStart.computeIfAbsent(ri, k -> new HashMap<>()).get(tctx);
+            DState d = tctx == null ? sll_start_null.get(ri) : sll_start.computeIfAbsent(ri, k -> new HashMap<>()).get(tctx);
             if (d == null) {
                 List<Config> seeds = new ArrayList<>();
                 for (int a = 0; a < alts[ri].length; a++) seeds.add(new Config(ri, a, 0, a, tctx));
                 steps = 0;
                 d = sllState(ri, closure(seeds));
-                if (tctx == null) sllStartNull.put(ri, d);
-                else sllStart.get(ri).put(tctx, d);
+                if (tctx == null) sll_start_null.put(ri, d);
+                else sll_start.get(ri).put(tctx, d);
             }
             for (int p = pos; ; p++) {
                 if (d.conflict) break;
-                if (d.predict >= 0) { sllHits++; return d.predict; }
+                if (d.predict >= 0) { sll_hits++; return d.predict; }
                 if (d.predict == -2) return -1;
                 if (p > input.length) break;
                 int sym = p < input.length ? input[p] : EOF;
@@ -860,26 +860,26 @@ final class IXMLLookahead {
         } catch (Failure f) {
             // The start state could not be built, use LL.
         }
-        llFallbacks++;
-        sllRuntime = false;
+        ll_fallbacks++;
+        sll_runtime = false;
         return predictDynamic(ri, ctx, input, pos);
     }
 
     static final boolean DYN_STATS = System.getenv("XMQ_DYN_STATS") != null;
-    static long dynCalls, dynSymbols, dynConfigs;
-    static final Map<String, long[]> dynPerRule = new TreeMap<>();
+    static long dyn_calls, dyn_symbols, dyn_configs;
+    static final Map<String, long[]> dyn_per_rule = new TreeMap<>();
     static {
         if (DYN_STATS) Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.err.println("sll hits " + sllHits + " ll fallbacks " + llFallbacks + " sll states " + sllStatesBuilt + " sll state configs " + sllStateConfigs);
-            System.err.println("dynamic predictions " + dynCalls + " symbols " + dynSymbols + " configs " + dynConfigs);
-            dynPerRule.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[2], a.getValue()[2])).limit(15)
+            System.err.println("sll hits " + sll_hits + " ll fallbacks " + ll_fallbacks + " sll states " + sll_states_built + " sll state configs " + sll_state_configs);
+            System.err.println("dynamic predictions " + dyn_calls + " symbols " + dyn_symbols + " configs " + dyn_configs);
+            dyn_per_rule.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[2], a.getValue()[2])).limit(15)
                 .forEach(e -> System.err.printf("  %-30s calls %8d symbols %9d configs %11d%n", e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2]));
         }));
     }
 
     private int predictDynamicInternal(int ri, Stack ctx, int[] input, int pos) throws Failure {
-        long[] st = DYN_STATS ? dynPerRule.computeIfAbsent(names[ri], k -> new long[3]) : null;
-        if (DYN_STATS) { dynCalls++; st[0]++; }
+        long[] st = DYN_STATS ? dyn_per_rule.computeIfAbsent(names[ri], k -> new long[3]) : null;
+        if (DYN_STATS) { dyn_calls++; st[0]++; }
         {
             List<Config> seeds = new ArrayList<>();
             for (int a = 0; a < alts[ri].length; a++) seeds.add(new Config(ri, a, 0, a, ctx));
@@ -909,7 +909,7 @@ final class IXMLLookahead {
                     }
                 }
                 configs = closure(moved);
-                if (DYN_STATS) { dynSymbols++; dynConfigs += configs.size(); st[1]++; st[2] += configs.size(); }
+                if (DYN_STATS) { dyn_symbols++; dyn_configs += configs.size(); st[1]++; st[2] += configs.size(); }
             }
         }
     }

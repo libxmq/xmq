@@ -59,7 +59,7 @@ public final class Xsd10PSVIIDCNode
     /** C {@code XmlXsd10PSVIIDCKey ** keys}. */
     Xsd10PSVIIDCKey[] keys;
     /** C {@code int nodeLine}. */
-    int nodeLine;
-    /** C {@code int nodeQNameID}. */
-    int nodeQNameID;
+    int node_line;
+    /** C {@code int node_q_name_id}. */
+    int node_q_name_id;
 }

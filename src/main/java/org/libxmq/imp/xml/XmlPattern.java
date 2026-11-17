@@ -133,14 +133,14 @@ public final class XmlPattern
         int flags;          /* properties of that step */
         String name;        /* first string value if NULL accept all */
         String ns;          /* second string value */
-        int nodeType;       /* type of node */
+        int node_type;       /* type of node */
     }
 
     // XmlPatStreamComp
     static final class StreamComp
     {
-        int nbStep;         /* number of steps in the automata */
-        int maxStep;        /* allocated number of steps */
+        int nb_step;         /* number of steps in the automata */
+        int max_step;        /* allocated number of steps */
         StreamStep[] steps; /* the array of steps */
         int flags;
     }
@@ -186,8 +186,8 @@ public final class XmlPattern
     XmlPattern next;        /* next pattern if | is used */
     String pattern;         /* the pattern */
     int flags;              /* flags */
-    int nbStep;
-    int maxStep;
+    int nb_step;
+    int max_step;
     StepOp[] steps;         /* ops for computation */
     StreamComp stream;      /* the streaming data if any */
 
@@ -243,10 +243,10 @@ public final class XmlPattern
 
     // xml_pattern_grow_capacity
     /** Port of xmlGrowCapacity (private/memory.h). */
-    private static int growCapacity(int capacity, long elemSize, int min, int max)
+    private static int growCapacity(int capacity, long elem_size, int min, int max)
     {
         if (capacity <= 0) return min;
-        if ((capacity >= max) || ((long) capacity > Long.MAX_VALUE / 2 / elemSize)) return -1;
+        if ((capacity >= max) || ((long) capacity > Long.MAX_VALUE / 2 / elem_size)) return -1;
         int extra = (capacity + 1) / 2;
         if (capacity > max - extra) return max;
         return capacity + extra;
@@ -391,9 +391,9 @@ public final class XmlPattern
      *
      * Returns the index of the end of the name on success. If the
      * name is invalid, returns `ptr`. If the name is longer than
-     * `maxSize` bytes, returns -1 (NULL).
+     * `max_size` bytes, returns -1 (NULL).
      */
-    private static int scanNameEnd(byte[] buf, int ptr, long maxSize, int nc)
+    private static int scanNameEnd(byte[] buf, int ptr, long max_size, int nc)
     {
         int stop = nc != 0 ? ':' : 0;
         int first = 1;
@@ -421,10 +421,10 @@ public final class XmlPattern
             if (first != 0 ? isNameStartChar(c) == 0 : isNameChar(c) == 0)
                 break;
 
-            if (len[0] > maxSize)
+            if (len[0] > max_size)
                 return -1;
             ptr += len[0];
-            maxSize -= len[0];
+            max_size -= len[0];
             first = 0;
         }
 
@@ -446,7 +446,7 @@ public final class XmlPattern
     {
         XmlPattern cur = new XmlPattern();
         cur.steps = null;
-        cur.maxStep = 0;
+        cur.max_step = 0;
         return cur;
     }
 
@@ -471,8 +471,8 @@ public final class XmlPattern
             streamCompFree(comp.stream);
         comp.stream = null;
         comp.steps = null;
-        comp.nbStep = 0;
-        comp.maxStep = 0;
+        comp.nb_step = 0;
+        comp.max_step = 0;
     }
 
     // xml_pattern_free_list
@@ -539,20 +539,20 @@ public final class XmlPattern
     /** Port of xmlPatternGrow. */
     private static int patternGrow(XmlPattern comp)
     {
-        int newSize;
+        int new_size;
 
-        newSize = growCapacity(comp.maxStep, 24, 10, XML_PAT_MAX_ITEMS);
-        if (newSize < 0)
+        new_size = growCapacity(comp.max_step, 24, 10, XML_PAT_MAX_ITEMS);
+        if (new_size < 0)
             return -1;
-        StepOp[] temp = new StepOp[newSize];
+        StepOp[] temp = new StepOp[new_size];
         int i = 0;
         if (comp.steps != null)
         {
-            for (; i < comp.steps.length && i < newSize; i++) temp[i] = comp.steps[i];
+            for (; i < comp.steps.length && i < new_size; i++) temp[i] = comp.steps[i];
         }
-        for (; i < newSize; i++) temp[i] = new StepOp();
+        for (; i < new_size; i++) temp[i] = new StepOp();
         comp.steps = temp;
-        comp.maxStep = newSize;
+        comp.max_step = new_size;
 
         return 0;
     }
@@ -565,7 +565,7 @@ public final class XmlPattern
      */
     private static int patternAdd(PatParserContext ctxt, XmlPattern comp, int op, String value, String value2)
     {
-        if (comp.nbStep >= comp.maxStep)
+        if (comp.nb_step >= comp.max_step)
         {
             if (patternGrow(comp) < 0)
             {
@@ -573,10 +573,10 @@ public final class XmlPattern
                 return -1;
             }
         }
-        comp.steps[comp.nbStep].op = op;
-        comp.steps[comp.nbStep].value = value;
-        comp.steps[comp.nbStep].value2 = value2;
-        comp.nbStep++;
+        comp.steps[comp.nb_step].op = op;
+        comp.steps[comp.nb_step].value = value;
+        comp.steps[comp.nb_step].value2 = value2;
+        comp.nb_step++;
         return 0;
     }
 
@@ -593,28 +593,28 @@ public final class XmlPattern
         /*
          * remove the leading // for //a or .//a
          */
-        if ((comp.nbStep > 0) && (comp.steps[0].op == XML_PAT_OP_ANCESTOR))
+        if ((comp.nb_step > 0) && (comp.steps[0].op == XML_PAT_OP_ANCESTOR))
         {
-            for (i = 0, j = 1; j < comp.nbStep; i++, j++)
+            for (i = 0, j = 1; j < comp.nb_step; i++, j++)
             {
                 comp.steps[i].value = comp.steps[j].value;
                 comp.steps[i].value2 = comp.steps[j].value2;
                 comp.steps[i].op = comp.steps[j].op;
             }
-            comp.nbStep--;
+            comp.nb_step--;
         }
 
         /*
          * Grow to add OP_END later
          */
-        if (comp.nbStep >= comp.maxStep)
+        if (comp.nb_step >= comp.max_step)
         {
             if (patternGrow(comp) < 0)
                 return -1;
         }
 
         i = 0;
-        j = comp.nbStep - 1;
+        j = comp.nb_step - 1;
         while (j > i)
         {
             String tmp;
@@ -632,9 +632,9 @@ public final class XmlPattern
             i++;
         }
 
-        comp.steps[comp.nbStep].value = null;
-        comp.steps[comp.nbStep].value2 = null;
-        comp.steps[comp.nbStep++].op = XML_PAT_OP_END;
+        comp.steps[comp.nb_step].value = null;
+        comp.steps[comp.nb_step].value2 = null;
+        comp.steps[comp.nb_step++].op = XML_PAT_OP_END;
         return 0;
     }
 
@@ -650,20 +650,20 @@ public final class XmlPattern
     {
         if (states.maxstates <= states.nbstates)
         {
-            int newSize;
+            int new_size;
 
-            newSize = growCapacity(states.maxstates, 16, 4, XML_PAT_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = growCapacity(states.maxstates, 16, 4, XML_PAT_MAX_ITEMS);
+            if (new_size < 0)
                 return -1;
-            StepState[] tmp = new StepState[newSize];
+            StepState[] tmp = new StepState[new_size];
             int i = 0;
             if (states.states != null)
             {
-                for (; i < states.states.length && i < newSize; i++) tmp[i] = states.states[i];
+                for (; i < states.states.length && i < new_size; i++) tmp[i] = states.states[i];
             }
-            for (; i < newSize; i++) tmp[i] = new StepState();
+            for (; i < new_size; i++) tmp[i] = new StepState();
             states.states = tmp;
-            states.maxstates = newSize;
+            states.maxstates = new_size;
         }
         states.states[states.nbstates].step = step;
         states.states[states.nbstates++].node = node;
@@ -715,7 +715,7 @@ public final class XmlPattern
         {
             boolean rollback = false;
             steps:
-            for (; i < comp.nbStep; i++)
+            for (; i < comp.nb_step; i++)
             {
                 step = comp.steps[i];
                 switch (step.op)
@@ -1178,7 +1178,7 @@ public final class XmlPattern
         String token = null;
         String name = null;
         String URL = null;
-        int hasBlanks = 0;
+        int has_blanks = 0;
 
         SKIP_BLANKS(ctxt);
         if (CUR(ctxt) == '.')
@@ -1225,7 +1225,7 @@ public final class XmlPattern
         }
         if (isBlankCh(CUR(ctxt)))
         {
-            hasBlanks = 1;
+            has_blanks = 1;
             SKIP_BLANKS(ctxt);
         }
         if (CUR(ctxt) == ':')
@@ -1235,7 +1235,7 @@ public final class XmlPattern
             {
                 String prefix = name;
 
-                if (hasBlanks != 0 || isBlankCh(CUR(ctxt)))
+                if (has_blanks != 0 || isBlankCh(CUR(ctxt)))
                 {
                     /* Invalid QName. */
                     ctxt.error = 1;
@@ -1625,8 +1625,8 @@ public final class XmlPattern
         cur = new StreamComp();
         cur.steps = new StreamStep[size];
         for (int i = 0; i < size; i++) cur.steps[i] = new StreamStep();
-        cur.nbStep = 0;
-        cur.maxStep = size;
+        cur.nb_step = 0;
+        cur.max_step = size;
         return cur;
     }
 
@@ -1645,32 +1645,32 @@ public final class XmlPattern
      * Add a new step to the compiled pattern
      * @returns -1 in case of error or the step index if successful
      */
-    private static int streamCompAddStep(StreamComp comp, String name, String ns, int nodeType, int flags)
+    private static int streamCompAddStep(StreamComp comp, String name, String ns, int node_type, int flags)
     {
         StreamStep cur;
 
-        if (comp.nbStep >= comp.maxStep)
+        if (comp.nb_step >= comp.max_step)
         {
-            int newSize;
+            int new_size;
 
-            newSize = growCapacity(comp.maxStep, 24, 4, XML_PAT_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = growCapacity(comp.max_step, 24, 4, XML_PAT_MAX_ITEMS);
+            if (new_size < 0)
             {
                 return -1;
             }
-            StreamStep[] tmp = new StreamStep[newSize];
+            StreamStep[] tmp = new StreamStep[new_size];
             int i = 0;
-            for (; i < comp.steps.length && i < newSize; i++) tmp[i] = comp.steps[i];
-            for (; i < newSize; i++) tmp[i] = new StreamStep();
+            for (; i < comp.steps.length && i < new_size; i++) tmp[i] = comp.steps[i];
+            for (; i < new_size; i++) tmp[i] = new StreamStep();
             comp.steps = tmp;
-            comp.maxStep = newSize;
+            comp.max_step = new_size;
         }
-        cur = comp.steps[comp.nbStep++];
+        cur = comp.steps[comp.nb_step++];
         cur.flags = flags;
         cur.name = name;
         cur.ns = ns;
-        cur.nodeType = nodeType;
-        return comp.nbStep - 1;
+        cur.node_type = node_type;
+        return comp.nb_step - 1;
     }
 
     // xml_stream_compile
@@ -1690,7 +1690,7 @@ public final class XmlPattern
         /*
          * special case for .
          */
-        if ((comp.nbStep == 1) &&
+        if ((comp.nb_step == 1) &&
             (comp.steps[0].op == XML_PAT_OP_ELEM) &&
             (comp.steps[0].value == null) &&
             (comp.steps[0].value2 == null))
@@ -1702,13 +1702,13 @@ public final class XmlPattern
             return 0;
         }
 
-        stream = streamCompNew((comp.nbStep / 2) + 1);
+        stream = streamCompNew((comp.nb_step / 2) + 1);
 
         i = 0;
         if ((comp.flags & PAT_FROM_ROOT) != 0)
             stream.flags |= XML_STREAM_FROM_ROOT;
 
-        for (; i < comp.nbStep; i++)
+        for (; i < comp.nb_step; i++)
         {
             step = comp.steps[i];
             switch (step.op)
@@ -1755,14 +1755,14 @@ public final class XmlPattern
                      * self::node() is the last node test and we had
                      * continuation somewhere beforehand.
                      */
-                    if ((comp.nbStep == i + 1) &&
+                    if ((comp.nb_step == i + 1) &&
                         (flags & XML_STREAM_STEP_DESC) != 0)
                     {
                         /*
                          * Mark the special case where the expression resolves
                          * to any type of node.
                          */
-                        if (comp.nbStep == i + 1)
+                        if (comp.nb_step == i + 1)
                         {
                             stream.flags |= XML_STREAM_FINAL_IS_ANY_NODE;
                         }
@@ -1851,13 +1851,13 @@ public final class XmlPattern
             if ((stream.flags & XML_STREAM_DESC) == 0)
                 stream.flags |= XML_STREAM_DESC;
 
-            if (stream.nbStep > 0)
+            if (stream.nb_step > 0)
             {
                 if ((stream.steps[0].flags & XML_STREAM_STEP_DESC) == 0)
                     stream.steps[0].flags |= XML_STREAM_STEP_DESC;
             }
         }
-        if (stream.nbStep <= s)
+        if (stream.nb_step <= s)
         {
             streamCompFree(stream);
             return 0;
@@ -1878,11 +1878,11 @@ public final class XmlPattern
     {
         XmlStreamCtxt cur = new XmlStreamCtxt();
         cur.states = null;
-        cur.nbState = 0;
-        cur.maxState = 0;
+        cur.nb_state = 0;
+        cur.max_state = 0;
         cur.level = 0;
         cur.comp = stream;
-        cur.blockLevel = -1;
+        cur.block_level = -1;
         return cur;
     }
 
@@ -1913,7 +1913,7 @@ public final class XmlPattern
     private static int streamCtxtAddState(XmlStreamCtxt comp, int idx, int level)
     {
         int i;
-        for (i = 0; i < comp.nbState; i++)
+        for (i = 0; i < comp.nb_state; i++)
         {
             if (comp.states[2 * i] < 0)
             {
@@ -1922,31 +1922,31 @@ public final class XmlPattern
                 return i;
             }
         }
-        if (comp.nbState >= comp.maxState)
+        if (comp.nb_state >= comp.max_state)
         {
-            int newSize;
+            int new_size;
 
-            newSize = growCapacity(comp.maxState, 8, 4, XML_PAT_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = growCapacity(comp.max_state, 8, 4, XML_PAT_MAX_ITEMS);
+            if (new_size < 0)
             {
                 return -1;
             }
-            int[] tmp = new int[newSize * 2];
+            int[] tmp = new int[new_size * 2];
             if (comp.states != null)
                 System.arraycopy(comp.states, 0, tmp, 0, Math.min(comp.states.length, tmp.length));
             comp.states = tmp;
-            comp.maxState = newSize;
+            comp.max_state = new_size;
         }
-        comp.states[2 * comp.nbState] = idx;
-        comp.states[2 * comp.nbState++ + 1] = level;
-        return comp.nbState - 1;
+        comp.states[2 * comp.nb_state] = idx;
+        comp.states[2 * comp.nb_state++ + 1] = level;
+        return comp.nb_state - 1;
     }
 
     /** The local/namespace-name compare of xmlStreamPushInternal. */
     private static int stepMatch(StreamStep step, String name, String ns)
     {
         int match = 0;
-        if (step.nodeType == XML_STREAM_ANY_NODE)
+        if (step.node_type == XML_STREAM_ANY_NODE)
         {
             match = 1;
         }
@@ -1982,37 +1982,37 @@ public final class XmlPattern
      * @returns -1 in case of error, 1 if the current state in the stream is a
      *    match and 0 otherwise.
      */
-    private static int streamPushInternal(XmlStreamCtxt stream, String name, String ns, int nodeType)
+    private static int streamPushInternal(XmlStreamCtxt stream, String name, String ns, int node_type)
     {
-        int ret = 0, fin = 0, tmp, i, m, match, stepNr, desc;
+        int ret = 0, fin = 0, tmp, i, m, match, step_nr, desc;
         StreamComp comp;
         StreamStep step;
 
-        if ((stream == null) || (stream.nbState < 0))
+        if ((stream == null) || (stream.nb_state < 0))
             return -1;
 
         while (stream != null)
         {
             comp = stream.comp;
 
-            if ((nodeType == XML_PAT_ELEMENT_NODE) &&
+            if ((node_type == XML_PAT_ELEMENT_NODE) &&
                 (name == null) && (ns == null))
             {
                 /* We have a document node here (or a reset). */
-                stream.nbState = 0;
+                stream.nb_state = 0;
                 stream.level = 0;
-                stream.blockLevel = -1;
+                stream.block_level = -1;
                 if ((comp.flags & XML_STREAM_FROM_ROOT) != 0)
                 {
-                    if (comp.nbStep == 0)
+                    if (comp.nb_step == 0)
                     {
                         /* TODO: We have a "/." here? */
                         ret = 1;
                     }
                     else
                     {
-                        if ((comp.nbStep == 1) &&
-                            (comp.steps[0].nodeType == XML_STREAM_ANY_NODE) &&
+                        if ((comp.nb_step == 1) &&
+                            (comp.steps[0].node_type == XML_STREAM_ANY_NODE) &&
                             (comp.steps[0].flags & XML_STREAM_STEP_DESC) != 0)
                         {
                             /*
@@ -2035,7 +2035,7 @@ public final class XmlPattern
             /*
              * Fast check for ".".
              */
-            if (comp.nbStep == 0)
+            if (comp.nb_step == 0)
             {
                 /*
                  * / and . are handled at the XPath node set creation
@@ -2051,7 +2051,7 @@ public final class XmlPattern
                  * or traditional XPath expressions, this will match if
                  * we are at the first level only, otherwise on every level.
                  */
-                if ((nodeType != XML_PAT_ATTRIBUTE_NODE) &&
+                if ((node_type != XML_PAT_ATTRIBUTE_NODE) &&
                     (((stream.flags & XML_PATTERN_NOTPATTERN) == 0) ||
                      (stream.level == 0)))
                 {
@@ -2061,7 +2061,7 @@ public final class XmlPattern
                 stream = stream.next; /* stream_next */
                 continue;
             }
-            if (stream.blockLevel != -1)
+            if (stream.block_level != -1)
             {
                 /*
                  * Skip blocked expressions.
@@ -2071,8 +2071,8 @@ public final class XmlPattern
                 continue;
             }
 
-            if ((nodeType != XML_PAT_ELEMENT_NODE) &&
-                (nodeType != XML_PAT_ATTRIBUTE_NODE) &&
+            if ((node_type != XML_PAT_ELEMENT_NODE) &&
+                (node_type != XML_PAT_ATTRIBUTE_NODE) &&
                 ((comp.flags & XML_STREAM_FINAL_IS_ANY_NODE) == 0))
             {
                 /*
@@ -2089,7 +2089,7 @@ public final class XmlPattern
              * Check evolution of existing states
              */
             i = 0;
-            m = stream.nbState;
+            m = stream.nb_state;
             while (i < m)
             {
                 next_state:
@@ -2100,11 +2100,11 @@ public final class XmlPattern
                          * If there is no "//", then only the last
                          * added state is of interest.
                          */
-                        stepNr = stream.states[2 * (stream.nbState - 1)];
+                        step_nr = stream.states[2 * (stream.nb_state - 1)];
                         /*
                          * TODO: Security check, should not happen, remove it.
                          */
-                        if (stream.states[(2 * (stream.nbState - 1)) + 1] <
+                        if (stream.states[(2 * (stream.nb_state - 1)) + 1] <
                             stream.level)
                         {
                             return -1;
@@ -2120,10 +2120,10 @@ public final class XmlPattern
                          * occurring in the states, plus any other state for this
                          * level.
                          */
-                        stepNr = stream.states[2 * i];
+                        step_nr = stream.states[2 * i];
 
                         /* TODO: should not happen anymore: dead states */
-                        if (stepNr < 0)
+                        if (step_nr < 0)
                             break next_state;
 
                         tmp = stream.states[(2 * i) + 1];
@@ -2133,26 +2133,26 @@ public final class XmlPattern
                             break next_state;
 
                         /* skip states at ancestor levels, except if "//" */
-                        desc = comp.steps[stepNr].flags & XML_STREAM_STEP_DESC;
+                        desc = comp.steps[step_nr].flags & XML_STREAM_STEP_DESC;
                         if ((tmp < stream.level) && (desc == 0))
                             break next_state;
                     }
                     /*
                      * Check for correct node-type.
                      */
-                    step = comp.steps[stepNr];
-                    if (step.nodeType != nodeType)
+                    step = comp.steps[step_nr];
+                    if (step.node_type != node_type)
                     {
-                        if (step.nodeType == XML_PAT_ATTRIBUTE_NODE)
+                        if (step.node_type == XML_PAT_ATTRIBUTE_NODE)
                         {
                             /*
                              * Block this expression for deeper evaluation.
                              */
                             if ((comp.flags & XML_STREAM_DESC) == 0)
-                                stream.blockLevel = stream.level + 1;
+                                stream.block_level = stream.level + 1;
                             break next_state;
                         }
-                        else if (step.nodeType != XML_STREAM_ANY_NODE)
+                        else if (step.node_type != XML_STREAM_ANY_NODE)
                             break next_state;
                     }
                     /*
@@ -2166,7 +2166,7 @@ public final class XmlPattern
                         {
                             ret = 1;
                         }
-                        else if (streamCtxtAddState(stream, stepNr + 1, stream.level + 1) < 0)
+                        else if (streamCtxtAddState(stream, step_nr + 1, stream.level + 1) < 0)
                         {
                             return -1;
                         }
@@ -2187,7 +2187,7 @@ public final class XmlPattern
                          * deeper levels. Note that this includes "/foo"
                          * expressions if the *pattern* behaviour is used.
                          */
-                        stream.blockLevel = stream.level + 1;
+                        stream.block_level = stream.level + 1;
                     }
                 }
                 /* next_state: */
@@ -2251,9 +2251,9 @@ public final class XmlPattern
             /*
              * Check expected node-type.
              */
-            if (step.nodeType != nodeType)
+            if (step.node_type != node_type)
             {
-                if (nodeType == XML_PAT_ATTRIBUTE_NODE || step.nodeType != XML_STREAM_ANY_NODE)
+                if (node_type == XML_PAT_ATTRIBUTE_NODE || step.node_type != XML_STREAM_ANY_NODE)
                 {
                     stream = stream.next; /* stream_next */
                     continue;
@@ -2290,7 +2290,7 @@ public final class XmlPattern
                  * Mark this expression as blocked for any evaluation at
                  * deeper levels.
                  */
-                stream.blockLevel = stream.level;
+                stream.block_level = stream.level;
             }
 
             /* stream_next: */
@@ -2330,13 +2330,13 @@ public final class XmlPattern
      * @param stream the stream context
      * @param name the current name
      * @param ns the namespace name
-     * @param nodeType the type of the node being pushed
+     * @param node_type the type of the node being pushed
      * @return -1 in case of error, 1 if the current state in the stream is a
      *    match and 0 otherwise.
      */
-    public static int streamPushNode(XmlStreamCtxt stream, String name, String ns, int nodeType)
+    public static int streamPushNode(XmlStreamCtxt stream, String name, String ns, int node_type)
     {
-        return streamPushInternal(stream, name, ns, nodeType);
+        return streamPushInternal(stream, name, ns, node_type);
     }
 
     // xml_stream_push_attr
@@ -2376,8 +2376,8 @@ public final class XmlPattern
             /*
              * Reset block-level.
              */
-            if (stream.blockLevel == stream.level)
-                stream.blockLevel = -1;
+            if (stream.block_level == stream.level)
+                stream.block_level = -1;
 
             /*
              *  stream->level can be zero when XML_FINAL_IS_ANY_NODE is set
@@ -2389,12 +2389,12 @@ public final class XmlPattern
             /*
              * Check evolution of existing states
              */
-            for (i = stream.nbState - 1; i >= 0; i--)
+            for (i = stream.nb_state - 1; i >= 0; i--)
             {
                 /* discard obsoleted states */
                 lev = stream.states[(2 * i) + 1];
                 if (lev > stream.level)
-                    stream.nbState--;
+                    stream.nb_state--;
                 if (lev <= stream.level)
                     break;
             }
@@ -2410,19 +2410,19 @@ public final class XmlPattern
      * text-, cdata-section-, comment- and processing-instruction-nodes.
      * If the result is 0 then only element-nodes and attribute-nodes
      * need to be pushed.
-     * @param streamCtxt the stream context
+     * @param stream_ctxt the stream context
      * @return 1 in case of need of nodes of the above described types,
      *          0 otherwise. -1 on API errors.
      */
-    public static int streamWantsAnyNode(XmlStreamCtxt streamCtxt)
+    public static int streamWantsAnyNode(XmlStreamCtxt stream_ctxt)
     {
-        if (streamCtxt == null)
+        if (stream_ctxt == null)
             return -1;
-        while (streamCtxt != null)
+        while (stream_ctxt != null)
         {
-            if ((streamCtxt.comp.flags & XML_STREAM_FINAL_IS_ANY_NODE) != 0)
+            if ((stream_ctxt.comp.flags & XML_STREAM_FINAL_IS_ANY_NODE) != 0)
                 return 1;
-            streamCtxt = streamCtxt.next;
+            stream_ctxt = stream_ctxt.next;
         }
         return 0;
     }
@@ -2440,10 +2440,10 @@ public final class XmlPattern
      * @param pattern the pattern to compile
      * @param flags compilation flags, see XML_PATTERN_*
      * @param namespaces the prefix definitions, array of [URI, prefix] or null
-     * @param patternOut output pattern (length 1)
+     * @param pattern_out output pattern (length 1)
      * @return 0 on success, 1 on error, -1 if a memory allocation failed.
      */
-    public static int patternCompileSafe(String pattern, int flags, String[] namespaces, XmlPattern[] patternOut)
+    public static int patternCompileSafe(String pattern, int flags, String[] namespaces, XmlPattern[] pattern_out)
     {
         XmlPattern ret = null, cur;
         PatParserContext ctxt = null;
@@ -2452,13 +2452,13 @@ public final class XmlPattern
         int streamable = 1;
         int error;
 
-        if (patternOut == null)
+        if (pattern_out == null)
             return 1;
 
         if (pattern == null)
         {
             error = 1;
-            patternOut[0] = null;
+            pattern_out[0] = null;
             return error;
         }
 
@@ -2498,7 +2498,7 @@ public final class XmlPattern
             {
                 error = ctxt.error;
                 patternFree(ret);
-                patternOut[0] = null;
+                pattern_out[0] = null;
                 return error;
             }
             freeParserContext(ctxt);
@@ -2527,7 +2527,7 @@ public final class XmlPattern
                 if (error != 0)
                 {
                     patternFree(ret);
-                    patternOut[0] = null;
+                    pattern_out[0] = null;
                     return error;
                 }
             }
@@ -2535,7 +2535,7 @@ public final class XmlPattern
             if (error != 0)
             {
                 patternFree(ret);
-                patternOut[0] = null;
+                pattern_out[0] = null;
                 return error;
             }
             start = orp;
@@ -2554,7 +2554,7 @@ public final class XmlPattern
             }
         }
 
-        patternOut[0] = ret;
+        pattern_out[0] = ret;
         return 0;
     }
 
@@ -2672,11 +2672,11 @@ public final class XmlPattern
         {
             if (comp.stream == null)
                 return -1;
-            for (i = 0; i < comp.stream.nbStep; i++)
+            for (i = 0; i < comp.stream.nb_step; i++)
                 if ((comp.stream.steps[i].flags & XML_STREAM_STEP_DESC) != 0)
                     return -2;
-            if (comp.stream.nbStep > ret)
-                ret = comp.stream.nbStep;
+            if (comp.stream.nb_step > ret)
+                ret = comp.stream.nb_step;
             comp = comp.next;
         }
         return ret;
@@ -2699,8 +2699,8 @@ public final class XmlPattern
         {
             if (comp.stream == null)
                 return -1;
-            if (comp.stream.nbStep < ret)
-                ret = comp.stream.nbStep;
+            if (comp.stream.nb_step < ret)
+                ret = comp.stream.nb_step;
             if (ret == 0)
                 return 0;
             comp = comp.next;

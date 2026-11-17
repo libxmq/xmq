@@ -63,7 +63,7 @@ public final class Xsd10AttributeGroup extends Xsd10BasicItem
     /** Deprecated; not used */
     String ref;
     /** Deprecated; not used */
-    String refNs;
+    String ref_ns;
     /** C {@code XmlXsd10Annot * annot}. */
     Xsd10Annot annot;
     /** Deprecated; not used */
@@ -72,14 +72,14 @@ public final class Xsd10AttributeGroup extends Xsd10BasicItem
     XmlNode node;
     /** C {@code int flags}. */
     int flags;
-    /** C {@code XmlXsd10Wildcard * attributeWildcard}. */
-    Xsd10Wildcard attributeWildcard;
+    /** C {@code XmlXsd10Wildcard * attribute_wildcard}. */
+    Xsd10Wildcard attribute_wildcard;
     /** Deprecated; not used */
-    String refPrefix;
+    String ref_prefix;
     /** Deprecated; not used */
-    Xsd10AttributeGroup refItem;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
-    /** C {@code void * attrUses}. */
-    Object attrUses;
+    Xsd10AttributeGroup ref_item;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
+    /** C {@code void * attr_uses}. */
+    Object attr_uses;
 }

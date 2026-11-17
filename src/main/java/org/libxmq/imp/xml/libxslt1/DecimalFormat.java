@@ -68,14 +68,14 @@ final class DecimalFormat
     DecimalFormat next;
     String name;
     String digit;
-    String patternSeparator;
-    String minusSign;
+    String pattern_separator;
+    String minus_sign;
     String infinity;
-    String noNumber;
-    String decimalPoint;
+    String no_number;
+    String decimal_point;
     String grouping;
     String percent;
     String permille;
-    String zeroDigit;
-    String nsUri;
+    String zero_digit;
+    String ns_uri;
 }

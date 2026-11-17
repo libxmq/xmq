@@ -117,7 +117,7 @@ public final class IXMLAnalyzer {
         // Like the C version: the line and column of the failing character, and the
         // input around it with a ^ below the failing character.
         int[] cps = input.codePoints().toArray();
-        int at = Math.min(failedAt, cps.length);
+        int at = Math.min(failed_at, cps.length);
         int line = 1, col = 1;
         for (int i = 0; i < at; i++) {
             if (cps[i] == '\n') { line++; col = 1; } else col++;
@@ -345,18 +345,18 @@ public final class IXMLAnalyzer {
         Element element;     // for '^'
         StringBuilder text;  // for '@'
         // For a rule rewritten from left recursion: where its content starts.
-        Element lrTarget;    // The element that receives the content, null if none.
-        int lrChildren, lrTextLen, lrAttrs;
+        Element lr_target;    // The element that receives the content, null if none.
+        int lr_children, lr_text_len, lr_attrs;
     }
-    private int failedAt;
+    private int failed_at;
     // Run the LL(*) parser on the input, the tree is added below into.
     // Returns null if accepted, else an error message. An explicit call stack
     // executes the parser without Java stack limits.
     private String run(String input, Element into) {
         int[] cps = input.codePoints().toArray(); int offset = 0;
         Deque<Frame> stack = new ArrayDeque<>();
-        Term startTerm = Term.call(grammar.start);
-        String err = enter(stack, startTerm, cps, offset, into);
+        Term start_term = Term.call(grammar.start);
+        String err = enter(stack, start_term, cps, offset, into);
         if (err != null) return err;
         while (!stack.isEmpty()) {
             Frame f = stack.peek();
@@ -366,7 +366,7 @@ public final class IXMLAnalyzer {
                     Element target = nearestElement(stack, into);
                     if (target.attribute(f.name) != null) {
                         // It is a dynamic error (D02) if an element gets the same attribute twice.
-                        failedAt = offset;
+                        failed_at = offset;
                         return "dynamic error D02: the attribute " + f.name + " occurs more than once on an element";
                     }
                     target.attr(f.name, f.text.toString());
@@ -379,20 +379,20 @@ public final class IXMLAnalyzer {
                 if (err != null) return err;
             } else if (t.chars != null) {
                 int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
-                if (!t.chars.get(cp)) { failedAt = offset; return "Expected " + ranges(t.chars) + ", found " + hex(cp); }
+                if (!t.chars.get(cp)) { failed_at = offset; return "Expected " + ranges(t.chars) + ", found " + hex(cp); }
                 if (!t.mark.equals("-")) text(stack, into, new String(Character.toChars(cp)));
                 offset++;
             } else if (t.not != null) {
                 if (notMatches(t.not, cps, offset)) {
-                    failedAt = offset;
+                    failed_at = offset;
                     return "Negative lookahead matched at " + hex(offset == cps.length ? IXMLGrammar.EOF : cps[offset]);
                 }
             } else {
                 text(stack, into, t.insertion);
             }
         }
-        if (offset != cps.length) { failedAt = offset; return "Expected EOF"; }
-        failedAt = offset;
+        if (offset != cps.length) { failed_at = offset; return "Expected EOF"; }
+        failed_at = offset;
         return null;
     }
     /** Does the input at offset start with the forbidden sequence of a negative lookahead? */
@@ -422,7 +422,7 @@ public final class IXMLAnalyzer {
                 alt = lookahead.predictAdaptive(lookahead.index.get(r.name), ctx, cps, offset);
             }
             if (alt < 0) {
-                failedAt = offset;
+                failed_at = offset;
                 int cp = offset == cps.length ? IXMLGrammar.EOF : cps[offset];
                 return "No alternative in " + r.name + " for " + hex(cp);
             }
@@ -431,9 +431,9 @@ public final class IXMLAnalyzer {
         f.rule = r; f.terms = r.alternatives.get(alt); f.alt = alt;
         String mark = !t.mark.isEmpty() ? t.mark : !r.mark.isEmpty() ? r.mark : "^";
         f.name = !t.alias.isEmpty() ? t.alias : !r.alias.isEmpty() ? r.alias : r.name;
-        boolean inAttribute = false;
-        for (Frame p : stack) if (p.kind == '@') { inAttribute = true; break; }
-        f.kind = inAttribute ? '-' : mark.charAt(0);
+        boolean in_attribute = false;
+        for (Frame p : stack) if (p.kind == '@') { in_attribute = true; break; }
+        f.kind = in_attribute ? '-' : mark.charAt(0);
         if (f.kind == '^') {
             f.element = new Element(f.name);
             Element parent = nearestElement(stack, into);
@@ -442,20 +442,20 @@ public final class IXMLAnalyzer {
             f.text = new StringBuilder();
         }
         stack.push(f);
-        if (r.lrTail != null && !inAttribute && f.kind != '@') {
+        if (r.lr_tail != null && !in_attribute && f.kind != '@') {
             // Remember where the content of this rule starts, for wrapping it
             // in the loop that replaced the left recursion.
             Element target = nearestElement(stack, into);
-            f.lrTarget = target;
-            f.lrChildren = target.numChildren();
+            f.lr_target = target;
+            f.lr_children = target.numChildren();
             XmlNode last = target.lastChild();
-            f.lrTextLen = last instanceof XmlText ? last.content().length() : -1;
-            f.lrAttrs = target.attributes().size();
+            f.lr_text_len = last instanceof XmlText ? last.content().length() : -1;
+            f.lr_attrs = target.attributes().size();
         }
-        if (r.lrWrap != null && r.lrWrap.get(alt) != null) {
+        if (r.lr_wrap != null && r.lr_wrap.get(alt) != null) {
             for (Frame o : stack) {
-                if (o.rule.name.equals(r.lrOwner)) {
-                    if (o.lrTarget != null) wrap(o, r.lrWrap.get(alt));
+                if (o.rule.name.equals(r.lr_owner)) {
+                    if (o.lr_target != null) wrap(o, r.lr_wrap.get(alt));
                     break;
                 }
             }
@@ -465,17 +465,17 @@ public final class IXMLAnalyzer {
     // Move the content produced since the mark in the owner frame into a new
     // element, which is added last. This builds the left nested tree.
     private static void wrap(Frame o, String name) {
-        Element target = o.lrTarget;
+        Element target = o.lr_target;
         Element w = new Element(name);
         List<XmlNode> children = target.children();
-        int from = o.lrChildren;
-        if (o.lrTextLen >= 0 && from > 0) {
+        int from = o.lr_children;
+        if (o.lr_text_len >= 0 && from > 0) {
             // Text added after the mark may have been merged into the last text node.
             XmlNode t = children.get(from - 1);
             String c = t.content();
-            if (c.length() > o.lrTextLen) {
-                t.setContent(c.substring(0, o.lrTextLen));
-                w.appendRaw(new XmlText(c.substring(o.lrTextLen)));
+            if (c.length() > o.lr_text_len) {
+                t.setContent(c.substring(0, o.lr_text_len));
+                w.appendRaw(new XmlText(c.substring(o.lr_text_len)));
             }
         }
         for (int i = from; i < children.size(); i++) {
@@ -484,7 +484,7 @@ public final class IXMLAnalyzer {
             w.appendRaw(n);
         }
         List<org.libxmq.imp.xml.XmlAttr> attrs = new ArrayList<>(target.attributes()); // A copy, the list is live.
-        for (int i = o.lrAttrs; i < attrs.size(); i++) {
+        for (int i = o.lr_attrs; i < attrs.size(); i++) {
             org.libxmq.imp.xml.XmlAttr a = attrs.get(i);
             target.removeAttribute(a);
             w.addAttribute(a);
@@ -505,8 +505,8 @@ public final class IXMLAnalyzer {
     private Element test(String input) {
         Element tree = new Element("tree");
         String err = run(input, tree);
-        if (err != null) return rejected(failedAt, err);
-        Element accepted = new Element("test").attr("status", "accepted").attr("consumed-codepoints", Integer.toString(failedAt));
+        if (err != null) return rejected(failed_at, err);
+        Element accepted = new Element("test").attr("status", "accepted").attr("consumed-codepoints", Integer.toString(failed_at));
         return accepted.addContent(tree);
     }
     private Element rejected(int offset, String message) {

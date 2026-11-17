@@ -98,7 +98,7 @@ public final class XmlUri
     /** The parsing flags, 2 disables unescaping of the parts. */
     public int cleanup;
     /** The query string (as it appears in the URI), or null. */
-    public String queryRaw;
+    public String query_raw;
 
     private static final int MAX_URI_LENGTH = 1024 * 1024;
 
@@ -255,12 +255,12 @@ public final class XmlUri
     }
 
     /** Like xmlStrcat: append add to s, s may be null. */
-    private static byte[] xmlUriStrcat(byte[] s, byte[] add, int addStart)
+    private static byte[] xmlUriStrcat(byte[] s, byte[] add, int add_start)
     {
         if (add == null) return s;
-        if (s == null) return Arrays.copyOfRange(add, addStart, add.length);
-        byte[] r = Arrays.copyOf(s, s.length + add.length - addStart);
-        System.arraycopy(add, addStart, r, s.length, add.length - addStart);
+        if (s == null) return Arrays.copyOfRange(add, add_start, add.length);
+        byte[] r = Arrays.copyOf(s, s.length + add.length - add_start);
+        System.arraycopy(add, add_start, r, s.length, add.length - add_start);
         return r;
     }
 
@@ -522,7 +522,7 @@ public final class XmlUri
             /* Save the raw bytes of the query as well.
              * See: http://mail.gnome.org/archives/xml/2007-April/thread.html#00114
              */
-            uri.queryRaw = fromUtf8(xmlUriStrndup(s, str[0], cur - str[0]));
+            uri.query_raw = fromUtf8(xmlUriStrndup(s, str[0], cur - str[0]));
         }
         str[0] = cur;
         return 0;
@@ -1035,17 +1035,17 @@ public final class XmlUri
         return 0;
     }
 
-    private static int xmlUriParseSafe(byte[] str, XmlUri[] uriOut)
+    private static int xmlUriParseSafe(byte[] str, XmlUri[] uri_out)
     {
-        if (uriOut == null) return 1;
-        uriOut[0] = null;
+        if (uri_out == null) return 1;
+        uri_out[0] = null;
         if (str == null) return 1;
 
         XmlUri uri = create();
         int ret = xmlUriParseUriReference(uri, str);
         if (ret != 0) return ret;
 
-        uriOut[0] = uri;
+        uri_out[0] = uri;
         return 0;
     }
 
@@ -1055,13 +1055,13 @@ public final class XmlUri
      * URI-reference = [ absoluteURI | relativeURI ] [ "\#" fragment ]
      *
      * @param str  the URI string to analyze
-     * @param uriOut  uriOut[0] is set to the parsed URI or null on error
+     * @param uri_out  uri_out[0] is set to the parsed URI or null on error
      * @return 0 on success, an error code (typically 1) if the URI is invalid
      * or -1 if a memory allocation failed.
      */
-    public static int parseSafe(String str, XmlUri[] uriOut)
+    public static int parseSafe(String str, XmlUri[] uri_out)
     {
-        return xmlUriParseSafe(toUtf8(str), uriOut);
+        return xmlUriParseSafe(toUtf8(str), uri_out);
     }
 
     /**
@@ -1152,10 +1152,10 @@ public final class XmlUri
         /** Function to handle properly a reallocation when saving an URI. */
         boolean xmlUriSaveRealloc()
         {
-            int newSize = xmlUriGrowCapacity(max, 80, MAX_URI_LENGTH);
-            if (newSize < 0) return false;
-            ret = Arrays.copyOf(ret, newSize + 1 + 16);
-            max = newSize;
+            int new_size = xmlUriGrowCapacity(max, 80, MAX_URI_LENGTH);
+            if (new_size < 0) return false;
+            ret = Arrays.copyOf(ret, new_size + 1 + 16);
+            max = new_size;
             return true;
         }
     }
@@ -1374,14 +1374,14 @@ public final class XmlUri
                     }
                 }
             }
-            if (uri.queryRaw != null)
+            if (uri.query_raw != null)
             {
                 if (len + 1 >= b.max)
                 {
                     if (!b.xmlUriSaveRealloc()) return null;
                 }
                 b.ret[len++] = '?';
-                p = toUtf8(uri.queryRaw);
+                p = toUtf8(uri.query_raw);
                 pi = 0;
                 while (at(p, pi) != 0)
                 {
@@ -1470,7 +1470,7 @@ public final class XmlUri
         uri.opaque = null;
         uri.authority = null;
         uri.query = null;
-        uri.queryRaw = null;
+        uri.query_raw = null;
     }
 
     /* **********************************************************************
@@ -1479,7 +1479,7 @@ public final class XmlUri
      *                                                                      *
      ************************************************************************/
 
-    private static boolean xmlUriIsPathSeparator(int c, boolean isFile)
+    private static boolean xmlUriIsPathSeparator(int c, boolean is_file)
     {
         if (c == '/') return true;
 
@@ -1494,10 +1494,10 @@ public final class XmlUri
      *
      * @return 0 or an error code
      */
-    private static int xmlUriNormalizePath(byte[] path, boolean isFile)
+    private static int xmlUriNormalizePath(byte[] path, boolean is_file)
     {
         int cur, out;
-        int numSeg = 0;
+        int num_seg = 0;
 
         if (path == null) return -1;
 
@@ -1506,7 +1506,7 @@ public final class XmlUri
 
         if (path[cur] == 0) return 0;
 
-        if (xmlUriIsPathSeparator(path[cur], isFile))
+        if (xmlUriIsPathSeparator(path[cur], is_file))
         {
             cur++;
             path[out++] = '/';
@@ -1518,7 +1518,7 @@ public final class XmlUri
              * At this point, out is either empty or ends with a separator.
              * Collapse multiple separators first.
              */
-            while (xmlUriIsPathSeparator(path[cur], isFile))
+            while (xmlUriIsPathSeparator(path[cur], is_file))
             {
                 cur++;
             }
@@ -1530,23 +1530,23 @@ public final class XmlUri
                     /* Ignore "." at end of path */
                     break;
                 }
-                else if (xmlUriIsPathSeparator(path[cur + 1], isFile))
+                else if (xmlUriIsPathSeparator(path[cur + 1], is_file))
                 {
                     /* Skip "./" */
                     cur += 2;
                     continue;
                 }
                 else if (path[cur + 1] == '.' &&
-                         (path[cur + 2] == 0 || xmlUriIsPathSeparator(path[cur + 2], isFile)))
+                         (path[cur + 2] == 0 || xmlUriIsPathSeparator(path[cur + 2], is_file)))
                 {
-                    if (numSeg > 0)
+                    if (num_seg > 0)
                     {
                         /* Handle ".." by removing last segment */
                         do
                         {
                             out--;
-                        } while (out > 0 && !xmlUriIsPathSeparator(path[out - 1], isFile));
-                        numSeg--;
+                        } while (out > 0 && !xmlUriIsPathSeparator(path[out - 1], is_file));
+                        num_seg--;
 
                         if (path[cur + 2] == 0) break;
                         cur += 3;
@@ -1562,13 +1562,13 @@ public final class XmlUri
                     else
                     {
                         /* Keep "../" at start of relative path */
-                        numSeg--;
+                        num_seg--;
                     }
                 }
             }
 
             /* Copy segment */
-            while (path[cur] != 0 && !xmlUriIsPathSeparator(path[cur], isFile))
+            while (path[cur] != 0 && !xmlUriIsPathSeparator(path[cur], is_file))
             {
                 path[out++] = path[cur++];
             }
@@ -1580,11 +1580,11 @@ public final class XmlUri
                 path[out++] = '/';
             }
 
-            numSeg++;
+            num_seg++;
         }
 
         /* Keep "." if output is empty and it's a file */
-        if (isFile && out <= 0) path[out++] = '.';
+        if (is_file && out <= 0) path[out++] = '.';
         path[out] = 0;
 
         return 0;
@@ -1716,7 +1716,7 @@ public final class XmlUri
      * @return 0 on success, -1 if a memory allocation failed or an error
      * code if URI or base are invalid.
      */
-    private static int xmlUriResolvePath(byte[] escRef, byte[] base, byte[][] out)
+    private static int xmlUriResolvePath(byte[] esc_ref, byte[] base, byte[][] out)
     {
         int fragment;
         byte[] ref;
@@ -1726,7 +1726,7 @@ public final class XmlUri
         if (out == null) return 1;
         out[0] = null;
 
-        if (escRef == null || escRef.length == 0)
+        if (esc_ref == null || esc_ref.length == 0)
         {
             if (base == null || base.length == 0) return 1;
             out[0] = base;
@@ -1738,11 +1738,11 @@ public final class XmlUri
          * a filesystem path. This means we have to unescape the part
          * before the fragment.
          */
-        fragment = indexOf(escRef, HASH);
-        byte[] esc = escRef;
+        fragment = indexOf(esc_ref, HASH);
+        byte[] esc = esc_ref;
         if (fragment >= 0)
         {
-            esc = Arrays.copyOf(escRef, fragment);
+            esc = Arrays.copyOf(esc_ref, fragment);
         }
 
         ref = xmlUriUnescapeString(esc, 0, -1);
@@ -1781,14 +1781,14 @@ public final class XmlUri
 
         if (fragment >= 0)
         {
-            result = xmlUriStrcat(result, escRef, fragment);
+            result = xmlUriStrcat(result, esc_ref, fragment);
         }
 
         out[0] = result;
         return 0;
     }
 
-    private static int xmlUriBuildSafe(byte[] URI, byte[] base, byte[][] valPtr)
+    private static int xmlUriBuildSafe(byte[] URI, byte[] base, byte[][] val_ptr)
     {
         byte[] val = null;
         int ret, len, indx, cur, out;
@@ -1797,14 +1797,14 @@ public final class XmlUri
         XmlUri res = null;
         XmlUri[] tmp = { null };
 
-        if (valPtr == null) return 1;
-        valPtr[0] = null;
+        if (val_ptr == null) return 1;
+        val_ptr[0] = null;
 
         if (URI == null) return 1;
 
         if (base == null)
         {
-            valPtr[0] = URI;
+            val_ptr[0] = URI;
             return 0;
         }
 
@@ -1841,7 +1841,7 @@ public final class XmlUri
              */
             if (indexOf(base, COLON_SLASH_SLASH) < 0)
             {
-                return xmlUriResolvePath(URI, base, valPtr);
+                return xmlUriResolvePath(URI, base, val_ptr);
             }
 
             // Paths with a Windows drive letter are resolved as filesystem paths only on _WIN32.
@@ -1901,9 +1901,9 @@ public final class XmlUri
                         res.port = bas.port;
                     }
                     if (bas.path != null) res.path = bas.path;
-                    if (ref.queryRaw != null) res.queryRaw = ref.queryRaw;
+                    if (ref.query_raw != null) res.query_raw = ref.query_raw;
                     else if (ref.query != null) res.query = ref.query;
-                    else if (bas.queryRaw != null) res.queryRaw = bas.queryRaw;
+                    else if (bas.query_raw != null) res.query_raw = bas.query_raw;
                     else if (bas.query != null) res.query = bas.query;
                     if (ref.fragment != null) res.fragment = ref.fragment;
                     break step7;
@@ -1923,7 +1923,7 @@ public final class XmlUri
                 }
                 if (bas.scheme != null) res.scheme = bas.scheme;
 
-                if (ref.queryRaw != null) res.queryRaw = ref.queryRaw;
+                if (ref.query_raw != null) res.query_raw = ref.query_raw;
                 else if (ref.query != null) res.query = ref.query;
                 if (ref.fragment != null) res.fragment = ref.fragment;
 
@@ -1978,11 +1978,11 @@ public final class XmlUri
                  *
                  * Allocate a buffer large enough for the result string.
                  */
-                byte[] refPath = toUtf8(ref.path);
-                byte[] basPath = toUtf8(bas.path);
+                byte[] ref_path = toUtf8(ref.path);
+                byte[] bas_path = toUtf8(bas.path);
                 len = 2; /* extra / and 0 */
-                if (refPath != null) len += refPath.length;
-                if (basPath != null) len += basPath.length;
+                if (ref_path != null) len += ref_path.length;
+                if (bas_path != null) len += bas_path.length;
                 byte[] p = new byte[len];
                 p[0] = 0;
 
@@ -1993,17 +1993,17 @@ public final class XmlUri
                  */
                 cur = 0;
                 out = 0;
-                if (basPath != null)
+                if (bas_path != null)
                 {
-                    while (at(basPath, cur) != 0)
+                    while (at(bas_path, cur) != 0)
                     {
-                        while (at(basPath, cur) != 0 && at(basPath, cur) != '/') cur++;
-                        if (at(basPath, cur) == 0) break;
+                        while (at(bas_path, cur) != 0 && at(bas_path, cur) != '/') cur++;
+                        if (at(bas_path, cur) == 0) break;
 
                         cur++;
                         while (out < cur)
                         {
-                            p[out] = basPath[out];
+                            p[out] = bas_path[out];
                             out++;
                         }
                     }
@@ -2014,7 +2014,7 @@ public final class XmlUri
                  * b) The reference's path component is appended to the buffer
                  *    string.
                  */
-                if (refPath != null && refPath.length != 0)
+                if (ref_path != null && ref_path.length != 0)
                 {
                     indx = 0;
                     /*
@@ -2022,9 +2022,9 @@ public final class XmlUri
                      */
                     if (out == 0 && (bas.server != null || bas.port != PORT_EMPTY))
                         p[out++] = '/';
-                    while (indx < refPath.length)
+                    while (indx < ref_path.length)
                     {
-                        p[out++] = refPath[indx++];
+                        p[out++] = ref_path[indx++];
                     }
                 }
                 p[out] = 0;
@@ -2045,7 +2045,7 @@ public final class XmlUri
             val = xmlUriSave(res);
             if (val != null) ret = 0;
         }
-        valPtr[0] = val;
+        val_ptr[0] = val;
         return ret;
     }
 
@@ -2057,15 +2057,15 @@ public final class XmlUri
      *
      * @param uri  the URI instance found in the document
      * @param base  the base value, may be null
-     * @param errorOut  if not null, errorOut[0] is set to 0 on success, -1 if
+     * @param error_out  if not null, error_out[0] is set to 0 on success, -1 if
      * the result is too long or an error code if URI or base are invalid
      * @return the resulting URI, or null on error
      */
-    public static String buildSafe(String uri, String base, int[] errorOut)
+    public static String buildSafe(String uri, String base, int[] error_out)
     {
         byte[][] val = { null };
         int ret = xmlUriBuildSafe(toUtf8(uri), toUtf8(base), val);
-        if (errorOut != null) errorOut[0] = ret;
+        if (error_out != null) error_out[0] = ret;
         return fromUtf8(val[0]);
     }
 

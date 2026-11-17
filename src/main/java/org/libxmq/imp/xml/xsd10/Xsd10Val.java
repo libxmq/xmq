@@ -61,11 +61,11 @@ public final class Xsd10Val
     {
         /** XmlXsd10Char *str */
         String str;
-        /** unsigned integralPlaces */
-        int integralPlaces;
-        /** unsigned fractionalPlaces */
-        int fractionalPlaces;
-        Decimal copy() { Decimal d = new Decimal(); d.str = str; d.integralPlaces = integralPlaces; d.fractionalPlaces = fractionalPlaces; return d; }
+        /** unsigned integral_places */
+        int integral_places;
+        /** unsigned fractional_places */
+        int fractional_places;
+        Decimal copy() { Decimal d = new Decimal(); d.str = str; d.integral_places = integral_places; d.fractional_places = fractional_places; return d; }
     }
     /** C XmlXsd10ValDate (the C bit fields are plain ints). */
     static final class Date

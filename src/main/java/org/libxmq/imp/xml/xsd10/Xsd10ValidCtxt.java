@@ -59,7 +59,7 @@ import static org.libxmq.imp.xml.xsd10.Xsd10Const.*;
 public final class Xsd10ValidCtxt extends Xsd10AbstractCtxt
 {
     /** user specific data block */
-    Object errCtxt;
+    Object err_ctxt;
     /** the callback in case of errors */
     ValidityErrorFunc error;
     /** the callback in case of warning */
@@ -86,64 +86,64 @@ public final class Xsd10ValidCtxt extends Xsd10AbstractCtxt
     XmlRegExecCtxt regexp;
     /** C {@code XmlXsd10Val * value}. */
     Xsd10Val value;
-    /** C {@code int valueWS}. */
-    int valueWS;
+    /** C {@code int value_ws}. */
+    int value_ws;
     /** C {@code int options}. */
     int options;
-    /** C {@code XMQNode * validationRoot}. */
-    XmlNode validationRoot;
+    /** C {@code XMQNode * validation_root}. */
+    XmlNode validation_root;
     /** C {@code XmlXsd10ParserCtxt * pctxt}. */
     Xsd10ParserCtxt pctxt;
-    /** C {@code int xsiAssemble}. */
-    int xsiAssemble;
+    /** C {@code int xsi_assemble}. */
+    int xsi_assemble;
     /** C {@code int depth}. */
     int depth;
     /** array of element information */
-    Xsd10NodeInfo[] elemInfos;
-    /** C {@code int sizeElemInfos}. */
-    int sizeElemInfos;
+    Xsd10NodeInfo[] elem_infos;
+    /** C {@code int size_elem_infos}. */
+    int size_elem_infos;
     /** the current element information */
     Xsd10NodeInfo inode;
     /** a list of augmented IDC information */
     Xsd10IDCAug aidcs;
     /** first active state object. */
-    Xsd10IDCStateObj xpathStates;
+    Xsd10IDCStateObj xpath_states;
     /** first stored state object. */
-    Xsd10IDCStateObj xpathStatePool;
+    Xsd10IDCStateObj xpath_state_pool;
     /** Cache for IDC matcher objects. */
-    Xsd10IDCMatcher idcMatcherCache;
+    Xsd10IDCMatcher idc_matcher_cache;
     /** list of all IDC node-table entries */
-    Xsd10PSVIIDCNode[] idcNodes;
-    /** C {@code int nbIdcNodes}. */
-    int nbIdcNodes;
-    /** C {@code int sizeIdcNodes}. */
-    int sizeIdcNodes;
+    Xsd10PSVIIDCNode[] idc_nodes;
+    /** C {@code int nb_idc_nodes}. */
+    int nb_idc_nodes;
+    /** C {@code int size_idc_nodes}. */
+    int size_idc_nodes;
     /** list of all IDC node-table entries */
-    Xsd10PSVIIDCKey[] idcKeys;
-    /** C {@code int nbIdcKeys}. */
-    int nbIdcKeys;
-    /** C {@code int sizeIdcKeys}. */
-    int sizeIdcKeys;
+    Xsd10PSVIIDCKey[] idc_keys;
+    /** C {@code int nb_idc_keys}. */
+    int nb_idc_keys;
+    /** C {@code int size_idc_keys}. */
+    int size_idc_keys;
     /** C {@code int flags}. */
     int flags;
     /** C {@code XmlXsd10Dict * dict}. */
     Xsd10Dict dict;
-    /** C {@code XmlXsd10AttrInfo ** attrInfos}. */
-    Xsd10AttrInfo[] attrInfos;
-    /** C {@code int nbAttrInfos}. */
-    int nbAttrInfos;
-    /** C {@code int sizeAttrInfos}. */
-    int sizeAttrInfos;
-    /** C {@code int skipDepth}. */
-    int skipDepth;
-    /** C {@code XmlXsd10ItemList * nodeQNames}. */
-    Xsd10ItemList nodeQNames;
-    /** C {@code int hasKeyrefs}. */
-    int hasKeyrefs;
-    /** C {@code int createIDCNodeTables}. */
-    int createIDCNodeTables;
-    /** C {@code int psviExposeIDCNodeTables}. */
-    int psviExposeIDCNodeTables;
+    /** C {@code XmlXsd10AttrInfo ** attr_infos}. */
+    Xsd10AttrInfo[] attr_infos;
+    /** C {@code int nb_attr_infos}. */
+    int nb_attr_infos;
+    /** C {@code int size_attr_infos}. */
+    int size_attr_infos;
+    /** C {@code int skip_depth}. */
+    int skip_depth;
+    /** C {@code XmlXsd10ItemList * node_q_names}. */
+    Xsd10ItemList node_q_names;
+    /** C {@code int has_keyrefs}. */
+    int has_keyrefs;
+    /** C {@code int create_idc_node_tables}. */
+    int create_idc_node_tables;
+    /** C {@code int psvi_expose_idc_node_tables}. */
+    int psvi_expose_idc_node_tables;
     /** The ID attributes of the validated document (replaces libxml2 doc->ids). */
     Xsd10Ids ids;
 }

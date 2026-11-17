@@ -72,7 +72,7 @@ final class StackElem
     StylePreComp comp;
     int computed;
     String name;
-    String nameUri;
+    String name_uri;
     String select;
     XmlNode tree;           // The content, if there is no select.
     XPathResult value;

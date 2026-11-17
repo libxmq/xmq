@@ -56,16 +56,16 @@ public final class Xsd10AttributeUse extends Xsd10AnnotItem
 {
     /** The next attr. use. */
     Xsd10AttributeUse next;
-    /** C {@code XmlXsd10Attribute * attrDecl}. */
-    Xsd10BasicItem attrDecl;
+    /** C {@code XmlXsd10Attribute * attr_decl}. */
+    Xsd10BasicItem attr_decl;
     /** C {@code int flags}. */
     int flags;
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** required, optional */
     int occurs;
-    /** C {@code const char * defValue}. */
-    String defValue;
-    /** C {@code XmlXsd10Val * defVal}. */
-    Xsd10Val defVal;
+    /** C {@code const char * def_value}. */
+    String def_value;
+    /** C {@code XmlXsd10Val * def_val}. */
+    Xsd10Val def_val;
 }

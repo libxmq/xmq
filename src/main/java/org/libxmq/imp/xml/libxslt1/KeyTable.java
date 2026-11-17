@@ -67,6 +67,6 @@ final class KeyTable
 {
     KeyTable next;
     String name;
-    String nameUri;
+    String name_uri;
     HashMap<String, XPathResult> keys;    // value -> node set.
 }

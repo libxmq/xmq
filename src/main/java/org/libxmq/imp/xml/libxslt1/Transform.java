@@ -220,7 +220,7 @@ public final class Transform
     {
         if (node == null || nodeKind(node) == NAMESPACE) return null;
         if (streq(href, XML_NAMESPACE)) return nsLookupPrefix(node, "xml");
-        boolean isAttr = nodeKind(node) == ATTRIBUTE;
+        boolean is_attr = nodeKind(node) == ATTRIBUTE;
         XmlNode orig = node;
         while (nodeKind(node) != ELEMENT)
         {
@@ -233,7 +233,7 @@ public final class Transform
             {
                 if (streq(nsHref(cur), href))
                 {
-                    if ((!isAttr || nsPrefix(cur) != null) && lxNsInScope(orig, node, nsPrefix(cur)) == 1) return cur;
+                    if ((!is_attr || nsPrefix(cur) != null) && lxNsInScope(orig, node, nsPrefix(cur)) == 1) return cur;
                 }
             }
             if (orig != node)
@@ -241,7 +241,7 @@ public final class Transform
                 XmlNs cur = nodeNs(node);
                 if (cur != null && streq(nsHref(cur), href))
                 {
-                    if ((!isAttr || nsPrefix(cur) != null) && lxNsInScope(orig, node, nsPrefix(cur)) == 1) return cur;
+                    if ((!is_attr || nsPrefix(cur) != null) && lxNsInScope(orig, node, nsPrefix(cur)) == 1) return cur;
                 }
             }
             node = nodeParent(node);
@@ -428,15 +428,15 @@ public final class Transform
     {
         rvt.prev = null;
         rvt.flag = RVT.LOCAL;
-        if (t.contextVariable != null)
+        if (t.context_variable != null)
         {
-            rvt.next = t.contextVariable.fragment;
-            t.contextVariable.fragment = rvt;
+            rvt.next = t.context_variable.fragment;
+            t.context_variable.fragment = rvt;
             return;
         }
-        rvt.next = t.tmpRvt;
-        if (t.tmpRvt != null) t.tmpRvt.prev = rvt;
-        t.tmpRvt = rvt;
+        rvt.next = t.tmp_rvt;
+        if (t.tmp_rvt != null) t.tmp_rvt.prev = rvt;
+        t.tmp_rvt = rvt;
     }
 
     /** Port of xsltRegisterLocalRVT. */
@@ -444,15 +444,15 @@ public final class Transform
     {
         rvt.prev = null;
         rvt.flag = RVT.LOCAL;
-        if (t.contextVariable != null && (t.contextVariable.flags & XSLT_VAR_IN_SELECT) != 0)
+        if (t.context_variable != null && (t.context_variable.flags & XSLT_VAR_IN_SELECT) != 0)
         {
-            rvt.next = t.contextVariable.fragment;
-            t.contextVariable.fragment = rvt;
+            rvt.next = t.context_variable.fragment;
+            t.context_variable.fragment = rvt;
             return;
         }
-        rvt.next = t.localRvt;
-        if (t.localRvt != null) t.localRvt.prev = rvt;
-        t.localRvt = rvt;
+        rvt.next = t.local_rvt;
+        if (t.local_rvt != null) t.local_rvt.prev = rvt;
+        t.local_rvt = rvt;
     }
 
     /** Port of xsltRegisterPersistRVT. */
@@ -460,9 +460,9 @@ public final class Transform
     {
         rvt.flag = RVT.GLOBAL;
         rvt.prev = null;
-        rvt.next = t.persistRvt;
-        if (t.persistRvt != null) t.persistRvt.prev = rvt;
-        t.persistRvt = rvt;
+        rvt.next = t.persist_rvt;
+        if (t.persist_rvt != null) t.persist_rvt.prev = rvt;
+        t.persist_rvt = rvt;
     }
 
     /** Port of xsltFlagRVTs. */
@@ -509,11 +509,11 @@ public final class Transform
     /** Port of xsltReleaseLocalRVTs. */
     private static void xsltReleaseLocalRvts(TransformCtx t, RVT base)
     {
-        RVT cur = t.localRvt;
+        RVT cur = t.local_rvt;
         if (cur == base) return;
         if (cur.prev != null) transformError(t, null, null, "localRVT not head of list\n");
         // Reset localRVT early because some RVTs might be registered again.
-        t.localRvt = base;
+        t.local_rvt = base;
         if (base != null) base.prev = null;
         do
         {
@@ -552,12 +552,12 @@ public final class Transform
     /** Port of xsltFreeRVTs. */
     private static void xsltFreeRvts(TransformCtx t)
     {
-        xsltFreeRvtList(t, t.localRvt);
-        t.localRvt = null;
-        xsltFreeRvtList(t, t.tmpRvt);
-        t.tmpRvt = null;
-        xsltFreeRvtList(t, t.persistRvt);
-        t.persistRvt = null;
+        xsltFreeRvtList(t, t.local_rvt);
+        t.local_rvt = null;
+        xsltFreeRvtList(t, t.tmp_rvt);
+        t.tmp_rvt = null;
+        xsltFreeRvtList(t, t.persist_rvt);
+        t.persist_rvt = null;
     }
 
     /** A node set holding the document node of the fragment (xmlXPathNewValueTree). */
@@ -584,7 +584,7 @@ public final class Transform
         if (comp == null) return null;
         try
         {
-            return t.xpath.eval(comp, node, t.xpPosition, t.xpSize);
+            return t.xpath.eval(comp, node, t.xp_position, t.xp_size);
         }
         catch (XPathException err)
         {
@@ -596,10 +596,10 @@ public final class Transform
     /** Port of xsltPreCompEval: the context position and size are restored afterwards. */
     private static XPathResult xsltPreCompEval(TransformCtx t, XmlNode node, StylePreComp comp)
     {
-        long pos = t.xpPosition, size = t.xpSize;
+        long pos = t.xp_position, size = t.xp_size;
         XPathResult res = xsltXpathEval(t, comp.comp, node);
-        t.xpPosition = pos;
-        t.xpSize = size;
+        t.xp_position = pos;
+        t.xp_size = size;
         return res;
     }
 
@@ -623,7 +623,7 @@ public final class Transform
     {
         StackElem cur = xsltNewStackElem();
         cur.name = elem.name;
-        cur.nameUri = elem.nameUri;
+        cur.name_uri = elem.name_uri;
         cur.select = elem.select;
         cur.tree = elem.tree;
         cur.comp = elem.comp;
@@ -667,28 +667,28 @@ public final class Transform
 
     private static StackElem varsAt(TransformCtx t, int i)
     {
-        return t.varsTab.get(i);
+        return t.vars_tab.get(i);
     }
 
     /** Port of xsltStackLookup. */
-    private static StackElem xsltStackLookup(TransformCtx t, String name, String nameUri)
+    private static StackElem xsltStackLookup(TransformCtx t, String name, String name_uri)
     {
-        if (name == null || t.varsNr == 0) return null;
-        for (int i = t.varsNr; i > t.varsBase; i--)
+        if (name == null || t.vars_nr == 0) return null;
+        for (int i = t.vars_nr; i > t.vars_base; i--)
         {
             for (StackElem cur = varsAt(t, i - 1); cur != null; cur = cur.next)
             {
-                if (streq(cur.name, name) && streq(cur.nameUri, nameUri)) return cur;
+                if (streq(cur.name, name) && streq(cur.name_uri, name_uri)) return cur;
             }
         }
         return null;
     }
 
     /** Port of xsltCheckStackElem: 0 not found, 1 variable, 2 param, 3 with-param. */
-    private static int xsltCheckStackElem(TransformCtx t, String name, String nameUri)
+    private static int xsltCheckStackElem(TransformCtx t, String name, String name_uri)
     {
         if (name == null) return -1;
-        StackElem cur = xsltStackLookup(t, name, nameUri);
+        StackElem cur = xsltStackLookup(t, name, name_uri);
         if (cur == null) return 0;
         if (cur.comp != null)
         {
@@ -700,9 +700,9 @@ public final class Transform
 
     private static void xsltVarsPush(TransformCtx t, StackElem elem)
     {
-        if (t.varsNr < t.varsTab.size()) t.varsTab.set(t.varsNr, elem);
-        else t.varsTab.add(elem);
-        t.varsNr++;
+        if (t.vars_nr < t.vars_tab.size()) t.vars_tab.set(t.vars_nr, elem);
+        else t.vars_tab.add(elem);
+        t.vars_nr++;
         t.vars = elem;
     }
 
@@ -727,41 +727,41 @@ public final class Transform
     }
 
     /** Port of xsltLocalVariablePop. */
-    private static void xsltLocalVariablePop(TransformCtx t, int limitNr, int level)
+    private static void xsltLocalVariablePop(TransformCtx t, int limit_nr, int level)
     {
-        if (t.varsNr <= 0) return;
+        if (t.vars_nr <= 0) return;
         do
         {
-            if (t.varsNr <= limitNr) break;
-            StackElem variable = varsAt(t, t.varsNr - 1);
+            if (t.vars_nr <= limit_nr) break;
+            StackElem variable = varsAt(t, t.vars_nr - 1);
             if (variable.level <= level) break;
             if (variable.level >= 0) xsltFreeRuntimeStackElemList(t, variable);
-            t.varsNr--;
-        } while (t.varsNr != 0);
-        t.vars = t.varsNr > 0 ? varsAt(t, t.varsNr - 1) : null;
+            t.vars_nr--;
+        } while (t.vars_nr != 0);
+        t.vars = t.vars_nr > 0 ? varsAt(t, t.vars_nr - 1) : null;
     }
 
     /** Port of xsltTemplateParamsCleanup: xsl:with-param items (level -1, -2) are not freed. */
     private static void xsltTemplateParamsCleanup(TransformCtx t)
     {
-        for (; t.varsNr > t.varsBase; t.varsNr--)
+        for (; t.vars_nr > t.vars_base; t.vars_nr--)
         {
-            StackElem param = varsAt(t, t.varsNr - 1);
+            StackElem param = varsAt(t, t.vars_nr - 1);
             if (param.level >= 0) xsltFreeRuntimeStackElemList(t, param);
         }
-        t.vars = t.varsNr > 0 ? varsAt(t, t.varsNr - 1) : null;
+        t.vars = t.vars_nr > 0 ? varsAt(t, t.vars_nr - 1) : null;
     }
 
     /** Instantiate content into a new result tree fragment (the content part of xsltEvalVariable). */
     private static XPathResult xsltEvalContentInto(TransformCtx t, RVT container, XmlNode tree)
     {
-        XmlDocument oldOutput = t.output;
-        XmlNode oldInsert = t.insert;
+        XmlDocument old_output = t.output;
+        XmlNode old_insert = t.insert;
         t.output = container.dom;
         t.insert = domDocument(container.dom);
         xsltApplyOneTemplate(t, t.node, tree, null);
-        t.insert = oldInsert;
-        t.output = oldOutput;
+        t.insert = old_insert;
+        t.output = old_output;
         return xsltNewValueTree(container);
     }
 
@@ -770,28 +770,28 @@ public final class Transform
     {
         XPathResult result = null;
         if (variable == null) return null;
-        XmlNode oldInst = t.inst;
+        XmlNode old_inst = t.inst;
         if (variable.select != null)
         {
-            XPath xpExpr = null;
-            StackElem oldVar = t.contextVariable;
+            XPath xp_expr = null;
+            StackElem old_var = t.context_variable;
             if (comp != null && comp.comp != null)
             {
-                xpExpr = comp.comp;
+                xp_expr = comp.comp;
             }
             else
             {
-                xpExpr = Xslt.xpathCompile(t.style.settings, null, variable.select, false);
+                xp_expr = Xslt.xpathCompile(t.style.settings, null, variable.select, false);
             }
-            if (xpExpr == null) return null;
-            long pos = t.xpPosition, size = t.xpSize;
-            t.contextVariable = variable;
+            if (xp_expr == null) return null;
+            long pos = t.xp_position, size = t.xp_size;
+            t.context_variable = variable;
             variable.flags |= XSLT_VAR_IN_SELECT;
-            result = xsltXpathEval(t, xpExpr, t.node);
+            result = xsltXpathEval(t, xp_expr, t.node);
             variable.flags ^= XSLT_VAR_IN_SELECT;
-            t.contextVariable = oldVar;
-            t.xpPosition = pos;
-            t.xpSize = size;
+            t.context_variable = old_var;
+            t.xp_position = pos;
+            t.xp_size = size;
             if (result == null)
             {
                 transformError(t, null, comp != null ? comp.inst : null,
@@ -807,17 +807,17 @@ public final class Transform
             }
             else
             {
-                StackElem oldVar = t.contextVariable;
+                StackElem old_var = t.context_variable;
                 RVT container = xsltCreateRvt(t);
                 variable.fragment = container;
                 container.flag = RVT.LOCAL;
-                t.contextVariable = variable;
+                t.context_variable = variable;
                 result = xsltEvalContentInto(t, container, variable.tree);
-                t.contextVariable = oldVar;
+                t.context_variable = old_var;
                 if (result == null) result = XPathResult.newString("");
             }
         }
-        t.inst = oldInst;
+        t.inst = old_inst;
         return result;
     }
 
@@ -827,33 +827,33 @@ public final class Transform
         XPathResult result = null;
         if (elem == null) return null;
         if (elem.computed != 0) return elem.value;
-        XmlNode oldInst = t.inst;
+        XmlNode old_inst = t.inst;
         StylePreComp comp = elem.comp;
-        String oldVarName = elem.name;
+        String old_var_name = elem.name;
         elem.name = XSLT_COMPUTING_GLOBAL_VAR_MARKER;
-        StackElem oldCtxtVar = t.contextVariable;
-        t.contextVariable = null;
+        StackElem old_ctxt_var = t.context_variable;
+        t.context_variable = null;
         error:
         {
             if (elem.select != null)
             {
-                XPath xpExpr = null;
+                XPath xp_expr = null;
                 if (comp != null && comp.comp != null)
                 {
-                    xpExpr = comp.comp;
+                    xp_expr = comp.comp;
                 }
                 else
                 {
-                    xpExpr = Xslt.xpathCompile(t.style.settings, null, elem.select, false);
+                    xp_expr = Xslt.xpathCompile(t.style.settings, null, elem.select, false);
                 }
-                if (xpExpr == null) break error;
+                if (xp_expr == null) break error;
                 t.inst = comp != null ? comp.inst : null;
-                long pos = t.xpPosition, size = t.xpSize;
-                t.xpSize = 1;
-                t.xpPosition = 1;
-                result = xsltXpathEval(t, xpExpr, t.initialContextNode);
-                t.xpPosition = pos;
-                t.xpSize = size;
+                long pos = t.xp_position, size = t.xp_size;
+                t.xp_size = 1;
+                t.xp_position = 1;
+                result = xsltXpathEval(t, xp_expr, t.initial_context_node);
+                t.xp_position = pos;
+                t.xp_size = size;
                 if (result == null)
                 {
                     transformError(t, null, comp != null ? comp.inst : null, fmt("Evaluating global variable %s failed\n", elem.name));
@@ -877,9 +877,9 @@ public final class Transform
                 }
             }
         }
-        t.contextVariable = oldCtxtVar;
-        elem.name = oldVarName;
-        t.inst = oldInst;
+        t.context_variable = old_ctxt_var;
+        elem.name = old_var_name;
+        t.inst = old_inst;
         if (result != null)
         {
             elem.value = result;
@@ -896,12 +896,12 @@ public final class Transform
         {
             for (StackElem elem = style.variables; elem != null; elem = elem.next)
             {
-                String key = Xslt.key2(elem.name, elem.nameUri);
-                StackElem def = t.globalVars.get(key);
+                String key = Xslt.key2(elem.name, elem.name_uri);
+                StackElem def = t.global_vars.get(key);
                 if (def == null)
                 {
                     def = xsltCopyStackElem(elem);
-                    t.globalVars.put(key, def);
+                    t.global_vars.put(key, def);
                     def.next = head;
                     head = def;
                     // Keep all of them for freeing.
@@ -937,7 +937,7 @@ public final class Transform
         elem.comp = comp;
         elem.name = comp.name;
         elem.select = comp.select;
-        elem.nameUri = comp.ns;
+        elem.name_uri = comp.ns;
         elem.tree = tree;
         elem.value = xsltEvalVariable(t, elem, comp);
         elem.computed = 1;
@@ -945,10 +945,10 @@ public final class Transform
     }
 
     /** Port of xsltRegisterVariable. */
-    private static int xsltRegisterVariable(TransformCtx t, StylePreComp comp, XmlNode tree, int isParam)
+    private static int xsltRegisterVariable(TransformCtx t, StylePreComp comp, XmlNode tree, int is_param)
     {
         int present = xsltCheckStackElem(t, comp.name, comp.ns);
-        if (isParam == 0)
+        if (is_param == 0)
         {
             if (present != 0 && present != 3)
             {
@@ -971,11 +971,11 @@ public final class Transform
     }
 
     /** Port of xsltGlobalVariableLookup (the value is borrowed). */
-    private static XPathResult xsltGlobalVariableLookup(TransformCtx t, String name, String nsUri)
+    private static XPathResult xsltGlobalVariableLookup(TransformCtx t, String name, String ns_uri)
     {
-        if (t.globalVars == null) return null;
-        String key = Xslt.key2(name, nsUri);
-        StackElem elem = t.globalVars.get(key);
+        if (t.global_vars == null) return null;
+        String key = Xslt.key2(name, ns_uri);
+        StackElem elem = t.global_vars.get(key);
         if (elem == null) return null;
         if (elem.computed == 0)
         {
@@ -1048,16 +1048,16 @@ public final class Transform
 
     /** Port of xsltXPathVariableLookup, the variable callback of the xpath context. Only the
         first element of each stack entry is looked at, like libxslt. */
-    private static XPathResult xsltXpathVariableLookup(TransformCtx t, String name, String nsUri)
+    private static XPathResult xsltXpathVariableLookup(TransformCtx t, String name, String ns_uri)
     {
         if (name == null) return null;
-        if (t.varsNr != 0)
+        if (t.vars_nr != 0)
         {
             StackElem variable = null;
-            for (int i = t.varsNr; i > t.varsBase; i--)
+            for (int i = t.vars_nr; i > t.vars_base; i--)
             {
                 StackElem cur = varsAt(t, i - 1);
-                if (streq(cur.name, name) && streq(cur.nameUri, nsUri))
+                if (streq(cur.name, name) && streq(cur.name_uri, ns_uri))
                 {
                     variable = cur;
                     break;
@@ -1074,10 +1074,10 @@ public final class Transform
             }
         }
         XPathResult value = null;
-        if (t.globalVars != null) value = xsltGlobalVariableLookup(t, name, nsUri);
+        if (t.global_vars != null) value = xsltGlobalVariableLookup(t, name, ns_uri);
         if (value == null)
         {
-            if (nsUri != null) transformError(t, null, t.inst, fmt("Variable '{%s}%s' has not been declared.\n", nsUri, name));
+            if (ns_uri != null) transformError(t, null, t.inst, fmt("Variable '{%s}%s' has not been declared.\n", ns_uri, name));
             else transformError(t, null, t.inst, fmt("Variable '%s' has not been declared.\n", name));
         }
         return value;
@@ -1090,24 +1090,24 @@ public final class Transform
     {
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
-            if (style.nsAliases != null && href != null)
+            if (style.ns_aliases != null && href != null)
             {
-                String uri = style.nsAliases.get(href);
+                String uri = style.ns_aliases.get(href);
                 if (uri != null) return uri;
             }
         }
         return null;
     }
 
-    /** Port of xsltGetSpecialNamespace: find or declare a namespace binding for nsName and
+    /** Port of xsltGetSpecialNamespace: find or declare a namespace binding for ns_name and
         nsPrefix in scope of target (an element of the result). */
-    private static XmlNs xsltGetSpecialNamespace(TransformCtx t, XmlNode invocNode, String nsName,
-                                                 String nsPrefix, XmlNode target)
+    private static XmlNs xsltGetSpecialNamespace(TransformCtx t, XmlNode invoc_node, String ns_name,
+                                                 String ns_prefix, XmlNode target)
     {
         if (!lxIsElement(target)) return null;
         XmlNs ns;
-        int prefixOccupied = 0;
-        if (nsPrefix == null && (nsName == null || nsName.isEmpty()))
+        int prefix_occupied = 0;
+        if (ns_prefix == null && (ns_name == null || ns_name.isEmpty()))
         {
             // Ensure that the default namespace is not in scope (an undeclaration if needed).
             for (XmlNs d : nodeNsDecls(target))
@@ -1116,7 +1116,7 @@ public final class Transform
                 {
                     if (nsHref(d) != null && !nsHref(d).isEmpty())
                     {
-                        transformError(t, null, invocNode, fmt("Namespace normalization error: Cannot undeclare " +
+                        transformError(t, null, invoc_node, fmt("Namespace normalization error: Cannot undeclare " +
                             "the default namespace, since the default namespace '%s' is already declared on the result element " +
                             "'%s'.\n", nsHref(d), nodeName(target)));
                     }
@@ -1134,15 +1134,15 @@ public final class Transform
             }
             return null;
         }
-        if (nsPrefix != null && nsPrefix.equals("xml")) return lxSearchNs(target, nsPrefix);
+        if (ns_prefix != null && ns_prefix.equals("xml")) return lxSearchNs(target, ns_prefix);
         for (XmlNs d : nodeNsDecls(target))
         {
-            if ((nsPrefix(d) == null) == (nsPrefix == null))
+            if ((nsPrefix(d) == null) == (ns_prefix == null))
             {
-                if (streq(nsPrefix(d), nsPrefix))
+                if (streq(nsPrefix(d), ns_prefix))
                 {
-                    if (streq(nsHref(d), nsName)) return d;
-                    prefixOccupied = 1;
+                    if (streq(nsHref(d), ns_name)) return d;
+                    prefix_occupied = 1;
                     break;
                 }
             }
@@ -1150,65 +1150,65 @@ public final class Transform
         XmlNode parent = lxParent(target);
         declareNewPrefix:
         {
-            if (prefixOccupied != 0)
+            if (prefix_occupied != 0)
             {
-                ns = lxSearchNsByHref(target, nsName);
+                ns = lxSearchNsByHref(target, ns_name);
                 if (ns != null) return ns;
             }
             else if (lxIsElement(parent))
             {
                 XmlNs pns = nodeNs(parent);
-                if (pns != null && ((nsPrefix(pns) != null) == (nsPrefix != null)))
+                if (pns != null && ((nsPrefix(pns) != null) == (ns_prefix != null)))
                 {
-                    if (nsPrefix == null)
+                    if (ns_prefix == null)
                     {
-                        if (streq(nsHref(pns), nsName)) return pns;
+                        if (streq(nsHref(pns), ns_name)) return pns;
                     }
-                    else if (streq(nsPrefix(pns), nsPrefix) && streq(nsHref(pns), nsName))
+                    else if (streq(nsPrefix(pns), ns_prefix) && streq(nsHref(pns), ns_name))
                     {
                         return pns;
                     }
                 }
-                ns = lxSearchNs(parent, nsPrefix);
+                ns = lxSearchNs(parent, ns_prefix);
                 if (ns != null)
                 {
-                    if (streq(nsHref(ns), nsName)) return ns;
+                    if (streq(nsHref(ns), ns_name)) return ns;
                     // The prefix is bound to another namespace, check that no attribute of the target uses it.
                     for (XmlAttr attr : nodeAttrs(target))
                     {
                         XmlNs ans = nodeNs(attrNode(attr));
-                        if (ans != null && streq(nsPrefix(ans), nsPrefix))
+                        if (ans != null && streq(nsPrefix(ans), ns_prefix))
                         {
-                            ns = lxSearchNsByHref(target, nsName);
+                            ns = lxSearchNsByHref(target, ns_name);
                             if (ns != null) return ns;
                             break declareNewPrefix;
                         }
                     }
                 }
-                return lxNewNs(target, nsName, nsPrefix);
+                return lxNewNs(target, ns_name, ns_prefix);
             }
             else
             {
-                return lxNewNs(target, nsName, nsPrefix);
+                return lxNewNs(target, ns_name, ns_prefix);
             }
         }
         // declare_new_prefix:
         String pref;
         int counter = 1;
-        if (nsPrefix == null) nsPrefix = "ns";
+        if (ns_prefix == null) ns_prefix = "ns";
         do
         {
-            pref = fmt("%s_%d", nsPrefix, counter++);
+            pref = fmt("%s_%d", ns_prefix, counter++);
             if (pref.length() > 29) pref = pref.substring(0, 29);
             ns = lxSearchNs(target, pref);
             if (counter > 1000)
             {
-                transformError(t, null, invocNode, "Internal error in xsltAcquireResultInScopeNs(): " +
+                transformError(t, null, invoc_node, "Internal error in xsltAcquireResultInScopeNs(): " +
                                "Failed to compute a unique ns-prefix for the generated element");
                 return null;
             }
         } while (ns != null);
-        return lxNewNs(target, nsName, pref);
+        return lxNewNs(target, ns_name, pref);
     }
 
     /** Port of xsltGetNamespace: the namespace of a literal result element or attribute, with aliases applied. */
@@ -1238,7 +1238,7 @@ public final class Transform
             if (!streq(nsHref(cur), XSLT_NAMESPACE))
             {
                 // Only the aliases of the top stylesheet (TODO in libxslt: apply cascading).
-                String uri = (t.style.nsAliases != null && nsHref(cur) != null) ? t.style.nsAliases.get(nsHref(cur)) : null;
+                String uri = (t.style.ns_aliases != null && nsHref(cur) != null) ? t.style.ns_aliases.get(nsHref(cur)) : null;
                 if (uri != null && uri.equals(XSLT_UNDEFINED_DEFAULT_NS)) continue;
                 if (node != null) lxNewNs(node, uri != null ? uri : nsHref(cur), nsPrefix(cur));
             }
@@ -1267,10 +1267,10 @@ public final class Transform
     /** Is target an element whose text goes into cdata sections (xsl:output cdata-section-elements)? */
     private static boolean xsltIsCdataTarget(TransformCtx t, XmlNode target)
     {
-        if (t.type != OUTPUT_XML || t.style.cdataSection == null || !lxIsElement(target)) return false;
+        if (t.type != OUTPUT_XML || t.style.cdata_section == null || !lxIsElement(target)) return false;
         XmlNs ns = nodeNs(target);
         String key = Xslt.key2(nodeName(target), ns != null ? nsHref(ns) : null);
-        return t.style.cdataSection.get(key) != null;
+        return t.style.cdata_section.get(key) != null;
     }
 
     /** Port of xsltAddTextString: append the string to the text (or cdata) node target. */
@@ -1360,17 +1360,17 @@ public final class Transform
     }
 
     /** Port of xsltShallowCopyAttr. */
-    private static XmlAttr xsltShallowCopyAttr(TransformCtx t, XmlNode invocNode, XmlNode target, XmlNode attr)
+    private static XmlAttr xsltShallowCopyAttr(TransformCtx t, XmlNode invoc_node, XmlNode target, XmlNode attr)
     {
         if (attr == null) return null;
         if (!lxIsElement(target))
         {
-            transformError(t, null, invocNode, "Cannot add an attribute node to a non-element node.\n");
+            transformError(t, null, invoc_node, "Cannot add an attribute node to a non-element node.\n");
             return null;
         }
         if (nodeFirstChild(target) != null)
         {
-            transformError(t, null, invocNode, "Attribute nodes must be added before any child nodes to an element.\n");
+            transformError(t, null, invoc_node, "Attribute nodes must be added before any child nodes to an element.\n");
             return null;
         }
         String value = lxAttrValue(attr);
@@ -1378,10 +1378,10 @@ public final class Transform
         XmlNs ans = nodeNs(attr);
         if (ans != null)
         {
-            XmlNs ns = xsltGetSpecialNamespace(t, invocNode, nsHref(ans), nsPrefix(ans), target);
+            XmlNs ns = xsltGetSpecialNamespace(t, invoc_node, nsHref(ans), nsPrefix(ans), target);
             if (ns == null)
             {
-                transformError(t, null, invocNode, fmt("Namespace fixup error: Failed to acquire an in-scope " +
+                transformError(t, null, invoc_node, fmt("Namespace fixup error: Failed to acquire an in-scope " +
                                "namespace binding of the copied attribute '{%s}%s'.\n", nsHref(ans), nodeName(attr)));
             }
             copy = lxSetNsProp(target, ns, nodeName(attr), value);
@@ -1394,34 +1394,34 @@ public final class Transform
     }
 
     /** Port of xsltCopyAttrListNoOverwrite. */
-    private static int xsltCopyAttrListNoOverwrite(TransformCtx t, XmlNode invocNode, XmlNode target, List<XmlAttr> attrs)
+    private static int xsltCopyAttrListNoOverwrite(TransformCtx t, XmlNode invoc_node, XmlNode target, List<XmlAttr> attrs)
     {
-        XmlNs origNs = null, copyNs = null;
+        XmlNs orig_ns = null, copy_ns = null;
         for (XmlAttr attr : new ArrayList<>(attrs))
         {
             XmlNode an = attrNode(attr);
             XmlNs ans = nodeNs(an);
-            if (ans != origNs)
+            if (ans != orig_ns)
             {
-                origNs = ans;
+                orig_ns = ans;
                 if (ans != null)
                 {
-                    copyNs = xsltGetSpecialNamespace(t, invocNode, nsHref(ans), nsPrefix(ans), target);
-                    if (copyNs == null) return -1;
+                    copy_ns = xsltGetSpecialNamespace(t, invoc_node, nsHref(ans), nsPrefix(ans), target);
+                    if (copy_ns == null) return -1;
                 }
                 else
                 {
-                    copyNs = null;
+                    copy_ns = null;
                 }
             }
             String value = lxAttrValue(an);
-            lxNewNsProp(target, copyNs, attrName(attr), value);
+            lxNewNsProp(target, copy_ns, attrName(attr), value);
         }
         return 0;
     }
 
     /** Port of xsltShallowCopyElem. */
-    private static XmlNode xsltShallowCopyElem(TransformCtx t, XmlNode node, XmlNode insert, int isLre)
+    private static XmlNode xsltShallowCopyElem(TransformCtx t, XmlNode node, XmlNode insert, int is_lre)
     {
         int k = nodeKind(node);
         if (k == DTD || insert == null) return null;
@@ -1440,13 +1440,13 @@ public final class Transform
                 List<XmlNs> defs = nodeNsDecls(node);
                 if (!defs.isEmpty())
                 {
-                    if (isLre != 0) xsltCopyNamespaceList(t, copy, defs);
+                    if (is_lre != 0) xsltCopyNamespaceList(t, copy, defs);
                     else xsltCopyNamespaceListInternal(copy, defs);
                 }
                 XmlNs nns = nodeNs(node);
                 if (nns != null)
                 {
-                    if (isLre != 0) nodeSetNs(copy, xsltGetNamespace(t, node, nns, copy));
+                    if (is_lre != 0) nodeSetNs(copy, xsltGetNamespace(t, node, nns, copy));
                     else nodeSetNs(copy, xsltGetSpecialNamespace(t, node, nsHref(nns), nsPrefix(nns), copy));
                 }
                 else if (lxIsElement(insert) && nodeNs(insert) != null)
@@ -1463,14 +1463,14 @@ public final class Transform
     }
 
     /** Port of xsltCopyTreeList. */
-    private static XmlNode xsltCopyTreeList(TransformCtx t, XmlNode invocNode, XmlNode list, XmlNode insert,
-                                            int isLre, int topElemVisited)
+    private static XmlNode xsltCopyTreeList(TransformCtx t, XmlNode invoc_node, XmlNode list, XmlNode insert,
+                                            int is_lre, int top_elem_visited)
     {
         XmlNode ret = null;
         while (list != null)
         {
             XmlNode next = nodeNext(list);
-            XmlNode copy = xsltCopyTree(t, invocNode, list, insert, isLre, topElemVisited);
+            XmlNode copy = xsltCopyTree(t, invoc_node, list, insert, is_lre, top_elem_visited);
             if (copy != null && ret == null) ret = copy;
             list = next;
         }
@@ -1478,12 +1478,12 @@ public final class Transform
     }
 
     /** Port of xsltShallowCopyNsNode: copy a namespace node as a declaration on insert. */
-    private static XmlNs xsltShallowCopyNsNode(TransformCtx t, XmlNode invocNode, XmlNode insert, XmlNode ns)
+    private static XmlNs xsltShallowCopyNsNode(TransformCtx t, XmlNode invoc_node, XmlNode insert, XmlNode ns)
     {
         if (!lxIsElement(insert)) return null;
         if (nodeFirstChild(insert) != null)
         {
-            transformError(t, null, invocNode, "Namespace nodes must be added before any child nodes are added to an element.\n");
+            transformError(t, null, invoc_node, "Namespace nodes must be added before any child nodes are added to an element.\n");
             return null;
         }
         // A namespace node has the prefix as name and the uri as content.
@@ -1535,8 +1535,8 @@ public final class Transform
     }
 
     /** Port of xsltCopyTree: a deep copy of node into insert. */
-    private static XmlNode xsltCopyTree(TransformCtx t, XmlNode invocNode, XmlNode node, XmlNode insert,
-                                        int isLre, int topElemVisited)
+    private static XmlNode xsltCopyTree(TransformCtx t, XmlNode invoc_node, XmlNode node, XmlNode insert,
+                                        int is_lre, int top_elem_visited)
     {
         if (node == null) return null;
         switch (nodeKind(node))
@@ -1552,9 +1552,9 @@ public final class Transform
         case CDATA:
             return xsltCopyTextString(t, insert, nodeContent(node), 0);
         case ATTRIBUTE:
-            return xsltShallowCopyAttr(t, invocNode, insert, node) != null ? insert : null;
+            return xsltShallowCopyAttr(t, invoc_node, insert, node) != null ? insert : null;
         case NAMESPACE:
-            return xsltShallowCopyNsNode(t, invocNode, insert, node) != null ? insert : null;
+            return xsltShallowCopyNsNode(t, invoc_node, insert, node) != null ? insert : null;
         default:
             return null;
         }
@@ -1564,9 +1564,9 @@ public final class Transform
             if (isRtf(t, nodeDom(node)))
             {
                 XmlNode c = nodeFirstChild(node);
-                return c != null ? xsltCopyTreeList(t, invocNode, c, insert, 0, 0) : null;
+                return c != null ? xsltCopyTreeList(t, invoc_node, c, insert, 0, 0) : null;
             }
-            transformError(t, null, invocNode, fmt("xsltCopyTree: Copying of '%s' failed.\n", "(null)"));
+            transformError(t, null, invoc_node, fmt("xsltCopyTree: Copying of '%s' failed.\n", "(null)"));
             return null;
         }
         XmlNode copy = lxShallowCopy(t.output, node);
@@ -1575,7 +1575,7 @@ public final class Transform
             copy = lxAddChild(insert, copy);
             if (copy == null)
             {
-                transformError(t, null, invocNode, fmt("xsltCopyTree: Copying of '%s' failed.\n", nodeName(node)));
+                transformError(t, null, invoc_node, fmt("xsltCopyTree: Copying of '%s' failed.\n", nodeName(node)));
                 return copy;
             }
             if (nodeLastChild(insert) != copy) return nodeLastChild(insert);
@@ -1583,42 +1583,42 @@ public final class Transform
             {
                 XmlNode parent = nodeParent(node);
                 XmlNs nns = nodeNs(node);
-                if (topElemVisited == 0 && parent != null && nodeKind(parent) != DOCUMENT)
+                if (top_elem_visited == 0 && parent != null && nodeKind(parent) != DOCUMENT)
                 {
                     // The top element of a copied subtree gets all namespaces in scope.
-                    List<XmlNs> nsList = lxGetNsList(node);
-                    for (XmlNs inScope : nsList)
+                    List<XmlNs> ns_list = lxGetNsList(node);
+                    for (XmlNs in_scope : ns_list)
                     {
-                        XmlNs ns = lxSearchNs(insert, nsPrefix(inScope));
-                        if (ns == null || !streq(nsHref(ns), nsHref(inScope))) ns = null;
-                        if (ns == null) ns = lxNewNs(copy, nsHref(inScope), nsPrefix(inScope));
-                        if (nns == inScope) nodeSetNs(copy, ns);
+                        XmlNs ns = lxSearchNs(insert, nsPrefix(in_scope));
+                        if (ns == null || !streq(nsHref(ns), nsHref(in_scope))) ns = null;
+                        if (ns == null) ns = lxNewNs(copy, nsHref(in_scope), nsPrefix(in_scope));
+                        if (nns == in_scope) nodeSetNs(copy, ns);
                     }
                 }
                 else if (!nodeNsDecls(node).isEmpty())
                 {
-                    if (isLre != 0) xsltCopyNamespaceList(t, copy, nodeNsDecls(node));
+                    if (is_lre != 0) xsltCopyNamespaceList(t, copy, nodeNsDecls(node));
                     else xsltCopyNamespaceListInternal(copy, nodeNsDecls(node));
                 }
                 if (nns != null)
                 {
                     if (nodeNs(copy) == null)
                     {
-                        nodeSetNs(copy, xsltGetSpecialNamespace(t, invocNode, nsHref(nns), nsPrefix(nns), copy));
+                        nodeSetNs(copy, xsltGetSpecialNamespace(t, invoc_node, nsHref(nns), nsPrefix(nns), copy));
                     }
                 }
                 else if (lxIsElement(insert) && nodeNs(insert) != null)
                 {
-                    xsltGetSpecialNamespace(t, invocNode, null, null, copy);
+                    xsltGetSpecialNamespace(t, invoc_node, null, null, copy);
                 }
-                if (!nodeAttrs(node).isEmpty()) xsltCopyAttrListNoOverwrite(t, invocNode, copy, nodeAttrs(node));
-                if (topElemVisited == 0) topElemVisited = 1;
+                if (!nodeAttrs(node).isEmpty()) xsltCopyAttrListNoOverwrite(t, invoc_node, copy, nodeAttrs(node));
+                if (top_elem_visited == 0) top_elem_visited = 1;
             }
-            if (lxChildren(node) != null) xsltCopyTreeList(t, invocNode, lxChildren(node), copy, isLre, topElemVisited);
+            if (lxChildren(node) != null) xsltCopyTreeList(t, invoc_node, lxChildren(node), copy, is_lre, top_elem_visited);
         }
         else
         {
-            transformError(t, null, invocNode, fmt("xsltCopyTree: Copying of '%s' failed.\n", nodeName(node)));
+            transformError(t, null, invoc_node, fmt("xsltCopyTree: Copying of '%s' failed.\n", nodeName(node)));
         }
         return copy;
     }
@@ -1633,8 +1633,8 @@ public final class Transform
             transformError(t, null, null, "xsltEvalXPathStringNs: No context or instruction\n");
             return null;
         }
-        XmlNode oldInst = t.inst;
-        long pos = t.xpPosition, size = t.xpSize;
+        XmlNode old_inst = t.inst;
+        long pos = t.xp_position, size = t.xp_size;
         String ret = null;
         XPathResult res = xsltXpathEval(t, comp, t.node);
         if (res != null)
@@ -1645,23 +1645,23 @@ public final class Transform
         {
             t.state = TransformCtx.STATE_STOPPED;
         }
-        t.inst = oldInst;
-        t.xpPosition = pos;
-        t.xpSize = size;
+        t.inst = old_inst;
+        t.xp_position = pos;
+        t.xp_size = size;
         return ret;
     }
 
     /** Port of xsltEvalTemplateString: instantiate the content of inst and return its text. */
-    private static String xsltEvalTemplateString(TransformCtx t, XmlNode contextNode, XmlNode inst)
+    private static String xsltEvalTemplateString(TransformCtx t, XmlNode context_node, XmlNode inst)
     {
-        if (contextNode == null || inst == null || nodeKind(inst) != ELEMENT) return null;
+        if (context_node == null || inst == null || nodeKind(inst) != ELEMENT) return null;
         if (nodeFirstChild(inst) == null) return null;
         // A temporary element to add the resulting text content to.
         XmlNode insert = nodeNewElement(t.output, "fake", null);
-        XmlNode oldInsert = t.insert;
+        XmlNode old_insert = t.insert;
         t.insert = insert;
-        xsltApplyOneTemplate(t, contextNode, nodeFirstChild(inst), null);
-        t.insert = oldInsert;
+        xsltApplyOneTemplate(t, context_node, nodeFirstChild(inst), null);
+        t.insert = old_insert;
         String ret = lxNodeGetContent(insert);
         nodeFree(insert);
         return ret;
@@ -1788,7 +1788,7 @@ public final class Transform
         if (avt == null || node == null) return null;
         String ret = null;
         boolean str = avt.strstart != 0;
-        for (int i = 0; i < avt.nbSeg; i++)
+        for (int i = 0; i < avt.nb_seg; i++)
         {
             if (str)
             {
@@ -1821,7 +1821,7 @@ public final class Transform
     private static void xsltAttrListTemplateProcess(TransformCtx t, XmlNode target, List<XmlAttr> attrs)
     {
         if (!lxIsElement(target) || attrs.isEmpty()) return;
-        XmlNode oldInsert = t.insert;
+        XmlNode old_insert = t.insert;
         t.insert = target;
         // Apply attribute sets.
         for (XmlAttr attr : new ArrayList<>(attrs))
@@ -1832,9 +1832,9 @@ public final class Transform
                 xsltApplyAttributeSet(t, t.node, attrNode(attr), null);
             }
         }
-        boolean hasAttr = !nodeAttrs(target).isEmpty();
+        boolean has_attr = !nodeAttrs(target).isEmpty();
         // Instantiate the literal result element attributes.
-        XmlNs origNs = null, copyNs = null;
+        XmlNs orig_ns = null, copy_ns = null;
         error:
         for (XmlAttr attr : new ArrayList<>(attrs))
         {
@@ -1854,17 +1854,17 @@ public final class Transform
                 value = nodeContent(first) != null ? nodeContent(first) : "";
             }
             // Get the namespace, avoid lookups of the same namespaces.
-            if (ans != origNs)
+            if (ans != orig_ns)
             {
-                origNs = ans;
+                orig_ns = ans;
                 if (ans != null)
                 {
-                    copyNs = xsltGetNamespace(t, attrOwner(attr), ans, target);
-                    if (copyNs == null) break error;
+                    copy_ns = xsltGetNamespace(t, attrOwner(attr), ans, target);
+                    if (copy_ns == null) break error;
                 }
                 else
                 {
-                    copyNs = null;
+                    copy_ns = null;
                 }
             }
             String val;
@@ -1880,8 +1880,8 @@ public final class Transform
                     else transformError(t, null, attrOwner(attr), fmt("Internal error: Failed to evaluate the AVT " +
                                         "of attribute '%s'.\n", attrName(attr)));
                     // libxslt has created the attribute with an empty value before failing.
-                    if (hasAttr) lxSetNsProp(target, copyNs, attrName(attr), "");
-                    else lxNewNsProp(target, copyNs, attrName(attr), "");
+                    if (has_attr) lxSetNsProp(target, copy_ns, attrName(attr), "");
+                    else lxNewNsProp(target, copy_ns, attrName(attr), "");
                     break error;
                 }
             }
@@ -1889,28 +1889,28 @@ public final class Transform
             {
                 val = value;
             }
-            if (hasAttr) lxSetNsProp(target, copyNs, attrName(attr), val);
-            else lxNewNsProp(target, copyNs, attrName(attr), val);
+            if (has_attr) lxSetNsProp(target, copy_ns, attrName(attr), val);
+            else lxNewNsProp(target, copy_ns, attrName(attr), val);
         }
-        t.insert = oldInsert;
+        t.insert = old_insert;
     }
 
     // Attributes, port of libxslt attributes.c (xsltAttribute, xsltApplyAttributeSet).
 
     /** Port of xsltAttribute (xsl:attribute). */
-    private static void xsltAttribute(TransformCtx t, XmlNode contextNode, XmlNode inst, StylePreComp comp)
+    private static void xsltAttribute(TransformCtx t, XmlNode context_node, XmlNode inst, StylePreComp comp)
     {
-        if (contextNode == null || inst == null || nodeKind(inst) != ELEMENT) return;
+        if (context_node == null || inst == null || nodeKind(inst) != ELEMENT) return;
         if (comp == null)
         {
             transformError(t, null, inst, "Internal error in xsltAttribute(): The XSLT 'attribute' instruction was not compiled.\n");
             return;
         }
-        if (comp.hasName == 0) return;
+        if (comp.has_name == 0) return;
         if (t.insert == null) return;
-        XmlNode targetElem = t.insert;
-        if (nodeKind(targetElem) != ELEMENT) return;
-        if (nodeFirstChild(targetElem) != null)
+        XmlNode target_elem = t.insert;
+        if (nodeKind(target_elem) != ELEMENT) return;
+        if (nodeFirstChild(target_elem) != null)
         {
             transformError(t, null, inst, "xsl:attribute: Cannot add attributes to an element if children have been already added " +
                            "to the element.\n");
@@ -1918,7 +1918,7 @@ public final class Transform
         }
         String name = null;
         String[] prefix = { null };
-        String nsName = null;
+        String ns_name = null;
         if (comp.name == null)
         {
             String prop = xsltEvalAttrValueTemplate(t, inst, "name", XSLT_NAMESPACE);
@@ -1943,23 +1943,23 @@ public final class Transform
         {
             name = Xslt.splitQname(comp.name, prefix);
         }
-        if (comp.hasNs != 0)
+        if (comp.has_ns != 0)
         {
             if (comp.ns != null)
             {
-                if (!comp.ns.isEmpty()) nsName = comp.ns;
+                if (!comp.ns.isEmpty()) ns_name = comp.ns;
             }
             else
             {
                 String tmp = xsltEvalAttrValueTemplate(t, inst, "namespace", XSLT_NAMESPACE);
-                if (tmp != null && !tmp.isEmpty()) nsName = tmp;
+                if (tmp != null && !tmp.isEmpty()) ns_name = tmp;
             }
-            if (streq(nsName, "http://www.w3.org/2000/xmlns/"))
+            if (streq(ns_name, "http://www.w3.org/2000/xmlns/"))
             {
                 transformError(t, null, inst, "xsl:attribute: Namespace http://www.w3.org/2000/xmlns/ forbidden.\n");
                 return;
             }
-            if (streq(nsName, XML_NAMESPACE))
+            if (streq(ns_name, XML_NAMESPACE))
             {
                 prefix[0] = "xml";
             }
@@ -1978,18 +1978,18 @@ public final class Transform
             }
             else
             {
-                nsName = nsHref(ns);
+                ns_name = nsHref(ns);
             }
         }
         XmlNs ns = null;
-        if (nsName != null)
+        if (ns_name != null)
         {
-            if (prefix[0] == null || prefix[0].equals("xmlns")) ns = xsltGetSpecialNamespace(t, inst, nsName, "ns_1", targetElem);
-            else ns = xsltGetSpecialNamespace(t, inst, nsName, prefix[0], targetElem);
+            if (prefix[0] == null || prefix[0].equals("xmlns")) ns = xsltGetSpecialNamespace(t, inst, ns_name, "ns_1", target_elem);
+            else ns = xsltGetSpecialNamespace(t, inst, ns_name, prefix[0], target_elem);
             if (ns == null)
             {
                 transformError(t, null, inst, fmt("Namespace fixup error: Failed to acquire an in-scope " +
-                               "namespace binding for the generated attribute '{%s}%s'.\n", nsName, name));
+                               "namespace binding for the generated attribute '{%s}%s'.\n", ns_name, name));
                 return;
             }
         }
@@ -2004,37 +2004,37 @@ public final class Transform
         }
         else
         {
-            String value = xsltEvalTemplateString(t, contextNode, inst);
+            String value = xsltEvalTemplateString(t, context_node, inst);
             lxSetNsProp(t.insert, ns, name, value != null ? value : "");
         }
     }
 
-    /** Port of xsltApplyAttributeSet: the attribute sets named in attrSets (or in the
+    /** Port of xsltApplyAttributeSet: the attribute sets named in attr_sets (or in the
         xsl:use-attribute-sets attribute inst). */
-    private static void xsltApplyAttributeSet(TransformCtx t, XmlNode node, XmlNode inst, String attrSets)
+    private static void xsltApplyAttributeSet(TransformCtx t, XmlNode node, XmlNode inst, String attr_sets)
     {
-        if (attrSets == null)
+        if (attr_sets == null)
         {
             if (inst == null) return;
             if (nodeKind(inst) == ATTRIBUTE)
             {
                 XmlNode first = nodeFirstChild(inst);
-                if (first != null) attrSets = nodeContent(first);
+                if (first != null) attr_sets = nodeContent(first);
             }
-            if (attrSets == null) return;
+            if (attr_sets == null) return;
         }
         // xmlSearchNs from an attribute starts at its element (and looks at the element's namespace).
-        XmlNode nsNode = inst;
-        int n = attrSets.length();
+        XmlNode ns_node = inst;
+        int n = attr_sets.length();
         int curstr = 0;
         while (curstr < n)
         {
-            while (curstr < n && Xslt.isBlank(attrSets.charAt(curstr))) curstr++;
+            while (curstr < n && Xslt.isBlank(attr_sets.charAt(curstr))) curstr++;
             if (curstr >= n) break;
             int endstr = curstr;
-            while (endstr < n && !Xslt.isBlank(attrSets.charAt(endstr))) endstr++;
-            String qname = attrSets.substring(curstr, endstr);
-            String nsUri = null;
+            while (endstr < n && !Xslt.isBlank(attr_sets.charAt(endstr))) endstr++;
+            String qname = attr_sets.substring(curstr, endstr);
+            String ns_uri = null;
             if (Xslt.validateQname(qname) != 0)
             {
                 transformError(t, null, inst, fmt("The name '%s' in use-attribute-sets is not a valid QName.\n", qname));
@@ -2044,19 +2044,19 @@ public final class Transform
             String ncname = Xslt.splitQname(qname, prefix);
             if (prefix[0] != null)
             {
-                XmlNs ns = lxSearchNs(nsNode, prefix[0]);
+                XmlNs ns = lxSearchNs(ns_node, prefix[0]);
                 if (ns == null)
                 {
                     transformError(t, null, inst, fmt("use-attribute-set : No namespace found for QName '%s:%s'\n", prefix[0], ncname));
                     return;
                 }
-                nsUri = nsHref(ns);
+                ns_uri = nsHref(ns);
             }
             AttrSet set = null;
-            if (t.style.attributeSets != null)
+            if (t.style.attribute_sets != null)
             {
-                String key = Xslt.key2(ncname, nsUri);
-                set = t.style.attributeSets.get(key);
+                String key = Xslt.key2(ncname, ns_uri);
+                set = t.style.attribute_sets.get(key);
             }
             if (set != null)
             {
@@ -2077,18 +2077,18 @@ public final class Transform
 
     private static void templPush(TransformCtx t, Template value)
     {
-        if (t.templNr < t.templTab.size()) t.templTab.set(t.templNr, value);
-        else t.templTab.add(value);
-        t.templNr++;
+        if (t.templ_nr < t.templ_tab.size()) t.templ_tab.set(t.templ_nr, value);
+        else t.templ_tab.add(value);
+        t.templ_nr++;
         t.templ = value;
     }
 
     private static void templPop(TransformCtx t)
     {
-        if (t.templNr <= 0) return;
-        t.templNr--;
-        t.templ = t.templNr > 0 ? t.templTab.get(t.templNr - 1) : null;
-        t.templTab.set(t.templNr, null);
+        if (t.templ_nr <= 0) return;
+        t.templ_nr--;
+        t.templ = t.templ_nr > 0 ? t.templ_tab.get(t.templ_nr - 1) : null;
+        t.templ_tab.set(t.templ_nr, null);
     }
 
     /** Port of xsltApplyFallbacks. */
@@ -2151,7 +2151,7 @@ public final class Transform
             return;
         }
         int nbchild = xsltCountRealChildren(node);
-        long oldSize = t.xpSize, oldPos = t.xpPosition;
+        long old_size = t.xp_size, old_pos = t.xp_position;
         int childno = 0;
         for (XmlNode cur = lxChildren(node); cur != null; cur = nodeNext(cur))
         {
@@ -2161,13 +2161,13 @@ public final class Transform
             {
             case DOCUMENT:
             case ELEMENT:
-                t.xpSize = nbchild;
-                t.xpPosition = childno;
-                if (t.depth >= t.maxTemplateDepth)
+                t.xp_size = nbchild;
+                t.xp_position = childno;
+                if (t.depth >= t.max_template_depth)
                 {
                     transformError(t, null, cur, fmt("xsltDefaultProcessOneNode: Maximum template depth exceeded.\n" +
                         "You can adjust xsltMaxDepth (--maxdepth) in order to raise the maximum number of nested template calls and " +
-                        "variables/params (currently set to %d).\n", t.maxTemplateDepth));
+                        "variables/params (currently set to %d).\n", t.max_template_depth));
                     t.state = TransformCtx.STATE_STOPPED;
                     return;
                 }
@@ -2190,8 +2190,8 @@ public final class Transform
                 templ = Xslt.getTemplate(t, cur, null);
                 if (templ != null)
                 {
-                    t.xpSize = nbchild;
-                    t.xpPosition = childno;
+                    t.xp_size = nbchild;
+                    t.xp_position = childno;
                     xsltApplyXsltTemplate(t, cur, templ.content, templ, params);
                 }
                 else if (xsltCopyText(t, t.insert, cur) == null)
@@ -2204,8 +2204,8 @@ public final class Transform
                 templ = Xslt.getTemplate(t, cur, null);
                 if (templ != null)
                 {
-                    t.xpSize = nbchild;
-                    t.xpPosition = childno;
+                    t.xp_size = nbchild;
+                    t.xp_position = childno;
                     xsltApplyXsltTemplate(t, cur, templ.content, templ, params);
                 }
                 break;
@@ -2213,31 +2213,31 @@ public final class Transform
                 break;
             }
         }
-        t.xpSize = oldSize;
-        t.xpPosition = oldPos;
+        t.xp_size = old_size;
+        t.xp_position = old_pos;
     }
 
     /** Port of xsltProcessOneNode. */
-    private static void xsltProcessOneNode(TransformCtx t, XmlNode contextNode, StackElem withParams)
+    private static void xsltProcessOneNode(TransformCtx t, XmlNode context_node, StackElem with_params)
     {
-        Template templ = Xslt.getTemplate(t, contextNode, null);
+        Template templ = Xslt.getTemplate(t, context_node, null);
         if (templ == null)
         {
-            XmlNode oldNode = t.node;
-            t.node = contextNode;
-            xsltDefaultProcessOneNode(t, contextNode, withParams);
-            t.node = oldNode;
+            XmlNode old_node = t.node;
+            t.node = context_node;
+            xsltDefaultProcessOneNode(t, context_node, with_params);
+            t.node = old_node;
             return;
         }
-        Template oldRule = t.currentTemplateRule;
-        t.currentTemplateRule = templ;
-        xsltApplyXsltTemplate(t, contextNode, templ.content, templ, withParams);
-        t.currentTemplateRule = oldRule;
+        Template old_rule = t.current_template_rule;
+        t.current_template_rule = templ;
+        xsltApplyXsltTemplate(t, context_node, templ.content, templ, with_params);
+        t.current_template_rule = old_rule;
     }
 
     /** Port of xsltApplyXSLTTemplate. */
-    private static void xsltApplyXsltTemplate(TransformCtx t, XmlNode contextNode, XmlNode list,
-                                              Template templ, StackElem withParams)
+    private static void xsltApplyXsltTemplate(TransformCtx t, XmlNode context_node, XmlNode list,
+                                              Template templ, StackElem with_params)
     {
         if (templ == null)
         {
@@ -2246,20 +2246,20 @@ public final class Transform
         }
         if (list == null) return;
         if (t.state == TransformCtx.STATE_STOPPED) return;
-        if (t.varsNr >= t.maxTemplateVars)
+        if (t.vars_nr >= t.max_template_vars)
         {
             transformError(t, null, list, fmt("xsltApplyXSLTTemplate: A potential infinite template recursion was detected.\n" +
                 "You can adjust maxTemplateVars (--maxvars) in order to raise the maximum number of variables/params (currently set to %d).\n",
-                t.maxTemplateVars));
-            xsltDebug(t, contextNode, list);
+                t.max_template_vars));
+            xsltDebug(t, context_node, list);
             t.state = TransformCtx.STATE_STOPPED;
             return;
         }
-        RVT oldUserFragmentTop = t.tmpRvt;
-        t.tmpRvt = null;
-        int oldVarsBase = t.varsBase;
-        t.varsBase = t.varsNr;
-        t.node = contextNode;
+        RVT old_user_fragment_top = t.tmp_rvt;
+        t.tmp_rvt = null;
+        int old_vars_base = t.vars_base;
+        t.vars_base = t.vars_nr;
+        t.node = context_node;
         templPush(t, templ);
         // The template parameters.
         XmlNode cur = list;
@@ -2276,50 +2276,50 @@ public final class Transform
                 break;
             }
             list = nodeNext(cur);
-            StackElem tmpParam = null;
-            if (withParams != null && iparam instanceof StylePreComp ip)
+            StackElem tmp_param = null;
+            if (with_params != null && iparam instanceof StylePreComp ip)
             {
-                for (tmpParam = withParams; tmpParam != null; tmpParam = tmpParam.next)
+                for (tmp_param = with_params; tmp_param != null; tmp_param = tmp_param.next)
                 {
-                    if (streq(tmpParam.name, ip.name) && streq(tmpParam.nameUri, ip.ns))
+                    if (streq(tmp_param.name, ip.name) && streq(tmp_param.name_uri, ip.ns))
                     {
-                        xsltLocalVariablePush(t, tmpParam, -1);
+                        xsltLocalVariablePush(t, tmp_param, -1);
                         break;
                     }
                 }
             }
-            if (tmpParam == null) xsltParseStylesheetParam(t, cur);
+            if (tmp_param == null) xsltParseStylesheetParam(t, cur);
             cur = nodeNext(cur);
         } while (cur != null);
-        xsltApplySequenceConstructor(t, contextNode, list, templ);
-        if (t.varsNr > t.varsBase) xsltTemplateParamsCleanup(t);
-        t.varsBase = oldVarsBase;
+        xsltApplySequenceConstructor(t, context_node, list, templ);
+        if (t.vars_nr > t.vars_base) xsltTemplateParamsCleanup(t);
+        t.vars_base = old_vars_base;
         // Fragments created by extension functions in the template.
-        while (t.tmpRvt != null)
+        while (t.tmp_rvt != null)
         {
-            RVT tmp = t.tmpRvt;
-            t.tmpRvt = tmp.next;
+            RVT tmp = t.tmp_rvt;
+            t.tmp_rvt = tmp.next;
             xsltReleaseRvt(t, tmp);
         }
-        t.tmpRvt = oldUserFragmentTop;
+        t.tmp_rvt = old_user_fragment_top;
         templPop(t);
     }
 
     /** Port of xsltApplyOneTemplate. */
-    private static void xsltApplyOneTemplate(TransformCtx t, XmlNode contextNode, XmlNode list, StackElem params)
+    private static void xsltApplyOneTemplate(TransformCtx t, XmlNode context_node, XmlNode list, StackElem params)
     {
         if (list == null) return;
         if (t.state == TransformCtx.STATE_STOPPED) return;
         if (params != null)
         {
-            int oldVarsNr = t.varsNr;
+            int old_vars_nr = t.vars_nr;
             for (; params != null; params = params.next) xsltLocalVariablePush(t, params, -1);
-            xsltApplySequenceConstructor(t, contextNode, list, null);
-            xsltLocalVariablePop(t, oldVarsNr, -2);
+            xsltApplySequenceConstructor(t, context_node, list, null);
+            xsltLocalVariablePop(t, old_vars_nr, -2);
         }
         else
         {
-            xsltApplySequenceConstructor(t, contextNode, list, null);
+            xsltApplySequenceConstructor(t, context_node, list, null);
         }
     }
 
@@ -2339,7 +2339,7 @@ public final class Transform
     /** Port of xsltCopy (xsl:copy). */
     private static void xsltCopy(TransformCtx t, XmlNode node, XmlNode inst, StylePreComp comp)
     {
-        XmlNode oldInsert = t.insert;
+        XmlNode old_insert = t.insert;
         if (t.insert != null)
         {
             switch (nodeKind(node))
@@ -2382,7 +2382,7 @@ public final class Transform
         default:
             break;
         }
-        t.insert = oldInsert;
+        t.insert = old_insert;
     }
 
     /** Port of xsltText (xsl:text, only reached when it could not be replaced by its content). */
@@ -2406,11 +2406,11 @@ public final class Transform
     private static void xsltElement(TransformCtx t, XmlNode node, XmlNode inst, StylePreComp comp)
     {
         if (t.insert == null) return;
-        if (comp.hasName == 0) return;
-        XmlNode oldInsert = t.insert;
+        if (comp.has_name == 0) return;
+        XmlNode old_insert = t.insert;
         String name = null;
         String[] prefix = { null };
-        String nsName = null;
+        String ns_name = null;
         error:
         {
             if (comp.name == null)
@@ -2439,23 +2439,23 @@ public final class Transform
                 transformError(t, null, inst, "xsl:element : xsltAddChild failed\n");
                 break error;
             }
-            if (comp.hasNs != 0)
+            if (comp.has_ns != 0)
             {
                 if (comp.ns != null)
                 {
-                    if (!comp.ns.isEmpty()) nsName = comp.ns;
+                    if (!comp.ns.isEmpty()) ns_name = comp.ns;
                 }
                 else
                 {
                     String tmp = xsltEvalAttrValueTemplate(t, inst, "namespace", XSLT_NAMESPACE);
-                    if (tmp != null && !tmp.isEmpty()) nsName = tmp;
+                    if (tmp != null && !tmp.isEmpty()) ns_name = tmp;
                 }
-                if (streq(nsName, "http://www.w3.org/2000/xmlns/"))
+                if (streq(ns_name, "http://www.w3.org/2000/xmlns/"))
                 {
                     transformError(t, null, inst, "xsl:attribute: Namespace http://www.w3.org/2000/xmlns/ forbidden.\n");
                     break error;
                 }
-                if (streq(nsName, XML_NAMESPACE))
+                if (streq(ns_name, XML_NAMESPACE))
                 {
                     prefix[0] = "xml";
                 }
@@ -2477,21 +2477,21 @@ public final class Transform
                 }
                 else
                 {
-                    nsName = nsHref(ns);
+                    ns_name = nsHref(ns);
                 }
             }
-            if (nsName != null)
+            if (ns_name != null)
             {
                 // Do not use a prefix of "xmlns".
-                if (streq(prefix[0], "xmlns")) nodeSetNs(copy, xsltGetSpecialNamespace(t, inst, nsName, "ns_1", copy));
-                else nodeSetNs(copy, xsltGetSpecialNamespace(t, inst, nsName, prefix[0], copy));
+                if (streq(prefix[0], "xmlns")) nodeSetNs(copy, xsltGetSpecialNamespace(t, inst, ns_name, "ns_1", copy));
+                else nodeSetNs(copy, xsltGetSpecialNamespace(t, inst, ns_name, prefix[0], copy));
             }
             else if (lxIsElement(nodeParent(copy)) && nodeNs(nodeParent(copy)) != null)
             {
                 xsltGetSpecialNamespace(t, inst, null, null, copy);
             }
             t.insert = copy;
-            if (comp.hasUse != 0)
+            if (comp.has_use != 0)
             {
                 if (comp.use != null)
                 {
@@ -2499,16 +2499,16 @@ public final class Transform
                 }
                 else
                 {
-                    String attrSets = xsltEvalAttrValueTemplate(t, inst, "use-attribute-sets", null);
-                    if (attrSets != null)
+                    String attr_sets = xsltEvalAttrValueTemplate(t, inst, "use-attribute-sets", null);
+                    if (attr_sets != null)
                     {
-                        xsltApplyAttributeSet(t, node, inst, attrSets);
+                        xsltApplyAttributeSet(t, node, inst, attr_sets);
                     }
                 }
             }
             if (nodeFirstChild(inst) != null) xsltApplySequenceConstructor(t, t.node, nodeFirstChild(inst), null);
         }
-        t.insert = oldInsert;
+        t.insert = old_insert;
     }
 
     /** Port of xsltComment (xsl:comment). */
@@ -2531,7 +2531,7 @@ public final class Transform
     private static void xsltProcessingInstruction(TransformCtx t, XmlNode node, XmlNode inst, StylePreComp comp)
     {
         if (t.insert == null) return;
-        if (comp.hasName == 0) return;
+        if (comp.has_name == 0) return;
         String name;
         String value = null;
         if (comp.name == null)
@@ -2658,7 +2658,7 @@ public final class Transform
     }
 
     /** Port of xsltApplyImports (xsl:apply-imports). */
-    private static void xsltApplyImports(TransformCtx t, XmlNode contextNode, XmlNode inst, StylePreComp comp)
+    private static void xsltApplyImports(TransformCtx t, XmlNode context_node, XmlNode inst, StylePreComp comp)
     {
         if (inst == null) return;
         if (comp == null)
@@ -2666,36 +2666,36 @@ public final class Transform
             transformError(t, null, inst, "Internal error in xsltApplyImports(): The XSLT 'apply-imports' instruction was not compiled.\n");
             return;
         }
-        if (t.currentTemplateRule == null)
+        if (t.current_template_rule == null)
         {
             transformError(t, null, inst, "It is an error to call 'apply-imports' when there's no current template rule.\n");
             return;
         }
-        Template templ = Xslt.getTemplate(t, contextNode, t.currentTemplateRule.style);
+        Template templ = Xslt.getTemplate(t, context_node, t.current_template_rule.style);
         if (templ != null)
         {
-            Template oldRule = t.currentTemplateRule;
-            t.currentTemplateRule = templ;
-            xsltApplyXsltTemplate(t, contextNode, templ.content, templ, null);
-            t.currentTemplateRule = oldRule;
+            Template old_rule = t.current_template_rule;
+            t.current_template_rule = templ;
+            xsltApplyXsltTemplate(t, context_node, templ.content, templ, null);
+            t.current_template_rule = old_rule;
         }
         else
         {
             // Use the built in templates.
-            xsltDefaultProcessOneNode(t, contextNode, null);
+            xsltDefaultProcessOneNode(t, context_node, null);
         }
     }
 
     /** Port of xsltFindTemplate: a named template over the import cascade. */
-    private static Template xsltFindTemplate(TransformCtx t, String name, String nameUri)
+    private static Template xsltFindTemplate(TransformCtx t, String name, String name_uri)
     {
         if (name == null) return null;
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
-            if (style.namedTemplates != null)
+            if (style.named_templates != null)
             {
-                String key = Xslt.hash3Key(name, nameUri, null);
-                Template cur = style.namedTemplates.get(key);
+                String key = Xslt.hash3Key(name, name_uri, null);
+                Template cur = style.named_templates.get(key);
                 if (cur != null) return cur;
             }
         }
@@ -2705,7 +2705,7 @@ public final class Transform
     /** Port of xsltCallTemplate (xsl:call-template). */
     private static void xsltCallTemplate(TransformCtx t, XmlNode node, XmlNode inst, StylePreComp comp)
     {
-        StackElem withParams = null;
+        StackElem with_params = null;
         if (t.insert == null) return;
         if (comp == null)
         {
@@ -2732,8 +2732,8 @@ public final class Transform
                     StackElem param = xsltParseStylesheetCallerParam(t, cur);
                     if (param != null)
                     {
-                        param.next = withParams;
-                        withParams = param;
+                        param.next = with_params;
+                        with_params = param;
                     }
                 }
                 else
@@ -2747,8 +2747,8 @@ public final class Transform
                              Xslt.libxml2NodeName(cur) != null ? Xslt.libxml2NodeName(cur) : "(null)"));
             }
         }
-        xsltApplyXsltTemplate(t, node, comp.templ.content, comp.templ, withParams);
-        if (withParams != null) xsltFreeRuntimeStackElemList(t, withParams);
+        xsltApplyXsltTemplate(t, node, comp.templ.content, comp.templ, with_params);
+        if (with_params != null) xsltFreeRuntimeStackElemList(t, with_params);
     }
 
     private static NodeList xsltNodeListFrom(XPathResult res)
@@ -2771,14 +2771,14 @@ public final class Transform
         }
         if (node == null || inst == null) return;
         NodeList list = null;
-        StackElem withParams = null;
-        XmlNode oldContextNode = t.node;
-        String oldMode = t.mode, oldModeUri = t.modeUri;
-        DocInfo oldDocInfo = t.document;
-        NodeList oldList = t.nodeList;
-        long oldSize = t.xpSize, oldPos = t.xpPosition;
+        StackElem with_params = null;
+        XmlNode old_context_node = t.node;
+        String old_mode = t.mode, old_mode_uri = t.mode_uri;
+        DocInfo old_doc_info = t.document;
+        NodeList old_list = t.node_list;
+        long old_size = t.xp_size, old_pos = t.xp_position;
         t.mode = comp.mode;
-        t.modeUri = comp.modeUri;
+        t.mode_uri = comp.mode_uri;
         error:
         {
             if (comp.select != null)
@@ -2818,7 +2818,7 @@ public final class Transform
                 for (XmlNode cur = lxChildren(node); cur != null; cur = nodeNext(cur)) if (lxIsRealNode(cur)) list.nodes[list.nr++] = cur;
             }
             if (list == null || list.nr == 0) break error;
-            t.nodeList = list;
+            t.node_list = list;
             // Parameters and sorts.
             for (XmlNode cur = nodeFirstChild(inst); cur != null; )
             {
@@ -2834,13 +2834,13 @@ public final class Transform
                     StackElem param = xsltParseStylesheetCallerParam(t, cur);
                     if (param != null)
                     {
-                        param.next = withParams;
-                        withParams = param;
+                        param.next = with_params;
+                        with_params = param;
                     }
                 }
                 if (Xslt.isXsltName(cur, "sort"))
                 {
-                    Template oldRule = t.currentTemplateRule;
+                    Template old_rule = t.current_template_rule;
                     int nbsorts = 0;
                     XmlNode[] sorts = new XmlNode[XSLT_MAX_SORT];
                     sorts[nbsorts++] = cur;
@@ -2859,8 +2859,8 @@ public final class Transform
                             StackElem param = xsltParseStylesheetCallerParam(t, cur);
                             if (param != null)
                             {
-                                param.next = withParams;
-                                withParams = param;
+                                param.next = with_params;
+                                with_params = param;
                             }
                         }
                         if (Xslt.isXsltName(cur, "sort"))
@@ -2876,36 +2876,36 @@ public final class Transform
                         }
                         cur = nodeNext(cur);
                     }
-                    t.currentTemplateRule = null;
+                    t.current_template_rule = null;
                     xsltDoSortFunction(t, sorts, nbsorts);
-                    t.currentTemplateRule = oldRule;
+                    t.current_template_rule = old_rule;
                     break;
                 }
                 cur = nodeNext(cur);
             }
-            t.xpSize = list.nr;
+            t.xp_size = list.nr;
             for (int i = 0; i < list.nr; i++)
             {
                 XmlNode cur = list.nodes[i];
                 t.node = cur;
-                t.xpPosition = i + 1;
-                xsltProcessOneNode(t, cur, withParams);
+                t.xp_position = i + 1;
+                xsltProcessOneNode(t, cur, with_params);
             }
         }
-        if (withParams != null) xsltFreeRuntimeStackElemList(t, withParams);
-        t.xpSize = oldSize;
-        t.xpPosition = oldPos;
-        t.document = oldDocInfo;
-        t.nodeList = oldList;
-        t.node = oldContextNode;
-        t.mode = oldMode;
-        t.modeUri = oldModeUri;
+        if (with_params != null) xsltFreeRuntimeStackElemList(t, with_params);
+        t.xp_size = old_size;
+        t.xp_position = old_pos;
+        t.document = old_doc_info;
+        t.node_list = old_list;
+        t.node = old_context_node;
+        t.mode = old_mode;
+        t.mode_uri = old_mode_uri;
     }
 
     /** Port of xsltChoose (xsl:choose). */
-    private static void xsltChoose(TransformCtx t, XmlNode contextNode, XmlNode inst)
+    private static void xsltChoose(TransformCtx t, XmlNode context_node, XmlNode inst)
     {
-        if (contextNode == null || inst == null) return;
+        if (context_node == null || inst == null) return;
         XmlNode cur = nodeFirstChild(inst);
         if (cur == null)
         {
@@ -2927,7 +2927,7 @@ public final class Transform
                     transformError(t, null, cur, "Internal error in xsltChoose(): The XSLT 'when' instruction was not compiled.\n");
                     return;
                 }
-                int res = xsltPreCompEvalToBoolean(t, contextNode, wcomp);
+                int res = xsltPreCompEvalToBoolean(t, context_node, wcomp);
                 if (res == -1)
                 {
                     t.state = TransformCtx.STATE_STOPPED;
@@ -2943,29 +2943,29 @@ public final class Transform
     }
 
     /** Port of xsltIf (xsl:if). */
-    private static void xsltIf(TransformCtx t, XmlNode contextNode, XmlNode inst, StylePreComp comp)
+    private static void xsltIf(TransformCtx t, XmlNode context_node, XmlNode inst, StylePreComp comp)
     {
-        if (contextNode == null || inst == null) return;
+        if (context_node == null || inst == null) return;
         if (comp == null || comp.test == null || comp.comp == null)
         {
             transformError(t, null, inst, "Internal error in xsltIf(): The XSLT 'if' instruction was not compiled.\n");
             return;
         }
-        RVT oldLocalFragmentTop = t.localRvt;
-        int res = xsltPreCompEvalToBoolean(t, contextNode, comp);
-        if (oldLocalFragmentTop != t.localRvt) xsltReleaseLocalRvts(t, oldLocalFragmentTop);
+        RVT old_local_fragment_top = t.local_rvt;
+        int res = xsltPreCompEvalToBoolean(t, context_node, comp);
+        if (old_local_fragment_top != t.local_rvt) xsltReleaseLocalRvts(t, old_local_fragment_top);
         if (res == -1)
         {
             t.state = TransformCtx.STATE_STOPPED;
             return;
         }
-        if (res == 1) xsltApplySequenceConstructor(t, contextNode, nodeFirstChild(inst), null);
+        if (res == 1) xsltApplySequenceConstructor(t, context_node, nodeFirstChild(inst), null);
     }
 
     /** Port of xsltForEach (xsl:for-each). */
-    private static void xsltForEach(TransformCtx t, XmlNode contextNode, XmlNode inst, StylePreComp comp)
+    private static void xsltForEach(TransformCtx t, XmlNode context_node, XmlNode inst, StylePreComp comp)
     {
-        if (contextNode == null || inst == null)
+        if (context_node == null || inst == null)
         {
             genericError(t.style.settings, "xsltForEach(): Bad arguments.\n");
             return;
@@ -2981,16 +2981,16 @@ public final class Transform
                            "instruction was not compiled correctly.\n");
             return;
         }
-        DocInfo oldDocInfo = t.document;
-        NodeList oldList = t.nodeList;
-        XmlNode oldContextNode = t.node;
-        Template oldRule = t.currentTemplateRule;
-        t.currentTemplateRule = null;
-        long oldSize = t.xpSize, oldPos = t.xpPosition;
+        DocInfo old_doc_info = t.document;
+        NodeList old_list = t.node_list;
+        XmlNode old_context_node = t.node;
+        Template old_rule = t.current_template_rule;
+        t.current_template_rule = null;
+        long old_size = t.xp_size, old_pos = t.xp_position;
         NodeList list = null;
         error:
         {
-            XPathResult res = xsltPreCompEval(t, contextNode, comp);
+            XPathResult res = xsltPreCompEval(t, context_node, comp);
             if (res != null)
             {
                 if (res.type() == XPathResult.NODESET && !res.isTree())
@@ -3010,42 +3010,42 @@ public final class Transform
                 break error;
             }
             if (list == null || list.nr <= 0) break error;
-            t.nodeList = list;
-            XmlNode curInst = nodeFirstChild(inst);
-            if (curInst != null && Xslt.isXsltElem(curInst) && Xslt.isXsltName(curInst, "sort"))
+            t.node_list = list;
+            XmlNode cur_inst = nodeFirstChild(inst);
+            if (cur_inst != null && Xslt.isXsltElem(cur_inst) && Xslt.isXsltName(cur_inst, "sort"))
             {
                 int nbsorts = 0;
                 XmlNode[] sorts = new XmlNode[XSLT_MAX_SORT];
-                sorts[nbsorts++] = curInst;
-                curInst = nodeNext(curInst);
-                while (curInst != null && Xslt.isXsltElem(curInst) && Xslt.isXsltName(curInst, "sort"))
+                sorts[nbsorts++] = cur_inst;
+                cur_inst = nodeNext(cur_inst);
+                while (cur_inst != null && Xslt.isXsltElem(cur_inst) && Xslt.isXsltName(cur_inst, "sort"))
                 {
                     if (nbsorts >= XSLT_MAX_SORT)
                     {
-                        transformError(t, null, curInst, fmt("The number of xsl:sort instructions exceeds the " +
+                        transformError(t, null, cur_inst, fmt("The number of xsl:sort instructions exceeds the " +
                                        "maximum (%d) allowed by this processor.\n", XSLT_MAX_SORT));
                         break error;
                     }
-                    sorts[nbsorts++] = curInst;
-                    curInst = nodeNext(curInst);
+                    sorts[nbsorts++] = cur_inst;
+                    cur_inst = nodeNext(cur_inst);
                 }
                 xsltDoSortFunction(t, sorts, nbsorts);
             }
-            t.xpSize = list.nr;
+            t.xp_size = list.nr;
             for (int i = 0; i < list.nr; i++)
             {
                 XmlNode cur = list.nodes[i];
                 t.node = cur;
-                t.xpPosition = i + 1;
-                xsltApplySequenceConstructor(t, cur, curInst, null);
+                t.xp_position = i + 1;
+                xsltApplySequenceConstructor(t, cur, cur_inst, null);
             }
         }
-        t.document = oldDocInfo;
-        t.nodeList = oldList;
-        t.node = oldContextNode;
-        t.currentTemplateRule = oldRule;
-        t.xpSize = oldSize;
-        t.xpPosition = oldPos;
+        t.document = old_doc_info;
+        t.node_list = old_list;
+        t.node = old_context_node;
+        t.current_template_rule = old_rule;
+        t.xp_size = old_size;
+        t.xp_position = old_pos;
     }
 
     /** Run the function of a precomputed instruction (comp->func in libxslt). Returns false if there is none. */
@@ -3088,41 +3088,41 @@ public final class Transform
     }
 
     /** Port of xsltApplySequenceConstructor: instantiate the nodes of list. */
-    private static void xsltApplySequenceConstructor(TransformCtx t, XmlNode contextNode, XmlNode list, Template templ)
+    private static void xsltApplySequenceConstructor(TransformCtx t, XmlNode context_node, XmlNode list, Template templ)
     {
         if (list == null) return;
         if (t.state == TransformCtx.STATE_STOPPED) return;
-        if (t.depth >= t.maxTemplateDepth)
+        if (t.depth >= t.max_template_depth)
         {
             transformError(t, null, list, fmt("xsltApplySequenceConstructor: A potential infinite template recursion was detected.\n" +
                 "You can adjust xsltMaxDepth (--maxdepth) in order to raise the maximum number of nested template calls and " +
-                "variables/params (currently set to %d).\n", t.maxTemplateDepth));
-            xsltDebug(t, contextNode, list);
+                "variables/params (currently set to %d).\n", t.max_template_depth));
+            xsltDebug(t, context_node, list);
             t.state = TransformCtx.STATE_STOPPED;
             return;
         }
         t.depth++;
-        RVT oldLocalFragmentTop = t.localRvt;
-        XmlNode oldInsert = t.insert, insert = t.insert;
-        XmlNode oldInst = t.inst, oldCurInst;
-        XmlNode oldContextNode = t.node;
-        int oldVarsNr = t.varsNr;
+        RVT old_local_fragment_top = t.local_rvt;
+        XmlNode old_insert = t.insert, insert = t.insert;
+        XmlNode old_inst = t.inst, old_cur_inst;
+        XmlNode old_context_node = t.node;
+        int old_vars_nr = t.vars_nr;
         int level = 0;
-        XmlNode listParent = nodeParent(list);
+        XmlNode list_parent = nodeParent(list);
         XmlNode cur = list;
         XmlNode copy = null;
         error:
         while (cur != null)
         {
-            if (t.opLimit != 0)
+            if (t.op_limit != 0)
             {
-                if (Long.compareUnsigned(t.opCount, t.opLimit) >= 0)
+                if (Long.compareUnsigned(t.op_count, t.op_limit) >= 0)
                 {
                     transformError(t, null, cur, "xsltApplySequenceConstructor: Operation limit exceeded\n");
                     t.state = TransformCtx.STATE_STOPPED;
                     break error;
                 }
-                t.opCount += 1;
+                t.op_count += 1;
             }
             t.inst = cur;
             if (insert == null) break error;
@@ -3136,43 +3136,43 @@ public final class Transform
                     {
                         if (Xslt.isXsltName(cur, "message"))
                         {
-                            xsltMessage(t, contextNode, cur);
+                            xsltMessage(t, context_node, cur);
                         }
                         else
                         {
                             // Something really went wrong, try the fallbacks.
                             t.insert = insert;
-                            if (xsltApplyFallbacks(t, contextNode, cur) == 0)
+                            if (xsltApplyFallbacks(t, context_node, cur) == 0)
                             {
                                 genericError(t.style.settings, fmt("xsltApplySequenceConstructor: %s was not compiled\n", nodeName(cur)));
                             }
-                            t.insert = oldInsert;
+                            t.insert = old_insert;
                         }
                         break skipChildren;
                     }
                     if (ud instanceof StylePreComp info)
                     {
-                        oldCurInst = t.inst;
+                        old_cur_inst = t.inst;
                         t.inst = cur;
                         t.insert = insert;
-                        boolean done = xsltCallFunc(t, contextNode, cur, info);
+                        boolean done = xsltCallFunc(t, context_node, cur, info);
                         if (done)
                         {
-                            if (oldLocalFragmentTop != t.localRvt) xsltReleaseLocalRvts(t, oldLocalFragmentTop);
-                            t.insert = oldInsert;
-                            t.inst = oldCurInst;
+                            if (old_local_fragment_top != t.local_rvt) xsltReleaseLocalRvts(t, old_local_fragment_top);
+                            t.insert = old_insert;
+                            t.inst = old_cur_inst;
                             break skipChildren;
                         }
-                        t.insert = oldInsert;
-                        t.inst = oldCurInst;
+                        t.insert = old_insert;
+                        t.inst = old_cur_inst;
                     }
                     if (Xslt.isXsltName(cur, "variable"))
                     {
                         StackElem tmpvar = t.vars;
-                        oldCurInst = t.inst;
+                        old_cur_inst = t.inst;
                         t.inst = cur;
                         xsltParseStylesheetVariable(t, cur);
-                        t.inst = oldCurInst;
+                        t.inst = old_cur_inst;
                         if (tmpvar != t.vars)
                         {
                             // The variable was registered, it lives until the end of its parent.
@@ -3181,7 +3181,7 @@ public final class Transform
                     }
                     else if (Xslt.isXsltName(cur, "message"))
                     {
-                        xsltMessage(t, contextNode, cur);
+                        xsltMessage(t, context_node, cur);
                     }
                     else
                     {
@@ -3196,16 +3196,16 @@ public final class Transform
                 else if (nodeKind(cur) == ELEMENT && nodeNs(cur) != null && nodeUserData(cur) != null)
                 {
                     // An extension element.
-                    oldCurInst = t.inst;
+                    old_cur_inst = t.inst;
                     t.inst = cur;
                     Object ud = nodeUserData(cur);
                     boolean done = false;
                     if (ud instanceof StylePreComp info)
                     {
                         t.insert = insert;
-                        done = xsltCallFunc(t, contextNode, cur, info);
-                        if (done && oldLocalFragmentTop != t.localRvt) xsltReleaseLocalRvts(t, oldLocalFragmentTop);
-                        t.insert = oldInsert;
+                        done = xsltCallFunc(t, context_node, cur, info);
+                        if (done && old_local_fragment_top != t.local_rvt) xsltReleaseLocalRvts(t, old_local_fragment_top);
+                        t.insert = old_insert;
                     }
                     if (!done)
                     {
@@ -3216,31 +3216,31 @@ public final class Transform
                             if (Xslt.isXsltElem(child) && Xslt.isXsltName(child, "fallback"))
                             {
                                 found = 1;
-                                xsltApplySequenceConstructor(t, contextNode, nodeFirstChild(child), null);
+                                xsltApplySequenceConstructor(t, context_node, nodeFirstChild(child), null);
                             }
                         }
-                        t.insert = oldInsert;
+                        t.insert = old_insert;
                         if (found == 0)
                         {
                             transformError(t, null, cur, fmt("xsltApplySequenceConstructor: failed to find extension %s\n", nodeName(cur)));
                         }
                     }
-                    t.inst = oldCurInst;
+                    t.inst = old_cur_inst;
                     break skipChildren;
                 }
                 else if (nodeKind(cur) == ELEMENT)
                 {
                     // A literal result element.
-                    oldCurInst = t.inst;
+                    old_cur_inst = t.inst;
                     t.inst = cur;
                     copy = xsltShallowCopyElem(t, cur, insert, 1);
                     if (copy == null) break error;
                     // Add the namespaces in scope of the template (only for its top level elements).
-                    if (templ != null && oldInsert == insert && t.templ != null && t.templ.inheritedNs != null)
+                    if (templ != null && old_insert == insert && t.templ != null && t.templ.inherited_ns != null)
                     {
-                        for (int i = 0; i < t.templ.inheritedNsNr; i++)
+                        for (int i = 0; i < t.templ.inherited_ns_nr; i++)
                         {
-                            XmlNs ns = t.templ.inheritedNs[i];
+                            XmlNs ns = t.templ.inherited_ns[i];
                             String uri = xsltLookupAlias(t, nsHref(ns));
                             if (uri != null && uri.equals(XSLT_UNDEFINED_DEFAULT_NS)) continue;
                             if (uri == null) uri = nsHref(ns);
@@ -3250,7 +3250,7 @@ public final class Transform
                         if (nodeNs(copy) != null) nodeSetNs(copy, xsltGetNamespace(t, cur, nodeNs(copy), copy));
                     }
                     if (!nodeAttrs(cur).isEmpty()) xsltAttrListTemplateProcess(t, copy, nodeAttrs(cur));
-                    t.inst = oldCurInst;
+                    t.inst = old_cur_inst;
                 }
                 // Descend into the content.
                 if (nodeFirstChild(cur) != null && nodeKind(nodeFirstChild(cur)) != ENTITY_DECL)
@@ -3273,10 +3273,10 @@ public final class Transform
                 cur = nodeParent(cur);
                 level--;
                 // Pop the variables of the leaving level.
-                if (t.varsNr > oldVarsNr && t.vars.level > level) xsltLocalVariablePop(t, oldVarsNr, level);
+                if (t.vars_nr > old_vars_nr && t.vars.level > level) xsltLocalVariablePop(t, old_vars_nr, level);
                 insert = lxParent(insert);
                 if (cur == null) break;
-                if (cur == listParent)
+                if (cur == list_parent)
                 {
                     cur = null;
                     break;
@@ -3289,10 +3289,10 @@ public final class Transform
             } while (cur != null);
         }
         // error:
-        if (t.varsNr > oldVarsNr) xsltLocalVariablePop(t, oldVarsNr, -1);
-        t.node = oldContextNode;
-        t.inst = oldInst;
-        t.insert = oldInsert;
+        if (t.vars_nr > old_vars_nr) xsltLocalVariablePop(t, old_vars_nr, -1);
+        t.node = old_context_node;
+        t.inst = old_inst;
+        t.insert = old_insert;
         t.depth--;
     }
 
@@ -3317,19 +3317,19 @@ public final class Transform
             return null;
         }
         if (comp.select == null || comp.comp == null) return null;
-        NodeList list = t.nodeList;
+        NodeList list = t.node_list;
         if (list == null || list.nr <= 1) return null;
         int len = list.nr;
         SortKey[] results = new SortKey[len];
         for (int i = 0; i < len; i++) results[i] = new SortKey();
-        XmlNode oldInst = t.inst;
-        XmlNode oldNode = t.node;
-        long oldPos = t.xpPosition, oldSize = t.xpSize;
+        XmlNode old_inst = t.inst;
+        XmlNode old_node = t.node;
+        long old_pos = t.xp_position, old_size = t.xp_size;
         for (int i = 0; i < len; i++)
         {
             t.inst = sort;
-            t.xpSize = len;
-            t.xpPosition = i + 1;
+            t.xp_size = len;
+            t.xp_position = i + 1;
             t.node = list.nodes[i];
             XPathResult res = xsltXpathEval(t, comp.comp, t.node);
             if (res != null)
@@ -3352,10 +3352,10 @@ public final class Transform
                 results[i].valid = false;
             }
         }
-        t.inst = oldInst;
-        t.node = oldNode;
-        t.xpSize = oldSize;
-        t.xpPosition = oldPos;
+        t.inst = old_inst;
+        t.node = old_node;
+        t.xp_size = old_size;
+        t.xp_position = old_pos;
         return results;
     }
 
@@ -3392,20 +3392,20 @@ public final class Transform
     /** Port of xsltDefaultSortFunction: a shell sort of the node list by the sort keys. */
     private static void xsltDoSortFunction(TransformCtx t, XmlNode[] sorts, int nbsorts)
     {
-        SortKey[][] resultsTab = new SortKey[XSLT_MAX_SORT][];
+        SortKey[][] results_tab = new SortKey[XSLT_MAX_SORT][];
         int[] number = new int[XSLT_MAX_SORT];
         int[] desc = new int[XSLT_MAX_SORT];
         if (sorts == null || nbsorts <= 0 || nbsorts >= XSLT_MAX_SORT) return;
         if (sorts[0] == null) return;
         StylePreComp comp = precomp(sorts[0]);
         if (nodeUserData(sorts[0]) == null) return;
-        NodeList list = t.nodeList;
+        NodeList list = t.node_list;
         if (list == null || list.nr <= 1) return;
         for (int j = 0; j < nbsorts; j++)
         {
             comp = precomp(sorts[j]);
             if (comp == null) continue;
-            if (comp.stype == null && comp.hasStype != 0)
+            if (comp.stype == null && comp.has_stype != 0)
             {
                 String stype = xsltEvalAttrValueTemplate(t, sorts[j], "data-type", null);
                 number[j] = 0;
@@ -3420,7 +3420,7 @@ public final class Transform
             {
                 number[j] = comp.number;
             }
-            if (comp.order == null && comp.hasOrder != 0)
+            if (comp.order == null && comp.has_order != 0)
             {
                 String order = xsltEvalAttrValueTemplate(t, sorts[j], "order", null);
                 desc[j] = 0;
@@ -3435,16 +3435,16 @@ public final class Transform
             {
                 desc[j] = comp.descending;
             }
-            if (comp.lang == null && comp.hasLang != 0)
+            if (comp.lang == null && comp.has_lang != 0)
             {
                 // TODO: locale specific collation (xsltNewLocale, xsltStrxfrm).
                 xsltEvalAttrValueTemplate(t, sorts[j], "lang", null);
             }
         }
         int len = list.nr;
-        resultsTab[0] = xsltComputeSortResult(t, sorts[0], number[0]);
-        for (int i = 1; i < XSLT_MAX_SORT; i++) resultsTab[i] = null;
-        SortKey[] results = resultsTab[0];
+        results_tab[0] = xsltComputeSortResult(t, sorts[0], number[0]);
+        for (int i = 1; i < XSLT_MAX_SORT; i++) results_tab[i] = null;
+        SortKey[] results = results_tab[0];
         if (results == null) return;
         // Shell's sort of the node set.
         for (int incr = len / 2; incr > 0; incr /= 2)
@@ -3473,8 +3473,8 @@ public final class Transform
                         {
                             if (sorts[depth] == null) break;
                             if (nodeUserData(sorts[depth]) == null) break;
-                            if (resultsTab[depth] == null) resultsTab[depth] = xsltComputeSortResult(t, sorts[depth], number[depth]);
-                            SortKey[] res = resultsTab[depth];
+                            if (results_tab[depth] == null) results_tab[depth] = xsltComputeSortResult(t, sorts[depth], number[depth]);
+                            SortKey[] res = results_tab[depth];
                             if (res == null) break;
                             if (!res[j].valid)
                             {
@@ -3504,8 +3504,8 @@ public final class Transform
                         list.nodes[j + incr] = node;
                         for (int depth = 1; depth < nbsorts; depth++)
                         {
-                            if (sorts[depth] == null || resultsTab[depth] == null) break;
-                            SortKey[] res = resultsTab[depth];
+                            if (sorts[depth] == null || results_tab[depth] == null) break;
+                            SortKey[] res = results_tab[depth];
                             SortKey tmp2 = res[j];
                             res[j] = res[j + incr];
                             res[j + incr] = tmp2;
@@ -3548,9 +3548,9 @@ public final class Transform
     {
         Settings s = t.style.settings;
         genericError(s, "Templates:\n");
-        for (int i = 0, j = t.templNr - 1; i < 15 && j >= 0; i++, j--)
+        for (int i = 0, j = t.templ_nr - 1; i < 15 && j >= 0; i++, j--)
         {
-            Template tj = t.templTab.get(j);
+            Template tj = t.templ_tab.get(j);
             genericError(s, fmt("#%d ", i));
             if (tj.name != null) genericError(s, fmt("name %s ", tj.name));
             if (tj.match != null) genericError(s, fmt("name %s ", tj.match));
@@ -3558,7 +3558,7 @@ public final class Transform
             genericError(s, "\n");
         }
         genericError(s, "Variables:\n");
-        for (int i = 0, j = t.varsNr - 1; i < 15 && j >= 0; i++, j--)
+        for (int i = 0, j = t.vars_nr - 1; i < 15 && j >= 0; i++, j--)
         {
             if (varsAt(t, j) == null) continue;
             genericError(s, fmt("#%d\n", i));
@@ -3648,13 +3648,13 @@ public final class Transform
             return;
         }
         // If the computation failed, the url was probably not escaped.
-        filename = XmlUri.build(url, t.outputFile);
+        filename = XmlUri.build(url, t.output_file);
         if (filename == null)
         {
             String esc = XmlUri.escapeStr(url, ":/.?,");
             if (esc != null)
             {
-                filename = XmlUri.build(esc, t.outputFile);
+                filename = XmlUri.build(esc, t.output_file);
             }
         }
         if (filename == null)
@@ -3662,11 +3662,11 @@ public final class Transform
             transformError(t, null, inst, fmt("xsltDocumentElem: URL computation failed for %s\n", url));
             return;
         }
-        String oldOutputFile = t.outputFile;
-        XmlDocument oldOutput = t.output;
-        XmlNode oldInsert = t.insert;
-        int oldType = t.type;
-        t.outputFile = filename;
+        String old_output_file = t.output_file;
+        XmlDocument old_output = t.output;
+        XmlNode old_insert = t.insert;
+        int old_type = t.type;
+        t.output_file = filename;
         style = Xslt.stylesheetNewEmpty(null, t.style.settings);
         error:
         {
@@ -3683,7 +3683,7 @@ public final class Transform
             if ((prop = xsltEvalAttrValueTemplate(t, inst, "method", null)) != null)
             {
                 style.method = null;
-                style.methodUri = null;
+                style.method_uri = null;
                 String[] pname = { prop };
                 String uri = Xslt.getQnameUri(t.style.settings, inst, pname);
                 prop = pname[0];
@@ -3706,16 +3706,16 @@ public final class Transform
                 else
                 {
                     style.method = prop;
-                    style.methodUri = uri;
+                    style.method_uri = uri;
                 }
             }
             if ((prop = xsltEvalAttrValueTemplate(t, inst, "doctype-system", null)) != null)
             {
-                style.doctypeSystem = prop;
+                style.doctype_system = prop;
             }
             if ((prop = xsltEvalAttrValueTemplate(t, inst, "doctype-public", null)) != null)
             {
-                style.doctypePublic = prop;
+                style.doctype_public = prop;
             }
             String[] yesno = { "standalone", "indent", "omit-xml-declaration" };
             for (int i = 0; i < 3; i++)
@@ -3734,7 +3734,7 @@ public final class Transform
                     {
                         if (i == 0) style.standalone = v;
                         else if (i == 1) style.indent = v;
-                        else style.omitXmlDeclaration = v;
+                        else style.omit_xml_declaration = v;
                     }
                 }
             }
@@ -3742,7 +3742,7 @@ public final class Transform
             if (elements != null)
             {
                 // Like libxslt they go into the strip-space table.
-                if (style.stripSpaces == null) style.stripSpaces = new HashMap<>();
+                if (style.strip_spaces == null) style.strip_spaces = new HashMap<>();
                 int n = elements.length();
                 int element = 0;
                 while (element < n)
@@ -3756,15 +3756,15 @@ public final class Transform
                     if (e[0] != null)
                     {
                         String key = Xslt.key2(e[0], uri);
-                        style.stripSpaces.putIfAbsent(key, "cdata");
+                        style.strip_spaces.putIfAbsent(key, "cdata");
                     }
                     element = end;
                 }
             }
             // Create a new document tree and process the element template.
             String method = xsltImportMethod(style);
-            String[] doctypePublic = { xsltImportDoctypePublic(style) };
-            String[] doctypeSystem = { xsltImportDoctypeSystem(style) };
+            String[] doctype_public = { xsltImportDoctypePublic(style) };
+            String[] doctype_system = { xsltImportDoctypeSystem(style) };
             String version = xsltImportVersion(style);
             String encoding = xsltImportEncoding(style);
             if (method != null && !method.equals("xml"))
@@ -3772,16 +3772,16 @@ public final class Transform
                 if (method.equals("html"))
                 {
                     t.type = OUTPUT_HTML;
-                    if (doctypePublic[0] != null || doctypeSystem[0] != null)
+                    if (doctype_public[0] != null || doctype_system[0] != null)
                     {
-                        res = xsltHtmlNewDoc(doctypeSystem[0], doctypePublic[0]);
+                        res = xsltHtmlNewDoc(doctype_system[0], doctype_public[0]);
                     }
                     else
                     {
-                        if (version != null) xsltGetHtmlIds(version, doctypePublic, doctypeSystem);
+                        if (version != null) xsltGetHtmlIds(version, doctype_public, doctype_system);
                         // htmlNewDocNoDtD.
                         res = domNew();
-                        if (doctypePublic[0] != null || doctypeSystem[0] != null) domSetDtd(res, "html", doctypePublic[0], doctypeSystem[0]);
+                        if (doctype_public[0] != null || doctype_system[0] != null) domSetDtd(res, "html", doctype_public[0], doctype_system[0]);
                     }
                 }
                 else if (method.equals("xhtml"))
@@ -3789,7 +3789,7 @@ public final class Transform
                     transformError(t, null, inst, "xsltDocumentElem: unsupported method xhtml\n");
                     t.type = OUTPUT_HTML;
                     res = domNew();
-                    if (doctypePublic[0] != null || doctypeSystem[0] != null) domSetDtd(res, "html", doctypePublic[0], doctypeSystem[0]);
+                    if (doctype_public[0] != null || doctype_system[0] != null) domSetDtd(res, "html", doctype_public[0], doctype_system[0]);
                 }
                 else if (method.equals("text"))
                 {
@@ -3839,22 +3839,22 @@ public final class Transform
                     if (tmp == root)
                     {
                         t.type = OUTPUT_HTML;
-                        if (doctypePublic[0] != null || doctypeSystem[0] != null)
+                        if (doctype_public[0] != null || doctype_system[0] != null)
                         {
-                            domSetDtd(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                            domSetDtd(res, doctype, doctype_public[0], doctype_system[0]);
                         }
                         else if (version != null)
                         {
-                            xsltGetHtmlIds(version, doctypePublic, doctypeSystem);
-                            if (doctypePublic[0] != null || doctypeSystem[0] != null) domSetDtd(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                            xsltGetHtmlIds(version, doctype_public, doctype_system);
+                            if (doctype_public[0] != null || doctype_system[0] != null) domSetDtd(res, doctype, doctype_public[0], doctype_system[0]);
                         }
                     }
                 }
                 if (t.type == OUTPUT_XML)
                 {
-                    doctypePublic[0] = xsltImportDoctypePublic(style);
-                    doctypeSystem[0] = xsltImportDoctypeSystem(style);
-                    if (doctypePublic[0] != null || doctypeSystem[0] != null) domSetDtd(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                    doctype_public[0] = xsltImportDoctypePublic(style);
+                    doctype_system[0] = xsltImportDoctypeSystem(style);
+                    if (doctype_public[0] != null || doctype_system[0] != null) domSetDtd(res, doctype, doctype_public[0], doctype_system[0]);
                 }
             }
             // redirect:write can append to the file (append="true|yes").
@@ -3863,12 +3863,12 @@ public final class Transform
             {
                 if (prop.equals("true") || prop.equals("yes"))
                 {
-                    style.omitXmlDeclaration = 1;
+                    style.omit_xml_declaration = 1;
                     append = true;
                 }
                 else
                 {
-                    style.omitXmlDeclaration = 0;
+                    style.omit_xml_declaration = 0;
                 }
             }
             if (xsltSaveResultToFilename(t, filename, res, style, append) < 0)
@@ -3876,10 +3876,10 @@ public final class Transform
                 transformError(t, null, inst, fmt("xsltDocumentElem: unable to save to %s\n", filename));
             }
         }
-        t.output = oldOutput;
-        t.insert = oldInsert;
-        t.type = oldType;
-        t.outputFile = oldOutputFile;
+        t.output = old_output;
+        t.insert = old_insert;
+        t.type = old_type;
+        t.output_file = old_output_file;
         if (style != null) Xslt.stylesheetFree(style);
     }
 
@@ -3914,7 +3914,7 @@ public final class Transform
     {
         byte[] start;
         FormatToken[] tokens = new FormatToken[XSLT_NUM_MAX_TOKENS];
-        int nTokens;
+        int n_tokens;
         byte[] end;
 
         Format()
@@ -4175,30 +4175,30 @@ public final class Transform
     }
 
     /** Port of xsltNumberFormatDecimal. */
-    private static void xsltNumberFormatDecimal(java.io.ByteArrayOutputStream buffer, double number, int digitZero, int width,
-                                                int digitsPerGroup, int groupingCharacter, int groupingCharacterLen,
+    private static void xsltNumberFormatDecimal(java.io.ByteArrayOutputStream buffer, double number, int digit_zero, int width,
+                                                int digits_per_group, int grouping_character, int grouping_character_len,
                                                 Settings settings)
     {
-        byte[] tempString = new byte[500];
-        byte[] tempChar = new byte[6];
+        byte[] temp_string = new byte[500];
+        byte[] temp_char = new byte[6];
         // Build the buffer from the back.
-        int pointer = tempString.length - 1;
-        tempString[pointer] = 0;
+        int pointer = temp_string.length - 1;
+        temp_string[pointer] = 0;
         int i = 0;
         while (pointer > 0)
         {
             if (i >= width && Math.abs(number) < 1.0) break;
-            if (i > 0 && groupingCharacter != 0 && digitsPerGroup > 0 && (i % digitsPerGroup) == 0)
+            if (i > 0 && grouping_character != 0 && digits_per_group > 0 && (i % digits_per_group) == 0)
             {
-                if (pointer - groupingCharacterLen < 0)
+                if (pointer - grouping_character_len < 0)
                 {
                     i = -1;
                     break;
                 }
-                pointer -= groupingCharacterLen;
-                xsltCopyCharMultiByte(tempString, pointer, groupingCharacter);
+                pointer -= grouping_character_len;
+                xsltCopyCharMultiByte(temp_string, pointer, grouping_character);
             }
-            int val = digitZero + (int)(number % 10.0);
+            int val = digit_zero + (int)(number % 10.0);
             if (val < 0x80)
             {
                 if (pointer <= 0)
@@ -4206,50 +4206,50 @@ public final class Transform
                     i = -1;
                     break;
                 }
-                tempString[--pointer] = (byte)val;
+                temp_string[--pointer] = (byte)val;
             }
             else
             {
-                int len = xsltCopyCharMultiByte(tempChar, 0, val);
+                int len = xsltCopyCharMultiByte(temp_char, 0, val);
                 if (pointer - len < 0)
                 {
                     i = -1;
                     break;
                 }
                 pointer -= len;
-                System.arraycopy(tempChar, 0, tempString, pointer, len);
+                System.arraycopy(temp_char, 0, temp_string, pointer, len);
             }
             number /= 10.0;
             ++i;
         }
         if (i < 0) genericError(settings, "xsltNumberFormatDecimal: Internal buffer size exceeded\n");
-        appendB(buffer, tempString, pointer);
+        appendB(buffer, temp_string, pointer);
     }
 
     /** Port of xsltNumberFormatAlpha. */
-    private static void xsltNumberFormatAlpha(NumberData data, java.io.ByteArrayOutputStream buffer, double number, int isUpper,
+    private static void xsltNumberFormatAlpha(NumberData data, java.io.ByteArrayOutputStream buffer, double number, int is_upper,
                                               Settings settings)
     {
-        byte[] tempString = new byte[8 * 8 + 1];
-        double alphaSize = (double)XSLT_ALPHA_UPPER_LIST.length;
+        byte[] temp_string = new byte[8 * 8 + 1];
+        double alpha_size = (double)XSLT_ALPHA_UPPER_LIST.length;
         // The "a" token has an intrinsic lower limit of 1.
         if (number < 1.0)
         {
-            xsltNumberFormatDecimal(buffer, number, '0', 1, data.digitsPerGroup, data.groupingCharacter,
-                                    utf8Len(data.groupingCharacter), settings);
+            xsltNumberFormatDecimal(buffer, number, '0', 1, data.digits_per_group, data.grouping_character,
+                                    utf8Len(data.grouping_character), settings);
             return;
         }
-        int pointer = tempString.length;
-        tempString[--pointer] = 0;
-        byte[] alphaList = isUpper != 0 ? XSLT_ALPHA_UPPER_LIST : XSLT_ALPHA_LOWER_LIST;
-        for (int i = 1; i < tempString.length; i++)
+        int pointer = temp_string.length;
+        temp_string[--pointer] = 0;
+        byte[] alpha_list = is_upper != 0 ? XSLT_ALPHA_UPPER_LIST : XSLT_ALPHA_LOWER_LIST;
+        for (int i = 1; i < temp_string.length; i++)
         {
             number--;
-            tempString[--pointer] = alphaList[(int)(number % alphaSize)];
-            number /= alphaSize;
+            temp_string[--pointer] = alpha_list[(int)(number % alpha_size)];
+            number /= alpha_size;
             if (number < 1.0) break;
         }
-        appendB(buffer, tempString, pointer);
+        appendB(buffer, temp_string, pointer);
     }
 
     private static final double[] ROMAN_V = { 1000.0, 900.0, 500.0, 400.0, 100.0, 90.0, 50.0, 40.0, 10.0, 9.0, 5.0, 4.0, 1.0 };
@@ -4258,14 +4258,14 @@ public final class Transform
     private static final boolean[] ROMAN_REPEAT = { true, false, true, false, true, false, true, false, true, false, true, false, true };
 
     /** Port of xsltNumberFormatRoman. */
-    private static void xsltNumberFormatRoman(NumberData data, java.io.ByteArrayOutputStream buffer, double number, int isUpper,
+    private static void xsltNumberFormatRoman(NumberData data, java.io.ByteArrayOutputStream buffer, double number, int is_upper,
                                               Settings settings)
     {
         // A reasonable upper bound to avoid denial of service.
         if (number < 1.0 || number > 5000.0)
         {
-            xsltNumberFormatDecimal(buffer, number, '0', 1, data.digitsPerGroup, data.groupingCharacter,
-                                    utf8Len(data.groupingCharacter), settings);
+            xsltNumberFormatDecimal(buffer, number, '0', 1, data.digits_per_group, data.grouping_character,
+                                    utf8Len(data.grouping_character), settings);
             return;
         }
         for (int k = 0; k < ROMAN_V.length; k++)
@@ -4274,13 +4274,13 @@ public final class Transform
             {
                 while (number >= ROMAN_V[k])
                 {
-                    appendB(buffer, isUpper != 0 ? ROMAN_U[k] : ROMAN_L[k]);
+                    appendB(buffer, is_upper != 0 ? ROMAN_U[k] : ROMAN_L[k]);
                     number -= ROMAN_V[k];
                 }
             }
             else if (number >= ROMAN_V[k])
             {
-                appendB(buffer, isUpper != 0 ? ROMAN_U[k] : ROMAN_L[k]);
+                appendB(buffer, is_upper != 0 ? ROMAN_U[k] : ROMAN_L[k]);
                 number -= ROMAN_V[k];
             }
         }
@@ -4302,12 +4302,12 @@ public final class Transform
             ix += len[0];
         }
         if (ix > 0) tokens.start = strndupB(format, 0, ix);
-        for (tokens.nTokens = 0; tokens.nTokens < XSLT_NUM_MAX_TOKENS; tokens.nTokens++)
+        for (tokens.n_tokens = 0; tokens.n_tokens < XSLT_NUM_MAX_TOKENS; tokens.n_tokens++)
         {
             if (at(format, ix) == 0) break;
-            FormatToken tok = tokens.tokens[tokens.nTokens];
+            FormatToken tok = tokens.tokens[tokens.n_tokens];
             // The separator has already been parsed (except for the first number) in tokens->end.
-            if (tokens.nTokens > 0)
+            if (tokens.n_tokens > 0)
             {
                 tok.separator = tokens.end;
                 tokens.end = null;
@@ -4367,14 +4367,14 @@ public final class Transform
     private static final FormatToken DEFAULT_TOKEN = new FormatToken(new byte[] { '.', 0 }, '0', 1);
 
     /** Port of xsltNumberFormatInsertNumbers. */
-    private static void xsltNumberFormatInsertNumbers(TransformCtx t, NumberData data, double[] numbers, int numbersMax,
+    private static void xsltNumberFormatInsertNumbers(TransformCtx t, NumberData data, double[] numbers, int numbers_max,
                                                       Format tokens, java.io.ByteArrayOutputStream buffer)
     {
         Settings settings = t.style.settings;
         if (tokens.start != null) appendB(buffer, tokens.start, 0);
-        for (int i = 0; i < numbersMax; i++)
+        for (int i = 0; i < numbers_max; i++)
         {
-            double number = numbers[(numbersMax - 1) - i];
+            double number = numbers[(numbers_max - 1) - i];
             // Round to nearest like XSLT 2.0.
             number = Math.floor(number + 0.5);
             if (number < 0.0)
@@ -4384,8 +4384,8 @@ public final class Transform
                 number = 0.0;
             }
             FormatToken token;
-            if (i < tokens.nTokens) token = tokens.tokens[i];
-            else if (tokens.nTokens > 0) token = tokens.tokens[tokens.nTokens - 1];
+            if (i < tokens.n_tokens) token = tokens.tokens[i];
+            else if (tokens.n_tokens > 0) token = tokens.tokens[tokens.n_tokens - 1];
             else token = DEFAULT_TOKEN;
             // The separator, except for the first number.
             if (i > 0)
@@ -4412,8 +4412,8 @@ public final class Transform
                 default:
                     if (xsltIsDigitZero(token.token))
                     {
-                        xsltNumberFormatDecimal(buffer, number, token.token, token.width, data.digitsPerGroup,
-                                                data.groupingCharacter, utf8Len(data.groupingCharacter), settings);
+                        xsltNumberFormatDecimal(buffer, number, token.token, token.width, data.digits_per_group,
+                                                data.grouping_character, utf8Len(data.grouping_character), settings);
                     }
                     break;
                 }
@@ -4423,9 +4423,9 @@ public final class Transform
     }
 
     /** Port of xsltTestCompMatchCount. */
-    private static int xsltTestCompMatchCount(TransformCtx t, XmlNode node, Pattern countPat, XmlNode cur)
+    private static int xsltTestCompMatchCount(TransformCtx t, XmlNode node, Pattern count_pat, XmlNode cur)
     {
-        if (countPat != null) return Xslt.patternMatch(t, node, countPat);
+        if (count_pat != null) return Xslt.patternMatch(t, node, count_pat);
         // The default: the same node type and expanded name as the current node.
         if (nodeKind(node) != nodeKind(cur)) return 0;
         if (nodeKind(node) == NAMESPACE) return 1;
@@ -4444,15 +4444,15 @@ public final class Transform
     }
 
     /** Port of xsltNumberFormatGetAnyLevel. */
-    private static int xsltNumberFormatGetAnyLevel(TransformCtx t, XmlNode node, Pattern countPat,
-                                                   Pattern fromPat, double[] array)
+    private static int xsltNumberFormatGetAnyLevel(TransformCtx t, XmlNode node, Pattern count_pat,
+                                                   Pattern from_pat, double[] array)
     {
         int amount = 0, cnt = 0;
         XmlNode cur = node;
         while (cur != null)
         {
-            if (xsltTestCompMatchCount(t, cur, countPat, node) != 0) cnt++;
-            if (fromPat != null && Xslt.patternMatch(t, cur, fromPat) == 1) break;
+            if (xsltTestCompMatchCount(t, cur, count_pat, node) != 0) cnt++;
+            if (from_pat != null && Xslt.patternMatch(t, cur, from_pat) == 1) break;
             // Skip to the next preceding or ancestor.
             if (nodeKind(cur) == DOCUMENT) break;
             if (nodeKind(cur) == NAMESPACE || nodeKind(cur) == ATTRIBUTE)
@@ -4477,23 +4477,23 @@ public final class Transform
     }
 
     /** Port of xsltNumberFormatGetMultipleLevel. */
-    private static int xsltNumberFormatGetMultipleLevel(TransformCtx t, XmlNode node, Pattern countPat,
-                                                        Pattern fromPat, double[] array, int max)
+    private static int xsltNumberFormatGetMultipleLevel(TransformCtx t, XmlNode node, Pattern count_pat,
+                                                        Pattern from_pat, double[] array, int max)
     {
         int amount = 0;
         // ancestor-or-self::*[count]
         XmlNode ancestor = node;
         while (ancestor != null && nodeKind(ancestor) != DOCUMENT)
         {
-            if (fromPat != null && Xslt.patternMatch(t, ancestor, fromPat) == 1) break;
-            if (xsltTestCompMatchCount(t, ancestor, countPat, node) != 0)
+            if (from_pat != null && Xslt.patternMatch(t, ancestor, from_pat) == 1) break;
+            if (xsltTestCompMatchCount(t, ancestor, count_pat, node) != 0)
             {
                 // count(preceding-sibling::*)
                 int cnt = 1;
                 XmlNode preceding = nodeKind(ancestor) != NAMESPACE ? xsltPrev(ancestor) : null;
                 while (preceding != null)
                 {
-                    if (xsltTestCompMatchCount(t, preceding, countPat, node) != 0) cnt++;
+                    if (xsltTestCompMatchCount(t, preceding, count_pat, node) != 0) cnt++;
                     preceding = xsltPrev(preceding);
                 }
                 array[amount++] = (double)cnt;
@@ -4533,7 +4533,7 @@ public final class Transform
         else
         {
             // The format needs to be recomputed each time.
-            if (data.hasFormat == 0) return;
+            if (data.has_format == 0) return;
             String format = xsltEvalAttrValueTemplate(t, data.node, "format", XSLT_NAMESPACE);
             if (format == null) return;
             xsltNumberFormatTokenize(cstr(format), tokens);
@@ -4550,24 +4550,24 @@ public final class Transform
         {
             if (data.level.equals("single"))
             {
-                amount = xsltNumberFormatGetMultipleLevel(t, node, data.countPat, data.fromPat, number, 1);
+                amount = xsltNumberFormatGetMultipleLevel(t, node, data.count_pat, data.from_pat, number, 1);
                 if (amount == 1) xsltNumberFormatInsertNumbers(t, data, number, 1, tokens, output);
             }
             else if (data.level.equals("multiple"))
             {
                 double[] numarray = new double[1024];
                 int max = numarray.length;
-                amount = xsltNumberFormatGetMultipleLevel(t, node, data.countPat, data.fromPat, numarray, max);
+                amount = xsltNumberFormatGetMultipleLevel(t, node, data.count_pat, data.from_pat, numarray, max);
                 if (amount > 0) xsltNumberFormatInsertNumbers(t, data, numarray, amount, tokens, output);
             }
             else if (data.level.equals("any"))
             {
-                amount = xsltNumberFormatGetAnyLevel(t, node, data.countPat, data.fromPat, number);
+                amount = xsltNumberFormatGetAnyLevel(t, node, data.count_pat, data.from_pat, number);
                 if (amount > 0) xsltNumberFormatInsertNumbers(t, data, number, 1, tokens, output);
             }
             // count and from patterns can contain variable references, clear the cache of direct matches.
-            if (data.countPat != null) Xslt.compMatchClearCache(t, data.countPat);
-            if (data.fromPat != null) Xslt.compMatchClearCache(t, data.fromPat);
+            if (data.count_pat != null) Xslt.compMatchClearCache(t, data.count_pat);
+            if (data.from_pat != null) Xslt.compMatchClearCache(t, data.from_pat);
         }
         // Insert the number as a text node.
         String text = new String(output.toByteArray(), StandardCharsets.UTF_8);
@@ -4577,53 +4577,53 @@ public final class Transform
     /** XsltFormatNumberInfo. */
     private static final class FormatNumberInfo
     {
-        int integerHash;
-        int integerDigits;
-        int fracDigits;
-        int fracHash;
+        int integer_hash;
+        int integer_digits;
+        int frac_digits;
+        int frac_hash;
         int group;
         int multiplier;
-        int addDecimal;
-        int isMultiplierSet;
-        int isNegativePattern;
+        int add_decimal;
+        int is_multiplier_set;
+        int is_negative_pattern;
     }
 
     /** The UTF-8 bytes of the strings of a decimal format. */
     private static final class DecimalFormatBytes
     {
         byte[] digit;
-        byte[] patternSeparator;
-        byte[] minusSign;
+        byte[] pattern_separator;
+        byte[] minus_sign;
         byte[] infinity;
-        byte[] noNumber;
-        byte[] decimalPoint;
+        byte[] no_number;
+        byte[] decimal_point;
         byte[] grouping;
         byte[] percent;
         byte[] permille;
-        byte[] zeroDigit;
+        byte[] zero_digit;
 
         DecimalFormatBytes(DecimalFormat f)
         {
             digit = cstr(f.digit);
-            patternSeparator = cstr(f.patternSeparator);
-            minusSign = cstr(f.minusSign);
+            pattern_separator = cstr(f.pattern_separator);
+            minus_sign = cstr(f.minus_sign);
             infinity = cstr(f.infinity);
-            noNumber = cstr(f.noNumber);
-            decimalPoint = cstr(f.decimalPoint);
+            no_number = cstr(f.no_number);
+            decimal_point = cstr(f.decimal_point);
             grouping = cstr(f.grouping);
             percent = cstr(f.percent);
             permille = cstr(f.permille);
-            zeroDigit = cstr(f.zeroDigit);
+            zero_digit = cstr(f.zero_digit);
         }
     }
 
     private static boolean xsltIsSpecial(DecimalFormatBytes self, byte[] letter, int p)
     {
-        return xsltUtf8Charcmp(letter, p, self.zeroDigit) == 0 ||
+        return xsltUtf8Charcmp(letter, p, self.zero_digit) == 0 ||
                xsltUtf8Charcmp(letter, p, self.digit) == 0 ||
-               xsltUtf8Charcmp(letter, p, self.decimalPoint) == 0 ||
+               xsltUtf8Charcmp(letter, p, self.decimal_point) == 0 ||
                xsltUtf8Charcmp(letter, p, self.grouping) == 0 ||
-               xsltUtf8Charcmp(letter, p, self.patternSeparator) == 0;
+               xsltUtf8Charcmp(letter, p, self.pattern_separator) == 0;
     }
 
     /** Port of xsltFormatNumberPreSuffix. format[0] is the index into f. */
@@ -4648,15 +4648,15 @@ public final class Transform
                 // Percent and per-mille, only one of them.
                 if (xsltUtf8Charcmp(f, format[0], self.percent) == 0)
                 {
-                    if (info.isMultiplierSet != 0) return -1;
+                    if (info.is_multiplier_set != 0) return -1;
                     info.multiplier = 100;
-                    info.isMultiplierSet = 1;
+                    info.is_multiplier_set = 1;
                 }
                 else if (xsltUtf8Charcmp(f, format[0], self.permille) == 0)
                 {
-                    if (info.isMultiplierSet != 0) return -1;
+                    if (info.is_multiplier_set != 0) return -1;
                     info.multiplier = 1000;
-                    info.isMultiplierSet = 1;
+                    info.is_multiplier_set = 1;
                 }
             }
             if ((len = xsltUtf8Size1(f, format[0])) < 1) return -1;
@@ -4668,309 +4668,309 @@ public final class Transform
     private static final int DBL_MAX_10_EXP = 308;
 
     /** Port of xsltFormatNumberConversion: format-number(). */
-    private static String xsltFormatNumberConversion(DecimalFormat selfFormat, String formatStr, double number, Settings settings)
+    private static String xsltFormatNumberConversion(DecimalFormat self_format, String format_str, double number, Settings settings)
     {
-        if (formatStr.isEmpty())
+        if (format_str.isEmpty())
         {
             Xslt.settingsError(settings, null, "xsltFormatNumberConversion : Invalid format (0-length)\n");
         }
         if (Double.isNaN(number))
         {
-            return (selfFormat == null || selfFormat.noNumber == null) ? "NaN" : selfFormat.noNumber;
+            return (self_format == null || self_format.no_number == null) ? "NaN" : self_format.no_number;
         }
-        DecimalFormatBytes self = new DecimalFormatBytes(selfFormat);
-        byte[] format = cstr(formatStr);
-        int[] theFormat = { 0 };
+        DecimalFormatBytes self = new DecimalFormatBytes(self_format);
+        byte[] format = cstr(format_str);
+        int[] the_format = { 0 };
         int prefix = -1, suffix = -1;
         int nprefix = -1, nsuffix = -1;
-        int prefixLength, suffixLength = 0, nprefixLength, nsuffixLength;
+        int prefix_length, suffix_length = 0, nprefix_length, nsuffix_length;
         int j, len = 0;
-        FormatNumberInfo formatInfo = new FormatNumberInfo();
-        int delayedMultiplier = 0;
-        int defaultSign = 0;
-        int foundError = 0;
-        formatInfo.integerHash = 0;
-        formatInfo.integerDigits = 0;
-        formatInfo.fracDigits = 0;
-        formatInfo.fracHash = 0;
-        formatInfo.group = -1;
-        formatInfo.multiplier = 1;
-        formatInfo.addDecimal = 0;
-        formatInfo.isMultiplierSet = 0;
-        formatInfo.isNegativePattern = 0;
-        theFormat[0] = 0;
-        prefixLength = 0;
+        FormatNumberInfo format_info = new FormatNumberInfo();
+        int delayed_multiplier = 0;
+        int default_sign = 0;
+        int found_error = 0;
+        format_info.integer_hash = 0;
+        format_info.integer_digits = 0;
+        format_info.frac_digits = 0;
+        format_info.frac_hash = 0;
+        format_info.group = -1;
+        format_info.multiplier = 1;
+        format_info.add_decimal = 0;
+        format_info.is_multiplier_set = 0;
+        format_info.is_negative_pattern = 0;
+        the_format[0] = 0;
+        prefix_length = 0;
         outputNumber:
         {
             // First the positive pattern, for percent and per-mille and the main format.
-            prefix = theFormat[0];
-            prefixLength = xsltFormatNumberPreSuffix(self, format, theFormat, formatInfo);
-            if (prefixLength < 0)
+            prefix = the_format[0];
+            prefix_length = xsltFormatNumberPreSuffix(self, format, the_format, format_info);
+            if (prefix_length < 0)
             {
-                foundError = 1;
+                found_error = 1;
                 break outputNumber;
             }
             // The number part, a trailing percent or per-mille may be part of the suffix.
-            int selfGroupingLen = self.grouping != null ? strlenB(self.grouping, 0) : 0;
-            while (at(format, theFormat[0]) != 0 && xsltUtf8Charcmp(format, theFormat[0], self.decimalPoint) != 0 &&
-                   xsltUtf8Charcmp(format, theFormat[0], self.patternSeparator) != 0)
+            int self_grouping_len = self.grouping != null ? strlenB(self.grouping, 0) : 0;
+            while (at(format, the_format[0]) != 0 && xsltUtf8Charcmp(format, the_format[0], self.decimal_point) != 0 &&
+                   xsltUtf8Charcmp(format, the_format[0], self.pattern_separator) != 0)
             {
-                if (delayedMultiplier != 0)
+                if (delayed_multiplier != 0)
                 {
-                    formatInfo.multiplier = delayedMultiplier;
-                    formatInfo.isMultiplierSet = 1;
-                    delayedMultiplier = 0;
+                    format_info.multiplier = delayed_multiplier;
+                    format_info.is_multiplier_set = 1;
+                    delayed_multiplier = 0;
                 }
-                if (xsltUtf8Charcmp(format, theFormat[0], self.digit) == 0)
+                if (xsltUtf8Charcmp(format, the_format[0], self.digit) == 0)
                 {
-                    if (formatInfo.integerDigits > 0)
+                    if (format_info.integer_digits > 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    formatInfo.integerHash++;
-                    if (formatInfo.group >= 0) formatInfo.group++;
+                    format_info.integer_hash++;
+                    if (format_info.group >= 0) format_info.group++;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.zeroDigit) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.zero_digit) == 0)
                 {
-                    formatInfo.integerDigits++;
-                    if (formatInfo.group >= 0) formatInfo.group++;
+                    format_info.integer_digits++;
+                    if (format_info.group >= 0) format_info.group++;
                 }
-                else if (selfGroupingLen > 0 && strncmpB(format, theFormat[0], self.grouping, 0, selfGroupingLen) == 0)
+                else if (self_grouping_len > 0 && strncmpB(format, the_format[0], self.grouping, 0, self_grouping_len) == 0)
                 {
                     // Reset the group count.
-                    formatInfo.group = 0;
-                    theFormat[0] += selfGroupingLen;
+                    format_info.group = 0;
+                    the_format[0] += self_grouping_len;
                     continue;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.percent) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.percent) == 0)
                 {
-                    if (formatInfo.isMultiplierSet != 0)
+                    if (format_info.is_multiplier_set != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    delayedMultiplier = 100;
+                    delayed_multiplier = 100;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.permille) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.permille) == 0)
                 {
-                    if (formatInfo.isMultiplierSet != 0)
+                    if (format_info.is_multiplier_set != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    delayedMultiplier = 1000;
+                    delayed_multiplier = 1000;
                 }
                 else
                 {
                     break;
                 }
-                if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                 {
-                    foundError = 1;
+                    found_error = 1;
                     break outputNumber;
                 }
-                theFormat[0] += len;
+                the_format[0] += len;
             }
             // The fraction.
-            if (at(format, theFormat[0]) != 0 && xsltUtf8Charcmp(format, theFormat[0], self.decimalPoint) == 0)
+            if (at(format, the_format[0]) != 0 && xsltUtf8Charcmp(format, the_format[0], self.decimal_point) == 0)
             {
-                formatInfo.addDecimal = 1;
-                if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                format_info.add_decimal = 1;
+                if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                 {
-                    foundError = 1;
+                    found_error = 1;
                     break outputNumber;
                 }
-                theFormat[0] += len;
+                the_format[0] += len;
             }
-            while (at(format, theFormat[0]) != 0)
+            while (at(format, the_format[0]) != 0)
             {
-                if (xsltUtf8Charcmp(format, theFormat[0], self.zeroDigit) == 0)
+                if (xsltUtf8Charcmp(format, the_format[0], self.zero_digit) == 0)
                 {
-                    if (formatInfo.fracHash != 0)
+                    if (format_info.frac_hash != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    formatInfo.fracDigits++;
+                    format_info.frac_digits++;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.digit) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.digit) == 0)
                 {
-                    formatInfo.fracHash++;
+                    format_info.frac_hash++;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.percent) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.percent) == 0)
                 {
-                    if (formatInfo.isMultiplierSet != 0)
+                    if (format_info.is_multiplier_set != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    delayedMultiplier = 100;
-                    if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                    delayed_multiplier = 100;
+                    if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    theFormat[0] += len;
+                    the_format[0] += len;
                     continue;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.permille) == 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.permille) == 0)
                 {
-                    if (formatInfo.isMultiplierSet != 0)
+                    if (format_info.is_multiplier_set != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    delayedMultiplier = 1000;
-                    if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                    delayed_multiplier = 1000;
+                    if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    theFormat[0] += len;
+                    the_format[0] += len;
                     continue;
                 }
-                else if (xsltUtf8Charcmp(format, theFormat[0], self.grouping) != 0)
+                else if (xsltUtf8Charcmp(format, the_format[0], self.grouping) != 0)
                 {
                     break;
                 }
-                if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                 {
-                    foundError = 1;
+                    found_error = 1;
                     break outputNumber;
                 }
-                theFormat[0] += len;
-                if (delayedMultiplier != 0)
+                the_format[0] += len;
+                if (delayed_multiplier != 0)
                 {
-                    formatInfo.multiplier = delayedMultiplier;
-                    delayedMultiplier = 0;
-                    formatInfo.isMultiplierSet = 1;
+                    format_info.multiplier = delayed_multiplier;
+                    delayed_multiplier = 0;
+                    format_info.is_multiplier_set = 1;
                 }
             }
             // A delayed multiplier after the number part belongs to the suffix.
-            if (delayedMultiplier != 0)
+            if (delayed_multiplier != 0)
             {
-                theFormat[0] -= len;
-                delayedMultiplier = 0;
+                the_format[0] -= len;
+                delayed_multiplier = 0;
             }
-            suffix = theFormat[0];
-            suffixLength = xsltFormatNumberPreSuffix(self, format, theFormat, formatInfo);
-            if (suffixLength < 0 || (at(format, theFormat[0]) != 0 && xsltUtf8Charcmp(format, theFormat[0], self.patternSeparator) != 0))
+            suffix = the_format[0];
+            suffix_length = xsltFormatNumberPreSuffix(self, format, the_format, format_info);
+            if (suffix_length < 0 || (at(format, the_format[0]) != 0 && xsltUtf8Charcmp(format, the_format[0], self.pattern_separator) != 0))
             {
-                foundError = 1;
+                found_error = 1;
                 break outputNumber;
             }
             // A negative number uses the negative prefix and suffix.
             if (number < 0)
             {
                 // j is the number of utf-8 characters before the separator (bug 151975).
-                j = xsltUtf8Strloc(format, self.patternSeparator);
+                j = xsltUtf8Strloc(format, self.pattern_separator);
                 if (j < 0)
                 {
                     // No negative pattern, use the default sign.
-                    defaultSign = 1;
+                    default_sign = 1;
                 }
                 else
                 {
-                    theFormat[0] = xsltUtf8Strpos(format, j + 1);
-                    formatInfo.isNegativePattern = 1;
-                    formatInfo.isMultiplierSet = 0;
+                    the_format[0] = xsltUtf8Strpos(format, j + 1);
+                    format_info.is_negative_pattern = 1;
+                    format_info.is_multiplier_set = 0;
                     // The negative prefix.
-                    nprefix = theFormat[0];
-                    nprefixLength = xsltFormatNumberPreSuffix(self, format, theFormat, formatInfo);
-                    if (nprefixLength < 0)
+                    nprefix = the_format[0];
+                    nprefix_length = xsltFormatNumberPreSuffix(self, format, the_format, format_info);
+                    if (nprefix_length < 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
-                    while (at(format, theFormat[0]) != 0)
+                    while (at(format, the_format[0]) != 0)
                     {
-                        if (xsltUtf8Charcmp(format, theFormat[0], self.percent) == 0 ||
-                            xsltUtf8Charcmp(format, theFormat[0], self.permille) == 0)
+                        if (xsltUtf8Charcmp(format, the_format[0], self.percent) == 0 ||
+                            xsltUtf8Charcmp(format, the_format[0], self.permille) == 0)
                         {
-                            if (formatInfo.isMultiplierSet != 0)
+                            if (format_info.is_multiplier_set != 0)
                             {
-                                foundError = 1;
+                                found_error = 1;
                                 break outputNumber;
                             }
-                            formatInfo.isMultiplierSet = 1;
-                            delayedMultiplier = 1;
+                            format_info.is_multiplier_set = 1;
+                            delayed_multiplier = 1;
                         }
-                        else if (xsltIsSpecial(self, format, theFormat[0]))
+                        else if (xsltIsSpecial(self, format, the_format[0]))
                         {
-                            delayedMultiplier = 0;
+                            delayed_multiplier = 0;
                         }
                         else
                         {
                             break;
                         }
-                        if ((len = xsltUtf8Size1(format, theFormat[0])) < 1)
+                        if ((len = xsltUtf8Size1(format, the_format[0])) < 1)
                         {
-                            foundError = 1;
+                            found_error = 1;
                             break outputNumber;
                         }
-                        theFormat[0] += len;
+                        the_format[0] += len;
                     }
-                    if (delayedMultiplier != 0)
+                    if (delayed_multiplier != 0)
                     {
-                        formatInfo.isMultiplierSet = 0;
-                        theFormat[0] -= len;
+                        format_info.is_multiplier_set = 0;
+                        the_format[0] -= len;
                     }
                     // The negative suffix.
-                    if (at(format, theFormat[0]) != 0)
+                    if (at(format, the_format[0]) != 0)
                     {
-                        nsuffix = theFormat[0];
-                        nsuffixLength = xsltFormatNumberPreSuffix(self, format, theFormat, formatInfo);
-                        if (nsuffixLength < 0)
+                        nsuffix = the_format[0];
+                        nsuffix_length = xsltFormatNumberPreSuffix(self, format, the_format, format_info);
+                        if (nsuffix_length < 0)
                         {
-                            foundError = 1;
+                            found_error = 1;
                             break outputNumber;
                         }
                     }
                     else
                     {
-                        nsuffixLength = 0;
+                        nsuffix_length = 0;
                     }
-                    if (at(format, theFormat[0]) != 0)
+                    if (at(format, the_format[0]) != 0)
                     {
-                        foundError = 1;
+                        found_error = 1;
                         break outputNumber;
                     }
                     // A Java peculiarity: if the negative prefix and suffix are the positive ones, use the default.
-                    if (nprefixLength != prefixLength || nsuffixLength != suffixLength ||
-                        (nprefixLength > 0 && strncmpB(format, nprefix, format, prefix, prefixLength) != 0) ||
-                        (nsuffixLength > 0 && strncmpB(format, nsuffix, format, suffix, suffixLength) != 0))
+                    if (nprefix_length != prefix_length || nsuffix_length != suffix_length ||
+                        (nprefix_length > 0 && strncmpB(format, nprefix, format, prefix, prefix_length) != 0) ||
+                        (nsuffix_length > 0 && strncmpB(format, nsuffix, format, suffix, suffix_length) != 0))
                     {
                         prefix = nprefix;
-                        prefixLength = nprefixLength;
+                        prefix_length = nprefix_length;
                         suffix = nsuffix;
-                        suffixLength = nsuffixLength;
+                        suffix_length = nsuffix_length;
                     }
                 }
             }
         }
         // OUTPUT_NUMBER:
-        if (foundError != 0)
+        if (found_error != 0)
         {
-            Xslt.settingsError(settings, null, fmt("xsltFormatNumberConversion : error in format string '%s', using default\n", formatStr));
-            defaultSign = (number < 0.0) ? 1 : 0;
-            prefixLength = suffixLength = 0;
-            formatInfo.integerHash = 0;
-            formatInfo.integerDigits = 1;
-            formatInfo.fracDigits = 1;
-            formatInfo.fracHash = 4;
-            formatInfo.group = -1;
-            formatInfo.multiplier = 1;
-            formatInfo.addDecimal = 1;
+            Xslt.settingsError(settings, null, fmt("xsltFormatNumberConversion : error in format string '%s', using default\n", format_str));
+            default_sign = (number < 0.0) ? 1 : 0;
+            prefix_length = suffix_length = 0;
+            format_info.integer_hash = 0;
+            format_info.integer_digits = 1;
+            format_info.frac_digits = 1;
+            format_info.frac_hash = 4;
+            format_info.group = -1;
+            format_info.multiplier = 1;
+            format_info.add_decimal = 1;
         }
         // Apply the multiplier.
-        number *= (double)formatInfo.multiplier;
+        number *= (double)format_info.multiplier;
         if (Double.isInfinite(number))
         {
             java.io.ByteArrayOutputStream mb = new java.io.ByteArrayOutputStream();
             if (number < 0)
             {
-                if (self.minusSign != null) appendB(mb, self.minusSign, 0);
+                if (self.minus_sign != null) appendB(mb, self.minus_sign, 0);
                 else appendB(mb, "-");
             }
             if (self.infinity == null) appendB(mb, "Infinity");
@@ -4979,9 +4979,9 @@ public final class Transform
         }
         java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
         // The default sign.
-        if (defaultSign != 0) appendRegionB(buffer, self.minusSign, 0, xsltUtf8Size1(self.minusSign, 0));
+        if (default_sign != 0) appendRegionB(buffer, self.minus_sign, 0, xsltUtf8Size1(self.minus_sign, 0));
         // The prefix.
-        for (j = 0; j < prefixLength;)
+        for (j = 0; j < prefix_length;)
         {
             if (at(format, prefix) == '\'') prefix++;
             len = xsltUtf8Size1(format, prefix);
@@ -4991,17 +4991,17 @@ public final class Transform
         }
         // Round to n digits.
         number = Math.abs(number);
-        int exp10 = formatInfo.fracDigits + formatInfo.fracHash;
+        int exp10 = format_info.frac_digits + format_info.frac_hash;
         if (exp10 > DBL_MAX_10_EXP)
         {
-            if (formatInfo.fracDigits > DBL_MAX_10_EXP)
+            if (format_info.frac_digits > DBL_MAX_10_EXP)
             {
-                formatInfo.fracDigits = DBL_MAX_10_EXP;
-                formatInfo.fracHash = 0;
+                format_info.frac_digits = DBL_MAX_10_EXP;
+                format_info.frac_hash = 0;
             }
             else
             {
-                formatInfo.fracHash = DBL_MAX_10_EXP - formatInfo.fracDigits;
+                format_info.frac_hash = DBL_MAX_10_EXP - format_info.frac_digits;
             }
             exp10 = DBL_MAX_10_EXP;
         }
@@ -5009,7 +5009,7 @@ public final class Transform
         double scale = Double.parseDouble("1e" + exp10);
         number += .5 / scale;
         number -= number % (1 / scale);
-        int zeroDigit0 = at(self.zeroDigit, 0);
+        int zero_digit0 = at(self.zero_digit, 0);
         // The integer part.
         if (self.grouping != null && at(self.grouping, 0) != 0)
         {
@@ -5017,48 +5017,48 @@ public final class Transform
             int gchar = utf8CharB(self.grouping, 0, glen);
             len = strlenB(self.grouping, 0);
             if (glen[0] > 0) len = glen[0];
-            xsltNumberFormatDecimal(buffer, Math.floor(number), zeroDigit0, formatInfo.integerDigits,
-                                    formatInfo.group, gchar, len, settings);
+            xsltNumberFormatDecimal(buffer, Math.floor(number), zero_digit0, format_info.integer_digits,
+                                    format_info.group, gchar, len, settings);
         }
         else
         {
-            xsltNumberFormatDecimal(buffer, Math.floor(number), zeroDigit0, formatInfo.integerDigits,
-                                    formatInfo.group, ',', 1, settings);
+            xsltNumberFormatDecimal(buffer, Math.floor(number), zero_digit0, format_info.integer_digits,
+                                    format_info.group, ',', 1, settings);
         }
         // Special case: java treats '.#' like '.0', '.##' like '.0#', etc.
-        if (formatInfo.integerDigits + formatInfo.integerHash + formatInfo.fracDigits == 0 && formatInfo.fracHash > 0)
+        if (format_info.integer_digits + format_info.integer_hash + format_info.frac_digits == 0 && format_info.frac_hash > 0)
         {
-            ++formatInfo.fracDigits;
-            --formatInfo.fracHash;
+            ++format_info.frac_digits;
+            --format_info.frac_hash;
         }
         // A leading zero, if required.
-        if (Math.floor(number) == 0 && formatInfo.integerDigits + formatInfo.fracDigits == 0)
+        if (Math.floor(number) == 0 && format_info.integer_digits + format_info.frac_digits == 0)
         {
-            appendRegionB(buffer, self.zeroDigit, 0, xsltUtf8Size1(self.zeroDigit, 0));
+            appendRegionB(buffer, self.zero_digit, 0, xsltUtf8Size1(self.zero_digit, 0));
         }
         // The fractional part, if required.
-        if (formatInfo.fracDigits + formatInfo.fracHash == 0)
+        if (format_info.frac_digits + format_info.frac_hash == 0)
         {
-            if (formatInfo.addDecimal != 0)
-                appendRegionB(buffer, self.decimalPoint, 0, xsltUtf8Size1(self.decimalPoint, 0));
+            if (format_info.add_decimal != 0)
+                appendRegionB(buffer, self.decimal_point, 0, xsltUtf8Size1(self.decimal_point, 0));
         }
         else
         {
             number -= Math.floor(number);
-            if (number != 0 || formatInfo.fracDigits != 0)
+            if (number != 0 || format_info.frac_digits != 0)
             {
-                appendRegionB(buffer, self.decimalPoint, 0, xsltUtf8Size1(self.decimalPoint, 0));
+                appendRegionB(buffer, self.decimal_point, 0, xsltUtf8Size1(self.decimal_point, 0));
                 number = Math.floor(scale * number + 0.5);
-                for (j = formatInfo.fracHash; j > 0; j--)
+                for (j = format_info.frac_hash; j > 0; j--)
                 {
                     if (number % 10.0 >= 1.0) break;
                     number /= 10.0;
                 }
-                xsltNumberFormatDecimal(buffer, Math.floor(number), zeroDigit0, formatInfo.fracDigits + j, 0, 0, 0, settings);
+                xsltNumberFormatDecimal(buffer, Math.floor(number), zero_digit0, format_info.frac_digits + j, 0, 0, 0, settings);
             }
         }
         // The suffix.
-        for (j = 0; j < suffixLength;)
+        for (j = 0; j < suffix_length;)
         {
             if (at(format, suffix) == '\'') suffix++;
             len = xsltUtf8Size1(format, suffix);
@@ -5079,7 +5079,7 @@ public final class Transform
             return null;
         }
         Stylesheet sheet = t.style;
-        DecimalFormat formatValues = sheet.decimalFormat;
+        DecimalFormat format_values = sheet.decimal_format;
         int nargs = args.length;
         if (nargs != 2 && nargs != 3)
         {
@@ -5091,7 +5091,7 @@ public final class Transform
             String qname = args[2].castToString();
             String[] prefix = { null };
             String ncname = Xslt.splitQname(qname, prefix);
-            String nsUri = null;
+            String ns_uri = null;
             if (prefix[0] != null)
             {
                 XmlNs ns = lxSearchNs(t.inst, prefix[0]);
@@ -5103,13 +5103,13 @@ public final class Transform
                 }
                 else
                 {
-                    nsUri = nsHref(ns);
+                    ns_uri = nsHref(ns);
                 }
             }
-            if (ncname != null) formatValues = Xslt.decimalFormatGetByQname(sheet, nsUri, ncname);
-            if (formatValues == null) transformError(t, null, null, fmt("format-number() : undeclared decimal format '%s'\n", qname));
+            if (ncname != null) format_values = Xslt.decimalFormatGetByQname(sheet, ns_uri, ncname);
+            if (format_values == null) transformError(t, null, null, fmt("format-number() : undeclared decimal format '%s'\n", qname));
         }
-        if (formatValues == null)
+        if (format_values == null)
         {
             // Nothing is pushed, a stack error in libxml2.
             ctx.setError(23);
@@ -5117,7 +5117,7 @@ public final class Transform
         }
         String format = args[1].castToString();
         double number = args[0].castToNumber();
-        String result = xsltFormatNumberConversion(formatValues, format, number, sheet.settings);
+        String result = xsltFormatNumberConversion(format_values, format, number, sheet.settings);
         return XPathResult.newString(result != null ? result : "");
     }
 
@@ -5130,81 +5130,81 @@ public final class Transform
         info.keys = null;
     }
 
-    /** Port of xsltInitCtxtKey: compute the key table of keyDef for the document idoc. */
-    private static int xsltInitCtxtKey(TransformCtx t, DocInfo idoc, KeyDef keyDef)
+    /** Port of xsltInitCtxtKey: compute the key table of key_def for the document idoc. */
+    private static int xsltInitCtxtKey(TransformCtx t, DocInfo idoc, KeyDef key_def)
     {
-        if (keyDef.comp == null || keyDef.usecomp == null) return -1;
+        if (key_def.comp == null || key_def.usecomp == null) return -1;
         // Detect recursive keys.
-        if (t.keyInitLevel > t.nbKeys)
+        if (t.key_init_level > t.nb_keys)
         {
-            transformError(t, null, keyDef.inst, fmt("Key definition for %s is recursive\n", keyDef.name));
+            transformError(t, null, key_def.inst, fmt("Key definition for %s is recursive\n", key_def.name));
             t.state = TransformCtx.STATE_STOPPED;
             return -1;
         }
-        t.keyInitLevel++;
-        idoc.nbKeysComputed++;
-        XmlNode oldInst = t.inst;
-        DocInfo oldDocInfo = t.document;
-        XmlNode oldContextNode = t.node;
-        long oldPos = t.xpPosition, oldSize = t.xpSize;
-        XPathResult useRes = null;
+        t.key_init_level++;
+        idoc.nb_keys_computed++;
+        XmlNode old_inst = t.inst;
+        DocInfo old_doc_info = t.document;
+        XmlNode old_context_node = t.node;
+        long old_pos = t.xp_position, old_size = t.xp_size;
+        XPathResult use_res = null;
         t.document = idoc;
         t.node = domDocument(idoc.doc);
-        t.inst = keyDef.inst;
+        t.inst = key_def.inst;
         error:
         {
             // Evaluate the match expression of the xsl:key (with the context size and position as they are).
-            XPathResult matchRes = xsltXpathEval(t, keyDef.comp, domDocument(idoc.doc));
-            if (matchRes == null)
+            XPathResult match_res = xsltXpathEval(t, key_def.comp, domDocument(idoc.doc));
+            if (match_res == null)
             {
-                transformError(t, null, keyDef.inst, "Failed to evaluate the 'match' expression.\n");
+                transformError(t, null, key_def.inst, "Failed to evaluate the 'match' expression.\n");
                 t.state = TransformCtx.STATE_STOPPED;
                 break error;
             }
-            if (matchRes.type() != XPathResult.NODESET || matchRes.isTree())
+            if (match_res.type() != XPathResult.NODESET || match_res.isTree())
             {
-                transformError(t, null, keyDef.inst, "The 'match' expression did not evaluate to a node set.\n");
+                transformError(t, null, key_def.inst, "The 'match' expression did not evaluate to a node set.\n");
                 t.state = TransformCtx.STATE_STOPPED;
                 break error;
             }
-            int nmatch = matchRes.size();
+            int nmatch = match_res.size();
             if (nmatch == 0) break error;
             // Multiple key definitions for the same name are allowed.
             KeyTable table = idoc.keys;
             while (table != null)
             {
-                if (streq(table.name, keyDef.name) && streq(table.nameUri, keyDef.nameUri)) break;
+                if (streq(table.name, key_def.name) && streq(table.name_uri, key_def.name_uri)) break;
                 table = table.next;
             }
             if (table == null)
             {
                 table = new KeyTable();
-                table.name = keyDef.name;
-                table.nameUri = keyDef.nameUri;
+                table.name = key_def.name;
+                table.name_uri = key_def.name_uri;
                 table.keys = new HashMap<>();
                 table.next = idoc.keys;
                 idoc.keys = table;
             }
             // The use expression is evaluated with a node list containing just the node.
-            t.xpSize = 1;
-            t.xpPosition = 1;
+            t.xp_size = 1;
+            t.xp_position = 1;
             for (int i = 0; i < nmatch; i++)
             {
-                XmlNode cur = matchRes.node(i);
+                XmlNode cur = match_res.node(i);
                 if (!lxIsRealNode(cur)) continue;
                 t.node = cur;
-                useRes = xsltXpathEval(t, keyDef.usecomp, cur);
-                if (useRes == null)
+                use_res = xsltXpathEval(t, key_def.usecomp, cur);
+                if (use_res == null)
                 {
-                    transformError(t, null, keyDef.inst, "Failed to evaluate the 'use' expression.\n");
+                    transformError(t, null, key_def.inst, "Failed to evaluate the 'use' expression.\n");
                     t.state = TransformCtx.STATE_STOPPED;
                     break;
                 }
                 int len;
-                boolean nodes = useRes.type() == XPathResult.NODESET;
+                boolean nodes = use_res.type() == XPathResult.NODESET;
                 if (nodes)
                 {
-                    len = useRes.size();
+                    len = use_res.size();
                     if (len == 0) continue;
                 }
                 else
@@ -5213,7 +5213,7 @@ public final class Transform
                 }
                 for (int k = 0; k < len; k++)
                 {
-                    String str = nodes ? nodeStringValue(useRes.node(k)) : useRes.castToString();
+                    String str = nodes ? nodeStringValue(use_res.node(k)) : use_res.castToString();
                     if (str == null) continue;
                     XPathResult keylist = table.keys.get(str);
                     if (keylist == null)
@@ -5230,22 +5230,22 @@ public final class Transform
                         for (int jj = 0; jj < n && !dup; jj++) dup = keylist.node(jj) == cur;
                         if (!dup) keylist.addNode(cur);
                     }
-                    if (t.keyedNodes == null) t.keyedNodes = new IdentityHashMap<>();
-                    t.keyedNodes.put(cur, Boolean.TRUE);
+                    if (t.keyed_nodes == null) t.keyed_nodes = new IdentityHashMap<>();
+                    t.keyed_nodes.put(cur, Boolean.TRUE);
                 }
             }
         }
-        t.keyInitLevel--;
-        t.xpPosition = oldPos;
-        t.xpSize = oldSize;
-        t.node = oldContextNode;
-        t.document = oldDocInfo;
-        t.inst = oldInst;
+        t.key_init_level--;
+        t.xp_position = old_pos;
+        t.xp_size = old_size;
+        t.node = old_context_node;
+        t.document = old_doc_info;
+        t.inst = old_inst;
         return 0;
     }
 
     /** Port of xsltInitDocKeyTable. */
-    private static int xsltInitDocKeyTable(TransformCtx t, String name, String nameUri)
+    private static int xsltInitDocKeyTable(TransformCtx t, String name, String name_uri)
     {
         KeyDef keyd = null;
         int found = 0;
@@ -5253,10 +5253,10 @@ public final class Transform
         {
             for (keyd = style.keys; keyd != null; keyd = keyd.next)
             {
-                if (streq(keyd.name, name) && streq(keyd.nameUri, nameUri))
+                if (streq(keyd.name, name) && streq(keyd.name_uri, name_uri))
                 {
                     xsltInitCtxtKey(t, t.document, keyd);
-                    if (t.document.nbKeysComputed == t.nbKeys) return 0;
+                    if (t.document.nb_keys_computed == t.nb_keys) return 0;
                     found = 1;
                 }
             }
@@ -5273,7 +5273,7 @@ public final class Transform
     /** Port of xsltInitAllDocKeys. */
     private static int xsltInitAllDocKeys(TransformCtx t)
     {
-        if (t.document.nbKeysComputed == t.nbKeys) return 0;
+        if (t.document.nb_keys_computed == t.nb_keys) return 0;
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
             for (KeyDef keyd = style.keys; keyd != null; keyd = keyd.next)
@@ -5282,10 +5282,10 @@ public final class Transform
                 KeyTable table = t.document.keys;
                 while (table != null)
                 {
-                    if (streq(keyd.name, table.name) && streq(keyd.nameUri, table.nameUri)) break;
+                    if (streq(keyd.name, table.name) && streq(keyd.name_uri, table.name_uri)) break;
                     table = table.next;
                 }
-                if (table == null) xsltInitDocKeyTable(t, keyd.name, keyd.nameUri);
+                if (table == null) xsltInitDocKeyTable(t, keyd.name, keyd.name_uri);
             }
         }
         return 0;
@@ -5295,16 +5295,16 @@ public final class Transform
      * Port of xsltGetKey: the nodes of the current document with the key value (borrowed).
      * @param t The transformation.
      * @param name The name of the key.
-     * @param nameUri The namespace of the name.
+     * @param name_uri The namespace of the name.
      * @param value The key value.
      * @return The nodes or null.
      */
-    static XPathResult getKey(TransformCtx t, String name, String nameUri, String value)
+    static XPathResult getKey(TransformCtx t, String name, String name_uri, String value)
     {
-        int initTable = 0;
+        int init_table = 0;
         if (name == null || value == null || t.document == null) return null;
         // Keys are computed on demand, on the first key access for a document.
-        if (t.document.nbKeysComputed < t.nbKeys && t.keyInitLevel == 0)
+        if (t.document.nb_keys_computed < t.nb_keys && t.key_init_level == 0)
         {
             if (xsltInitAllDocKeys(t) != 0) return null;
         }
@@ -5312,16 +5312,16 @@ public final class Transform
         {
             for (KeyTable table = t.document.keys; table != null; table = table.next)
             {
-                if (streq(table.name, name) && streq(table.nameUri, nameUri))
+                if (streq(table.name, name) && streq(table.name_uri, name_uri))
                 {
                     return table.keys.get(value);
                 }
             }
-            if (t.keyInitLevel != 0 && initTable == 0)
+            if (t.key_init_level != 0 && init_table == 0)
             {
                 // A recursive key, initialize just this one and retry.
-                xsltInitDocKeyTable(t, name, nameUri);
-                initTable = 1;
+                xsltInitDocKeyTable(t, name, name_uri);
+                init_table = 1;
                 continue;
             }
             return null;
@@ -5336,7 +5336,7 @@ public final class Transform
      */
     static boolean nodeHasKey(TransformCtx t, XmlNode node)
     {
-        return t.keyedNodes != null && t.keyedNodes.containsKey(node);
+        return t.keyed_nodes != null && t.keyed_nodes.containsKey(node);
     }
 
     /**
@@ -5345,9 +5345,9 @@ public final class Transform
      * @param contextNode The context node.
      * @return 0 or -1.
      */
-    static int computeAllKeys(TransformCtx t, XmlNode contextNode)
+    static int computeAllKeys(TransformCtx t, XmlNode context_node)
     {
-        if (contextNode == null)
+        if (context_node == null)
         {
             transformError(t, null, t.inst, "Internal error in xsltComputeAllKeys(): Bad arguments.\n");
             return -1;
@@ -5359,7 +5359,7 @@ public final class Transform
     /** Port of xsltFindDocument. */
     private static DocInfo xsltFindDocument(TransformCtx t, XmlDocument doc)
     {
-        for (DocInfo ret = t.docList; ret != null; ret = ret.next)
+        for (DocInfo ret = t.doc_list; ret != null; ret = ret.next)
         {
             if (ret.doc == doc) return ret;
         }
@@ -5376,8 +5376,8 @@ public final class Transform
         cur.owned = owned;
         if (!isRtf(t, doc))
         {
-            cur.next = t.docList;
-            t.docList = cur;
+            cur.next = t.doc_list;
+            t.doc_list = cur;
         }
         return cur;
     }
@@ -5386,7 +5386,7 @@ public final class Transform
     private static DocInfo xsltLoadDocument(TransformCtx t, String uri)
     {
         if (uri == null) return null;
-        for (DocInfo ret = t.docList; ret != null; ret = ret.next)
+        for (DocInfo ret = t.doc_list; ret != null; ret = ret.next)
         {
             if (ret.doc != null && domUrl(ret.doc) != null && domUrl(ret.doc).equals(uri)) return ret;
         }
@@ -5742,10 +5742,10 @@ public final class Transform
             return;
         }
         // The fragment identifier is an XPointer.
-        XPathResult resObj = xsltXptrEval(doc, fragment);
-        if (resObj != null)
+        XPathResult res_obj = xsltXptrEval(doc, fragment);
+        if (res_obj != null)
         {
-            xsltNodesetMerge(ret, resObj);
+            xsltNodesetMerge(ret, res_obj);
         }
     }
 
@@ -5769,18 +5769,18 @@ public final class Transform
     }
 
     /** document() for one uri string with an optional base node set (obj2). */
-    private static XPathResult xsltDocumentString(TransformCtx t, String urlIn, XPathResult obj2)
+    private static XPathResult xsltDocumentString(TransformCtx t, String url_in, XPathResult obj2)
     {
         XPathResult ret = XPathResult.newNodeSet();
-        XmlUri uri = XmlUri.parse(urlIn);
+        XmlUri uri = XmlUri.parse(url_in);
         if (uri == null)
         {
-            transformError(t, null, null, fmt("document() : failed to parse URI '%s'\n", urlIn));
+            transformError(t, null, null, fmt("document() : failed to parse URI '%s'\n", url_in));
             return ret;
         }
         // Check for and remove the fragment identifier.
         String fragment = uri.fragment;
-        String url = urlIn;
+        String url = url_in;
         if (fragment != null)
         {
             uri.fragment = null;
@@ -5884,41 +5884,41 @@ public final class Transform
         }
         for (int vi = 0; vi < nvalues; vi++)
         {
-            DocInfo oldDocInfo = t.document;
+            DocInfo old_doc_info = t.document;
             XmlNode node = ctx.contextNode();
             if (node == null)
             {
                 transformError(t, null, t.inst, "Internal error in xsltKeyFunction(): The context node is not set on the XPath context.\n");
                 t.state = TransformCtx.STATE_STOPPED;
-                t.document = oldDocInfo;
+                t.document = old_doc_info;
                 continue;
             }
             // The name, with the namespace of a prefix.
             String prefix = null;
             String key = null;
-            String keyUri = null;
+            String key_uri = null;
             int colon = qname.indexOf(':');
             if (colon > 0 && colon + 1 < qname.length())
             {
                 prefix = qname.substring(0, colon);
                 key = qname.substring(colon + 1);
-                keyUri = ctx.lookupNamespace(prefix);
-                if (keyUri == null) transformError(t, null, t.inst, fmt("key() : prefix %s is not bound\n", prefix));
+                key_uri = ctx.lookupNamespace(prefix);
+                if (key_uri == null) transformError(t, null, t.inst, fmt("key() : prefix %s is not bound\n", prefix));
             }
             else
             {
                 key = qname;
             }
-            XmlNode tmpNode = node;
-            if (nodeKind(node) == NAMESPACE) tmpNode = nodeParent(node);
+            XmlNode tmp_node = node;
+            if (nodeKind(node) == NAMESPACE) tmp_node = nodeParent(node);
             XPathResult nodelist = null;
-            if (tmpNode == null || nodeDom(tmpNode) == null)
+            if (tmp_node == null || nodeDom(tmp_node) == null)
             {
                 transformError(t, null, t.inst, "Internal error in xsltKeyFunction(): Couldn't get the doc of the XPath context node.\n");
             }
             else
             {
-                XmlDocument doc = nodeDom(tmpNode);
+                XmlDocument doc = nodeDom(tmp_node);
                 boolean ok = true;
                 if (t.document == null || t.document.doc != doc)
                 {
@@ -5941,9 +5941,9 @@ public final class Transform
                         ok = false;
                     }
                 }
-                if (ok) nodelist = getKey(t, key, keyUri, values[vi]);
+                if (ok) nodelist = getKey(t, key, key_uri, values[vi]);
             }
-            t.document = oldDocInfo;
+            t.document = old_doc_info;
             if (nodelist != null) xsltNodesetMerge(ret, nodelist);
         }
         return ret;
@@ -6009,23 +6009,23 @@ public final class Transform
             ctx.setErrorQuiet(XPathException.INVALID_ARITY);
             return null;
         }
-        String nsPrefix = null;
-        boolean isNs = false;
+        String ns_prefix = null;
+        boolean is_ns = false;
         if (nodeKind(cur) == NAMESPACE)
         {
-            isNs = true;
-            nsPrefix = nodeName(cur) != null ? nodeName(cur) : "";
+            is_ns = true;
+            ns_prefix = nodeName(cur) != null ? nodeName(cur) : "";
             cur = nodeParent(cur);
         }
-        if (t.generatedIds == null) t.generatedIds = new IdentityHashMap<>();
-        String id = t.generatedIds.get(cur);
+        if (t.generated_ids == null) t.generated_ids = new IdentityHashMap<>();
+        String id = t.generated_ids.get(cur);
         if (id == null)
         {
-            id = Long.toUnsignedString(++t.currentId);
-            t.generatedIds.put(cur, id);
+            id = Long.toUnsignedString(++t.current_id);
+            t.generated_ids.put(cur, id);
         }
         StringBuilder mb = new StringBuilder();
-        if (!isNs)
+        if (!is_ns)
         {
             mb.append("id").append(id);
         }
@@ -6033,7 +6033,7 @@ public final class Transform
         {
             // Only ascii alphanumerics are allowed, the prefix is hex encoded.
             mb.append("id").append(id).append("ns");
-            for (byte b : nsPrefix.getBytes(StandardCharsets.UTF_8))
+            for (byte b : ns_prefix.getBytes(StandardCharsets.UTF_8))
             {
                 int p = b & 0xff;
                 int v = p >> 4;
@@ -6073,7 +6073,7 @@ public final class Transform
         }
         String s = args[0].stringValue();
         String[] prefix = { null };
-        String nsUri = null;
+        String ns_uri = null;
         String name = xsltSplitQname2(s, prefix);
         if (name == null)
         {
@@ -6081,11 +6081,11 @@ public final class Transform
         }
         else
         {
-            nsUri = ctx.lookupNamespace(prefix[0]);
-            if (nsUri == null) transformError(t, null, null, fmt("system-property() : prefix %s is not bound\n", prefix[0]));
+            ns_uri = ctx.lookupNamespace(prefix[0]);
+            if (ns_uri == null) transformError(t, null, null, fmt("system-property() : prefix %s is not bound\n", prefix[0]));
         }
         String value = "";
-        if (streq(nsUri, XSLT_NAMESPACE))
+        if (streq(ns_uri, XSLT_NAMESPACE))
         {
             if (name.equals("vendor")) value = "libxslt";
             else if (name.equals("version")) value = "1.0";
@@ -6131,20 +6131,20 @@ public final class Transform
             return XPathResult.newBoolean(false);
         }
         String[] prefix = { null };
-        String nsUri = null;
+        String ns_uri = null;
         String name = xsltSplitQname2(s, prefix);
         if (name == null)
         {
             name = s;
             XmlNs ns = lxSearchNs(t.inst, null);
-            if (ns != null) nsUri = nsHref(ns);
+            if (ns != null) ns_uri = nsHref(ns);
         }
         else
         {
-            nsUri = ctx.lookupNamespace(prefix[0]);
-            if (nsUri == null) transformError(t, null, null, fmt("element-available() : prefix %s is not bound\n", prefix[0]));
+            ns_uri = ctx.lookupNamespace(prefix[0]);
+            if (ns_uri == null) transformError(t, null, null, fmt("element-available() : prefix %s is not bound\n", prefix[0]));
         }
-        boolean r = xsltExtElementAvailable(name, nsUri);
+        boolean r = xsltExtElementAvailable(name, ns_uri);
         return XPathResult.newBoolean(r);
     }
 
@@ -6153,9 +6153,9 @@ public final class Transform
         "string-length", "starts-with", "substring", "substring-before", "substring-after", "sum", "true", "translate" };
 
     /** Is the function a core XPath 1.0 function of libxml2? */
-    private static boolean xsltIsCoreFunction(String name, String nsUri)
+    private static boolean xsltIsCoreFunction(String name, String ns_uri)
     {
-        if (nsUri != null) return nsUri.equals("http://www.w3.org/2002/08/xquery-functions") && name.equals("escape-uri");
+        if (ns_uri != null) return ns_uri.equals("http://www.w3.org/2002/08/xquery-functions") && name.equals("escape-uri");
         for (String c : CORE_FUNCTIONS) if (c.equals(name)) return true;
         return false;
     }
@@ -6171,7 +6171,7 @@ public final class Transform
         }
         String s = args[0].castToString();
         String[] prefix = { null };
-        String nsUri = null;
+        String ns_uri = null;
         String name = xsltSplitQname2(s, prefix);
         if (name == null)
         {
@@ -6179,10 +6179,10 @@ public final class Transform
         }
         else
         {
-            nsUri = ctx.lookupNamespace(prefix[0]);
-            if (nsUri == null) transformError(t, null, null, fmt("function-available() : prefix %s is not bound\n", prefix[0]));
+            ns_uri = ctx.lookupNamespace(prefix[0]);
+            if (ns_uri == null) transformError(t, null, null, fmt("function-available() : prefix %s is not bound\n", prefix[0]));
         }
-        boolean r = xsltIsCoreFunction(name, nsUri) || xsltFunctionLookup(t, name, nsUri) != null;
+        boolean r = xsltIsCoreFunction(name, ns_uri) || xsltFunctionLookup(t, name, ns_uri) != null;
         return XPathResult.newBoolean(r);
     }
 
@@ -6228,9 +6228,9 @@ public final class Transform
 
     /** The function lookup of the xpath context: the XSLT functions (xsltRegisterAllFunctions) and
         the extension functions libxslt registers by default (extra.c). */
-    private static XsltFunction xsltFunctionLookup(TransformCtx t, String name, String nsUri)
+    private static XsltFunction xsltFunctionLookup(TransformCtx t, String name, String ns_uri)
     {
-        if (nsUri == null)
+        if (ns_uri == null)
         {
             if (name.equals("current")) return Transform::xsltCurrentFunction;
             if (name.equals("document")) return Transform::xsltDocumentFunction;
@@ -6244,7 +6244,7 @@ public final class Transform
             return null;
         }
         if (name.equals("node-set") &&
-            (nsUri.equals(XSLT_LIBXSLT_NAMESPACE) || nsUri.equals(XSLT_SAXON_NAMESPACE) || nsUri.equals(XSLT_XT_NAMESPACE)))
+            (ns_uri.equals(XSLT_LIBXSLT_NAMESPACE) || ns_uri.equals(XSLT_SAXON_NAMESPACE) || ns_uri.equals(XSLT_XT_NAMESPACE)))
         {
             return Transform::xsltFunctionNodeSet;
         }
@@ -6267,26 +6267,26 @@ public final class Transform
         t.source = source;
         t.xpath = new XPathEvalContext();
         // Like a fresh libxml2 xpath context, the position and size are unknown.
-        t.xpPosition = -1;
-        t.xpSize = -1;
-        int extrasMax = style.extrasNr + 20;
-        for (int i = 0; i < extrasMax; i++) t.extras.add(new RuntimeExtra());
-        t.extrasNr = style.extrasNr;
-        t.maxTemplateDepth = XSLT_MAX_DEPTH;
-        t.maxTemplateVars = XSLT_MAX_VARS;
-        t.opLimit = style.opLimit;
+        t.xp_position = -1;
+        t.xp_size = -1;
+        int extras_max = style.extras_nr + 20;
+        for (int i = 0; i < extras_max; i++) t.extras.add(new RuntimeExtra());
+        t.extras_nr = style.extras_nr;
+        t.max_template_depth = XSLT_MAX_DEPTH;
+        t.max_template_vars = XSLT_MAX_VARS;
+        t.op_limit = style.op_limit;
         final TransformCtx tc = t;
-        t.xpath.setVariableLookup((name, nsUri) -> xsltXpathVariableLookup(tc, name, nsUri));
-        t.xpath.setFunctionLookup((name, nsUri) ->
+        t.xpath.setVariableLookup((name, ns_uri) -> xsltXpathVariableLookup(tc, name, ns_uri));
+        t.xpath.setFunctionLookup((name, ns_uri) ->
         {
-            XsltFunction f = xsltFunctionLookup(tc, name, nsUri);
+            XsltFunction f = xsltFunctionLookup(tc, name, ns_uri);
             if (f == null) return null;
             return (ctx, args) -> f.call(ctx, tc, args);
         });
         DocInfo docu = new DocInfo();
         docu.doc = source;
         docu.main = 1;
-        t.docList = docu;
+        t.doc_list = docu;
         t.document = docu;
         return t;
     }
@@ -6300,13 +6300,13 @@ public final class Transform
     {
         if (t == null) return;
         t.extras.clear();
-        if (t.globalVars != null)
+        if (t.global_vars != null)
         {
-            for (StackElem val : t.globalVars.values()) xsltFreeRuntimeStackElem(t, val);
-            t.globalVars = null;
+            for (StackElem val : t.global_vars.values()) xsltFreeRuntimeStackElem(t, val);
+            t.global_vars = null;
         }
         xsltFreeRvts(t);
-        DocInfo d = t.docList;
+        DocInfo d = t.doc_list;
         while (d != null)
         {
             DocInfo next = d.next;
@@ -6317,8 +6317,8 @@ public final class Transform
             }
             d = next;
         }
-        t.keyedNodes = null;
-        t.generatedIds = null;
+        t.keyed_nodes = null;
+        t.generated_ids = null;
     }
 
     /** Port of xsltFindElemSpaceHandling: are blank text children of node stripped? */
@@ -6328,23 +6328,23 @@ public final class Transform
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
             String val = null;
-            if (style.stripSpaces != null && nodeKind(node) == ELEMENT)
+            if (style.strip_spaces != null && nodeKind(node) == ELEMENT)
             {
                 XmlNs ns = nodeNs(node);
                 if (ns != null)
                 {
                     String key = Xslt.key2(nodeName(node), nsHref(ns));
-                    val = style.stripSpaces.get(key);
+                    val = style.strip_spaces.get(key);
                     if (val == null)
                     {
                         key = Xslt.key2("*", nsHref(ns));
-                        val = style.stripSpaces.get(key);
+                        val = style.strip_spaces.get(key);
                     }
                 }
                 else
                 {
                     String key = Xslt.key2(nodeName(node), null);
-                    val = style.stripSpaces.get(key);
+                    val = style.strip_spaces.get(key);
                 }
             }
             if (val != null)
@@ -6352,8 +6352,8 @@ public final class Transform
                 if (val.equals("strip")) return 1;
                 if (val.equals("preserve")) return 0;
             }
-            if (style.stripAll == 1) return 1;
-            if (style.stripAll == -1) return 0;
+            if (style.strip_all == 1) return 1;
+            if (style.strip_all == -1) return 0;
         }
         return 0;
     }
@@ -6363,7 +6363,7 @@ public final class Transform
     {
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
-            if (style.stripSpaces != null) return 1;
+            if (style.strip_spaces != null) return 1;
         }
         return 0;
     }
@@ -6416,26 +6416,26 @@ public final class Transform
     /** Port of xsltCountKeys. */
     private static int xsltCountKeys(TransformCtx t)
     {
-        t.hasTemplKeyPatterns = 0;
+        t.has_templ_key_patterns = 0;
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
-            if (style.keyMatch != null)
+            if (style.key_match != null)
             {
-                t.hasTemplKeyPatterns = 1;
+                t.has_templ_key_patterns = 1;
                 break;
             }
         }
-        t.nbKeys = 0;
+        t.nb_keys = 0;
         for (Stylesheet style = t.style; style != null; style = Xslt.nextImport(style))
         {
-            for (KeyDef keyd = style.keys; keyd != null; keyd = keyd.next) t.nbKeys++;
+            for (KeyDef keyd = style.keys; keyd != null; keyd = keyd.next) t.nb_keys++;
         }
-        return t.nbKeys;
+        return t.nb_keys;
     }
 
     private static String xsltImportMethod(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.method != null) return s.method; return null; }
-    private static String xsltImportDoctypePublic(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.doctypePublic != null) return s.doctypePublic; return null; }
-    private static String xsltImportDoctypeSystem(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.doctypeSystem != null) return s.doctypeSystem; return null; }
+    private static String xsltImportDoctypePublic(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.doctype_public != null) return s.doctype_public; return null; }
+    private static String xsltImportDoctypeSystem(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.doctype_system != null) return s.doctype_system; return null; }
     private static String xsltImportVersion(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.version != null) return s.version; return null; }
     private static String xsltImportEncoding(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.encoding != null) return s.encoding; return null; }
 
@@ -6467,15 +6467,15 @@ public final class Transform
     }
 
     /** Port of xsltGetHTMLIDs. */
-    private static int xsltGetHtmlIds(String version, String[] publicId, String[] systemId)
+    private static int xsltGetHtmlIds(String version, String[] public_id, String[] system_id)
     {
         if (version == null) return -1;
         for (String[] v : HTML_VERSIONS)
         {
             if (strcaseeq(version, v[0]))
             {
-                if (publicId != null) publicId[0] = v[1];
-                if (systemId != null) systemId[0] = v[2];
+                if (public_id != null) public_id[0] = v[1];
+                if (system_id != null) system_id[0] = v[2];
                 return 0;
             }
         }
@@ -6483,15 +6483,15 @@ public final class Transform
     }
 
     /** htmlNewDoc: an html document with a doctype (the html 4.0 transitional one if none is given). */
-    private static XmlDocument xsltHtmlNewDoc(String systemId, String publicId)
+    private static XmlDocument xsltHtmlNewDoc(String system_id, String public_id)
     {
         XmlDocument res = domNew();
-        if (systemId == null && publicId == null)
+        if (system_id == null && public_id == null)
         {
-            systemId = "http://www.w3.org/TR/REC-html40/loose.dtd";
-            publicId = "-//W3C//DTD HTML 4.0 Transitional//EN";
+            system_id = "http://www.w3.org/TR/REC-html40/loose.dtd";
+            public_id = "-//W3C//DTD HTML 4.0 Transitional//EN";
         }
-        domSetDtd(res, "html", publicId, systemId);
+        domSetDtd(res, "html", public_id, system_id);
         return res;
     }
 
@@ -6501,9 +6501,9 @@ public final class Transform
     }
 
     /** Put the dtd first among the children of the document (libxslt's "hack" before comments). */
-    private static void xsltSetDtdFirst(XmlDocument res, String name, String publicId, String systemId)
+    private static void xsltSetDtdFirst(XmlDocument res, String name, String public_id, String system_id)
     {
-        XmlNode dtd = domSetDtd(res, name, publicId, systemId);
+        XmlNode dtd = domSetDtd(res, name, public_id, system_id);
         XmlNode doc = domDocument(res);
         XmlNode first = nodeFirstChild(doc);
         if (dtd != null && first != null && first != dtd)
@@ -6550,28 +6550,28 @@ public final class Transform
             return -1;
         }
         String key = Xslt.key2(name, href);
-        if (t.globalVars.get(key) != null) transformError(t, style, null, fmt("Global parameter %s already defined\n", name));
+        if (t.global_vars.get(key) != null) transformError(t, style, null, fmt("Global parameter %s already defined\n", name));
         // Like libxslt, only the variables of the top stylesheet are looked at (for every import).
         for (Stylesheet st = style; st != null; st = Xslt.nextImport(st))
         {
             for (StackElem elem = t.style.variables; elem != null; elem = elem.next)
             {
-                if (elem.comp != null && elem.comp.type == StylePreComp.FUNC_VARIABLE && streq(elem.name, name) && streq(elem.nameUri, href))
+                if (elem.comp != null && elem.comp.type == StylePreComp.FUNC_VARIABLE && streq(elem.name, name) && streq(elem.name_uri, href))
                 {
                     return 0;
                 }
             }
         }
         XPathResult result = null;
-        XPath xpExpr = Xslt.xpathCompile(style.settings, null, value, false);
-        if (xpExpr != null)
+        XPath xp_expr = Xslt.xpathCompile(style.settings, null, value, false);
+        if (xp_expr != null)
         {
-            long pos = t.xpPosition, size = t.xpSize;
-            t.xpSize = 1;
-            t.xpPosition = 1;
-            result = xsltXpathEval(t, xpExpr, t.initialContextNode);
-            t.xpPosition = pos;
-            t.xpSize = size;
+            long pos = t.xp_position, size = t.xp_size;
+            t.xp_size = 1;
+            t.xp_position = 1;
+            result = xsltXpathEval(t, xp_expr, t.initial_context_node);
+            t.xp_position = pos;
+            t.xp_size = size;
         }
         if (result == null)
         {
@@ -6582,17 +6582,17 @@ public final class Transform
         StackElem elem = xsltNewStackElem();
         elem.name = name;
         elem.select = value;
-        elem.nameUri = href;
+        elem.name_uri = href;
         elem.computed = 1;
         elem.value = result;
-        if (t.globalVars.get(key) != null)
+        if (t.global_vars.get(key) != null)
         {
             transformError(t, style, null, fmt("Global parameter %s already defined\n", name));
             xsltFreeRuntimeStackElem(t, elem);
         }
         else
         {
-            t.globalVars.put(key, elem);
+            t.global_vars.put(key, elem);
         }
         return 0;
     }
@@ -6611,7 +6611,7 @@ public final class Transform
     // Output, port of libxslt xsltutils.c xsltSaveResultTo ///////////////
 
     private static int xsltImportIntIndent(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.indent != -1) return s.indent; return -1; }
-    private static int xsltImportIntOmit(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.omitXmlDeclaration != -1) return s.omitXmlDeclaration; return -1; }
+    private static int xsltImportIntOmit(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.omit_xml_declaration != -1) return s.omit_xml_declaration; return -1; }
     private static int xsltImportIntStandalone(Stylesheet s) { for (; s != null; s = Xslt.nextImport(s)) if (s.standalone != -1) return s.standalone; return -1; }
 
     /** xml_html_save_doc_to: the html serialization of the document in UTF-8. The C serializer
@@ -6635,10 +6635,10 @@ public final class Transform
     private static boolean xsltSaveResultTo(StringBuilder buf, XmlDocument result, Stylesheet style, int type)
     {
         if (buf == null || result == null || style == null) return false;
-        XmlNode docNode = domDocument(result);
-        XmlNode first = nodeFirstChild(docNode);
+        XmlNode doc_node = domDocument(result);
+        XmlNode first = nodeFirstChild(doc_node);
         if (first == null || (nodeKind(first) == DTD && nodeNext(first) == null)) return true;
-        if (style.methodUri != null && (style.method == null || !style.method.equals("xhtml")))
+        if (style.method_uri != null && (style.method == null || !style.method.equals("xhtml")))
         {
             genericError(style.settings, "xsltSaveResultTo : unknown output method\n");
             return false;
@@ -6678,7 +6678,7 @@ public final class Transform
                 do
                 {
                     cur = nodeParent(cur);
-                    if (cur == null || cur == docNode)
+                    if (cur == null || cur == doc_node)
                     {
                         cur = null;
                         break;
@@ -6693,9 +6693,9 @@ public final class Transform
         }
         else
         {
-            int omitXmlDecl = xsltImportIntOmit(style);
+            int omit_xml_decl = xsltImportIntOmit(style);
             int standalone = xsltImportIntStandalone(style);
-            if (omitXmlDecl != 1)
+            if (omit_xml_decl != 1)
             {
                 buf.append("<?xml version=");
                 String version = domVersion(result);
@@ -6729,13 +6729,13 @@ public final class Transform
      * indentation, xml declaration and doctype of the stylesheet (xml_libxslt1_save_result_to_string).
      * @param result The result document.
      * @param style The stylesheet.
-     * @param outputType What applyStylesheet gave.
+     * @param output_type What applyStylesheet gave.
      * @return The bytes in the output encoding.
      */
-    public static byte[] saveResultToString(XmlDocument result, Stylesheet style, int outputType)
+    public static byte[] saveResultToString(XmlDocument result, Stylesheet style, int output_type)
     {
         StringBuilder utf8 = new StringBuilder();
-        if (result != null && nodeFirstChild(domDocument(result)) != null) xsltSaveResultTo(utf8, result, style, outputType);
+        if (result != null && nodeFirstChild(domDocument(result)) != null) xsltSaveResultTo(utf8, result, style, output_type);
         String encoding = xsltImportEncoding(style);
         // Like libxslt, no encoder for UTF-8; an encoding without an encoder is written as UTF-8.
         if (encoding != null && !encoding.equalsIgnoreCase("UTF-8") && !encoding.equalsIgnoreCase("UTF8") && XmlSave.encodingSupported(encoding))
@@ -6753,20 +6753,20 @@ public final class Transform
      * @param style The stylesheet.
      * @param doc The source document.
      * @param params Name, value pairs (the values are xpath expressions) or null.
-     * @param outputType If not null, outputType[0] gets OUTPUT_XML, OUTPUT_HTML or OUTPUT_TEXT.
+     * @param output_type If not null, output_type[0] gets OUTPUT_XML, OUTPUT_HTML or OUTPUT_TEXT.
      * @return The result, null after reporting errors.
      */
-    public static XmlDocument applyStylesheet(Stylesheet style, XmlDocument doc, String[] params, int[] outputType)
+    public static XmlDocument applyStylesheet(Stylesheet style, XmlDocument doc, String[] params, int[] output_type)
     {
         if (style == null || doc == null) return null;
         XmlDocument res = null;
         TransformCtx t = transformNew(style, doc);
         t.params = params;
-        t.initialContextDoc = doc;
-        t.initialContextNode = domDocument(doc);
+        t.initial_context_doc = doc;
+        t.initial_context_node = domDocument(doc);
         String method = xsltImportMethod(style);
-        String[] doctypePublic = { xsltImportDoctypePublic(style) };
-        String[] doctypeSystem = { xsltImportDoctypeSystem(style) };
+        String[] doctype_public = { xsltImportDoctypePublic(style) };
+        String[] doctype_system = { xsltImportDoctypeSystem(style) };
         String version = xsltImportVersion(style);
         String encoding = xsltImportEncoding(style);
         if (method != null && !method.equals("xml"))
@@ -6774,9 +6774,9 @@ public final class Transform
             if (method.equals("html"))
             {
                 t.type = OUTPUT_HTML;
-                if (doctypePublic[0] != null || doctypeSystem[0] != null)
+                if (doctype_public[0] != null || doctype_system[0] != null)
                 {
-                    res = xsltHtmlNewDoc(doctypeSystem[0], doctypePublic[0]);
+                    res = xsltHtmlNewDoc(doctype_system[0], doctype_public[0]);
                 }
                 else if (version == null)
                 {
@@ -6785,15 +6785,15 @@ public final class Transform
                 }
                 else
                 {
-                    xsltGetHtmlIds(version, doctypePublic, doctypeSystem);
-                    res = xsltHtmlNewDoc(doctypeSystem[0], doctypePublic[0]);
+                    xsltGetHtmlIds(version, doctype_public, doctype_system);
+                    res = xsltHtmlNewDoc(doctype_system[0], doctype_public[0]);
                 }
             }
             else if (method.equals("xhtml"))
             {
                 transformError(t, null, domDocument(doc), "xsltApplyStylesheetInternal: unsupported method xhtml, using html\n");
                 t.type = OUTPUT_HTML;
-                res = xsltHtmlNewDoc(doctypeSystem[0], doctypePublic[0]);
+                res = xsltHtmlNewDoc(doctype_system[0], doctype_public[0]);
             }
             else if (method.equals("text"))
             {
@@ -6817,17 +6817,17 @@ public final class Transform
         if (encoding != null) domSetEncoding(res, encoding);
         t.node = domDocument(doc);
         t.output = res;
-        t.xpSize = 1;
-        t.xpPosition = 1;
+        t.xp_size = 1;
+        t.xp_position = 1;
         if (xsltNeedElemSpaceHandling(t) != 0) xsltApplyStripSpaces(t, domRootElement(doc));
-        t.globalVars = new HashMap<>();
+        t.global_vars = new HashMap<>();
         if (params != null) xsltEvalUserParams(t, params);
         xsltCountKeys(t);
         xsltEvalGlobalVariables(t);
         // Clean up any unused fragments.
-        if (t.localRvt != null) xsltReleaseLocalRvts(t, null);
+        if (t.local_rvt != null) xsltReleaseLocalRvts(t, null);
         t.insert = domDocument(res);
-        t.varsBase = t.varsNr - 1;
+        t.vars_base = t.vars_nr - 1;
         xsltProcessOneNode(t, t.node, null);
         xsltLocalVariablePop(t, 0, -2);
 
@@ -6857,29 +6857,29 @@ public final class Transform
                 if (tmp == root)
                 {
                     t.type = OUTPUT_HTML;
-                    if (doctypePublic[0] != null || doctypeSystem[0] != null)
+                    if (doctype_public[0] != null || doctype_system[0] != null)
                     {
-                        domSetDtd(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                        domSetDtd(res, doctype, doctype_public[0], doctype_system[0]);
                     }
                     else if (version != null)
                     {
-                        xsltGetHtmlIds(version, doctypePublic, doctypeSystem);
-                        if (doctypePublic[0] != null || doctypeSystem[0] != null) domSetDtd(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                        xsltGetHtmlIds(version, doctype_public, doctype_system);
+                        if (doctype_public[0] != null || doctype_system[0] != null) domSetDtd(res, doctype, doctype_public[0], doctype_system[0]);
                     }
                 }
             }
             if (t.type == OUTPUT_XML)
             {
-                doctypePublic[0] = xsltImportDoctypePublic(style);
-                doctypeSystem[0] = xsltImportDoctypeSystem(style);
-                if (doctypePublic[0] != null || doctypeSystem[0] != null) xsltSetDtdFirst(res, doctype, doctypePublic[0], doctypeSystem[0]);
+                doctype_public[0] = xsltImportDoctypePublic(style);
+                doctype_system[0] = xsltImportDoctypeSystem(style);
+                if (doctype_public[0] != null || doctype_system[0] != null) xsltSetDtdFirst(res, doctype, doctype_public[0], doctype_system[0]);
             }
         }
         if (t.state != TransformCtx.STATE_OK)
         {
             res = null;
         }
-        if (outputType != null) outputType[0] = t.type;
+        if (output_type != null) output_type[0] = t.type;
         transformFree(t);
         return res;
     }

@@ -61,17 +61,17 @@ public final class Xsd10Wildcard extends Xsd10BasicItem
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** Deprecated; not used */
-    int minOccurs;
+    int min_occurs;
     /** Deprecated; not used */
-    int maxOccurs;
-    /** C {@code int processContents}. */
-    int processContents;
+    int max_occurs;
+    /** C {@code int process_contents}. */
+    int process_contents;
     /** Indicates if the ns constraint is of ##any */
     int any;
     /** The list of allowed namespaces */
-    Xsd10WildcardNs nsSet;
+    Xsd10WildcardNs ns_set;
     /** The negated namespace */
-    Xsd10WildcardNs negNsSet;
+    Xsd10WildcardNs neg_ns_set;
     /** C {@code int flags}. */
     int flags;
 }

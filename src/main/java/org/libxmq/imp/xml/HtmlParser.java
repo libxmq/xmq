@@ -94,22 +94,22 @@ public final class HtmlParser
     private byte[] in_;
     private int pos_;
     private int end_;
-    private int curLen_;
+    private int cur_len_;
 
     private boolean eof_;
-    private boolean disableSAX_;
-    private final boolean keepBlanks_;
+    private boolean disable_sax_;
+    private final boolean keep_blanks_;
     private int html_;
     private int depth_;
 
-    private final XmlDocument myDoc_;
-    private final List<String> nameTab_ = new ArrayList<>();
+    private final XmlDocument my_doc_;
+    private final List<String> name_tab_ = new ArrayList<>();
     private String name_;
-    private final List<XmlNode> nodeTab_ = new ArrayList<>();
+    private final List<XmlNode> node_tab_ = new ArrayList<>();
     private XmlNode node_;
 
-    private XmlText pendingText_;
-    private StringBuilder pendingSb_;
+    private XmlText pending_text_;
+    private StringBuilder pending_sb_;
 
     private HtmlParser(String content, boolean noblanks)
     {
@@ -118,10 +118,10 @@ public final class HtmlParser
         System.arraycopy(b, 0, in_, 0, b.length);
         end_ = b.length;
         pos_ = 0;
-        keepBlanks_ = !noblanks;
-        myDoc_ = new XmlDocument(true);
+        keep_blanks_ = !noblanks;
+        my_doc_ = new XmlDocument(true);
         // Like htmlNewDocNoDtD (and the C version), printed as standalone="yes" when saved as xml.
-        myDoc_.setStandalone(1);
+        my_doc_.setStandalone(1);
     }
 
     /**
@@ -138,7 +138,7 @@ public final class HtmlParser
         if (content == null || content.isEmpty()) return null;
         HtmlParser p = new HtmlParser(content, noblanks);
         p.parseDocument();
-        return p.myDoc_;
+        return p.my_doc_;
     }
 
     /**
@@ -206,7 +206,7 @@ public final class HtmlParser
         pos_ += l;
     }
 
-    /** htmlCurrentChar, sets curLen_. */
+    /** htmlCurrentChar, sets cur_len_. */
     private int curChar()
     {
         if (eof_) return 0;
@@ -222,10 +222,10 @@ public final class HtmlParser
             case 4 -> val = ((c & 0x7) << 18) | ((nxt(1) & 0x3f) << 12) | ((nxt(2) & 0x3f) << 6) | (nxt(3) & 0x3f);
             default -> val = c;
             }
-            curLen_ = l;
+            cur_len_ = l;
             return val;
         }
-        curLen_ = 1;
+        cur_len_ = 1;
         if (c == 0 && pos_ < end_) return ' ';
         return c;
     }
@@ -261,7 +261,7 @@ public final class HtmlParser
     private void haltParser()
     {
         eof_ = true;
-        disableSAX_ = true;
+        disable_sax_ = true;
         in_ = new byte[PAD];
         pos_ = 0;
         end_ = 0;
@@ -328,40 +328,40 @@ public final class HtmlParser
     {
         if (html_ < 3 && value.equals("head")) html_ = 3;
         if (html_ < 10 && value.equals("body")) html_ = 10;
-        nameTab_.add(value);
+        name_tab_.add(value);
         name_ = value;
     }
 
     private String namePop()
     {
-        if (nameTab_.isEmpty()) return null;
-        String ret = nameTab_.remove(nameTab_.size() - 1);
-        name_ = nameTab_.isEmpty() ? null : nameTab_.get(nameTab_.size() - 1);
+        if (name_tab_.isEmpty()) return null;
+        String ret = name_tab_.remove(name_tab_.size() - 1);
+        name_ = name_tab_.isEmpty() ? null : name_tab_.get(name_tab_.size() - 1);
         return ret;
     }
 
     private int nameNr()
     {
-        return nameTab_.size();
+        return name_tab_.size();
     }
 
     private boolean nodePush(XmlNode n)
     {
-        if (nodeTab_.size() > MAX_DEPTH)
+        if (node_tab_.size() > MAX_DEPTH)
         {
             haltParser();
             return false;
         }
-        nodeTab_.add(n);
+        node_tab_.add(n);
         node_ = n;
         return true;
     }
 
     private void nodePop()
     {
-        if (nodeTab_.isEmpty()) return;
-        nodeTab_.remove(nodeTab_.size() - 1);
-        node_ = nodeTab_.isEmpty() ? null : nodeTab_.get(nodeTab_.size() - 1);
+        if (node_tab_.isEmpty()) return;
+        node_tab_.remove(node_tab_.size() - 1);
+        node_ = node_tab_.isEmpty() ? null : node_tab_.get(node_tab_.size() - 1);
     }
 
     private static boolean strEqual(String a, String b)
@@ -375,11 +375,11 @@ public final class HtmlParser
 
     private void flushText()
     {
-        if (pendingText_ != null)
+        if (pending_text_ != null)
         {
-            pendingText_.setContent(pendingSb_.toString());
-            pendingText_ = null;
-            pendingSb_ = null;
+            pending_text_.setContent(pending_sb_.toString());
+            pending_text_ = null;
+            pending_sb_ = null;
         }
     }
 
@@ -391,20 +391,20 @@ public final class HtmlParser
         XmlNode last = node_.last_;
         if (last != null && last.type() == type)
         {
-            if (pendingText_ != last)
+            if (pending_text_ != last)
             {
                 flushText();
-                pendingText_ = (XmlText)last;
-                pendingSb_ = new StringBuilder(last.content() == null ? "" : last.content());
+                pending_text_ = (XmlText)last;
+                pending_sb_ = new StringBuilder(last.content() == null ? "" : last.content());
             }
-            pendingSb_.append(s);
+            pending_sb_.append(s);
             return;
         }
         flushText();
         XmlText t = cdata ? new XmlCData(s) : new XmlText(s);
         node_.appendRaw(t);
-        pendingText_ = t;
-        pendingSb_ = new StringBuilder(s);
+        pending_text_ = t;
+        pending_sb_ = new StringBuilder(s);
     }
 
     private void characters(String s)
@@ -424,7 +424,7 @@ public final class HtmlParser
         XmlNode parent = node_;
         if (parent == null)
         {
-            myDoc_.appendRaw(n);
+            my_doc_.appendRaw(n);
         }
         else if (parent.type() == XmlNodeType.ELEMENT)
         {
@@ -457,13 +457,13 @@ public final class HtmlParser
         flushText();
         XmlNode parent = node_;
         XmlElement ret = new XmlElement(localName(fullname));
-        if (myDoc_.children_ == null)
+        if (my_doc_.children_ == null)
         {
-            myDoc_.appendRaw(ret);
+            my_doc_.appendRaw(ret);
         }
         else if (parent == null)
         {
-            parent = myDoc_.children_;
+            parent = my_doc_.children_;
         }
         if (!nodePush(ret))
         {
@@ -515,11 +515,11 @@ public final class HtmlParser
     }
 
     /** xmlSAX2InternalSubset */
-    private void internalSubset(String name, String externalId, String systemId)
+    private void internalSubset(String name, String external_id, String system_id)
     {
         flushText();
-        if (myDoc_.intSubset() != null) return;
-        myDoc_.setIntSubset(new XmlDtd(name, externalId, systemId));
+        if (my_doc_.intSubset() != null) return;
+        my_doc_.setIntSubset(new XmlDtd(name, external_id, system_id));
     }
 
     // -----------------------------------------------------------------
@@ -548,8 +548,8 @@ public final class HtmlParser
         int i;
         for (i = nameNr() - 1; i >= 0; i--)
         {
-            if (strEqual(newtag, nameTab_.get(i))) break;
-            if (endPriority(nameTab_.get(i)) > priority) return;
+            if (strEqual(newtag, name_tab_.get(i))) break;
+            if (endPriority(name_tab_.get(i)) > priority) return;
         }
         if (i < 0) return;
         while (!strEqual(newtag, name_))
@@ -607,8 +607,8 @@ public final class HtmlParser
             if (html_ >= 10) return;
             for (int i = 0; i < nameNr(); i++)
             {
-                if (nameTab_.get(i).equals("body")) return;
-                if (nameTab_.get(i).equals("head")) return;
+                if (name_tab_.get(i).equals("body")) return;
+                if (name_tab_.get(i).equals("head")) return;
             }
             namePush("body");
             startElement("body", null);
@@ -650,7 +650,7 @@ public final class HtmlParser
         if (name_.equals("head")) return true;
         if (name_.equals("body"))
         {
-            XmlDtd dtd = myDoc_.intSubset();
+            XmlDtd dtd = my_doc_.intSubset();
             if (dtd != null && dtd.externalId() != null)
             {
                 if (dtd.externalId().equalsIgnoreCase("-//W3C//DTD HTML 4.01//EN") ||
@@ -661,16 +661,16 @@ public final class HtmlParser
             }
         }
         if (node_ == null) return false;
-        XmlNode lastChild = node_.last_;
-        while (lastChild != null && lastChild.type() == XmlNodeType.COMMENT) lastChild = lastChild.prev_;
-        if (lastChild == null)
+        XmlNode last_child = node_.last_;
+        while (last_child != null && last_child.type() == XmlNodeType.COMMENT) last_child = last_child.prev_;
+        if (last_child == null)
         {
             for (String s : ALLOW_PCDATA)
             {
                 if (s.equals(name_)) return false;
             }
         }
-        else if (lastChild.type() == XmlNodeType.TEXT)
+        else if (last_child.type() == XmlNodeType.TEXT)
         {
             return false;
         }
@@ -678,7 +678,7 @@ public final class HtmlParser
         {
             for (String s : ALLOW_PCDATA)
             {
-                if (s.equals(lastChild.name())) return false;
+                if (s.equals(last_child.name())) return false;
             }
         }
         return true;
@@ -762,7 +762,7 @@ public final class HtmlParser
     {
         int len = 0;
         int c = curChar();
-        int l = curLen_;
+        int l = cur_len_;
         if (c == ' ' || c == '>' || c == '/' ||
             (!HtmlCharClasses.isLetter(c) && c != '_' && c != ':'))
         {
@@ -776,7 +776,7 @@ public final class HtmlParser
             len += l;
             nextl(l);
             c = curChar();
-            l = curLen_;
+            l = cur_len_;
         }
         return str(pos_ - len, len);
     }
@@ -798,9 +798,9 @@ public final class HtmlParser
                 }
                 else
                 {
-                    String[] nameOut = new String[1];
-                    int ent = parseEntityRef(nameOut);
-                    String name = nameOut[0];
+                    String[] name_out = new String[1];
+                    int ent = parseEntityRef(name_out);
+                    String name = name_out[0];
                     if (name == null)
                     {
                         out.add('&');
@@ -829,11 +829,11 @@ public final class HtmlParser
 
     /**
      * htmlParseEntityRef, returns the code point of the entity or -1 if
-     * not found. The name (if any) is stored in nameOut[0].
+     * not found. The name (if any) is stored in name_out[0].
      */
-    private int parseEntityRef(String[] nameOut)
+    private int parseEntityRef(String[] name_out)
     {
-        nameOut[0] = null;
+        name_out[0] = null;
         int ent = -1;
         if (cur() == '&')
         {
@@ -843,13 +843,13 @@ public final class HtmlParser
             {
                 if (cur() == ';')
                 {
-                    nameOut[0] = name;
+                    name_out[0] = name;
                     ent = HtmlEntityTable.lookup(name);
                     if (ent >= 0) next();
                 }
                 else
                 {
-                    nameOut[0] = name;
+                    name_out[0] = name;
                 }
             }
         }
@@ -887,7 +887,7 @@ public final class HtmlParser
         if (cur() != '"' && cur() != '\'') return null;
         int quote = cur();
         next();
-        int startPosition = pos_;
+        int start_position = pos_;
         while (cur() != 0 && cur() != quote)
         {
             int c = cur();
@@ -899,7 +899,7 @@ public final class HtmlParser
         if (cur() == quote)
         {
             next();
-            if (!err) ret = str(startPosition, len);
+            if (!err) ret = str(start_position, len);
         }
         return ret;
     }
@@ -912,7 +912,7 @@ public final class HtmlParser
         if (cur() != '"' && cur() != '\'') return null;
         int quote = cur();
         next();
-        int startPosition = pos_;
+        int start_position = pos_;
         while (cur() != 0 && cur() != quote)
         {
             if (!HtmlCharClasses.isPubidChar(cur())) err = true;
@@ -923,7 +923,7 @@ public final class HtmlParser
         if (cur() == quote)
         {
             next();
-            if (!err) ret = str(startPosition, len);
+            if (!err) ret = str(start_position, len);
         }
         return ret;
     }
@@ -933,7 +933,7 @@ public final class HtmlParser
     {
         ByteBuf buf = new ByteBuf();
         int c = curChar();
-        int l = curLen_;
+        int l = cur_len_;
         while (c != 0)
         {
             if (c == '<' && nxt(1) == '/')
@@ -951,9 +951,9 @@ public final class HtmlParser
             }
             nextl(l);
             c = curChar();
-            l = curLen_;
+            l = cur_len_;
         }
-        if (buf.n != 0 && !disableSAX_)
+        if (buf.n != 0 && !disable_sax_)
         {
             cdataBlock(buf.str());
         }
@@ -975,10 +975,10 @@ public final class HtmlParser
     /** Deliver a chunk of character data, used by htmlParseCharDataInternal. */
     private void deliverCharData(ByteBuf buf)
     {
-        if (disableSAX_) return;
+        if (disable_sax_) return;
         if (areBlanks(buf))
         {
-            if (keepBlanks_)
+            if (keep_blanks_)
             {
                 characters(buf.str());
             }
@@ -996,7 +996,7 @@ public final class HtmlParser
     {
         ByteBuf buf = new ByteBuf();
         int c = curChar();
-        int l = curLen_;
+        int l = cur_len_;
         while (c != '<' && c != '&' && c != 0)
         {
             if (HtmlCharClasses.isChar(c))
@@ -1010,7 +1010,7 @@ public final class HtmlParser
             }
             nextl(l);
             c = curChar();
-            l = curLen_;
+            l = cur_len_;
         }
         if (buf.n != 0)
         {
@@ -1022,11 +1022,11 @@ public final class HtmlParser
         }
     }
 
-    /** htmlParseExternalID, returns {uri, publicId} */
+    /** htmlParseExternalID, returns {uri, public_id} */
     private String[] parseExternalID()
     {
         String uri = null;
-        String publicId = null;
+        String public_id = null;
         if (upp(0) == 'S' && upp(1) == 'Y' && upp(2) == 'S' && upp(3) == 'T' && upp(4) == 'E' && upp(5) == 'M')
         {
             skip(6);
@@ -1037,14 +1037,14 @@ public final class HtmlParser
         {
             skip(6);
             skipBlanks();
-            publicId = parsePubidLiteral();
+            public_id = parsePubidLiteral();
             skipBlanks();
             if (cur() == '"' || cur() == '\'')
             {
                 uri = parseSystemLiteral();
             }
         }
-        return new String[] { uri, publicId };
+        return new String[] { uri, public_id };
     }
 
     /** htmlParsePI */
@@ -1059,13 +1059,13 @@ public final class HtmlParser
                 if (cur() == '>')
                 {
                     skip(1);
-                    if (!disableSAX_) addMisc(new XmlPI(target, null));
+                    if (!disable_sax_) addMisc(new XmlPI(target, null));
                     return;
                 }
                 ByteBuf buf = new ByteBuf();
                 skipBlanks();
                 int c = curChar();
-                int l = curLen_;
+                int l = cur_len_;
                 while (c != 0 && c != '>')
                 {
                     if (HtmlCharClasses.isChar(c))
@@ -1074,12 +1074,12 @@ public final class HtmlParser
                     }
                     nextl(l);
                     c = curChar();
-                    l = curLen_;
+                    l = cur_len_;
                 }
                 if (c == '>')
                 {
                     skip(1);
-                    if (!disableSAX_) addMisc(new XmlPI(target, buf.str()));
+                    if (!disable_sax_) addMisc(new XmlPI(target, buf.str()));
                 }
             }
         }
@@ -1092,20 +1092,20 @@ public final class HtmlParser
         skip(4);
         ByteBuf buf = new ByteBuf();
         int q = curChar();
-        int ql = curLen_;
+        int ql = cur_len_;
         if (q == 0) return;
         nextl(ql);
         int r = curChar();
-        int rl = curLen_;
+        int rl = cur_len_;
         if (r == 0) return;
         nextl(rl);
         int c = curChar();
-        int l = curLen_;
+        int l = cur_len_;
         while (c != 0 && (c != '>' || r != '-' || q != '-'))
         {
             nextl(l);
             int nx = curChar();
-            int nl = curLen_;
+            int nl = cur_len_;
             if (q == '-' && r == '-' && c == '!' && nx == '>')
             {
                 c = '>';
@@ -1125,7 +1125,7 @@ public final class HtmlParser
         if (c == '>')
         {
             next();
-            if (!disableSAX_) addMisc(new XmlComment(buf.str()));
+            if (!disable_sax_) addMisc(new XmlComment(buf.str()));
         }
     }
 
@@ -1195,7 +1195,7 @@ public final class HtmlParser
             while (cur() != 0 && cur() != '>') next();
         }
         if (cur() == '>') next();
-        if (!disableSAX_) internalSubset(name, ids[1], ids[0]);
+        if (!disable_sax_) internalSubset(name, ids[1], ids[0]);
     }
 
     /** htmlParseAttribute, returns {name, value} or null. */
@@ -1243,7 +1243,7 @@ public final class HtmlParser
         {
             for (int indx = 0; indx < nameNr(); indx++)
             {
-                if (nameTab_.get(indx).equals("body"))
+                if (name_tab_.get(indx).equals("body"))
                 {
                     discardtag = true;
                     depth_++;
@@ -1306,7 +1306,7 @@ public final class HtmlParser
         int i;
         for (i = nameNr() - 1; i >= 0; i--)
         {
-            if (name.equals(nameTab_.get(i))) break;
+            if (name.equals(name_tab_.get(i))) break;
         }
         if (i < 0) return false;
         autoCloseOnClose(name);
@@ -1333,9 +1333,9 @@ public final class HtmlParser
         }
         else
         {
-            String[] nameOut = new String[1];
-            int ent = parseEntityRef(nameOut);
-            String name = nameOut[0];
+            String[] name_out = new String[1];
+            int ent = parseEntityRef(name_out);
+            String name = name_out[0];
             if (name == null)
             {
                 checkParagraph();
@@ -1413,16 +1413,16 @@ public final class HtmlParser
     /** htmlParseContentInternal */
     private void parseContentInternal()
     {
-        String currentNode = name_;
+        String current_node = name_;
         int depth = nameNr();
         for (;;)
         {
             if (eof_) break;
             if (cur() == '<' && nxt(1) == '/')
             {
-                if (parseEndTag() && (currentNode != null || nameNr() == 0))
+                if (parseEndTag() && (current_node != null || nameNr() == 0))
                 {
-                    currentNode = name_;
+                    current_node = name_;
                     depth = nameNr();
                 }
                 continue;
@@ -1433,7 +1433,7 @@ public final class HtmlParser
                 if (name == null)
                 {
                     finishElementParsing();
-                    currentNode = name_;
+                    current_node = name_;
                     depth = nameNr();
                     continue;
                 }
@@ -1446,14 +1446,14 @@ public final class HtmlParser
                     }
                 }
             }
-            if (nameNr() > 0 && depth >= nameNr() && !strEqual(currentNode, name_))
+            if (nameNr() > 0 && depth >= nameNr() && !strEqual(current_node, name_))
             {
                 finishElementParsing();
-                currentNode = name_;
+                current_node = name_;
                 depth = nameNr();
                 continue;
             }
-            if (cur() != 0 && ("script".equals(currentNode) || "style".equals(currentNode)))
+            if (cur() != 0 && ("script".equals(current_node) || "style".equals(current_node)))
             {
                 parseScript();
             }
@@ -1474,12 +1474,12 @@ public final class HtmlParser
                 else if (cur() == '<' && isAsciiLetter(nxt(1)))
                 {
                     parseElementInternal();
-                    currentNode = name_;
+                    current_node = name_;
                     depth = nameNr();
                 }
                 else if (cur() == '<')
                 {
-                    if (!disableSAX_) characters("<");
+                    if (!disable_sax_) characters("<");
                     next();
                 }
                 else if (cur() == '&')
@@ -1528,9 +1528,9 @@ public final class HtmlParser
         parseContentInternal();
         if (cur() == 0) autoCloseOnEnd();
         flushText();
-        if (myDoc_.intSubset() == null)
+        if (my_doc_.intSubset() == null)
         {
-            myDoc_.setIntSubset(new XmlDtd("html",
+            my_doc_.setIntSubset(new XmlDtd("html",
                                            "-//W3C//DTD HTML 4.0 Transitional//EN",
                                            "http://www.w3.org/TR/REC-html40/loose.dtd"));
         }

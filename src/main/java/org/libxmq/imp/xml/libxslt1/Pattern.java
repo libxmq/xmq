@@ -91,9 +91,9 @@ final class Pattern
         String value3;
         XPath comp;
         // Optimisations for count.
-        int previousExtra;
-        int indexExtra;
-        int lenExtra;
+        int previous_extra;
+        int index_extra;
+        int len_extra;
     }
 
     /** A state of the pattern interpreter, for backtracking (XsltStepState in C). */
@@ -113,12 +113,12 @@ final class Pattern
     float priority;
     String pattern;
     String mode;
-    String modeUri;
+    String mode_uri;
     Template templ;
     XmlNode node;           // The containing element.
     int direct;
-    int nbStep;
-    Map<String, String> nsList; // The namespaces in scope.
+    int nb_step;
+    Map<String, String> ns_list; // The namespaces in scope.
     List<StepOp> steps = new ArrayList<>();
 
     /** The step i, a zeroed (OP_END) step beyond the steps like the calloced C array. */

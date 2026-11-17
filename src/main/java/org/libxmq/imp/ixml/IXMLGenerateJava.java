@@ -27,8 +27,8 @@ public final class IXMLGenerateJava
     private final IXMLGrammar grammar;
     private final String pkg, cls, source_name;
     private final Map<String, Integer> ids = new LinkedHashMap<>();
-    private final Map<String, Integer> setIds = new LinkedHashMap<>();
-    private final List<IXMLLookahead.Ranges> setList = new ArrayList<>();
+    private final Map<String, Integer> set_ids = new LinkedHashMap<>();
+    private final List<IXMLLookahead.Ranges> set_list = new ArrayList<>();
     private final StringBuilder out = new StringBuilder();
 
     private IXMLGenerateJava(IXMLAnalyzer analyzer, String pkg, String cls, String source_name)
@@ -103,10 +103,10 @@ public final class IXMLGenerateJava
      */
     String ruleFn(String name)
     {
-        return fnNames.get(name);
+        return fn_names.get(name);
     }
 
-    private final Map<String, String> fnNames = new HashMap<>();
+    private final Map<String, String> fn_names = new HashMap<>();
 
     void assignRuleFns()
     {
@@ -123,7 +123,7 @@ public final class IXMLGenerateJava
             String fn = "eat_" + b;
             String unique = fn;
             for (int k = 2; !taken.add(unique); k++) unique = fn + "_" + k;
-            fnNames.put(name, unique);
+            fn_names.put(name, unique);
         }
     }
 
@@ -136,12 +136,12 @@ public final class IXMLGenerateJava
     {
         IXMLLookahead.Ranges r = IXMLLookahead.Ranges.of(chars);
         String key = Arrays.toString(r.lo) + Arrays.toString(r.hi);
-        Integer id = setIds.get(key);
+        Integer id = set_ids.get(key);
         if (id == null)
         {
-            id = setList.size();
-            setIds.put(key, id);
-            setList.add(r);
+            id = set_list.size();
+            set_ids.put(key, id);
+            set_list.add(r);
         }
         return id;
     }
@@ -189,9 +189,9 @@ public final class IXMLGenerateJava
 
         header();
         out.append("    // Character sets: sorted inclusive code point ranges, and an ascii bitmap.\n");
-        for (int i = 0; i < setList.size(); i++)
+        for (int i = 0; i < set_list.size(); i++)
         {
-            IXMLLookahead.Ranges r = setList.get(i);
+            IXMLLookahead.Ranges r = set_list.get(i);
             StringBuilder data = new StringBuilder();
             long a0 = 0, a1 = 0;
             for (int j = 0; j < r.lo.length; j++)
@@ -254,13 +254,13 @@ public final class %1$s
     private final int n;
     private int pos;
     private final XmlDocument doc = new XmlDocument();
-    private final StringBuilder text = new StringBuilder(); // Pending text, not yet added to textNode.
-    private XmlElement textNode;
-    private int failPos;
-    private String failRule, failExpected, failMessage;
+    private final StringBuilder text = new StringBuilder(); // Pending text, not yet added to text_node.
+    private XmlElement text_node;
+    private int fail_pos;
+    private String fail_rule, fail_expected, fail_message;
     // Handed from a left recursive rule to its loop rule: where its content starts.
-    private XmlElement lrElem;
-    private int lrChildren, lrTextLen, lrAttrs;
+    private XmlElement lr_elem;
+    private int lr_children, lr_text_len, lr_attrs;
 
     private %1$s(int[] in)
     {
@@ -335,25 +335,25 @@ public final class %1$s
     // A dynamic error in the serialization of the tree, eg a duplicate attribute.
     private boolean failDynamic(String message)
     {
-        failPos = pos;
-        failMessage = message;
+        fail_pos = pos;
+        fail_message = message;
         return false;
     }
 
     private boolean fail(String rule, String expected)
     {
-        failPos = pos;
-        failRule = rule;
-        failExpected = expected;
+        fail_pos = pos;
+        fail_rule = rule;
+        fail_expected = expected;
         return false;
     }
 
     // Add the pending text to its node.
     private void flush()
     {
-        if (text.length() > 0 && textNode != null) textNode.addChild(new XmlText(text.toString()));
+        if (text.length() > 0 && text_node != null) text_node.addChild(new XmlText(text.toString()));
         text.setLength(0);
-        textNode = null;
+        text_node = null;
     }
 
     // Text goes into the attribute value being collected, or to the element.
@@ -361,7 +361,7 @@ public final class %1$s
     {
         if (attr != null) { attr.append(s); return; }
         if (elem == null) return;
-        if (elem != textNode) { flush(); textNode = elem; }
+        if (elem != text_node) { flush(); text_node = elem; }
         text.append(s);
     }
 
@@ -369,7 +369,7 @@ public final class %1$s
     {
         if (attr != null) { attr.appendCodePoint(c); return; }
         if (elem == null) return;
-        if (elem != textNode) { flush(); textNode = elem; }
+        if (elem != text_node) { flush(); text_node = elem; }
         text.appendCodePoint(c);
     }
 
@@ -385,19 +385,19 @@ public final class %1$s
 
     // Move the content added to the element since the mark into a new element,
     // added last. This builds the left nested tree of a left recursive rule.
-    private static void wrap(XmlElement target, int from, int textLen, int attrsFrom, String name)
+    private static void wrap(XmlElement target, int from, int text_len, int attrs_from, String name)
     {
         XmlElement w = new XmlElement(name);
         List<XmlNode> children = target.children();
-        if (textLen >= 0 && from > 0)
+        if (text_len >= 0 && from > 0)
         {
             // Text added after the mark may have been merged into the marked text node.
             XmlNode t = children.get(from - 1);
             String c = t.content();
-            if (c.length() > textLen)
+            if (c.length() > text_len)
             {
-                t.setContent(c.substring(0, textLen));
-                w.appendRaw(new XmlText(c.substring(textLen)));
+                t.setContent(c.substring(0, text_len));
+                w.appendRaw(new XmlText(c.substring(text_len)));
             }
         }
         for (int i = from; i < children.size(); i++)
@@ -407,7 +407,7 @@ public final class %1$s
             w.appendRaw(c);
         }
         List<XmlAttr> attrs = new ArrayList<>(target.attributes());
-        for (int i = attrsFrom; i < attrs.size(); i++)
+        for (int i = attrs_from; i < attrs.size(); i++)
         {
             target.removeAttribute(attrs.get(i));
             w.addAttribute(attrs.get(i));
@@ -444,27 +444,27 @@ public final class %1$s
         int id = ruleId(name);
         b.append("    // ").append(comment(name)).append('\n');
         b.append("    private boolean ").append(ruleFn(name)).append("(XmlElement elem, StringBuilder attr)\n    {\n");
-        if (r.lrTail != null)
+        if (r.lr_tail != null)
         {
             // Mark where the content of this left recursive rule starts.
-            b.append("        XmlElement lrE = attr != null ? null : elem;\n");
-            b.append("        int lrC = 0, lrT = -1, lrA = 0;\n");
-            b.append("        if (lrE != null)\n        {\n");
+            b.append("        XmlElement lr_e = attr != null ? null : elem;\n");
+            b.append("        int lr_c = 0, lr_t = -1, lr_a = 0;\n");
+            b.append("        if (lr_e != null)\n        {\n");
             b.append("            flush();\n");
-            b.append("            lrC = lrE.numChildren();\n");
-            b.append("            XmlNode last = lrE.lastChild();\n");
-            b.append("            lrT = last instanceof XmlText ? last.content().length() : -1;\n");
-            b.append("            lrA = lrE.attributes().size();\n");
+            b.append("            lr_c = lr_e.numChildren();\n");
+            b.append("            XmlNode last = lr_e.lastChild();\n");
+            b.append("            lr_t = last instanceof XmlText ? last.content().length() : -1;\n");
+            b.append("            lr_a = lr_e.attributes().size();\n");
             b.append("        }\n");
         }
-        if (r.lrOwner != null)
+        if (r.lr_owner != null)
         {
-            b.append("        XmlElement lrE = attr != null ? null : lrElem; // The content mark of ").append(comment(r.lrOwner)).append('\n');
-            b.append("        int lrC = lrChildren, lrT = lrTextLen, lrA = lrAttrs;\n");
+            b.append("        XmlElement lr_e = attr != null ? null : lr_elem; // The content mark of ").append(comment(r.lr_owner)).append('\n');
+            b.append("        int lr_c = lr_children, lr_t = lr_text_len, lr_a = lr_attrs;\n");
         }
         StringBuilder body = new StringBuilder();
         boolean loops;
-        if (r.lrOwner == null && genCharLoop(body, r))
+        if (r.lr_owner == null && genCharLoop(body, r))
         {
             loops = false;
         }
@@ -479,11 +479,11 @@ public final class %1$s
             for (int a = 0; a < r.alternatives.size(); a++)
             {
                 body.append("            case ").append(a).append(":\n            {\n");
-                if (r.lrWrap != null && r.lrWrap.get(a) != null)
+                if (r.lr_wrap != null && r.lr_wrap.get(a) != null)
                 {
                     // Another turn of the loop, the content so far becomes the inner element.
-                    body.append("                if (lrE != null) { flush(); wrap(lrE, lrC, lrT, lrA, ")
-                        .append(jstring(r.lrWrap.get(a))).append("); }\n");
+                    body.append("                if (lr_e != null) { flush(); wrap(lr_e, lr_c, lr_t, lr_a, ")
+                        .append(jstring(r.lr_wrap.get(a))).append("); }\n");
                 }
                 loops |= genAlt(body, r, r.alternatives.get(a), "                ");
                 body.append("            }\n");
@@ -529,16 +529,16 @@ public final class %1$s
         Term m = r.alternatives.get(loop).get(0);
         BitSet extra = (BitSet)take.clone();
         extra.andNot(m.chars);
-        int takeId = setId(take);
+        int take_id = setId(take);
         b.append("            // Greedy loop over a character table.\n");
         b.append("            for (;;)\n            {\n");
         b.append("                int c = peek(pos);\n");
-        b.append("                if (").append(inset(takeId, "c")).append(")\n                {\n");
+        b.append("                if (").append(inset(take_id, "c")).append(")\n                {\n");
         if (!extra.isEmpty())
         {
             int sid = setId(m.chars);
             b.append("                    if (!").append(inset(sid, "c")).append(") ")
-             .append(fail(r, IXMLGenerateC.describe(setList.get(sid)))).append('\n');
+             .append(fail(r, IXMLGenerateC.describe(set_list.get(sid)))).append('\n');
         }
         if (!m.mark.equals("-")) b.append("                    chr(elem, attr, c);\n");
         b.append("                    pos++;\n                    continue;\n                }\n");
@@ -546,8 +546,8 @@ public final class %1$s
         all.or(stop);
         if (!IXMLGenerateC.coversAll(all))
         {
-            int stopId = setId(stop);
-            b.append("                if (!").append(inset(stopId, "c")).append(") ").append(fail(r, null)).append('\n');
+            int stop_id = setId(stop);
+            b.append("                if (!").append(inset(stop_id, "c")).append(") ").append(fail(r, null)).append('\n');
         }
         b.append("                return true;\n            }\n");
         return true;
@@ -564,7 +564,7 @@ public final class %1$s
             {
                 int sid = setId(t.chars);
                 b.append(ind).append("if (!").append(inset(sid, "peek(pos)")).append(") ")
-                 .append(fail(r, IXMLGenerateC.describe(setList.get(sid)))).append('\n');
+                 .append(fail(r, IXMLGenerateC.describe(set_list.get(sid)))).append('\n');
                 if (!t.mark.equals("-")) b.append(ind).append("chr(elem, attr, in[pos]);\n");
                 b.append(ind).append("pos++;\n");
             }
@@ -581,9 +581,9 @@ public final class %1$s
                         b.append(ind).append("continue start; // ").append(comment(t.ref)).append('\n');
                         return true;
                     }
-                    if (callee.lrOwner != null)
+                    if (callee.lr_owner != null)
                     {
-                        b.append(ind).append("lrElem = lrE; lrChildren = lrC; lrTextLen = lrT; lrAttrs = lrA;\n");
+                        b.append(ind).append("lr_elem = lr_e; lr_children = lr_c; lr_text_len = lr_t; lr_attrs = lr_a;\n");
                     }
                     b.append(ind).append("if (!").append(fn).append("(elem, attr)) return false; // ").append(comment(t.ref)).append('\n');
                 }
@@ -616,7 +616,7 @@ public final class %1$s
                 {
                     int sid = setId(t.not.get(k));
                     cond.append(" && ").append(inset(sid, "in[pos + " + k + "]"));
-                    what.append(' ').append(IXMLGenerateC.describe(setList.get(sid)));
+                    what.append(' ').append(IXMLGenerateC.describe(set_list.get(sid)));
                 }
                 b.append(ind).append("if (").append(len == 0 ? "true" : cond).append(") ").append(fail(r, what.toString())).append('\n');
             }
@@ -655,19 +655,19 @@ public final class %1$s
             return p.doc;
         }
         int line = 1, col = 1;
-        for (int i = 0; i < p.failPos && i < p.n; i++)
+        for (int i = 0; i < p.fail_pos && i < p.n; i++)
         {
             if (p.in[i] == '\\n') { line++; col = 1; } else col++;
         }
-        int c = p.peek(p.failPos);
+        int c = p.peek(p.fail_pos);
         String found = c == EOF ? "end of input"
             : (c > 0x20 && c < 0x7f && c != 0x27) ? "'" + (char)c + "'"
             : c == ' ' ? "space" : "#" + Integer.toHexString(c);
-        String rule = p.failRule != null ? p.failRule : "input";
-        String message = p.failMessage != null ? p.failMessage : p.failExpected != null
-            ? "expected " + p.failExpected + " in " + rule + ", found " + found
+        String rule = p.fail_rule != null ? p.fail_rule : "input";
+        String message = p.fail_message != null ? p.fail_message : p.fail_expected != null
+            ? "expected " + p.fail_expected + " in " + rule + ", found " + found
             : "no alternative of " + rule + " matches, found " + found;
-        throw new ParseError(message, line, col, p.failPos);
+        throw new ParseError(message, line, col, p.fail_pos);
     }
 
     /**

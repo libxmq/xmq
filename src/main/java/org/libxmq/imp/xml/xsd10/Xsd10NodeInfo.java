@@ -55,46 +55,46 @@ import org.libxmq.imp.xml.XmlRegExecCtxt;
 /** Holds information of an element node (libxml2 xmlSchemaNodeInfo). (C {@code XmlXsd10NodeInfo}). */
 public class Xsd10NodeInfo
 {
-    /** C {@code int nodeType}. */
-    int nodeType;
+    /** C {@code int node_type}. */
+    int node_type;
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** C {@code int nodeLine}. */
-    int nodeLine;
+    int node_line;
     /** C {@code const char * localName}. */
-    String localName;
-    /** C {@code const char * nsName}. */
-    String nsName;
+    String local_name;
+    /** C {@code const char * ns_name}. */
+    String ns_name;
     /** C {@code const char * value}. */
     String value;
     /** the pre-computed value if any */
     Xsd10Val val;
     /** the complex/simple type definition if any */
-    Xsd10Type typeDef;
+    Xsd10Type type_def;
     /** combination of node info flags */
     int flags;
-    /** C {@code int valNeeded}. */
-    int valNeeded;
-    /** C {@code int normVal}. */
-    int normVal;
+    /** C {@code int val_needed}. */
+    int val_needed;
+    /** C {@code int norm_val}. */
+    int norm_val;
     /** the element/attribute declaration */
     Xsd10Element decl;
     /** C {@code int depth}. */
     int depth;
-    /** C {@code XmlXsd10PSVIIDCBinding * idcTable}. */
-    Xsd10PSVIIDCBinding idcTable;
-    /** C {@code XmlXsd10IDCMatcher * idcMatchers}. */
-    Xsd10IDCMatcher idcMatchers;
-    /** C {@code XmlRegExecCtxt * regexCtxt}. */
-    XmlRegExecCtxt regexCtxt;
+    /** C {@code XmlXsd10PSVIIDCBinding * idc_table}. */
+    Xsd10PSVIIDCBinding idc_table;
+    /** C {@code XmlXsd10IDCMatcher * idc_matchers}. */
+    Xsd10IDCMatcher idc_matchers;
+    /** C {@code XmlRegExecCtxt * regex_ctxt}. */
+    XmlRegExecCtxt regex_ctxt;
     /** Namespace bindings on this element */
-    String[] nsBindings;
-    /** C {@code int nbNsBindings}. */
-    int nbNsBindings;
-    /** C {@code int sizeNsBindings}. */
-    int sizeNsBindings;
-    /** C {@code int hasKeyrefs}. */
-    int hasKeyrefs;
+    String[] ns_bindings;
+    /** C {@code int nb_ns_bindings}. */
+    int nb_ns_bindings;
+    /** C {@code int size_ns_bindings}. */
+    int size_ns_bindings;
+    /** C {@code int has_keyrefs}. */
+    int has_keyrefs;
     /** Indicates that an XPath has been applied. */
-    int appliedXPath;
+    int applied_x_path;
 }

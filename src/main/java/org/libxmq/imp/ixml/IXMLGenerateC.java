@@ -29,8 +29,8 @@ public final class IXMLGenerateC
     private final String prefix;
     private final String source_name;
     private final Map<String, Integer> ids = new LinkedHashMap<>();
-    private final Map<String, Integer> setIds = new LinkedHashMap<>(); // ranges text -> id
-    private final List<IXMLLookahead.Ranges> setList = new ArrayList<>();
+    private final Map<String, Integer> set_ids = new LinkedHashMap<>(); // ranges text -> id
+    private final List<IXMLLookahead.Ranges> set_list = new ArrayList<>();
     private final StringBuilder out = new StringBuilder();
 
     private IXMLGenerateC(IXMLAnalyzer analyzer, String prefix, String source_name)
@@ -88,10 +88,10 @@ public final class IXMLGenerateC
      */
     String ruleFn(String name)
     {
-        return fnNames.get(name);
+        return fn_names.get(name);
     }
 
-    private final Map<String, String> fnNames = new HashMap<>();
+    private final Map<String, String> fn_names = new HashMap<>();
 
     void assignRuleFns()
     {
@@ -108,7 +108,7 @@ public final class IXMLGenerateC
             String fn = prefix + "_eat_" + b;
             String unique = fn;
             for (int k = 2; !taken.add(unique); k++) unique = fn + "_" + k;
-            fnNames.put(name, unique);
+            fn_names.put(name, unique);
         }
     }
 
@@ -121,12 +121,12 @@ public final class IXMLGenerateC
     {
         IXMLLookahead.Ranges r = IXMLLookahead.Ranges.of(chars);
         String key = Arrays.toString(r.lo) + Arrays.toString(r.hi);
-        Integer id = setIds.get(key);
+        Integer id = set_ids.get(key);
         if (id == null)
         {
-            id = setList.size();
-            setIds.put(key, id);
-            setList.add(r);
+            id = set_list.size();
+            set_ids.put(key, id);
+            set_list.add(r);
         }
         return id;
     }
@@ -224,9 +224,9 @@ public final class IXMLGenerateC
         header();
         // Character sets.
         out.append("// Character sets, sorted inclusive code point ranges.\n");
-        for (int i = 0; i < setList.size(); i++)
+        for (int i = 0; i < set_list.size(); i++)
         {
-            IXMLLookahead.Ranges r = setList.get(i);
+            IXMLLookahead.Ranges r = set_list.get(i);
             out.append("static const int ").append(prefix).append("_set_").append(i).append("[] = {");
             for (int j = 0; j < r.lo.length; j++)
             {
@@ -489,28 +489,28 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         b.append("// ").append(comment(name)).append('\n');
         b.append("static bool ").append(ruleFn(name)).append("(").append(P)
          .append("_Parser *p, void *elem, ").append(P).append("_Buf *attr)\n{\n");
-        boolean usesStart = false;
+        boolean uses_start = false;
         StringBuilder body = new StringBuilder();
-        if (r.lrTail != null)
+        if (r.lr_tail != null)
         {
             // Mark where the content of this left recursive rule starts.
             b.append("    void *lr_elem = attr ? NULL : elem;\n");
             b.append("    XMQ_MARK_TYPE lr_mark = {0};\n");
             b.append("    if (lr_elem) { ").append(P).append("_flush(p); lr_mark = XMQ_CONTENT_MARK(p->ctx, lr_elem); }\n");
         }
-        if (r.lrOwner != null)
+        if (r.lr_owner != null)
         {
-            b.append("    void *lr_elem = p->lr_elem; // The content mark of ").append(comment(r.lrOwner)).append('\n');
+            b.append("    void *lr_elem = p->lr_elem; // The content mark of ").append(comment(r.lr_owner)).append('\n');
             b.append("    XMQ_MARK_TYPE lr_mark = p->lr_mark;\n");
             b.append("    if (attr) lr_elem = NULL;\n");
         }
-        if (r.lrOwner == null && genCharLoop(body, r))
+        if (r.lr_owner == null && genCharLoop(body, r))
         {
             // Done.
         }
         else if (r.alternatives.size() == 1)
         {
-            usesStart = genAlt(body, r, 0, r.alternatives.get(0), "    ");
+            uses_start = genAlt(body, r, 0, r.alternatives.get(0), "    ");
         }
         else
         {
@@ -518,19 +518,19 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
             for (int a = 0; a < r.alternatives.size(); a++)
             {
                 body.append("    case ").append(a).append(":\n    {\n");
-                if (r.lrWrap != null && r.lrWrap.get(a) != null)
+                if (r.lr_wrap != null && r.lr_wrap.get(a) != null)
                 {
                     // Another turn of the loop, the content so far becomes the inner element.
                     body.append("        if (lr_elem) { ").append(P).append("_flush(p); XMQ_WRAP_CONTENT(p->ctx, lr_elem, lr_mark, ")
-                        .append(cstring(r.lrWrap.get(a))).append("); }\n");
+                        .append(cstring(r.lr_wrap.get(a))).append("); }\n");
                 }
-                usesStart |= genAlt(body, r, a, r.alternatives.get(a), "        ");
+                uses_start |= genAlt(body, r, a, r.alternatives.get(a), "        ");
                 body.append("    }\n");
             }
             body.append("    default:\n        return ").append(P).append("_fail(p, ").append(cstring(displayName(r)))
                 .append(", NULL);\n    }\n");
         }
-        if (usesStart) b.append("start:\n");
+        if (uses_start) b.append("start:\n");
         b.append(body);
         b.append("}\n\n");
     }
@@ -538,7 +538,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
     /** A call of _inset for the character set with id sid. */
     String inset(int sid, String c)
     {
-        return prefix + "_inset(" + prefix + "_set_" + sid + ", " + setList.get(sid).lo.length + ", "
+        return prefix + "_inset(" + prefix + "_set_" + sid + ", " + set_list.get(sid).lo.length + ", "
             + prefix + "_ascii_" + sid + ", " + c + ")";
     }
 
@@ -578,17 +578,17 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         Term m = r.alternatives.get(loop).get(0);
         BitSet extra = (BitSet)take.clone();
         extra.andNot(m.chars);
-        int takeId = setId(take);
+        int take_id = setId(take);
         b.append("    // Greedy loop over a character table.\n");
         b.append("    for (;;)\n    {\n");
         b.append("        int c = ").append(P).append("_peek(p, p->pos);\n");
-        b.append("        if (").append(inset(takeId, "c")).append(")\n        {\n");
+        b.append("        if (").append(inset(take_id, "c")).append(")\n        {\n");
         if (!extra.isEmpty())
         {
             // The prediction also takes symbols that the match rejects (a syntax error).
             int sid = setId(m.chars);
             b.append("            if (!").append(inset(sid, "c")).append(") return ").append(P).append("_fail(p, ")
-             .append(cstring(displayName(r))).append(", ").append(cstring(describe(setList.get(sid)))).append(");\n");
+             .append(cstring(displayName(r))).append(", ").append(cstring(describe(set_list.get(sid)))).append(");\n");
         }
         if (!m.mark.equals("-")) b.append("            ").append(P).append("_char(p, elem, attr, c);\n");
         b.append("            p->pos++;\n            continue;\n        }\n");
@@ -596,8 +596,8 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         all.or(stop);
         if (!coversAll(all))
         {
-            int stopId = setId(stop);
-            b.append("        if (!").append(inset(stopId, "c")).append(") return ").append(P).append("_fail(p, ")
+            int stop_id = setId(stop);
+            b.append("        if (!").append(inset(stop_id, "c")).append(") return ").append(P).append("_fail(p, ")
              .append(cstring(displayName(r))).append(", NULL);\n");
         }
         b.append("        return true;\n    }\n");
@@ -632,7 +632,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         List<Integer> site0 = new ArrayList<>(), sites = new ArrayList<>(), pred0 = new ArrayList<>(), predsets = new ArrayList<>();
         List<Integer> cost = new ArrayList<>();
         // The predicates in the order of IXMLLookahead.preds (rule, alt, term order).
-        Map<Integer, List<BitSet>> predBits = new TreeMap<>();
+        Map<Integer, List<BitSet>> pred_bits = new TreeMap<>();
         for (int ri = 0; ri < nrules; ri++)
         {
             Rule rule = grammar.rules.get(la.names[ri]);
@@ -649,14 +649,14 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
                     else if (term.not != null)
                     {
                         kind.add(2);
-                        arg.add(la.predIds[ri][a][t]);
-                        predBits.put(la.predIds[ri][a][t], term.not);
+                        arg.add(la.pred_ids[ri][a][t]);
+                        pred_bits.put(la.pred_ids[ri][a][t], term.not);
                     }
                     else { kind.add(3); arg.add(0); }
                 }
             }
             site0.add(sites.size() / 3);
-            for (int[] s : la.callSites[ri]) { sites.add(s[0]); sites.add(s[1]); sites.add(s[2]); }
+            for (int[] s : la.call_sites[ri]) { sites.add(s[0]); sites.add(s[1]); sites.add(s[2]); }
             if (rule == null) throw new IllegalStateException("No rule " + la.names[ri]);
         }
         alt0.add(term0.size());
@@ -665,7 +665,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         for (int pi = 0; pi < la.preds.size(); pi++)
         {
             pred0.add(predsets.size());
-            for (BitSet bs : predBits.getOrDefault(pi, List.of())) predsets.add(setId(bs));
+            for (BitSet bs : pred_bits.getOrDefault(pi, List.of())) predsets.add(setId(bs));
         }
         pred0.add(predsets.size());
 
@@ -684,13 +684,13 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
         table(b, "pred0", pred0);
         table(b, "predsets", predsets);
         b.append("static const int *const ").append(P).append("_atn_set[] = {");
-        for (int i = 0; i < setList.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_set_").append(i).append(',');
+        for (int i = 0; i < set_list.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_set_").append(i).append(',');
         b.append("\n};\n");
         b.append("static const int ").append(P).append("_atn_setn[] = {");
-        for (int i = 0; i < setList.size(); i++) b.append(i % 16 == 0 ? "\n    " : " ").append(setList.get(i).lo.length).append(',');
+        for (int i = 0; i < set_list.size(); i++) b.append(i % 16 == 0 ? "\n    " : " ").append(set_list.get(i).lo.length).append(',');
         b.append("\n};\n");
         b.append("static const unsigned char *const ").append(P).append("_atn_ascii[] = {");
-        for (int i = 0; i < setList.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_ascii_").append(i).append(',');
+        for (int i = 0; i < set_list.size(); i++) b.append(i % 8 == 0 ? "\n    " : " ").append(P).append("_ascii_").append(i).append(',');
         b.append("\n};\n");
         b.append(IXMLRuntimeC.code(P));
     }
@@ -715,7 +715,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
             if (t.chars != null)
             {
                 int sid = setId(t.chars);
-                IXMLLookahead.Ranges rs = setList.get(sid);
+                IXMLLookahead.Ranges rs = set_list.get(sid);
                 b.append(ind).append("if (!").append(inset(sid, P + "_peek(p, p->pos)")).append(") return ").append(P)
                  .append("_fail(p, ").append(cstring(displayName(r))).append(", ").append(cstring(describe(rs))).append(");\n");
                 if (!t.mark.equals("-"))
@@ -738,7 +738,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
                         loops = true;
                         return loops;
                     }
-                    if (callee.lrOwner != null)
+                    if (callee.lr_owner != null)
                     {
                         b.append(ind).append("p->lr_elem = lr_elem;\n");
                         b.append(ind).append("p->lr_mark = lr_mark;\n");
@@ -794,7 +794,7 @@ static bool %1$s_fail_dynamic(%1$s_Parser *p, const char *message)
                 {
                     int sid = setId(t.not.get(k));
                     cond.append(" && ").append(inset(sid, "p->in[p->pos + " + k + "]"));
-                    what.append(' ').append(describe(setList.get(sid)));
+                    what.append(' ').append(describe(set_list.get(sid)));
                 }
                 if (len == 0) cond.setLength(0);
                 b.append(ind).append("if (").append(len == 0 ? "true" : cond).append(") return ").append(P)

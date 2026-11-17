@@ -111,9 +111,9 @@ public final class Xslt
 
     private static void emit(Settings s, String msg)
     {
-        if (s != null && s.messageCallback != null)
+        if (s != null && s.message_callback != null)
         {
-            s.messageCallback.message(msg);
+            s.message_callback.message(msg);
         }
         else
         {
@@ -366,11 +366,11 @@ public final class Xslt
         return st;
     }
 
-    static XPath xpathCompile(Settings s, XmlNode elem, String str, boolean noVariables)
+    static XPath xpathCompile(Settings s, XmlNode elem, String str, boolean no_variables)
     {
         Map<String, String> nss = elem != null ? nsList(elem) : null;
         XPathSettings st = xpathSettings(nss);
-        st.noVariables = noVariables;
+        st.no_variables = no_variables;
         try
         {
             return XPath.compile(str, st);
@@ -384,14 +384,14 @@ public final class Xslt
 
     private static int allocateExtra(Stylesheet style)
     {
-        return style.extrasNr++;
+        return style.extras_nr++;
     }
 
     /** Port of xsltAllocateExtraCtxt. */
     static int allocateExtraCtxt(TransformCtx t)
     {
-        while (t.extras.size() <= t.extrasNr) t.extras.add(new RuntimeExtra());
-        return t.extrasNr++;
+        while (t.extras.size() <= t.extras_nr) t.extras.add(new RuntimeExtra());
+        return t.extras_nr++;
     }
 
     /** XSLT_RUNTIME_EXTRA(t, nr). */
@@ -461,15 +461,15 @@ public final class Xslt
         s.value2 = value2;
         if (ctxt.ctxt != null)
         {
-            s.previousExtra = allocateExtraCtxt(ctxt.ctxt);
-            s.indexExtra = allocateExtraCtxt(ctxt.ctxt);
-            s.lenExtra = allocateExtraCtxt(ctxt.ctxt);
+            s.previous_extra = allocateExtraCtxt(ctxt.ctxt);
+            s.index_extra = allocateExtraCtxt(ctxt.ctxt);
+            s.len_extra = allocateExtraCtxt(ctxt.ctxt);
         }
         else
         {
-            s.previousExtra = allocateExtra(ctxt.style);
-            s.indexExtra = allocateExtra(ctxt.style);
-            s.lenExtra = allocateExtra(ctxt.style);
+            s.previous_extra = allocateExtra(ctxt.style);
+            s.index_extra = allocateExtra(ctxt.style);
+            s.len_extra = allocateExtra(ctxt.style);
         }
         if (op == Pattern.OP_PREDICATE)
         {
@@ -480,14 +480,14 @@ public final class Xslt
                 if (ctxt.style != null) ctxt.style.errors++;
             }
         }
-        comp.nbStep++;
+        comp.nb_step++;
         return 0;
     }
 
     /** Port of xsltSwapTopCompMatch: reverse the two top steps. */
     private static void swapTopCompMatch(Pattern comp)
     {
-        int j = comp.nbStep - 1;
+        int j = comp.nb_step - 1;
         if (j > 0) Collections.swap(comp.steps, j - 1, j);
     }
 
@@ -495,7 +495,7 @@ public final class Xslt
     private static void reverseCompMatch(ParserContext ctxt, Pattern comp)
     {
         int i = 0;
-        int j = comp.nbStep - 1;
+        int j = comp.nb_step - 1;
         while (j > i)
         {
             Collections.swap(comp.steps, i, j);
@@ -505,7 +505,7 @@ public final class Xslt
         compMatchAdd(ctxt, comp, Pattern.OP_END, null, null, 0);
 
         // Consecutive predicates: match by evaluating the whole pattern.
-        for (i = 0; i < comp.nbStep - 1; i++)
+        for (i = 0; i < comp.nb_step - 1; i++)
         {
             if (comp.steps.get(i).op == Pattern.OP_PREDICATE && comp.steps.get(i + 1).op == Pattern.OP_PREDICATE)
             {
@@ -534,9 +534,9 @@ public final class Xslt
 
     /** Evaluate an expression with namespaces from a pattern, like libxml2 xmlXPathEval with the
         namespaces of the xpath context set to nsList. */
-    private static XPathResult evalWithNs(TransformCtx t, String expr, Map<String, String> nsList, XmlNode node, long position, long size)
+    private static XPathResult evalWithNs(TransformCtx t, String expr, Map<String, String> ns_list, XmlNode node, long position, long size)
     {
-        XPathSettings st = xpathSettings(nsList);
+        XPathSettings st = xpathSettings(ns_list);
         XPath comp;
         try
         {
@@ -557,32 +557,32 @@ public final class Xslt
     }
 
     /** Port of xsltTestCompMatchDirect: evaluate the pattern as an expression and look for the node. */
-    private static int testCompMatchDirect(TransformCtx t, Pattern comp, XmlNode node, Map<String, String> nsList)
+    private static int testCompMatchDirect(TransformCtx t, Pattern comp, XmlNode node, Map<String, String> ns_list)
     {
         XmlDocument doc = nodeDom(node);
-        boolean isRvt = Transform.isRtf(t, doc);
+        boolean is_rvt = Transform.isRtf(t, doc);
         Pattern.StepOp sel = comp.steps.get(0); // Store extra in first step arbitrarily.
         boolean nocache = false;
 
-        XmlDocument prevdoc = (XmlDocument)extra(t, sel.previousExtra).ptr;
-        XPathResult list = (XPathResult)extra(t, sel.lenExtra).info;
+        XmlDocument prevdoc = (XmlDocument)extra(t, sel.previous_extra).ptr;
+        XPathResult list = (XPathResult)extra(t, sel.len_extra).info;
 
         if (list == null || prevdoc != doc)
         {
             XmlNode parent = nodeParent(node);
-            XPathResult newlist = evalWithNs(t, comp.pattern, nsList, node, t.xpPosition, t.xpSize);
+            XPathResult newlist = evalWithNs(t, comp.pattern, ns_list, node, t.xp_position, t.xp_size);
             if (newlist == null) return -1;
             if (newlist.type() != XPathResult.NODESET)
             {
                 return -1;
             }
-            if (parent == null || isRvt) nocache = true;
+            if (parent == null || is_rvt) nocache = true;
             if (!nocache)
             {
                 list = newlist;
-                extra(t, sel.lenExtra).info = list;
-                extra(t, sel.previousExtra).ptr = doc;
-                extra(t, sel.indexExtra).ival = 0;
+                extra(t, sel.len_extra).info = list;
+                extra(t, sel.previous_extra).ptr = doc;
+                extra(t, sel.index_extra).ival = 0;
             }
             else
             {
@@ -720,7 +720,7 @@ public final class Xslt
         XPathResult res;
         try
         {
-            res = t.xpath.eval(comp, t.node, t.xpPosition, t.xpSize);
+            res = t.xpath.eval(comp, t.node, t.xp_position, t.xp_size);
         }
         catch (XPathException err)
         {
@@ -730,7 +730,7 @@ public final class Xslt
         if (res != null)
         {
             // libxml2 xmlXPathEvalPredicate.
-            if (res.type() == XPathResult.NUMBER) ret = res.numberValue() == (double)t.xpPosition ? 1 : 0;
+            if (res.type() == XPathResult.NUMBER) ret = res.numberValue() == (double)t.xp_position ? 1 : 0;
             else ret = res.castToBoolean() ? 1 : 0;
         }
         else
@@ -748,14 +748,14 @@ public final class Xslt
         if (step.value == null || step.comp == null || sel == null) return 0;
 
         XmlDocument doc = nodeDom(node);
-        boolean isRvt = Transform.isRtf(t, doc);
+        boolean is_rvt = Transform.isRtf(t, doc);
 
         // Recompute the context size and position.
-        long oldCs = t.xpSize;
-        long oldCp = t.xpPosition;
+        long old_cs = t.xp_size;
+        long old_cp = t.xp_position;
         {
             boolean nocache = false;
-            XmlNode previous = (XmlNode)extra(t, sel.previousExtra).ptr;
+            XmlNode previous = (XmlNode)extra(t, sel.previous_extra).ptr;
             if (previous != null && nodeParent(previous) == nodeParent(node))
             {
                 // Just walk back to adjust the index.
@@ -781,13 +781,13 @@ public final class Xslt
                 }
                 if (sibling != null)
                 {
-                    pos = extra(t, sel.indexExtra).ival + indx;
+                    pos = extra(t, sel.index_extra).ival + indx;
                     // In a result tree fragment len is kept but the node cannot be cached.
-                    len = extra(t, sel.lenExtra).ival;
-                    if (!isRvt)
+                    len = extra(t, sel.len_extra).ival;
+                    if (!is_rvt)
                     {
-                        extra(t, sel.previousExtra).ptr = node;
-                        extra(t, sel.indexExtra).ival = pos;
+                        extra(t, sel.previous_extra).ptr = node;
+                        extra(t, sel.index_extra).ival = pos;
                     }
                 }
                 else
@@ -828,26 +828,26 @@ public final class Xslt
             }
             if (pos != 0)
             {
-                t.xpSize = len;
-                t.xpPosition = pos;
-                if (!isRvt && !nocache)
+                t.xp_size = len;
+                t.xp_position = pos;
+                if (!is_rvt && !nocache)
                 {
-                    extra(t, sel.previousExtra).ptr = node;
-                    extra(t, sel.indexExtra).ival = pos;
-                    extra(t, sel.lenExtra).ival = len;
+                    extra(t, sel.previous_extra).ptr = node;
+                    extra(t, sel.index_extra).ival = pos;
+                    extra(t, sel.len_extra).ival = len;
                 }
             }
         }
 
-        XmlNode oldNode = t.node;
+        XmlNode old_node = t.node;
         t.node = node;
         int match = evalXpathPredicate(t, step.comp);
         if (pos != 0)
         {
-            t.xpSize = oldCs;
-            t.xpPosition = oldCp;
+            t.xp_size = old_cs;
+            t.xp_position = old_cp;
         }
-        t.node = oldNode;
+        t.node = old_node;
         return match;
     }
 
@@ -865,11 +865,11 @@ public final class Xslt
     }
 
     /** Port of xsltTestCompMatch. Returns 1 if the node matches, 0 if not, -1 on an error. */
-    private static int testCompMatch(TransformCtx t, Pattern comp, XmlNode matchNode, String mode, String modeUri)
+    private static int testCompMatch(TransformCtx t, Pattern comp, XmlNode match_node, String mode, String mode_uri)
     {
         int i;
         int found = 0;
-        XmlNode node = matchNode;
+        XmlNode node = match_node;
         Pattern.StepOp step, sel = null;
         List<Pattern.StepState> states = new ArrayList<>();
 
@@ -879,10 +879,10 @@ public final class Xslt
             return -1;
         }
         if (!streq(comp.mode, mode)) return 0;
-        if (!streq(comp.modeUri, modeUri)) return 0;
+        if (!streq(comp.mode_uri, mode_uri)) return 0;
 
         // Some XPath functions rely on inst being set correctly.
-        XmlNode oldInst = t.inst;
+        XmlNode old_inst = t.inst;
         t.inst = comp.node;
 
         // The gotos of the C version: what to do after the loop over the steps.
@@ -893,7 +893,7 @@ public final class Xslt
         {
             int go = GO_FOUND;
             steps:
-            for (; i < comp.nbStep; i++)
+            for (; i < comp.nb_step; i++)
             {
                 step = comp.steps.get(i);
                 if (step.op != Pattern.OP_PREDICATE) sel = step;
@@ -963,7 +963,7 @@ public final class Xslt
                     // evaluate the whole pattern.
                     if (comp.direct != 0)
                     {
-                        found = testCompMatchDirect(t, comp, matchNode, comp.nsList);
+                        found = testCompMatchDirect(t, comp, match_node, comp.ns_list);
                         go = GO_EXIT;
                         break steps;
                     }
@@ -990,7 +990,7 @@ public final class Xslt
             i = st.step;
             node = st.node;
         }
-        t.inst = oldInst;
+        t.inst = old_inst;
         return found;
     }
 
@@ -1011,14 +1011,14 @@ public final class Xslt
     /** Port of xsltCompMatchClearCache: drop the cached node list of a direct match. */
     static void compMatchClearCache(TransformCtx t, Pattern comp)
     {
-        if (t == null || comp == null || comp.nbStep == 0) return;
+        if (t == null || comp == null || comp.nb_step == 0) return;
         Pattern.StepOp sel = comp.steps.get(0);
-        XPathResult list = (XPathResult)extra(t, sel.lenExtra).info;
+        XPathResult list = (XPathResult)extra(t, sel.len_extra).info;
         if (list != null)
         {
-            extra(t, sel.lenExtra).info = null;
-            extra(t, sel.previousExtra).ptr = null;
-            extra(t, sel.indexExtra).ival = 0;
+            extra(t, sel.len_extra).info = null;
+            extra(t, sel.previous_extra).ptr = null;
+            extra(t, sel.index_extra).ival = 0;
         }
     }
 
@@ -1615,7 +1615,7 @@ public final class Xslt
             ctxt.cur = current - start;
             element.pattern = ctxt.base;
             element.node = node;
-            element.nsList = node != null ? nsList(node) : null;
+            element.ns_list = node != null ? nsList(node) : null;
 
             // Preset default priority to be zero, may be changed by the location path.
             element.priority = 0;
@@ -1675,11 +1675,11 @@ public final class Xslt
     }
 
     /** Compile a pattern, element (in the stylesheet document) gives the namespaces in
-        scope. With noVariables, variable references in predicates are errors (template
+        scope. With no_variables, variable references in predicates are errors (template
         match patterns). Returns null after reporting an error. */
-    static Pattern patternCompile(Stylesheet style, String pattern, XmlNode element, boolean noVariables)
+    static Pattern patternCompile(Stylesheet style, String pattern, XmlNode element, boolean no_variables)
     {
-        return compilePatternInternal(pattern, element, style, null, noVariables ? 1 : 0);
+        return compilePatternInternal(pattern, element, style, null, no_variables ? 1 : 0);
     }
 
     // Template registration and lookup (pattern.c xsltAddTemplate, xsltGetTemplate).
@@ -1733,19 +1733,19 @@ public final class Xslt
     {
         switch (top)
         {
-        case TOP_ATTR: style.attrMatch = insertByPriority(style.attrMatch, pat); break;
-        case TOP_ELEM: style.elemMatch = insertByPriority(style.elemMatch, pat); break;
-        case TOP_ROOT: style.rootMatch = insertByPriority(style.rootMatch, pat); break;
-        case TOP_KEY: style.keyMatch = insertByPriority(style.keyMatch, pat); break;
-        case TOP_PI: style.piMatch = insertByPriority(style.piMatch, pat); break;
-        case TOP_COMMENT: style.commentMatch = insertByPriority(style.commentMatch, pat); break;
-        case TOP_TEXT: style.textMatch = insertByPriority(style.textMatch, pat); break;
+        case TOP_ATTR: style.attr_match = insertByPriority(style.attr_match, pat); break;
+        case TOP_ELEM: style.elem_match = insertByPriority(style.elem_match, pat); break;
+        case TOP_ROOT: style.root_match = insertByPriority(style.root_match, pat); break;
+        case TOP_KEY: style.key_match = insertByPriority(style.key_match, pat); break;
+        case TOP_PI: style.pi_match = insertByPriority(style.pi_match, pat); break;
+        case TOP_COMMENT: style.comment_match = insertByPriority(style.comment_match, pat); break;
+        case TOP_TEXT: style.text_match = insertByPriority(style.text_match, pat); break;
         default: break;
         }
     }
 
     /** Port of xsltAddTemplate. */
-    private static int addTemplate(Stylesheet style, Template cur, String mode, String modeUri)
+    private static int addTemplate(Stylesheet style, Template cur, String mode, String mode_uri)
     {
         if (style == null || cur == null) return -1;
         if (cur.next != null) cur.position = cur.next.position + 1;
@@ -1753,15 +1753,15 @@ public final class Xslt
         // Register a named template.
         if (cur.name != null)
         {
-            if (style.namedTemplates == null) style.namedTemplates = new HashMap<>();
-            String key = hash3Key(cur.name, cur.nameUri, null);
-            if (style.namedTemplates.get(key) != null)
+            if (style.named_templates == null) style.named_templates = new HashMap<>();
+            String key = hash3Key(cur.name, cur.name_uri, null);
+            if (style.named_templates.get(key) != null)
             {
                 transformError(null, style, cur.elem, CFormat.format("xsl:template: error duplicate name '%s'\n", cur.name));
                 style.errors++;
                 return -1;
             }
-            style.namedTemplates.put(key, cur);
+            style.named_templates.put(key, cur);
         }
 
         if (cur.match == null)
@@ -1787,7 +1787,7 @@ public final class Xslt
 
             pat.templ = cur;
             if (mode != null) pat.mode = mode;
-            if (modeUri != null) pat.modeUri = modeUri;
+            if (mode_uri != null) pat.mode_uri = mode_uri;
             if (priority != PAT_NO_PRIORITY) pat.priority = priority;
 
             // Insert it in the hash table list corresponding to its lookup name.
@@ -1837,19 +1837,19 @@ public final class Xslt
             }
             if (name != null)
             {
-                if (style.templatesHash == null) style.templatesHash = new HashMap<>();
-                String key = hash3Key(name, mode, modeUri);
-                Pattern list = style.templatesHash.get(key);
+                if (style.templates_hash == null) style.templates_hash = new HashMap<>();
+                String key = hash3Key(name, mode, mode_uri);
+                Pattern list = style.templates_hash.get(key);
                 if (list == null)
                 {
-                    style.templatesHash.put(key, pat);
+                    style.templates_hash.put(key, pat);
                 }
                 else
                 {
                     // Note <= since one must choose, among the matching template rules that are
                     // left, the one that occurs last in the stylesheet.
                     Pattern head = insertByPriority(list, pat);
-                    if (head != list) style.templatesHash.put(key, head);
+                    if (head != list) style.templates_hash.put(key, head);
                 }
             }
             else if (top != TOP_NONE)
@@ -1882,7 +1882,7 @@ public final class Xslt
                (ret[0] == null || list.priority > priority[0] ||
                 (list.priority == priority[0] && list.templ.position > ret[0].position)))
         {
-            if (testCompMatch(t, list, node, t.mode, t.modeUri) == 1)
+            if (testCompMatch(t, list, node, t.mode, t.mode_uri) == 1)
             {
                 ret[0] = list.templ;
                 priority[0] = list.priority;
@@ -1904,7 +1904,7 @@ public final class Xslt
             Template[] ret = { null };
             String name = null;
             int k = nodeKind(node);
-            if (curstyle.templatesHash != null)
+            if (curstyle.templates_hash != null)
             {
                 // Use the top name as selector.
                 if (k == ELEMENT || k == ATTRIBUTE || k == PI) name = nodeName(node);
@@ -1912,11 +1912,11 @@ public final class Xslt
             if (name != null)
             {
                 // The list of applicable expressions based on the name.
-                String key = hash3Key(name, t.mode, t.modeUri);
-                Pattern list = curstyle.templatesHash.get(key);
+                String key = hash3Key(name, t.mode, t.mode_uri);
+                Pattern list = curstyle.templates_hash.get(key);
                 while (list != null)
                 {
-                    if (testCompMatch(t, list, node, t.mode, t.modeUri) == 1)
+                    if (testCompMatch(t, list, node, t.mode, t.mode_uri) == 1)
                     {
                         ret[0] = list.templ;
                         priority[0] = list.priority;
@@ -1930,29 +1930,29 @@ public final class Xslt
             Pattern list = null;
             switch (k)
             {
-            case ELEMENT: list = curstyle.elemMatch; break;
-            case ATTRIBUTE: list = curstyle.attrMatch; break;
-            case PI: list = curstyle.piMatch; break;
-            case DOCUMENT: list = curstyle.rootMatch; break;
+            case ELEMENT: list = curstyle.elem_match; break;
+            case ATTRIBUTE: list = curstyle.attr_match; break;
+            case PI: list = curstyle.pi_match; break;
+            case DOCUMENT: list = curstyle.root_match; break;
             case TEXT:
-            case CDATA: list = curstyle.textMatch; break;
-            case COMMENT: list = curstyle.commentMatch; break;
+            case CDATA: list = curstyle.text_match; break;
+            case COMMENT: list = curstyle.comment_match; break;
             default: break;
             }
             firstMatch(t, list, node, ret, priority);
             // Some of the tests for elements can also apply to documents.
             if (k == DOCUMENT || k == TEXT || k == PI || k == COMMENT)
             {
-                firstMatch(t, curstyle.elemMatch, node, ret, priority);
+                firstMatch(t, curstyle.elem_match, node, ret, priority);
             }
             // keyed_match:
             while (true)
             {
                 if (Transform.nodeHasKey(t, node))
                 {
-                    firstMatch(t, curstyle.keyMatch, node, ret, priority);
+                    firstMatch(t, curstyle.key_match, node, ret, priority);
                 }
-                else if (t.hasTemplKeyPatterns != 0 && (t.document == null || t.document.nbKeysComputed < t.nbKeys))
+                else if (t.has_templ_key_patterns != 0 && (t.document == null || t.document.nb_keys_computed < t.nb_keys))
                 {
                     // Compute all remaining keys for this document.
                     if (Transform.computeAllKeys(t, node) == -1) return null;
@@ -2327,7 +2327,7 @@ public final class Xslt
     /** Port of xsltCheckInstructionElement. */
     private static void checkInstructionElement(Stylesheet style, XmlNode inst)
     {
-        if (style == null || inst == null || nodeNs(inst) == null || style.literalResult != 0) return;
+        if (style == null || inst == null || nodeNs(inst) == null || style.literal_result != 0) return;
         XmlNode parent = nodeParent(inst);
         if (parent == null)
         {
@@ -2353,7 +2353,7 @@ public final class Xslt
     /** Port of xsltCheckParentElement. */
     private static void checkParentElement(Stylesheet style, XmlNode inst, String allow1, String allow2)
     {
-        if (style == null || inst == null || nodeNs(inst) == null || style.literalResult != 0) return;
+        if (style == null || inst == null || nodeNs(inst) == null || style.literal_result != 0) return;
         XmlNode parent = nodeParent(inst);
         if (parent == null)
         {
@@ -2376,8 +2376,8 @@ public final class Xslt
         if (style == null) return null;
         StylePreComp cur = new StylePreComp();
         cur.type = type;
-        cur.next = style.preComps;
-        style.preComps = cur;
+        cur.next = style.pre_comps;
+        style.pre_comps = cur;
         return cur;
     }
 
@@ -2415,7 +2415,7 @@ public final class Xslt
         comp.ver11 = 0;
         String filename = null;
         String name = nodeName(inst);
-        int[] f = { comp.hasFilename };
+        int[] f = { comp.has_filename };
         if (streq(name, "output"))
         {
             filename = evalStaticAvt(style, inst, "file", null, f);
@@ -2429,8 +2429,8 @@ public final class Xslt
             if (nodeNs(inst) != null && streq(nodeNsHref(inst), XSLT_NAMESPACE)) comp.ver11 = 1;
             filename = evalStaticAvt(style, inst, "href", null, f);
         }
-        comp.hasFilename = f[0];
-        if (comp.hasFilename == 0)
+        comp.has_filename = f[0];
+        if (comp.has_filename == 0)
         {
             return comp;
         }
@@ -2446,9 +2446,9 @@ public final class Xslt
         comp.inst = inst;
         int[] f = new int[1];
 
-        f[0] = comp.hasStype;
+        f[0] = comp.has_stype;
         comp.stype = evalStaticAvt(style, inst, "data-type", null, f);
-        comp.hasStype = f[0];
+        comp.has_stype = f[0];
         if (comp.stype != null)
         {
             if (comp.stype.equals("text")) comp.number = 0;
@@ -2460,9 +2460,9 @@ public final class Xslt
                 style.warnings++;
             }
         }
-        f[0] = comp.hasOrder;
+        f[0] = comp.has_order;
         comp.order = evalStaticAvt(style, inst, "order", null, f);
-        comp.hasOrder = f[0];
+        comp.has_order = f[0];
         if (comp.order != null)
         {
             if (comp.order.equals("ascending")) comp.descending = 0;
@@ -2474,24 +2474,24 @@ public final class Xslt
                 style.warnings++;
             }
         }
-        f[0] = comp.hasUse;
-        comp.caseOrder = evalStaticAvt(style, inst, "case-order", null, f);
-        comp.hasUse = f[0];
-        if (comp.caseOrder != null)
+        f[0] = comp.has_use;
+        comp.case_order = evalStaticAvt(style, inst, "case-order", null, f);
+        comp.has_use = f[0];
+        if (comp.case_order != null)
         {
-            if (comp.caseOrder.equals("upper-first")) comp.lowerFirst = 0;
-            else if (comp.caseOrder.equals("lower-first")) comp.lowerFirst = 1;
+            if (comp.case_order.equals("upper-first")) comp.lower_first = 0;
+            else if (comp.case_order.equals("lower-first")) comp.lower_first = 1;
             else
             {
                 // Like libxslt, the message shows the order.
                 transformError(null, style, inst, CFormat.format("xsltSortComp: invalid value %s for order\n", comp.order != null ? comp.order : "(null)"));
-                comp.lowerFirst = 0;
+                comp.lower_first = 0;
                 style.warnings++;
             }
         }
-        f[0] = comp.hasLang;
+        f[0] = comp.has_lang;
         comp.lang = evalStaticAvt(style, inst, "lang", null, f);
-        comp.hasLang = f[0];
+        comp.has_lang = f[0];
 
         comp.select = getNsProp(inst, "select", XSLT_NAMESPACE);
         // The default is ., the string-value of the current node is the sort key.
@@ -2516,7 +2516,7 @@ public final class Xslt
         nodeSetUserData(inst, comp);
         comp.inst = inst;
         comp.use = getNsProp(inst, "use-attribute-sets", XSLT_NAMESPACE);
-        comp.hasUse = comp.use != null ? 1 : 0;
+        comp.has_use = comp.use != null ? 1 : 0;
     }
 
     /** Port of xsltTextComp. */
@@ -2554,18 +2554,18 @@ public final class Xslt
         comp.inst = inst;
         int[] f = new int[1];
 
-        f[0] = comp.hasName;
+        f[0] = comp.has_name;
         comp.name = evalStaticAvt(style, inst, "name", null, f);
-        comp.hasName = f[0];
-        if (comp.hasName == 0)
+        comp.has_name = f[0];
+        if (comp.has_name == 0)
         {
             transformError(null, style, inst, "xsl:element: The attribute 'name' is missing.\n");
             style.errors++;
             return;
         }
-        f[0] = comp.hasNs;
+        f[0] = comp.has_ns;
         comp.ns = evalStaticAvt(style, inst, "namespace", null, f);
-        comp.hasNs = f[0];
+        comp.has_ns = f[0];
         if (comp.name != null)
         {
             if (validateQname(comp.name) != 0)
@@ -2577,14 +2577,14 @@ public final class Xslt
             {
                 String[] prefix = { null };
                 splitQname(comp.name, prefix);
-                if (comp.hasNs == 0)
+                if (comp.has_ns == 0)
                 {
                     // The QName is expanded with the namespace declarations in effect, including the default one.
                     XmlNs ns = nsLookupPrefix(inst, prefix[0]);
                     if (ns != null)
                     {
                         comp.ns = nsHref(ns);
-                        comp.hasNs = 1;
+                        comp.has_ns = 1;
                     }
                     else if (prefix[0] != null)
                     {
@@ -2597,13 +2597,13 @@ public final class Xslt
                 if (prefix[0] != null && startsWithXmlIgnoreCase(prefix[0]))
                 {
                     // Mark it to be skipped.
-                    comp.hasName = 0;
+                    comp.has_name = 0;
                 }
             }
         }
-        f[0] = comp.hasUse;
+        f[0] = comp.has_use;
         comp.use = evalStaticAvt(style, inst, "use-attribute-sets", null, f);
-        comp.hasUse = f[0];
+        comp.has_use = f[0];
     }
 
     /** Port of xsltAttributeComp. */
@@ -2614,18 +2614,18 @@ public final class Xslt
         comp.inst = inst;
         int[] f = new int[1];
 
-        f[0] = comp.hasName;
+        f[0] = comp.has_name;
         comp.name = evalStaticAvt(style, inst, "name", null, f);
-        comp.hasName = f[0];
-        if (comp.hasName == 0)
+        comp.has_name = f[0];
+        if (comp.has_name == 0)
         {
             transformError(null, style, inst, "XSLT-attribute: The attribute 'name' is missing.\n");
             style.errors++;
             return;
         }
-        f[0] = comp.hasNs;
+        f[0] = comp.has_ns;
         comp.ns = evalStaticAvt(style, inst, "namespace", null, f);
-        comp.hasNs = f[0];
+        comp.has_ns = f[0];
         if (comp.name != null)
         {
             if (validateQname(comp.name) != 0)
@@ -2642,13 +2642,13 @@ public final class Xslt
             {
                 String[] prefix = { null };
                 splitQname(comp.name, prefix);
-                if (prefix[0] != null && comp.hasNs == 0)
+                if (prefix[0] != null && comp.has_ns == 0)
                 {
                     XmlNs ns = nsLookupPrefix(inst, prefix[0]);
                     if (ns != null)
                     {
                         comp.ns = nsHref(ns);
-                        comp.hasNs = 1;
+                        comp.has_ns = 1;
                     }
                     else
                     {
@@ -2675,9 +2675,9 @@ public final class Xslt
         StylePreComp comp = newStylePreComp(style, StylePreComp.FUNC_PI);
         nodeSetUserData(inst, comp);
         comp.inst = inst;
-        int[] f = { comp.hasName };
+        int[] f = { comp.has_name };
         comp.name = evalStaticAvt(style, inst, "name", XSLT_NAMESPACE, f);
-        comp.hasName = f[0];
+        comp.has_name = f[0];
     }
 
     /** Port of xsltCopyOfComp and xsltValueOfComp. */
@@ -2716,25 +2716,25 @@ public final class Xslt
     }
 
     /** Port of xsltGetQNameProperty. The outputs (C pointers) are one element arrays or null. */
-    private static void getQnameProperty(Stylesheet style, XmlNode inst, String propName, int mandatory,
-                                         int[] hasProp, String[] nsName, String[] localName)
+    private static void getQnameProperty(Stylesheet style, XmlNode inst, String prop_name, int mandatory,
+                                         int[] has_prop, String[] ns_name, String[] local_name)
     {
-        if (nsName != null) nsName[0] = null;
-        if (localName != null) localName[0] = null;
-        if (hasProp != null) hasProp[0] = 0;
-        String prop = getNsProp(inst, propName, XSLT_NAMESPACE);
+        if (ns_name != null) ns_name[0] = null;
+        if (local_name != null) local_name[0] = null;
+        if (has_prop != null) has_prop[0] = 0;
+        String prop = getNsProp(inst, prop_name, XSLT_NAMESPACE);
         if (prop == null)
         {
             if (mandatory != 0)
             {
-                transformError(null, style, inst, CFormat.format("The attribute '%s' is missing.\n", propName));
+                transformError(null, style, inst, CFormat.format("The attribute '%s' is missing.\n", prop_name));
                 style.errors++;
             }
             return;
         }
         if (validateQname(prop) != 0)
         {
-            transformError(null, style, inst, CFormat.format("The value '%s' of the attribute '%s' is not a valid QName.\n", prop, propName));
+            transformError(null, style, inst, CFormat.format("The value '%s' of the attribute '%s' is not a valid QName.\n", prop, prop_name));
             style.errors++;
             return;
         }
@@ -2746,9 +2746,9 @@ public final class Xslt
             style.errors++;
             return;
         }
-        if (localName != null) localName[0] = prop;
-        if (hasProp != null) hasProp[0] = 1;
-        if (uri != null && nsName != null) nsName[0] = uri;
+        if (local_name != null) local_name[0] = prop;
+        if (has_prop != null) has_prop[0] = 1;
+        if (uri != null && ns_name != null) ns_name[0] = uri;
     }
 
     /** Port of xsltWithParamComp, xsltVariableComp and xsltParamComp. */
@@ -2761,10 +2761,10 @@ public final class Xslt
         String[] ns = new String[1];
         String[] name = new String[1];
         getQnameProperty(style, inst, "name", 1, has, ns, name);
-        comp.hasName = has[0];
+        comp.has_name = has[0];
         comp.ns = ns[0];
         comp.name = name[0];
-        if (comp.ns != null) comp.hasNs = 1;
+        if (comp.ns != null) comp.has_ns = 1;
         comp.select = getNsProp(inst, "select", XSLT_NAMESPACE);
         if (comp.select == null) return;
         comp.comp = xpathCompileInst(style, inst, comp.select, false);
@@ -2853,10 +2853,10 @@ public final class Xslt
         comp.numdata.node = cur;
         comp.numdata.value = getNsProp(cur, "value", XSLT_NAMESPACE);
 
-        int[] f = { comp.numdata.hasFormat };
+        int[] f = { comp.numdata.has_format };
         String prop = evalStaticAvt(style, cur, "format", XSLT_NAMESPACE, f);
-        comp.numdata.hasFormat = f[0];
-        if (comp.numdata.hasFormat == 0)
+        comp.numdata.has_format = f[0];
+        if (comp.numdata.has_format == 0)
         {
             comp.numdata.format = "";
         }
@@ -2868,8 +2868,8 @@ public final class Xslt
         comp.numdata.count = getNsProp(cur, "count", XSLT_NAMESPACE);
         comp.numdata.from = getNsProp(cur, "from", XSLT_NAMESPACE);
 
-        if (comp.numdata.count != null) comp.numdata.countPat = compilePatternInternal(comp.numdata.count, cur, style, null, 0);
-        if (comp.numdata.from != null) comp.numdata.fromPat = compilePatternInternal(comp.numdata.from, cur, style, null, 0);
+        if (comp.numdata.count != null) comp.numdata.count_pat = compilePatternInternal(comp.numdata.count, cur, style, null, 0);
+        if (comp.numdata.from != null) comp.numdata.from_pat = compilePatternInternal(comp.numdata.from, cur, style, null, 0);
 
         prop = getNsProp(cur, "level", XSLT_NAMESPACE);
         if (prop != null)
@@ -2920,18 +2920,18 @@ public final class Xslt
         {
             int[] len = { prop.length() };
             int c = utf8Char(prop, 0, len);
-            comp.numdata.groupingCharacterLen = len[0];
-            comp.numdata.groupingCharacter = c < 0 ? 0 : c;
+            comp.numdata.grouping_character_len = len[0];
+            comp.numdata.grouping_character = c < 0 ? 0 : c;
         }
 
         prop = getNsProp(cur, "grouping-size", XSLT_NAMESPACE);
         if (prop != null)
         {
-            comp.numdata.digitsPerGroup = scanInt(prop, comp.numdata.digitsPerGroup);
+            comp.numdata.digits_per_group = scanInt(prop, comp.numdata.digits_per_group);
         }
         else
         {
-            comp.numdata.groupingCharacter = 0;
+            comp.numdata.grouping_character = 0;
         }
 
         // Default values.
@@ -2947,10 +2947,10 @@ public final class Xslt
         StylePreComp comp = newStylePreComp(style, StylePreComp.FUNC_APPLYTEMPLATES);
         nodeSetUserData(inst, comp);
         comp.inst = inst;
-        String[] modeUri = new String[1];
+        String[] mode_uri = new String[1];
         String[] mode = new String[1];
-        getQnameProperty(style, inst, "mode", 0, null, modeUri, mode);
-        comp.modeUri = modeUri[0];
+        getQnameProperty(style, inst, "mode", 0, null, mode_uri, mode);
+        comp.mode_uri = mode_uri[0];
         comp.mode = mode[0];
         comp.select = getNsProp(inst, "select", XSLT_NAMESPACE);
         if (comp.select != null)
@@ -2974,10 +2974,10 @@ public final class Xslt
         String[] ns = new String[1];
         String[] name = new String[1];
         getQnameProperty(style, inst, "name", 1, has, ns, name);
-        comp.hasName = has[0];
+        comp.has_name = has[0];
         comp.ns = ns[0];
         comp.name = name[0];
-        if (comp.ns != null) comp.hasNs = 1;
+        if (comp.ns != null) comp.has_ns = 1;
     }
 
     /** Port of xsltIfComp and xsltWhenComp. */
@@ -3200,7 +3200,7 @@ public final class Xslt
                 checkInstructionElement(style, inst);
                 nodeSetUserData(inst, documentComp(style, inst));
             }
-            else if (style == null || style.forwardsCompatible == 0)
+            else if (style == null || style.forwards_compatible == 0)
             {
                 transformError(null, style, inst, CFormat.format("xsltStylePreCompute: unknown xsl:%s\n", nodeName(inst)));
                 if (style != null) style.warnings++;
@@ -3208,7 +3208,7 @@ public final class Xslt
 
             // A namespace list is built for every xslt instruction, for its xpath expressions.
             Object cur = nodeUserData(inst);
-            if (cur != null && cur != StylePreComp.EXT_MARKER) ((StylePreComp)cur).nsList = nsList(inst);
+            if (cur != null && cur != StylePreComp.EXT_MARKER) ((StylePreComp)cur).ns_list = nsList(inst);
         }
         else
         {
@@ -3223,15 +3223,15 @@ public final class Xslt
     private static AttrVT newAttrVt(Stylesheet style)
     {
         AttrVT cur = new AttrVT();
-        cur.next = style.attVts;
-        style.attVts = cur;
+        cur.next = style.att_vts;
+        style.att_vts = cur;
         return cur;
     }
 
     private static void setAttrVtSegment(AttrVT avt, Object val)
     {
         avt.segments.add(val);
-        avt.nbSeg++;
+        avt.nb_seg++;
     }
 
     /** Like xmlStrncat: a is returned unchanged (even null) when there is nothing to add. n
@@ -3270,7 +3270,7 @@ public final class Xslt
 
         AttrVT avt = newAttrVt(style);
         nodeSetUserData(an, avt);
-        avt.nsList = nsList(attrOwner(attr));
+        avt.ns_list = nsList(attrOwner(attr));
 
         String ret = null;
         String expr = null;
@@ -3303,7 +3303,7 @@ public final class Xslt
                 {
                     ret = strncat(ret, s.substring(str), cur - str);
                     str = cur;
-                    if (avt.nbSeg == 0) avt.strstart = 1;
+                    if (avt.nb_seg == 0) avt.strstart = 1;
                     setAttrVtSegment(avt, ret);
                     ret = null;
                     lastavt = 0;
@@ -3339,7 +3339,7 @@ public final class Xslt
                     style.errors++;
                     return;
                 }
-                if (avt.nbSeg == 0) avt.strstart = 0;
+                if (avt.nb_seg == 0) avt.strstart = 0;
                 if (lastavt == 1) setAttrVtSegment(avt, null);
                 setAttrVtSegment(avt, comp);
                 lastavt = 1;
@@ -3369,7 +3369,7 @@ public final class Xslt
         if (ret != null || cur - str > 0)
         {
             ret = strncat(ret, s.substring(str), cur - str);
-            if (avt.nbSeg == 0) avt.strstart = 1;
+            if (avt.nb_seg == 0) avt.strstart = 1;
             setAttrVtSegment(avt, ret);
             ret = null;
         }
@@ -3392,53 +3392,53 @@ public final class Xslt
     /** Port of exclPrefixPush: returns the index, -1 for duplicates. */
     private static int exclPrefixPush(Stylesheet style, String orig)
     {
-        for (int i = 0; i < style.exclPrefixTab.size(); i++)
+        for (int i = 0; i < style.excl_prefix_tab.size(); i++)
         {
-            if (streq(style.exclPrefixTab.get(i), orig)) return -1;
+            if (streq(style.excl_prefix_tab.get(i), orig)) return -1;
         }
-        style.exclPrefixTab.add(orig);
-        style.exclPrefix = orig;
-        return style.exclPrefixTab.size() - 1;
+        style.excl_prefix_tab.add(orig);
+        style.excl_prefix = orig;
+        return style.excl_prefix_tab.size() - 1;
     }
 
     /** Port of exclPrefixPop. */
     private static void exclPrefixPop(Stylesheet style)
     {
-        int nr = style.exclPrefixTab.size();
+        int nr = style.excl_prefix_tab.size();
         if (nr <= 0) return;
         nr--;
-        style.exclPrefix = nr > 0 ? style.exclPrefixTab.get(nr - 1) : null;
-        style.exclPrefixTab.remove(nr);
+        style.excl_prefix = nr > 0 ? style.excl_prefix_tab.get(nr - 1) : null;
+        style.excl_prefix_tab.remove(nr);
     }
 
     /** Port of xsltNewDecimalFormat. */
-    private static DecimalFormat newDecimalFormat(String nsUri, String name)
+    private static DecimalFormat newDecimalFormat(String ns_uri, String name)
     {
         DecimalFormat self = new DecimalFormat();
-        self.nsUri = nsUri;
+        self.ns_uri = ns_uri;
         self.name = name;
         self.digit = "#";
-        self.patternSeparator = ";";
-        self.decimalPoint = ".";
+        self.pattern_separator = ";";
+        self.decimal_point = ".";
         self.grouping = ",";
         self.percent = "%";
         self.permille = "‰";
-        self.zeroDigit = "0";
-        self.minusSign = "-";
+        self.zero_digit = "0";
+        self.minus_sign = "-";
         self.infinity = "Infinity";
-        self.noNumber = "NaN";
+        self.no_number = "NaN";
         return self;
     }
 
     /** Port of xsltDecimalFormatGetByQName. */
-    static DecimalFormat decimalFormatGetByQname(Stylesheet style, String nsUri, String name)
+    static DecimalFormat decimalFormatGetByQname(Stylesheet style, String ns_uri, String name)
     {
-        if (name == null) return style.decimalFormat;
+        if (name == null) return style.decimal_format;
         while (style != null)
         {
-            for (DecimalFormat r = style.decimalFormat.next; r != null; r = r.next)
+            for (DecimalFormat r = style.decimal_format.next; r != null; r = r.next)
             {
-                if (streq(nsUri, r.nsUri) && streq(name, r.name)) return r;
+                if (streq(ns_uri, r.ns_uri) && streq(name, r.name)) return r;
             }
             style = nextImport(style);
         }
@@ -3460,25 +3460,25 @@ public final class Xslt
         else if (parent != null) ret.settings = parent.settings;
         else ret.settings = new Settings();
         ret.parent = parent;
-        ret.omitXmlDeclaration = -1;
+        ret.omit_xml_declaration = -1;
         ret.standalone = -1;
-        ret.decimalFormat = newDecimalFormat(null, null);
+        ret.decimal_format = newDecimalFormat(null, null);
         ret.indent = -1;
         ret.principal = parent != null ? parent.principal : ret;
         return ret;
     }
 
     /**
-     * An empty stylesheet whose document is styleDom (not owned), patterns can be compiled
+     * An empty stylesheet whose document is style_dom (not owned), patterns can be compiled
      * with namespaces from its elements (xml_libxslt1_stylesheet_new_empty).
-     * @param styleDom The document.
+     * @param style_dom The document.
      * @param settings The settings, null for the defaults.
      * @return The stylesheet.
      */
-    public static Stylesheet stylesheetNewEmpty(XmlDocument styleDom, Settings settings)
+    public static Stylesheet stylesheetNewEmpty(XmlDocument style_dom, Settings settings)
     {
         Stylesheet style = newStylesheetInternal(null, settings);
-        style.doc = styleDom;
+        style.doc = style_dom;
         return style;
     }
 
@@ -3493,7 +3493,7 @@ public final class Xslt
     /** Port of xsltGetInheritedNsList: the namespaces in scope of a template, for literal result elements. */
     private static int getInheritedNsList(Stylesheet style, Template templ, XmlNode node)
     {
-        if (style == null || templ == null || node == null || templ.inheritedNsNr != 0 || templ.inheritedNs != null) return 0;
+        if (style == null || templ == null || node == null || templ.inherited_ns_nr != 0 || templ.inherited_ns != null) return 0;
         List<XmlNs> ret = new ArrayList<>();
         int nbns = 0;
         for (; node != null; node = nodeParent(node))
@@ -3505,9 +3505,9 @@ public final class Xslt
                 if (nsPrefix(cur) != null && checkExtPrefix(style, nsPrefix(cur)) != 0) continue;
                 // Namespaces excluded on the topmost stylesheet element.
                 boolean skip = false;
-                for (int i = 0; i < style.exclPrefixTab.size(); i++)
+                for (int i = 0; i < style.excl_prefix_tab.size(); i++)
                 {
-                    if (streq(nsHref(cur), style.exclPrefixTab.get(i))) skip = true;
+                    if (streq(nsHref(cur), style.excl_prefix_tab.get(i))) skip = true;
                 }
                 if (skip) continue;
                 // Skip shadowed namespace bindings.
@@ -3525,8 +3525,8 @@ public final class Xslt
         }
         if (nbns != 0)
         {
-            templ.inheritedNsNr = nbns;
-            templ.inheritedNs = ret.toArray(new XmlNs[0]);
+            templ.inherited_ns_nr = nbns;
+            templ.inherited_ns = ret.toArray(new XmlNs[0]);
         }
         return nbns;
     }
@@ -3581,7 +3581,7 @@ public final class Xslt
             if (ns != null) uri = nsHref(ns);
         }
         String key = key2(element, uri);
-        style.cdataSection.putIfAbsent(key, "cdata");
+        style.cdata_section.putIfAbsent(key, "cdata");
     }
 
     /** Port of xsltParseStylesheetOutput. */
@@ -3594,7 +3594,7 @@ public final class Xslt
         if ((prop = getNsPropExact(cur, "method", null)) != null)
         {
             style.method = null;
-            style.methodUri = null;
+            style.method_uri = null;
             String[] p = { prop };
             String uri = getQnameUri(style.settings, cur, p);
             prop = p[0];
@@ -3617,11 +3617,11 @@ public final class Xslt
             else
             {
                 style.method = prop;
-                style.methodUri = uri;
+                style.method_uri = uri;
             }
         }
-        if ((prop = getNsPropExact(cur, "doctype-system", null)) != null) style.doctypeSystem = prop;
-        if ((prop = getNsPropExact(cur, "doctype-public", null)) != null) style.doctypePublic = prop;
+        if ((prop = getNsPropExact(cur, "doctype-system", null)) != null) style.doctype_system = prop;
+        if ((prop = getNsPropExact(cur, "doctype-public", null)) != null) style.doctype_public = prop;
         String[] yesno = { "standalone", "indent", "omit-xml-declaration" };
         for (int i = 0; i < 3; ++i)
         {
@@ -3639,17 +3639,17 @@ public final class Xslt
                 {
                     if (i == 0) style.standalone = v;
                     else if (i == 1) style.indent = v;
-                    else style.omitXmlDeclaration = v;
+                    else style.omit_xml_declaration = v;
                 }
             }
         }
         String elements = getNsPropExact(cur, "cdata-section-elements", null);
         if (elements != null)
         {
-            if (style.cdataSection == null) style.cdataSection = new HashMap<>();
+            if (style.cdata_section == null) style.cdata_section = new HashMap<>();
             forEachToken(style, cur, elements, Xslt::cdataToken, null);
         }
-        if ((prop = getNsPropExact(cur, "media-type", null)) != null) style.mediaType = prop;
+        if ((prop = getNsPropExact(cur, "media-type", null)) != null) style.media_type = prop;
         if (nodeFirstChild(cur) != null) parseContentError(style, nodeFirstChild(cur));
     }
 
@@ -3657,7 +3657,7 @@ public final class Xslt
     private static void parseStylesheetDecimalFormat(Stylesheet style, XmlNode cur)
     {
         if (cur == null || style == null || nodeKind(cur) != ELEMENT) return;
-        DecimalFormat format = style.decimalFormat;
+        DecimalFormat format = style.decimal_format;
         String prop = getNsPropExact(cur, "name", null);
         if (prop != null)
         {
@@ -3668,36 +3668,36 @@ public final class Xslt
                 return;
             }
             String[] p = { prop };
-            String nsUri = getQnameUri(style.settings, cur, p);
+            String ns_uri = getQnameUri(style.settings, cur, p);
             prop = p[0];
             if (prop == null)
             {
                 style.warnings++;
                 return;
             }
-            format = decimalFormatGetByQname(style, nsUri, prop);
+            format = decimalFormatGetByQname(style, ns_uri, prop);
             if (format != null)
             {
                 transformError(null, style, cur, CFormat.format("xsltParseStylestyleDecimalFormat: %s already exists\n", prop));
                 style.warnings++;
                 return;
             }
-            format = newDecimalFormat(nsUri, prop);
+            format = newDecimalFormat(ns_uri, prop);
             // Append the new decimal-format structure.
-            DecimalFormat iter = style.decimalFormat;
+            DecimalFormat iter = style.decimal_format;
             while (iter.next != null) iter = iter.next;
             iter.next = format;
         }
-        if ((prop = getNsPropExact(cur, "decimal-separator", null)) != null) format.decimalPoint = prop;
+        if ((prop = getNsPropExact(cur, "decimal-separator", null)) != null) format.decimal_point = prop;
         if ((prop = getNsPropExact(cur, "grouping-separator", null)) != null) format.grouping = prop;
         if ((prop = getNsPropExact(cur, "infinity", null)) != null) format.infinity = prop;
-        if ((prop = getNsPropExact(cur, "minus-sign", null)) != null) format.minusSign = prop;
-        if ((prop = getNsPropExact(cur, "NaN", null)) != null) format.noNumber = prop;
+        if ((prop = getNsPropExact(cur, "minus-sign", null)) != null) format.minus_sign = prop;
+        if ((prop = getNsPropExact(cur, "NaN", null)) != null) format.no_number = prop;
         if ((prop = getNsPropExact(cur, "percent", null)) != null) format.percent = prop;
         if ((prop = getNsPropExact(cur, "per-mille", null)) != null) format.permille = prop;
-        if ((prop = getNsPropExact(cur, "zero-digit", null)) != null) format.zeroDigit = prop;
+        if ((prop = getNsPropExact(cur, "zero-digit", null)) != null) format.zero_digit = prop;
         if ((prop = getNsPropExact(cur, "digit", null)) != null) format.digit = prop;
-        if ((prop = getNsPropExact(cur, "pattern-separator", null)) != null) format.patternSeparator = prop;
+        if ((prop = getNsPropExact(cur, "pattern-separator", null)) != null) format.pattern_separator = prop;
         if (nodeFirstChild(cur) != null) parseContentError(style, nodeFirstChild(cur));
     }
 
@@ -3706,7 +3706,7 @@ public final class Xslt
         String what = (String)data;
         if (element.equals("*"))
         {
-            style.stripAll = what.equals("strip") ? 1 : -1;
+            style.strip_all = what.equals("strip") ? 1 : -1;
         }
         else
         {
@@ -3716,7 +3716,7 @@ public final class Xslt
             if (element != null)
             {
                 String key = key2(element, uri);
-                style.stripSpaces.putIfAbsent(key, what);
+                style.strip_spaces.putIfAbsent(key, what);
             }
         }
     }
@@ -3726,7 +3726,7 @@ public final class Xslt
     {
         if (cur == null || style == null || nodeKind(cur) != ELEMENT) return;
         // libxslt creates the table before checking the attribute for strip-space, after for preserve-space.
-        if (strip && style.stripSpaces == null) style.stripSpaces = new HashMap<>();
+        if (strip && style.strip_spaces == null) style.strip_spaces = new HashMap<>();
         String elements = getNsPropExact(cur, "elements", null);
         if (elements == null)
         {
@@ -3735,7 +3735,7 @@ public final class Xslt
             style.warnings++;
             return;
         }
-        if (style.stripSpaces == null) style.stripSpaces = new HashMap<>();
+        if (style.strip_spaces == null) style.strip_spaces = new HashMap<>();
         forEachToken(style, cur, elements, Xslt::spaceToken, strip ? "strip" : "preserve");
         if (nodeFirstChild(cur) != null) parseContentError(style, nodeFirstChild(cur));
     }
@@ -3744,15 +3744,15 @@ public final class Xslt
     private static int registerExtPrefix(Stylesheet style, String prefix, String uri)
     {
         if (style == null || uri == null) return -1;
-        for (ExtDef def = style.nsDefs; def != null; def = def.next)
+        for (ExtDef def = style.ns_defs; def != null; def = def.next)
         {
             if (streq(prefix, def.prefix)) return -1;
         }
         ExtDef ret = new ExtDef();
         ret.prefix = prefix;
         ret.uri = uri;
-        ret.next = style.nsDefs;
-        style.nsDefs = ret;
+        ret.next = style.ns_defs;
+        style.ns_defs = ret;
         // No extension module has a stylesheet initialization function.
         return 0;
     }
@@ -3760,9 +3760,9 @@ public final class Xslt
     /** Port of xsltCheckExtPrefix (compares with the registered prefixes, see libxslt). */
     private static int checkExtPrefix(Stylesheet style, String uri)
     {
-        if (style == null || style.nsDefs == null) return 0;
+        if (style == null || style.ns_defs == null) return 0;
         if (uri == null) uri = "#default";
-        for (ExtDef cur = style.nsDefs; cur != null; cur = cur.next)
+        for (ExtDef cur = style.ns_defs; cur != null; cur = cur.next)
         {
             if (streq(uri, cur.prefix)) return 1;
         }
@@ -3772,8 +3772,8 @@ public final class Xslt
     /** Port of xsltCheckExtURI. */
     private static int checkExtUri(Stylesheet style, String uri)
     {
-        if (style == null || style.nsDefs == null || uri == null) return 0;
-        for (ExtDef cur = style.nsDefs; cur != null; cur = cur.next)
+        if (style == null || style.ns_defs == null || uri == null) return 0;
+        for (ExtDef cur = style.ns_defs; cur != null; cur = cur.next)
         {
             if (streq(uri, cur.uri)) return 1;
         }
@@ -3781,10 +3781,10 @@ public final class Xslt
     }
 
     /** Port of xsltParseStylesheetExtPrefix. */
-    private static void parseStylesheetExtPrefix(Stylesheet style, XmlNode cur, int isXsltElem)
+    private static void parseStylesheetExtPrefix(Stylesheet style, XmlNode cur, int is_xslt_elem)
     {
         if (cur == null || style == null || nodeKind(cur) != ELEMENT) return;
-        String prefixes = isXsltElem != 0 ? getNsPropExact(cur, "extension-element-prefixes", null)
+        String prefixes = is_xslt_elem != 0 ? getNsPropExact(cur, "extension-element-prefixes", null)
                                           : getNsPropExact(cur, "extension-element-prefixes", XSLT_NAMESPACE);
         if (prefixes == null) return;
         int prefix = 0;
@@ -3810,10 +3810,10 @@ public final class Xslt
     }
 
     /** Port of xsltParseStylesheetExcludePrefix: returns the number of prefixes pushed. */
-    private static int parseStylesheetExcludePrefix(Stylesheet style, XmlNode cur, int isXsltElem)
+    private static int parseStylesheetExcludePrefix(Stylesheet style, XmlNode cur, int is_xslt_elem)
     {
         if (cur == null || style == null || nodeKind(cur) != ELEMENT) return 0;
-        String prefixes = isXsltElem != 0 ? getNsPropExact(cur, "exclude-result-prefixes", null)
+        String prefixes = is_xslt_elem != 0 ? getNsPropExact(cur, "exclude-result-prefixes", null)
                                           : getNsPropExact(cur, "exclude-result-prefixes", XSLT_NAMESPACE);
         if (prefixes == null) return 0;
         int nb = 0;
@@ -3851,40 +3851,40 @@ public final class Xslt
     {
         if (style == null || cur == null) return;
         XmlNode styleelem = (isXsltElem(cur) && isXsltName(cur, "stylesheet")) ? cur : null;
-        XmlNode docNode = domDocument(style.doc);
-        XmlNode deleteNode = null;
+        XmlNode doc_node = domDocument(style.doc);
+        XmlNode delete_node = null;
         while (cur != null)
         {
-            if (deleteNode != null)
+            if (delete_node != null)
             {
-                deleteNode(deleteNode);
-                deleteNode = null;
+                deleteNode(delete_node);
+                delete_node = null;
             }
             int k = nodeKind(cur);
-            boolean skipChildren = false;
+            boolean skip_children = false;
             if (k == ELEMENT)
             {
-                int exclPrefixes = 0;
+                int excl_prefixes = 0;
                 if (isXsltElem(cur))
                 {
-                    if (isXsltName(cur, "text")) skipChildren = true;
+                    if (isXsltName(cur, "text")) skip_children = true;
                 }
                 else
                 {
-                    exclPrefixes = parseStylesheetExcludePrefix(style, cur, 0);
+                    excl_prefixes = parseStylesheetExcludePrefix(style, cur, 0);
                 }
-                if (!skipChildren)
+                if (!skip_children)
                 {
-                    if (!nodeNsDecls(cur).isEmpty() && style.exclPrefixTab.size() > 0)
+                    if (!nodeNsDecls(cur).isEmpty() && style.excl_prefix_tab.size() > 0)
                     {
                         XmlNode root = domRootElement(style.doc);
                         if (root != null && root != cur)
                         {
                             for (XmlNs ns : new ArrayList<>(nodeNsDecls(cur)))
                             {
-                                for (int i = 0; i < style.exclPrefixTab.size(); i++)
+                                for (int i = 0; i < style.excl_prefix_tab.size(); i++)
                                 {
-                                    if (nsPrefix(ns) != null && streq(nsHref(ns), style.exclPrefixTab.get(i)))
+                                    if (nsPrefix(ns) != null && streq(nsHref(ns), style.excl_prefix_tab.get(i)))
                                     {
                                         // Move the declaration to the root, to avoid duplicating it without losing it.
                                         nsMoveDeclTo(cur, ns, root);
@@ -3895,11 +3895,11 @@ public final class Xslt
                         }
                     }
                     // Prefixes declared locally are popped when going back.
-                    if (exclPrefixes > 0)
+                    if (excl_prefixes > 0)
                     {
                         preprocessStylesheet(style, nodeFirstChild(cur));
-                        for (; exclPrefixes > 0; exclPrefixes--) exclPrefixPop(style);
-                        skipChildren = true;
+                        for (; excl_prefixes > 0; excl_prefixes--) exclPrefixPop(style);
+                        skip_children = true;
                     }
                 }
             }
@@ -3907,22 +3907,22 @@ public final class Xslt
             {
                 if (isBlankNode(cur))
                 {
-                    if (getSpacePreserve(nodeParent(cur)) != 1) deleteNode = cur;
+                    if (getSpacePreserve(nodeParent(cur)) != 1) delete_node = cur;
                 }
             }
             else if (k != CDATA)
             {
-                deleteNode = cur;
-                skipChildren = true;
+                delete_node = cur;
+                skip_children = true;
             }
 
-            if (!skipChildren)
+            if (!skip_children)
             {
                 // A namespaced child of the stylesheet that is neither xslt nor an extension: skip its content.
                 if (k == ELEMENT && nodeNs(cur) != null && styleelem != null && nodeParent(cur) == styleelem &&
                     !streq(nodeNsHref(cur), XSLT_NAMESPACE) && checkExtUri(style, nodeNsHref(cur)) == 0)
                 {
-                    skipChildren = true;
+                    skip_children = true;
                 }
                 else if (nodeFirstChild(cur) != null)
                 {
@@ -3940,7 +3940,7 @@ public final class Xslt
             {
                 cur = nodeParent(cur);
                 if (cur == null) break;
-                if (cur == docNode)
+                if (cur == doc_node)
                 {
                     cur = null;
                     break;
@@ -3952,7 +3952,7 @@ public final class Xslt
                 }
             } while (cur != null);
         }
-        if (deleteNode != null) deleteNode(deleteNode);
+        if (delete_node != null) deleteNode(delete_node);
     }
 
     /** Port of xsltParseTemplateContent: precompute the instructions of a template body. */
@@ -3963,13 +3963,13 @@ public final class Xslt
         XmlNode del = null;
         while (cur != null)
         {
-            style.principal.opCount += 1;
+            style.principal.op_count += 1;
             if (del != null)
             {
                 deleteNode(del);
                 del = null;
             }
-            boolean skipChildren = false;
+            boolean skip_children = false;
             if (isXsltElem(cur))
             {
                 stylePreCompute(style, cur);
@@ -4021,10 +4021,10 @@ public final class Xslt
                         }
                     }
                     del = cur;
-                    skipChildren = true;
+                    skip_children = true;
                 }
             }
-            else if (nodeKind(cur) == ELEMENT && nodeNs(cur) != null && style.nsDefs != null &&
+            else if (nodeKind(cur) == ELEMENT && nodeNs(cur) != null && style.ns_defs != null &&
                      checkExtPrefix(style, nsPrefix(nodeNs(cur))) != 0)
             {
                 // An extension element, compile it too.
@@ -4033,13 +4033,13 @@ public final class Xslt
             else if (nodeKind(cur) == ELEMENT)
             {
                 // A literal result element, precompile its attribute value templates.
-                if (nodeNs(cur) == null && style.defaultAlias != null)
+                if (nodeNs(cur) == null && style.default_alias != null)
                 {
-                    nodeSetNs(cur, nsLookupHref(cur, style.defaultAlias));
+                    nodeSetNs(cur, nsLookupHref(cur, style.default_alias));
                 }
                 for (XmlAttr attr : new ArrayList<>(nodeAttrs(cur))) compileAttr(style, attr);
             }
-            if (!skipChildren)
+            if (!skip_children)
             {
                 if (nodeFirstChild(cur) != null)
                 {
@@ -4141,12 +4141,12 @@ public final class Xslt
     }
 
     /** Port of xsltAddKey. */
-    private static int addKey(Stylesheet style, String name, String nameUri, String match, String use, XmlNode inst)
+    private static int addKey(Stylesheet style, String name, String name_uri, String match, String use, XmlNode inst)
     {
         if (style == null || name == null || match == null || use == null) return -1;
         KeyDef key = new KeyDef();
         key.name = name;
-        key.nameUri = nameUri;
+        key.name_uri = name_uri;
         key.match = match;
         key.use = use;
         key.inst = inst;
@@ -4229,7 +4229,7 @@ public final class Xslt
     private static void parseStylesheetKey(Stylesheet style, XmlNode key)
     {
         if (style == null || key == null || nodeKind(key) != ELEMENT) return;
-        String name = null, nameUri = null, match = null, use = null;
+        String name = null, name_uri = null, match = null, use = null;
         String prop = getNsPropExact(key, "name", null);
         error:
         {
@@ -4244,7 +4244,7 @@ public final class Xslt
                     break error;
                 }
                 name = prop;
-                if (uri != null) nameUri = uri;
+                if (uri != null) name_uri = uri;
             }
             else
             {
@@ -4266,26 +4266,26 @@ public final class Xslt
                 style.errors++;
                 break error;
             }
-            addKey(style, name, nameUri, match, use, key);
+            addKey(style, name, name_uri, match, use, key);
         }
         if (nodeFirstChild(key) != null) parseContentError(style, nodeFirstChild(key));
     }
 
     /** Port of xsltParseStylesheetTemplate. */
-    private static void parseStylesheetTemplate(Stylesheet style, XmlNode templateElem)
+    private static void parseStylesheetTemplate(Stylesheet style, XmlNode template_elem)
     {
-        if (style == null || templateElem == null || nodeKind(templateElem) != ELEMENT) return;
+        if (style == null || template_elem == null || nodeKind(template_elem) != ELEMENT) return;
         Template ret = newTemplate();
         ret.next = style.templates;
         style.templates = ret;
         ret.style = style;
-        getInheritedNsList(style, ret, templateElem);
+        getInheritedNsList(style, ret, template_elem);
 
-        String prop = getNsPropExact(templateElem, "mode", null);
+        String prop = getNsPropExact(template_elem, "mode", null);
         if (prop != null)
         {
             String[] p = { prop };
-            String uri = getQnameUri(style.settings, templateElem, p);
+            String uri = getQnameUri(style.settings, template_elem, p);
             prop = p[0];
             if (prop == null)
             {
@@ -4293,20 +4293,20 @@ public final class Xslt
                 return;
             }
             ret.mode = prop;
-            ret.modeUri = uri;
+            ret.mode_uri = uri;
         }
-        prop = getNsPropExact(templateElem, "match", null);
+        prop = getNsPropExact(template_elem, "match", null);
         if (prop != null) ret.match = prop;
-        prop = getNsPropExact(templateElem, "priority", null);
+        prop = getNsPropExact(template_elem, "priority", null);
         if (prop != null)
         {
             ret.priority = (float)XPath.stringToNumber(prop);
         }
-        prop = getNsPropExact(templateElem, "name", null);
+        prop = getNsPropExact(template_elem, "name", null);
         if (prop != null)
         {
             String[] p = { prop };
-            String uri = getQnameUri(style.settings, templateElem, p);
+            String uri = getQnameUri(style.settings, template_elem, p);
             prop = p[0];
             if (prop == null)
             {
@@ -4315,60 +4315,60 @@ public final class Xslt
             }
             if (validateNcname(prop) != 0)
             {
-                transformError(null, style, templateElem, CFormat.format("xsl:template : error invalid name '%s'\n", prop));
+                transformError(null, style, template_elem, CFormat.format("xsl:template : error invalid name '%s'\n", prop));
                 style.errors++;
                 return;
             }
             ret.name = prop;
-            ret.nameUri = uri;
+            ret.name_uri = uri;
         }
         // Parse the content and register the pattern.
-        parseTemplateContent(style, templateElem);
-        ret.elem = templateElem;
-        ret.content = nodeFirstChild(templateElem);
-        addTemplate(style, ret, ret.mode, ret.modeUri);
+        parseTemplateContent(style, template_elem);
+        ret.elem = template_elem;
+        ret.content = nodeFirstChild(template_elem);
+        addTemplate(style, ret, ret.mode, ret.mode_uri);
     }
 
     // Attribute sets, port of libxslt attributes.c (the compilation).
 
     private static AttrSet findAttrSet(Stylesheet style, String ncname, String ns)
     {
-        if (style.attributeSets == null) return null;
+        if (style.attribute_sets == null) return null;
         String key = key2(ncname, ns);
-        return style.attributeSets.get(key);
+        return style.attribute_sets.get(key);
     }
 
     private static void addAttrSet(Stylesheet style, AttrSet set)
     {
-        if (style.attributeSets == null) style.attributeSets = new HashMap<>();
+        if (style.attribute_sets == null) style.attribute_sets = new HashMap<>();
         String key = key2(set.name, set.ns);
-        style.attributeSets.put(key, set);
+        style.attribute_sets.put(key, set);
         // Keep the declaration order.
-        set.nextInOrder = null;
-        if (style.attributeSetList == null)
+        set.next_in_order = null;
+        if (style.attribute_set_list == null)
         {
-            style.attributeSetList = set;
+            style.attribute_set_list = set;
         }
         else
         {
-            AttrSet p = style.attributeSetList;
-            while (p.nextInOrder != null) p = p.nextInOrder;
-            p.nextInOrder = set;
+            AttrSet p = style.attribute_set_list;
+            while (p.next_in_order != null) p = p.next_in_order;
+            p.next_in_order = set;
         }
     }
 
     private static void removeAttrSet(Stylesheet style, AttrSet set)
     {
         String key = key2(set.name, set.ns);
-        style.attributeSets.remove(key);
-        if (style.attributeSetList == set)
+        style.attribute_sets.remove(key);
+        if (style.attribute_set_list == set)
         {
-            style.attributeSetList = set.nextInOrder;
+            style.attribute_set_list = set.next_in_order;
             return;
         }
-        AttrSet p = style.attributeSetList;
-        while (p != null && p.nextInOrder != set) p = p.nextInOrder;
-        if (p != null) p.nextInOrder = set.nextInOrder;
+        AttrSet p = style.attribute_set_list;
+        while (p != null && p.next_in_order != set) p = p.next_in_order;
+        if (p != null) p.next_in_order = set.next_in_order;
     }
 
     /** Port of xsltParseStylesheetAttributeSet. */
@@ -4389,7 +4389,7 @@ public final class Xslt
         }
         String[] prefix = { null };
         String ncname = splitQname(value, prefix);
-        String nsUri = null;
+        String ns_uri = null;
         if (prefix[0] != null)
         {
             XmlNs ns = nsLookupPrefix(cur, prefix[0]);
@@ -4399,14 +4399,14 @@ public final class Xslt
                 style.errors++;
                 return;
             }
-            nsUri = nsHref(ns);
+            ns_uri = nsHref(ns);
         }
-        AttrSet set = findAttrSet(style, ncname, nsUri);
+        AttrSet set = findAttrSet(style, ncname, ns_uri);
         if (set == null)
         {
             set = new AttrSet();
             set.name = ncname;
-            set.ns = nsUri;
+            set.ns = ns_uri;
             addAttrSet(style, set);
         }
 
@@ -4470,7 +4470,7 @@ public final class Xslt
                 }
                 String[] prefix2 = { null };
                 String ncname2 = splitQname(qn, prefix2);
-                String nsUri2 = null;
+                String ns_uri2 = null;
                 if (prefix2[0] != null)
                 {
                     XmlNs ns2 = nsLookupPrefix(cur, prefix2[0]);
@@ -4481,22 +4481,22 @@ public final class Xslt
                         style.errors++;
                         return;
                     }
-                    nsUri2 = nsHref(ns2);
+                    ns_uri2 = nsHref(ns2);
                 }
                 // xsltAddUseAttrSetList: no duplicates.
                 boolean dup = false;
                 UseAttrSet last = null;
-                for (UseAttrSet u = set.useAttrSets; u != null; u = u.next)
+                for (UseAttrSet u = set.use_attr_sets; u != null; u = u.next)
                 {
-                    if (streq(u.ncname, ncname2) && streq(u.ns, nsUri2)) dup = true;
+                    if (streq(u.ncname, ncname2) && streq(u.ns, ns_uri2)) dup = true;
                     last = u;
                 }
                 if (!dup)
                 {
                     UseAttrSet u = new UseAttrSet();
                     u.ncname = ncname2;
-                    u.ns = nsUri2;
-                    if (last == null) set.useAttrSets = u;
+                    u.ns = ns_uri2;
+                    if (last == null) set.use_attr_sets = u;
                     else last.next = u;
                 }
                 curval = endval;
@@ -4514,9 +4514,9 @@ public final class Xslt
             int add = 1;
             while (cur != null)
             {
-                StylePreComp curComp = (StylePreComp)nodeUserData(cur.attr);
-                StylePreComp oldComp = (StylePreComp)nodeUserData(old.attr);
-                if (streq(curComp.name, oldComp.name) && streq(curComp.ns, oldComp.ns))
+                StylePreComp cur_comp = (StylePreComp)nodeUserData(cur.attr);
+                StylePreComp old_comp = (StylePreComp)nodeUserData(old.attr);
+                if (streq(cur_comp.name, old_comp.name) && streq(cur_comp.ns, old_comp.ns))
                 {
                     add = 0;
                     break;
@@ -4535,53 +4535,53 @@ public final class Xslt
     }
 
     /** Port of xsltResolveUseAttrSets. */
-    private static void resolveUseAttrSets(AttrSet set, Stylesheet topStyle, int depth)
+    private static void resolveUseAttrSets(AttrSet set, Stylesheet top_style, int depth)
     {
-        UseAttrSet use = set.useAttrSets;
+        UseAttrSet use = set.use_attr_sets;
         while (use != null)
         {
             // Iterate the top stylesheet and all imports.
-            for (Stylesheet cur = topStyle; cur != null; cur = nextImport(cur))
+            for (Stylesheet cur = top_style; cur != null; cur = nextImport(cur))
             {
                 AttrSet other = findAttrSet(cur, use.ncname, use.ns);
                 if (other != null)
                 {
-                    resolveAttrSet(other, topStyle, cur, use.ncname, use.ns, depth + 1);
+                    resolveAttrSet(other, top_style, cur, use.ncname, use.ns, depth + 1);
                     mergeAttrSets(set, other);
                     break;
                 }
             }
             use = use.next;
         }
-        set.useAttrSets = null;
+        set.use_attr_sets = null;
     }
 
     /** Port of xsltResolveAttrSet. */
-    private static void resolveAttrSet(AttrSet set, Stylesheet topStyle, Stylesheet style, String name, String ns, int depth)
+    private static void resolveAttrSet(AttrSet set, Stylesheet top_style, Stylesheet style, String name, String ns, int depth)
     {
         if (set.state == AttrSet.RESOLVED) return;
         if (set.state == AttrSet.RESOLVING)
         {
-            transformError(null, topStyle, null, CFormat.format("xsl:attribute-set : use-attribute-sets recursion detected on %s\n", name));
-            topStyle.errors++;
+            transformError(null, top_style, null, CFormat.format("xsl:attribute-set : use-attribute-sets recursion detected on %s\n", name));
+            top_style.errors++;
             set.state = AttrSet.RESOLVED;
             return;
         }
         if (depth > 100)
         {
-            transformError(null, topStyle, null, CFormat.format("xsl:attribute-set : use-attribute-sets maximum recursion depth exceeded on %s\n", name));
-            topStyle.errors++;
+            transformError(null, top_style, null, CFormat.format("xsl:attribute-set : use-attribute-sets maximum recursion depth exceeded on %s\n", name));
+            top_style.errors++;
             return;
         }
         set.state = AttrSet.RESOLVING;
-        resolveUseAttrSets(set, topStyle, depth);
+        resolveUseAttrSets(set, top_style, depth);
         // Merge the imported sets.
         for (Stylesheet cur = nextImport(style); cur != null; cur = nextImport(cur))
         {
             AttrSet other = findAttrSet(cur, name, ns);
             if (other != null)
             {
-                resolveUseAttrSets(other, topStyle, depth);
+                resolveUseAttrSets(other, top_style, depth);
                 mergeAttrSets(set, other);
                 removeAttrSet(cur, other);
             }
@@ -4596,9 +4596,9 @@ public final class Xslt
         int error = 0;
         for (Stylesheet cur = style; cur != null; cur = nextImport(cur))
         {
-            if (cur.attributeSetList == null) continue;
+            if (cur.attribute_set_list == null) continue;
             List<String> names = new ArrayList<>();
-            for (AttrSet set = cur.attributeSetList; set != null; set = set.nextInOrder)
+            for (AttrSet set = cur.attribute_set_list; set != null; set = set.next_in_order)
             {
                 names.add(set.name);
                 names.add(set.ns);
@@ -4642,72 +4642,72 @@ public final class Xslt
     private static void namespaceAlias(Stylesheet style, XmlNode node)
     {
         if (style == null || node == null) return;
-        String stylePrefix = getNsPropExact(node, "stylesheet-prefix", null);
-        String resultPrefix = null;
-        if (stylePrefix == null)
+        String style_prefix = getNsPropExact(node, "stylesheet-prefix", null);
+        String result_prefix = null;
+        if (style_prefix == null)
         {
             transformError(null, style, node, "namespace-alias: stylesheet-prefix attribute missing\n");
             return;
         }
-        resultPrefix = getNsPropExact(node, "result-prefix", null);
-        if (resultPrefix == null)
+        result_prefix = getNsPropExact(node, "result-prefix", null);
+        if (result_prefix == null)
         {
             transformError(null, style, node, "namespace-alias: result-prefix attribute missing\n");
             return;
         }
-        String literalNsName;
-        String targetNsName;
-        XmlNs literalNs, targetNs;
-        if (stylePrefix.equals("#default"))
+        String literal_ns_name;
+        String target_ns_name;
+        XmlNs literal_ns, target_ns;
+        if (style_prefix.equals("#default"))
         {
-            literalNs = nsLookupPrefix(node, null);
-            literalNsName = literalNs != null ? nsHref(literalNs) : null;
+            literal_ns = nsLookupPrefix(node, null);
+            literal_ns_name = literal_ns != null ? nsHref(literal_ns) : null;
         }
         else
         {
-            literalNs = nsLookupPrefix(node, stylePrefix);
-            if (literalNs == null || nsHref(literalNs) == null)
+            literal_ns = nsLookupPrefix(node, style_prefix);
+            if (literal_ns == null || nsHref(literal_ns) == null)
             {
-                transformError(null, style, node, CFormat.format("namespace-alias: prefix %s not bound to any namespace\n", stylePrefix));
+                transformError(null, style, node, CFormat.format("namespace-alias: prefix %s not bound to any namespace\n", style_prefix));
                 return;
             }
-            literalNsName = nsHref(literalNs);
+            literal_ns_name = nsHref(literal_ns);
         }
         // For #default without a default namespace, UNDEFINED_DEFAULT_NS is used.
-        if (resultPrefix.equals("#default"))
+        if (result_prefix.equals("#default"))
         {
-            targetNs = nsLookupPrefix(node, null);
-            targetNsName = targetNs != null ? nsHref(targetNs) : UNDEFINED_DEFAULT_NS;
+            target_ns = nsLookupPrefix(node, null);
+            target_ns_name = target_ns != null ? nsHref(target_ns) : UNDEFINED_DEFAULT_NS;
         }
         else
         {
-            targetNs = nsLookupPrefix(node, resultPrefix);
-            if (targetNs == null || nsHref(targetNs) == null)
+            target_ns = nsLookupPrefix(node, result_prefix);
+            if (target_ns == null || nsHref(target_ns) == null)
             {
-                transformError(null, style, node, CFormat.format("namespace-alias: prefix %s not bound to any namespace\n", resultPrefix));
+                transformError(null, style, node, CFormat.format("namespace-alias: prefix %s not bound to any namespace\n", result_prefix));
                 return;
             }
-            targetNsName = nsHref(targetNs);
+            target_ns_name = nsHref(target_ns);
         }
-        if (literalNsName == null)
+        if (literal_ns_name == null)
         {
             // #default without a default namespace in scope.
-            if (targetNs != null) style.defaultAlias = nsHref(targetNs);
+            if (target_ns != null) style.default_alias = nsHref(target_ns);
         }
         else
         {
-            if (style.nsAliases == null) style.nsAliases = new HashMap<>();
+            if (style.ns_aliases == null) style.ns_aliases = new HashMap<>();
             // xmlHashAddEntry: the first alias wins.
-            if (style.nsAliases.get(literalNsName) == null)
+            if (style.ns_aliases.get(literal_ns_name) == null)
             {
-                style.nsAliases.put(literalNsName, targetNsName != null ? targetNsName : "");
+                style.ns_aliases.put(literal_ns_name, target_ns_name != null ? target_ns_name : "");
             }
         }
     }
 
     // Global variables, port of xsltParseGlobalVariable/Param (variables.c).
 
-    private static int registerGlobalVariable(Stylesheet style, String name, String nsUri, String sel,
+    private static int registerGlobalVariable(Stylesheet style, String name, String ns_uri, String sel,
                                               XmlNode tree, StylePreComp comp, String value)
     {
         if (style == null || name == null || comp == null) return -1;
@@ -4715,12 +4715,12 @@ public final class Xslt
         elem.comp = comp;
         elem.name = name;
         elem.select = sel;
-        elem.nameUri = nsUri;
+        elem.name_uri = ns_uri;
         elem.tree = tree;
         for (StackElem tmp = style.variables; tmp != null; tmp = tmp.next)
         {
             if (elem.comp.type == StylePreComp.FUNC_VARIABLE && tmp.comp.type == StylePreComp.FUNC_VARIABLE &&
-                streq(elem.name, tmp.name) && streq(elem.nameUri, tmp.nameUri))
+                streq(elem.name, tmp.name) && streq(elem.name_uri, tmp.name_uri))
             {
                 transformError(null, style, comp.inst, CFormat.format("redefinition of global variable %s\n", elem.name));
                 style.errors++;
@@ -4764,20 +4764,20 @@ public final class Xslt
         each name list of the template hash is renumbered, like libxslt. */
     private static void fixImportedCompSteps(Stylesheet master, Stylesheet style)
     {
-        if (style.templatesHash != null)
+        if (style.templates_hash != null)
         {
-            for (Pattern comp : style.templatesHash.values())
+            for (Pattern comp : style.templates_hash.values())
             {
                 if (comp == null) continue;
-                for (int ix = 0; ix < comp.nbStep; ix++)
+                for (int ix = 0; ix < comp.nb_step; ix++)
                 {
-                    comp.steps.get(ix).previousExtra += master.extrasNr;
-                    comp.steps.get(ix).indexExtra += master.extrasNr;
-                    comp.steps.get(ix).lenExtra += master.extrasNr;
+                    comp.steps.get(ix).previous_extra += master.extras_nr;
+                    comp.steps.get(ix).index_extra += master.extras_nr;
+                    comp.steps.get(ix).len_extra += master.extras_nr;
                 }
             }
         }
-        master.extrasNr += style.extrasNr;
+        master.extras_nr += style.extras_nr;
         for (Stylesheet res = style.imports; res != null; res = res.next) fixImportedCompSteps(master, res);
     }
 
@@ -4815,10 +4815,10 @@ public final class Xslt
     }
 
     /** Port of xsltParseStylesheetImportedDoc. */
-    private static Stylesheet parseStylesheetImportedDoc(XmlDocument doc, Stylesheet parentStyle, Settings settings)
+    private static Stylesheet parseStylesheetImportedDoc(XmlDocument doc, Stylesheet parent_style, Settings settings)
     {
         if (doc == null) return null;
-        Stylesheet ret = newStylesheetInternal(parentStyle, settings);
+        Stylesheet ret = newStylesheetInternal(parent_style, settings);
         if (parseStylesheetUser(ret, doc) != 0)
         {
             return null;
@@ -4831,17 +4831,17 @@ public final class Xslt
     {
         int ret = -1;
         String base = null, uri = null;
-        String uriRef = getNsPropExact(cur, "href", null);
-        if (uriRef == null)
+        String uri_ref = getNsPropExact(cur, "href", null);
+        if (uri_ref == null)
         {
             transformError(null, style, cur, "xsl:import : missing href attribute\n");
             return ret;
         }
         base = nodeGetBase(style.doc, cur);
-        uri = XmlUri.build(uriRef, base);
+        uri = XmlUri.build(uri_ref, base);
         if (uri == null)
         {
-            transformError(null, style, cur, CFormat.format("xsl:import : invalid URI reference %s\n", uriRef));
+            transformError(null, style, cur, CFormat.format("xsl:import : invalid URI reference %s\n", uri_ref));
             return ret;
         }
         if (checkCycle(style, cur, uri) < 0) return ret;
@@ -4865,7 +4865,7 @@ public final class Xslt
     /** Port of xsltLoadStyleDocument (documents.c). */
     private static XsltDocument loadStyleDocument(Stylesheet style, String uri)
     {
-        for (XsltDocument ret = style.docList; ret != null; ret = ret.next)
+        for (XsltDocument ret = style.doc_list; ret != null; ret = ret.next)
         {
             if (ret.doc != null && domUrl(ret.doc) != null && streq(domUrl(ret.doc), uri)) return ret;
         }
@@ -4873,8 +4873,8 @@ public final class Xslt
         if (doc == null) return null;
         XsltDocument ret = new XsltDocument();
         ret.doc = doc;
-        ret.next = style.docList;
-        style.docList = ret;
+        ret.next = style.doc_list;
+        style.doc_list = ret;
         return ret;
     }
 
@@ -4883,17 +4883,17 @@ public final class Xslt
     {
         int ret = -1;
         String base = null, uri = null;
-        String uriRef = getNsPropExact(cur, "href", null);
-        if (uriRef == null)
+        String uri_ref = getNsPropExact(cur, "href", null);
+        if (uri_ref == null)
         {
             transformError(null, style, cur, "xsl:include : missing href attribute\n");
             return ret;
         }
         base = nodeGetBase(style.doc, cur);
-        uri = XmlUri.build(uriRef, base);
+        uri = XmlUri.build(uri_ref, base);
         if (uri == null)
         {
-            transformError(null, style, cur, CFormat.format("xsl:include : invalid URI reference %s\n", uriRef));
+            transformError(null, style, cur, CFormat.format("xsl:include : invalid URI reference %s\n", uri_ref));
             return ret;
         }
         if (checkCycle(style, cur, uri) < 0) return ret;
@@ -4903,18 +4903,18 @@ public final class Xslt
             transformError(null, style, cur, CFormat.format("xsl:include : unable to load %s\n", uri));
             return ret;
         }
-        XmlDocument oldDoc = style.doc;
+        XmlDocument old_doc = style.doc;
         style.doc = include.doc;
         // Chain to the stylesheet for the recursion check.
         include.includes = style.includes;
         style.includes = include;
-        int oldNopreproc = style.nopreproc;
+        int old_nopreproc = style.nopreproc;
         style.nopreproc = include.preproc;
         Stylesheet result = parseStylesheetProcess(style, include.doc);
-        style.nopreproc = oldNopreproc;
+        style.nopreproc = old_nopreproc;
         include.preproc = 1;
         style.includes = include.includes;
-        style.doc = oldDoc;
+        style.doc = old_doc;
         ret = result != null ? 0 : -1;
         return ret;
     }
@@ -4934,7 +4934,7 @@ public final class Xslt
             if (!prop.equals("1.0") && !prop.equals("1.1"))
             {
                 transformError(null, style, top, "xsl:version: only 1.1 features are supported\n");
-                style.forwardsCompatible = 1;
+                style.forwards_compatible = 1;
                 style.warnings++;
             }
         }
@@ -4943,7 +4943,7 @@ public final class Xslt
         XmlNode cur = nodeFirstChild(top);
         while (cur != null)
         {
-            style.principal.opCount += 1;
+            style.principal.op_count += 1;
             if (isBlankNode(cur))
             {
                 cur = nodeNext(cur);
@@ -4963,7 +4963,7 @@ public final class Xslt
         // The other top level elements.
         while (cur != null)
         {
-            style.principal.opCount += 1;
+            style.principal.op_count += 1;
             if (isBlankNode(cur))
             {
                 cur = nodeNext(cur);
@@ -5014,7 +5014,7 @@ public final class Xslt
             else if (isXsltName(cur, "namespace-alias")) namespaceAlias(style, cur);
             else
             {
-                if (style.forwardsCompatible == 0)
+                if (style.forwards_compatible == 0)
                 {
                     transformError(null, style, cur, CFormat.format("xsltParseStylesheetTop: unknown %s element\n",
                                                                     nodeName(cur) != null ? nodeName(cur) : "(null)"));
@@ -5037,7 +5037,7 @@ public final class Xslt
         }
         if (isXsltElem(cur) && (isXsltName(cur, "stylesheet") || isXsltName(cur, "transform")))
         {
-            ret.literalResult = 0;
+            ret.literal_result = 0;
             parseStylesheetExcludePrefix(ret, cur, 1);
             parseStylesheetExtPrefix(ret, cur, 1);
         }
@@ -5045,10 +5045,10 @@ public final class Xslt
         {
             parseStylesheetExcludePrefix(ret, cur, 0);
             parseStylesheetExtPrefix(ret, cur, 0);
-            ret.literalResult = 1;
+            ret.literal_result = 1;
         }
         if (ret.nopreproc == 0) preprocessStylesheet(ret, cur);
-        if (ret.literalResult == 0)
+        if (ret.literal_result == 0)
         {
             parseStylesheetTop(ret, cur);
         }
@@ -5064,7 +5064,7 @@ public final class Xslt
             if (!prop.equals("1.0") && !prop.equals("1.1"))
             {
                 transformError(null, ret, cur, "xsl:version: only 1.1 features are supported\n");
-                ret.forwardsCompatible = 1;
+                ret.forwards_compatible = 1;
                 ret.warnings++;
             }
             Template templ = newTemplate();
@@ -5076,7 +5076,7 @@ public final class Xslt
             templ.elem = domDocument(doc);
             templ.content = nodeFirstChild(domDocument(doc));
             addTemplate(ret, templ, null, null);
-            ret.literalResult = 1;
+            ret.literal_result = 1;
         }
         return ret;
     }
@@ -5210,28 +5210,28 @@ public final class Xslt
             return;
         }
         if (c.stype != null) dStr(mb, "stype", c.stype);
-        if (c.hasStype != 0) mb.append(CFormat.format(" has_stype=%d", c.hasStype));
+        if (c.has_stype != 0) mb.append(CFormat.format(" has_stype=%d", c.has_stype));
         if (c.number != 0) mb.append(CFormat.format(" number=%d", c.number));
         if (c.order != null) dStr(mb, "order", c.order);
-        if (c.hasOrder != 0) mb.append(CFormat.format(" has_order=%d", c.hasOrder));
+        if (c.has_order != 0) mb.append(CFormat.format(" has_order=%d", c.has_order));
         if (c.descending != 0) mb.append(CFormat.format(" descending=%d", c.descending));
         if (c.lang != null) dStr(mb, "lang", c.lang);
-        if (c.hasLang != 0) mb.append(CFormat.format(" has_lang=%d", c.hasLang));
-        if (c.caseOrder != null) dStr(mb, "case_order", c.caseOrder);
-        if (c.lowerFirst != 0) mb.append(CFormat.format(" lower_first=%d", c.lowerFirst));
+        if (c.has_lang != 0) mb.append(CFormat.format(" has_lang=%d", c.has_lang));
+        if (c.case_order != null) dStr(mb, "case_order", c.case_order);
+        if (c.lower_first != 0) mb.append(CFormat.format(" lower_first=%d", c.lower_first));
         if (c.use != null) dStr(mb, "use", c.use);
-        if (c.hasUse != 0) mb.append(CFormat.format(" has_use=%d", c.hasUse));
+        if (c.has_use != 0) mb.append(CFormat.format(" has_use=%d", c.has_use));
         if (c.noescape != 0) mb.append(CFormat.format(" noescape=%d", c.noescape));
         if (c.name != null) dStr(mb, "name", c.name);
-        if (c.hasName != 0) mb.append(CFormat.format(" has_name=%d", c.hasName));
+        if (c.has_name != 0) mb.append(CFormat.format(" has_name=%d", c.has_name));
         if (c.ns != null) dStr(mb, "ns", c.ns);
-        if (c.hasNs != 0) mb.append(CFormat.format(" has_ns=%d", c.hasNs));
+        if (c.has_ns != 0) mb.append(CFormat.format(" has_ns=%d", c.has_ns));
         if (c.mode != null) dStr(mb, "mode", c.mode);
-        if (c.modeUri != null) dStr(mb, "mode_uri", c.modeUri);
+        if (c.mode_uri != null) dStr(mb, "mode_uri", c.mode_uri);
         if (c.test != null) dStr(mb, "test", c.test);
         if (c.select != null) dStr(mb, "select", c.select);
         if (c.comp != null) mb.append(" comp");
-        if (nsNr(c.nsList) != 0) mb.append(CFormat.format(" ns_nr=%d", nsNr(c.nsList)));
+        if (nsNr(c.ns_list) != 0) mb.append(CFormat.format(" ns_nr=%d", nsNr(c.ns_list)));
         if (c.type == StylePreComp.FUNC_NUMBER)
         {
             NumberData n = c.numdata;
@@ -5241,7 +5241,7 @@ public final class Xslt
             dStr(mb, "value", n.value);
             dStr(mb, "format", n.format);
             mb.append(CFormat.format(" has_format=%d digits_per_group=%d grouping_character=%d count_pat=%d from_pat=%d",
-                                     n.hasFormat, n.digitsPerGroup, n.groupingCharacter, n.countPat != null ? 1 : 0, n.fromPat != null ? 1 : 0));
+                                     n.has_format, n.digits_per_group, n.grouping_character, n.count_pat != null ? 1 : 0, n.from_pat != null ? 1 : 0));
         }
     }
 
@@ -5249,7 +5249,7 @@ public final class Xslt
     {
         mb.append(CFormat.format(" avt=[strstart=%d", avt.strstart));
         boolean str = avt.strstart != 0;
-        for (int i = 0; i < avt.nbSeg; ++i)
+        for (int i = 0; i < avt.nb_seg; ++i)
         {
             Object seg = avt.segments.get(i);
             if (str && seg != null) dStr(mb, "s", (String)seg);
@@ -5326,7 +5326,7 @@ public final class Xslt
             dStr(mb, "p", p.pattern);
             mb.append(CFormat.format(" prio=%g", (double)p.priority));
             if (p.mode != null) dStr(mb, "mode", p.mode);
-            if (p.modeUri != null) dStr(mb, "mode_uri", p.modeUri);
+            if (p.mode_uri != null) dStr(mb, "mode_uri", p.mode_uri);
             if (p.templ != null)
             {
                 int ix = 0;
@@ -5347,24 +5347,24 @@ public final class Xslt
     {
         dIndent(mb, depth);
         mb.append(CFormat.format("stylesheet errors=%d warnings=%d literal_result=%d forwards_compatible=%d extras_nr=%d strip_all=%d\n",
-                                 style.errors, style.warnings, style.literalResult, style.forwardsCompatible, style.extrasNr, style.stripAll));
+                                 style.errors, style.warnings, style.literal_result, style.forwards_compatible, style.extras_nr, style.strip_all));
         dIndent(mb, depth);
         mb.append("output");
         dStr(mb, "method", style.method);
-        dStr(mb, "method_uri", style.methodUri);
+        dStr(mb, "method_uri", style.method_uri);
         dStr(mb, "version", style.version);
         dStr(mb, "encoding", style.encoding);
-        mb.append(CFormat.format(" omit=%d standalone=%d indent=%d", style.omitXmlDeclaration, style.standalone, style.indent));
-        dStr(mb, "doctype_public", style.doctypePublic);
-        dStr(mb, "doctype_system", style.doctypeSystem);
-        dStr(mb, "media_type", style.mediaType);
-        dStr(mb, "default_alias", style.defaultAlias);
+        mb.append(CFormat.format(" omit=%d standalone=%d indent=%d", style.omit_xml_declaration, style.standalone, style.indent));
+        dStr(mb, "doctype_public", style.doctype_public);
+        dStr(mb, "doctype_system", style.doctype_system);
+        dStr(mb, "media_type", style.media_type);
+        dStr(mb, "default_alias", style.default_alias);
         mb.append('\n');
 
         List<Map<String, String>> maps = new ArrayList<>();
-        maps.add(style.stripSpaces);
-        maps.add(style.cdataSection);
-        maps.add(style.nsAliases);
+        maps.add(style.strip_spaces);
+        maps.add(style.cdata_section);
+        maps.add(style.ns_aliases);
         String[] labels = { "space", "cdata", "alias" };
         for (int m = 0; m < 3; ++m)
         {
@@ -5382,14 +5382,14 @@ public final class Xslt
             }
             dSorted(mb, lines);
         }
-        for (int i = 0; i < style.exclPrefixTab.size(); ++i)
+        for (int i = 0; i < style.excl_prefix_tab.size(); ++i)
         {
             dIndent(mb, depth);
             mb.append("exclude");
-            dStr(mb, "uri", style.exclPrefixTab.get(i));
+            dStr(mb, "uri", style.excl_prefix_tab.get(i));
             mb.append('\n');
         }
-        for (ExtDef d = style.nsDefs; d != null; d = d.next)
+        for (ExtDef d = style.ns_defs; d != null; d = d.next)
         {
             dIndent(mb, depth);
             mb.append("extension");
@@ -5397,22 +5397,22 @@ public final class Xslt
             dStr(mb, "uri", d.uri);
             mb.append('\n');
         }
-        for (DecimalFormat f = style.decimalFormat; f != null; f = f.next)
+        for (DecimalFormat f = style.decimal_format; f != null; f = f.next)
         {
             dIndent(mb, depth);
             mb.append("decimal-format");
             dStr(mb, "name", f.name);
-            dStr(mb, "ns", f.nsUri);
+            dStr(mb, "ns", f.ns_uri);
             dStr(mb, "digit", f.digit);
-            dStr(mb, "pattern_separator", f.patternSeparator);
-            dStr(mb, "minus_sign", f.minusSign);
+            dStr(mb, "pattern_separator", f.pattern_separator);
+            dStr(mb, "minus_sign", f.minus_sign);
             dStr(mb, "infinity", f.infinity);
-            dStr(mb, "nan", f.noNumber);
-            dStr(mb, "decimal_point", f.decimalPoint);
+            dStr(mb, "nan", f.no_number);
+            dStr(mb, "decimal_point", f.decimal_point);
             dStr(mb, "grouping", f.grouping);
             dStr(mb, "percent", f.percent);
             dStr(mb, "permille", f.permille);
-            dStr(mb, "zero_digit", f.zeroDigit);
+            dStr(mb, "zero_digit", f.zero_digit);
             mb.append('\n');
         }
         for (KeyDef k = style.keys; k != null; k = k.next)
@@ -5420,7 +5420,7 @@ public final class Xslt
             dIndent(mb, depth);
             mb.append("key");
             dStr(mb, "name", k.name);
-            dStr(mb, "name_uri", k.nameUri);
+            dStr(mb, "name_uri", k.name_uri);
             dStr(mb, "match", k.match);
             dStr(mb, "use", k.use);
             mb.append(CFormat.format(" comp=%d usecomp=%d\n", k.comp != null ? 1 : 0, k.usecomp != null ? 1 : 0));
@@ -5430,14 +5430,14 @@ public final class Xslt
             dIndent(mb, depth);
             mb.append(CFormat.format("global %s", styleTypeName(v.comp != null ? v.comp.type : 0)));
             dStr(mb, "name", v.name);
-            dStr(mb, "name_uri", v.nameUri);
+            dStr(mb, "name_uri", v.name_uri);
             dStr(mb, "select", v.select);
             mb.append(CFormat.format(" tree=%d computed=%d\n", v.tree != null ? 1 : 0, v.computed));
         }
-        if (style.attributeSets != null)
+        if (style.attribute_sets != null)
         {
             List<String> lines = new ArrayList<>();
-            for (AttrSet set = style.attributeSetList; set != null; set = set.nextInOrder)
+            for (AttrSet set = style.attribute_set_list; set != null; set = set.next_in_order)
             {
                 StringBuilder l = new StringBuilder();
                 dIndent(l, depth);
@@ -5454,7 +5454,7 @@ public final class Xslt
                     dStr(l, "ns", c != null ? c.ns : null);
                     l.append(CFormat.format(" line=%d ]", nodeLine(a.attr)));
                 }
-                for (UseAttrSet u = set.useAttrSets; u != null; u = u.next)
+                for (UseAttrSet u = set.use_attr_sets; u != null; u = u.next)
                 {
                     l.append(" use");
                     dStr(l, "ncname", u.ncname);
@@ -5471,26 +5471,26 @@ public final class Xslt
             mb.append("template");
             dStr(mb, "match", t.match);
             dStr(mb, "name", t.name);
-            dStr(mb, "name_uri", t.nameUri);
+            dStr(mb, "name_uri", t.name_uri);
             dStr(mb, "mode", t.mode);
-            dStr(mb, "mode_uri", t.modeUri);
+            dStr(mb, "mode_uri", t.mode_uri);
             mb.append(CFormat.format(" prio=%g position=%d content=%d inherited=%d", (double)t.priority, t.position,
-                                     t.content != null ? 1 : 0, t.inheritedNsNr));
-            for (int i = 0; i < t.inheritedNsNr; ++i) dStr(mb, "ns", nsPrefix(t.inheritedNs[i]));
+                                     t.content != null ? 1 : 0, t.inherited_ns_nr));
+            for (int i = 0; i < t.inherited_ns_nr; ++i) dStr(mb, "ns", nsPrefix(t.inherited_ns[i]));
             mb.append('\n');
         }
-        dPatterns(mb, "root_match", style.rootMatch, depth);
-        dPatterns(mb, "key_match", style.keyMatch, depth);
-        dPatterns(mb, "elem_match", style.elemMatch, depth);
-        dPatterns(mb, "attr_match", style.attrMatch, depth);
-        dPatterns(mb, "parent_match", style.parentMatch, depth);
-        dPatterns(mb, "text_match", style.textMatch, depth);
-        dPatterns(mb, "pi_match", style.piMatch, depth);
-        dPatterns(mb, "comment_match", style.commentMatch, depth);
-        if (style.templatesHash != null)
+        dPatterns(mb, "root_match", style.root_match, depth);
+        dPatterns(mb, "key_match", style.key_match, depth);
+        dPatterns(mb, "elem_match", style.elem_match, depth);
+        dPatterns(mb, "attr_match", style.attr_match, depth);
+        dPatterns(mb, "parent_match", style.parent_match, depth);
+        dPatterns(mb, "text_match", style.text_match, depth);
+        dPatterns(mb, "pi_match", style.pi_match, depth);
+        dPatterns(mb, "comment_match", style.comment_match, depth);
+        if (style.templates_hash != null)
         {
             List<String> lines = new ArrayList<>();
-            for (Map.Entry<String, Pattern> e : style.templatesHash.entrySet())
+            for (Map.Entry<String, Pattern> e : style.templates_hash.entrySet())
             {
                 if (e.getValue() == null) continue;
                 StringBuilder l = new StringBuilder();
@@ -5507,12 +5507,12 @@ public final class Xslt
         {
             dIndent(mb, depth);
             mb.append("document");
-            XmlNode docNode = domDocument(style.doc);
-            if (nodeUserData(docNode) != null) dPrecomp(mb, nodeUserData(docNode));
+            XmlNode doc_node = domDocument(style.doc);
+            if (nodeUserData(doc_node) != null) dPrecomp(mb, nodeUserData(doc_node));
             mb.append('\n');
-            dTree(mb, nodeFirstChild(docNode), depth + 1);
+            dTree(mb, nodeFirstChild(doc_node), depth + 1);
         }
-        for (XsltDocument d = style.docList; d != null; d = d.next)
+        for (XsltDocument d = style.doc_list; d != null; d = d.next)
         {
             dIndent(mb, depth);
             mb.append(CFormat.format("include preproc=%d\n", d.preproc));

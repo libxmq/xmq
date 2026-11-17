@@ -35,7 +35,7 @@ public class XmlElement extends XmlNode
 {
     XmlNs ns_;
     final List<XmlAttr> attributes_ = new ArrayList<>();
-    final List<XmlNs> nsDefs_ = new ArrayList<>();
+    final List<XmlNs> ns_defs_ = new ArrayList<>();
 
     /**
      * Create an element.
@@ -76,7 +76,7 @@ public class XmlElement extends XmlNode
      */
     public List<XmlNs> nsDefs()
     {
-        return nsDefs_;
+        return ns_defs_;
     }
 
     /**
@@ -89,12 +89,12 @@ public class XmlElement extends XmlNode
      */
     public XmlNs declareNs(String prefix, String href)
     {
-        for (XmlNs n : nsDefs_)
+        for (XmlNs n : ns_defs_)
         {
             if (java.util.Objects.equals(n.prefix(), prefix)) return n;
         }
         XmlNs n = new XmlNs(prefix, href);
-        nsDefs_.add(n);
+        ns_defs_.add(n);
         return n;
     }
 
@@ -109,7 +109,7 @@ public class XmlElement extends XmlNode
         if ("xml".equals(prefix)) return XML_NS;
         for (XmlNode n = this; n instanceof XmlElement e; n = n.parent_)
         {
-            for (XmlNs ns : e.nsDefs_)
+            for (XmlNs ns : e.ns_defs_)
             {
                 if (java.util.Objects.equals(ns.prefix(), prefix)) return ns;
             }

@@ -70,12 +70,12 @@ final class Template
     String match;
     float priority;
     String name;
-    String nameUri;
+    String name_uri;
     String mode;
-    String modeUri;
+    String mode_uri;
     XmlNode content;        // The first node of the template body.
     XmlNode elem;           // The xsl:template element (or the document of a literal result stylesheet).
-    XmlNs[] inheritedNs;    // The namespaces in scope of the template, for literal result elements.
-    int inheritedNsNr;
+    XmlNs[] inherited_ns;    // The namespaces in scope of the template, for literal result elements.
+    int inherited_ns_nr;
     int position;
 }

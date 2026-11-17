@@ -60,16 +60,16 @@ public final class XmlStreamCtxt
     /** the compiled stream */
     XmlPattern.StreamComp comp;
     /** number of states in the automata */
-    int nbState;
+    int nb_state;
     /** allocated number of states */
-    int maxState;
+    int max_state;
     /** how deep are we ? */
     int level;
     /** the array of step indexes */
     int[] states;
     /** validation options */
     int flags;
-    int blockLevel;
+    int block_level;
 
     XmlStreamCtxt()
     {

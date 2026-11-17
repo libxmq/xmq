@@ -47,7 +47,7 @@ public abstract class XmlNode
     /** The line of the node in its source, like libxml2 (0 if unknown). */
     int line_;
     /** Data attached by the user of the dom (the xslt compiler keeps its precompiled instructions here). */
-    Object userData_;
+    Object user_data_;
     /** Creation order, orders nodes of different trees like the C version (that compares addresses). */
     final long seq_ = SEQ.getAndIncrement();
     private static final java.util.concurrent.atomic.AtomicLong SEQ = new java.util.concurrent.atomic.AtomicLong();
@@ -350,7 +350,7 @@ public abstract class XmlNode
         {
             if (parent_.children_ == this) parent_.children_ = next_;
             if (parent_.last_ == this) parent_.last_ = prev_;
-            if (parent_ instanceof XmlDocument d && d.intSubset_ == this) d.intSubset_ = null;
+            if (parent_ instanceof XmlDocument d && d.int_subset_ == this) d.int_subset_ = null;
         }
         if (prev_ != null) prev_.next_ = next_;
         if (next_ != null) next_.prev_ = prev_;

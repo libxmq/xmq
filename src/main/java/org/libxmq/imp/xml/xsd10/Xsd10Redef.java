@@ -61,9 +61,9 @@ public final class Xsd10Redef
     /** The to-be-redefined component. */
     Xsd10BasicItem target;
     /** The name of the to-be-redefined component. */
-    String refName;
-    /** C {@code const char * refTargetNs}. */
-    String refTargetNs;
+    String ref_name;
+    /** C {@code const char * ref_target_ns}. */
+    String ref_target_ns;
     /** The redefined schema. */
-    Xsd10Bucket targetBucket;
+    Xsd10Bucket target_bucket;
 }

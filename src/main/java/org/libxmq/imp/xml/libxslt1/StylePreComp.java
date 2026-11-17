@@ -104,31 +104,31 @@ final class StylePreComp
     int ext;                // For FUNC_EXTENSION and FUNC_DOCUMENT.
     XmlNode inst;
     String stype;
-    int hasStype;
+    int has_stype;
     int number;
     String order;
-    int hasOrder;
+    int has_order;
     int descending;
     String lang;
-    int hasLang;
-    String caseOrder;
-    int lowerFirst;
+    int has_lang;
+    String case_order;
+    int lower_first;
     String use;
-    int hasUse;
+    int has_use;
     int noescape;
     String name;
-    int hasName;
+    int has_name;
     String ns;
-    int hasNs;
+    int has_ns;
     String mode;
-    String modeUri;
+    String mode_uri;
     String test;
     String select;
     int ver11;
     String filename;
-    int hasFilename;
+    int has_filename;
     Template templ;         // The called template (call-template), found at runtime.
     NumberData numdata = new NumberData();
     XPath comp;
-    Map<String, String> nsList; // The namespaces in scope (xmlGetNsList), in order, the first of a prefix wins.
+    Map<String, String> ns_list; // The namespaces in scope (xmlGetNsList), in order, the first of a prefix wins.
 }

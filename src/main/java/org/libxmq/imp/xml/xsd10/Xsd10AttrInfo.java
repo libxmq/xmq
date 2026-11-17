@@ -58,10 +58,10 @@ public final class Xsd10AttrInfo extends Xsd10NodeInfo
     Xsd10AttributeUse use;
     /** C {@code int state}. */
     int state;
-    /** C {@code int metaType}. */
-    int metaType;
+    /** C {@code int meta_type}. */
+    int meta_type;
     /** the value constraint value */
-    String vcValue;
+    String vc_value;
     /** C {@code XmlXsd10NodeInfo * parent}. */
     Xsd10NodeInfo parent;
 }

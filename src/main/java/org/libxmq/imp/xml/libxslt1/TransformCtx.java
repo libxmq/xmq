@@ -76,48 +76,48 @@ public final class TransformCtx
     XmlNode node;           // The current node (ctxt->node).
     XmlNode inst;           // The current instruction (ctxt->inst).
     // The context position and size of the libxslt xpath context.
-    long xpPosition;
-    long xpSize;
+    long xp_position;
+    long xp_size;
     String mode;
-    String modeUri;
+    String mode_uri;
     List<RuntimeExtra> extras = new ArrayList<>();
-    int extrasNr;
+    int extras_nr;
     // The transformation (transform.c, variables.c).
     XmlDocument output;     // The tree being built (the result or a result tree fragment).
     XmlNode insert;         // Where new nodes are added.
     int type;               // OUTPUT_XML, OUTPUT_HTML, OUTPUT_TEXT.
     Template templ;         // The current template.
-    List<Template> templTab = new ArrayList<>();
-    int templNr;
-    List<StackElem> varsTab = new ArrayList<>(); // The stack of local variables and parameters.
-    int varsNr;
-    int varsBase;
+    List<Template> templ_tab = new ArrayList<>();
+    int templ_nr;
+    List<StackElem> vars_tab = new ArrayList<>(); // The stack of local variables and parameters.
+    int vars_nr;
+    int vars_base;
     StackElem vars;
-    HashMap<String, StackElem> globalVars;      // "name\1uri" -> StackElem
-    StackElem globalVarsList;
-    Template currentTemplateRule;
-    NodeList nodeList;      // The node list being processed (for xsl:sort).
+    HashMap<String, StackElem> global_vars;      // "name\1uri" -> StackElem
+    StackElem global_vars_list;
+    Template current_template_rule;
+    NodeList node_list;      // The node list being processed (for xsl:sort).
     int depth;
-    int maxTemplateDepth;
-    int maxTemplateVars;
-    XmlNode initialContextNode;
-    XmlDocument initialContextDoc;
-    StackElem contextVariable;
-    RVT tmpRvt;             // Result tree fragments of the template (xsltRegisterTmpRVT).
-    RVT localRvt;           // Of the current instruction (xsltRegisterLocalRVT).
-    RVT persistRvt;         // Kept until the end (global variables).
-    long opCount;
-    long opLimit;
-    DocInfo docList;        // Documents of the transformation (the source and document()), with their keys.
+    int max_template_depth;
+    int max_template_vars;
+    XmlNode initial_context_node;
+    XmlDocument initial_context_doc;
+    StackElem context_variable;
+    RVT tmp_rvt;             // Result tree fragments of the template (xsltRegisterTmpRVT).
+    RVT local_rvt;           // Of the current instruction (xsltRegisterLocalRVT).
+    RVT persist_rvt;         // Kept until the end (global variables).
+    long op_count;
+    long op_limit;
+    DocInfo doc_list;        // Documents of the transformation (the source and document()), with their keys.
     DocInfo document;       // The current document.
-    int hasTemplKeyPatterns;
-    int nbKeys;
-    int keyInitLevel;
+    int has_templ_key_patterns;
+    int nb_keys;
+    int key_init_level;
     String[] params;        // name, value pairs (xpath expressions).
-    java.util.IdentityHashMap<XmlNode, Boolean> keyedNodes; // The source nodes with keys (XSLT_SOURCE_NODE_HAS_KEY).
-    java.util.IdentityHashMap<XmlNode, String> generatedIds;  // node -> id of generate-id().
-    String outputFile;      // The file the result goes to (ctxt->outputFile), for xsl:document.
-    long currentId;
+    java.util.IdentityHashMap<XmlNode, Boolean> keyed_nodes; // The source nodes with keys (XSLT_SOURCE_NODE_HAS_KEY).
+    java.util.IdentityHashMap<XmlNode, String> generated_ids;  // node -> id of generate-id().
+    String output_file;      // The file the result goes to (ctxt->output_file), for xsl:document.
+    long current_id;
 
     TransformCtx()
     {

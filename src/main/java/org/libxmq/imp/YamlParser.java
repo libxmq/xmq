@@ -190,10 +190,10 @@ public class YamlParser extends XMQParseIntoDOM
     }
 
     // A trailing ' #' comment not inside a quoted scalar, -1 if none.
-    int yclfind_comment(int lineStart)
+    int yclfind_comment(int line_start)
     {
         char q = 0;
-        for (int i = lineStart; buf[i] != 0; i++)
+        for (int i = line_start; buf[i] != 0; i++)
         {
             char c = buf[i];
             if (q == '\'')
@@ -212,7 +212,7 @@ public class YamlParser extends XMQParseIntoDOM
             else
             {
                 if (c == '\'' || c == '"') q = c;
-                else if (c == '#' && (i == lineStart || buf[i - 1] == ' ' || buf[i - 1] == '\t')) return i;
+                else if (c == '#' && (i == line_start || buf[i - 1] == ' ' || buf[i - 1] == '\t')) return i;
             }
         }
         return -1;

@@ -63,7 +63,7 @@ public final class Xsd10Type extends Xsd10BasicItem
     /** Deprecated; not used */
     String ref;
     /** Deprecated; not used */
-    String refNs;
+    String ref_ns;
     /** C {@code XmlXsd10Annot * annot}. */
     Xsd10Annot annot;
     /** C {@code XmlXsd10Type * subtypes}. */
@@ -73,19 +73,19 @@ public final class Xsd10Type extends Xsd10BasicItem
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** Deprecated; not used */
-    int minOccurs;
+    int min_occurs;
     /** Deprecated; not used */
-    int maxOccurs;
+    int max_occurs;
     /** C {@code int flags}. */
     int flags;
-    /** C {@code XmlXsd10ContentType contentType}. */
-    int contentType;
+    /** C {@code XmlXsd10ContentType content_type}. */
+    int content_type;
     /** Base type's local name */
     String base;
     /** Base type's target namespace */
-    String baseNs;
+    String base_ns;
     /** The base type component */
-    Xsd10Type baseType;
+    Xsd10Type base_type;
     /** Local facets */
     Xsd10Facet facets;
     /** Deprecated; not used */
@@ -93,23 +93,23 @@ public final class Xsd10Type extends Xsd10BasicItem
     /** Obsolete */
     int recurse;
     /** Deprecated; not used */
-    Xsd10AttributeLink[] attributeUses;
-    /** C {@code XmlXsd10Wildcard * attributeWildcard}. */
-    Xsd10Wildcard attributeWildcard;
+    Xsd10AttributeLink[] attribute_uses;
+    /** C {@code XmlXsd10Wildcard * attribute_wildcard}. */
+    Xsd10Wildcard attribute_wildcard;
     /** Type of built-in types. */
-    int builtInType;
+    int built_in_type;
     /** member-types if a union type. */
-    Xsd10TypeLink memberTypes;
+    Xsd10TypeLink member_types;
     /** All facets (incl. inherited) */
-    Xsd10FacetLink facetSet;
+    Xsd10FacetLink facet_set;
     /** Deprecated; not used */
-    String refPrefix;
-    /** C {@code XmlXsd10Type * contentTypeDef}. */
-    Xsd10Type contentTypeDef;
+    String ref_prefix;
+    /** C {@code XmlXsd10Type * content_type_def}. */
+    Xsd10Type content_type_def;
     /** Holds the automaton of the content model (a compiled regexp) */
-    Object contModel;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
-    /** C {@code void * attrUses}. */
-    Object attrUses;
+    Object cont_model;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
+    /** C {@code void * attr_uses}. */
+    Object attr_uses;
 }

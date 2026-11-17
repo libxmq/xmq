@@ -44,8 +44,8 @@ public class XmlEntityDecl extends XmlNode
     int etype_;
     String content_; // The value with character references expanded.
     String orig_;    // The literal value as written in the source, without quotes.
-    String externalId_;
-    String systemId_;
+    String external_id_;
+    String system_id_;
 
     /**
      * Create an entity declaration.
@@ -56,12 +56,12 @@ public class XmlEntityDecl extends XmlNode
      * @param content The (expanded) content, or the notation name for unparsed entities.
      * @param orig The literal value as written, or null.
      */
-    public XmlEntityDecl(String name, int etype, String externalId, String systemId, String content, String orig)
+    public XmlEntityDecl(String name, int etype, String external_id, String system_id, String content, String orig)
     {
         super(name);
         etype_ = etype;
-        externalId_ = externalId;
-        systemId_ = systemId;
+        external_id_ = external_id;
+        system_id_ = system_id;
         content_ = content;
         orig_ = orig;
     }
@@ -102,7 +102,7 @@ public class XmlEntityDecl extends XmlNode
      */
     public String externalId()
     {
-        return externalId_;
+        return external_id_;
     }
 
     /**
@@ -111,7 +111,7 @@ public class XmlEntityDecl extends XmlNode
      */
     public String systemId()
     {
-        return systemId_;
+        return system_id_;
     }
 
     @Override

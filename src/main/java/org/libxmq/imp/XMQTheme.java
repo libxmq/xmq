@@ -310,38 +310,38 @@ public class XMQTheme
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5\"><style>",
             "</style></head>");
 
-        StringBuilder stylePre = new StringBuilder();
-        stylePre.append("@media screen and (orientation: portrait) { pre { font-size: 2vw; } }")
+        StringBuilder style_pre = new StringBuilder();
+        style_pre.append("@media screen and (orientation: portrait) { pre { font-size: 2vw; } }")
                 .append("@media screen and (orientation: landscape) { pre { max-width: 98%; } }");
 
         body = new XMQThemeStrings("<body class=\"" + bgModeClass(bg) + "\">", "</body>");
 
         // Default body background (light mode / no preference).
         XMQColorDef def = colors_lightbg[XMQ_COLOR_BG_INDEX];
-        stylePre.append("body{background-color:#");
-        if (def.r != -1) stylePre.append(hex(def.r, def.g, def.b));
-        else stylePre.append("ffffff");
-        stylePre.append(";}\n");
+        style_pre.append("body{background-color:#");
+        if (def.r != -1) style_pre.append(hex(def.r, def.g, def.b));
+        else style_pre.append("ffffff");
+        style_pre.append(";}\n");
 
         // CSS for dark mode (applied when the browser prefers dark mode).
-        stylePre.append("@media (prefers-color-scheme: dark) {\n");
-        stylePre.append("body.xmq_auto{background-color:black;}\n");
-        appendPreHtmlColoring(stylePre, true, "xmq_auto");
-        stylePre.append("}\n");
+        style_pre.append("@media (prefers-color-scheme: dark) {\n");
+        style_pre.append("body.xmq_auto{background-color:black;}\n");
+        appendPreHtmlColoring(style_pre, true, "xmq_auto");
+        style_pre.append("}\n");
 
         // Forced dark mode (--bg=dark).
-        stylePre.append("body.xmq_dark{background-color:black;}\n");
-        appendPreHtmlColoring(stylePre, true, "xmq_dark");
+        style_pre.append("body.xmq_dark{background-color:black;}\n");
+        appendPreHtmlColoring(style_pre, true, "xmq_dark");
 
         // CSS for light mode (applied when the browser prefers light mode).
-        stylePre.append("@media (prefers-color-scheme: light) {\n");
-        appendPreHtmlColoring(stylePre, false, "xmq_auto");
-        stylePre.append("}\n");
+        style_pre.append("@media (prefers-color-scheme: light) {\n");
+        appendPreHtmlColoring(style_pre, false, "xmq_auto");
+        style_pre.append("}\n");
 
         // Forced light mode (--bg=light).
-        appendPreHtmlColoring(stylePre, false, "xmq_light");
+        appendPreHtmlColoring(style_pre, false, "xmq_light");
 
-        style = new XMQThemeStrings(stylePre.toString(), null);
+        style = new XMQThemeStrings(style_pre.toString(), null);
 
         content = new XMQThemeStrings(pre, "</pre>");
     }

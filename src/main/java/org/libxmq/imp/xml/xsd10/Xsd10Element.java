@@ -63,7 +63,7 @@ public final class Xsd10Element extends Xsd10BasicItem
     /** Deprecated; not used */
     String ref;
     /** Deprecated; not used */
-    String refNs;
+    String ref_ns;
     /** C {@code XmlXsd10Annot * annot}. */
     Xsd10Annot annot;
     /** the type definition */
@@ -73,35 +73,35 @@ public final class Xsd10Element extends Xsd10BasicItem
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** Deprecated; not used */
-    int minOccurs;
+    int min_occurs;
     /** Deprecated; not used */
-    int maxOccurs;
+    int max_occurs;
     /** C {@code int flags}. */
     int flags;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
-    /** C {@code const char * namedType}. */
-    String namedType;
-    /** C {@code const char * namedTypeNs}. */
-    String namedTypeNs;
-    /** C {@code const char * substGroup}. */
-    String substGroup;
-    /** C {@code const char * substGroupNs}. */
-    String substGroupNs;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
+    /** C {@code const char * named_type}. */
+    String named_type;
+    /** C {@code const char * named_type_ns}. */
+    String named_type_ns;
+    /** C {@code const char * subst_group}. */
+    String subst_group;
+    /** C {@code const char * subst_group_ns}. */
+    String subst_group_ns;
     /** C {@code const char * scope}. */
     String scope;
     /** The original value of the value constraint. */
     String value;
-    /** C {@code struct XmlXsd10Element * refDecl}. */
-    Xsd10Element refDecl;
+    /** C {@code struct XmlXsd10Element * ref_decl}. */
+    Xsd10Element ref_decl;
     /** Obsolete for WXS, maybe used for RelaxNG */
-    Object contModel;
-    /** C {@code XmlXsd10ContentType contentType}. */
-    int contentType;
+    Object cont_model;
+    /** C {@code XmlXsd10ContentType content_type}. */
+    int content_type;
     /** Deprecated; not used */
-    String refPrefix;
+    String ref_prefix;
     /** The compiled value constraint. */
-    Xsd10Val defVal;
+    Xsd10Val def_val;
     /** The identity-constraint defs */
     Object idcs;
 }

@@ -235,7 +235,7 @@ public final class XmlRegexp
         int type;
         int start;
         int end;
-        String blockName;
+        String block_name;
     }
 
     // struct XmlRegAtom
@@ -254,8 +254,8 @@ public final class XmlRegexp
         XmlAutomataState start;
         XmlAutomataState start0;
         XmlAutomataState stop;
-        int maxRanges;
-        int nbRanges;
+        int max_ranges;
+        int nb_ranges;
         RegRange[] ranges;
         Object data;
     }
@@ -295,11 +295,11 @@ public final class XmlRegexp
 
     // struct XmlRegexp
     byte[] string;
-    int nbStates;
+    int nb_states;
     XmlAutomataState[] states;
-    int nbAtoms;
+    int nb_atoms;
     RegAtom[] atoms;
-    int nbCounters;
+    int nb_counters;
     RegCounter[] counters;
     int determinist;
     int flags;
@@ -310,7 +310,7 @@ public final class XmlRegexp
     int[] compact;
     Object[] transdata;
     int nbstrings;
-    String[] stringMap;
+    String[] string_map;
 
     XmlRegexp()
     {
@@ -590,15 +590,15 @@ public final class XmlRegexp
      */
     private static int regCalloc2(long dim1, long dim2)
     {
-        long numElems;
+        long num_elems;
 
         /* Check for overflow */
         if (dim2 == 0)
             return -1;
-        numElems = dim1 * dim2;
-        if (numElems > XML_MAX_ITEMS)
+        num_elems = dim1 * dim2;
+        if (num_elems > XML_MAX_ITEMS)
             return -1;
-        return (int) numElems;
+        return (int) num_elems;
     }
 
     // xml_reg_epx_from_parse
@@ -612,11 +612,11 @@ public final class XmlRegexp
 
         ret = new XmlRegexp();
         ret.string = ctxt.string;
-        ret.nbStates = ctxt.nbStates;
+        ret.nb_states = ctxt.nb_states;
         ret.states = ctxt.states;
-        ret.nbAtoms = ctxt.nbAtoms;
+        ret.nb_atoms = ctxt.nb_atoms;
         ret.atoms = ctxt.atoms;
-        ret.nbCounters = ctxt.nbCounters;
+        ret.nb_counters = ctxt.nb_counters;
         ret.counters = ctxt.counters;
         ret.determinist = ctxt.determinist;
         ret.flags = ctxt.flags;
@@ -630,18 +630,18 @@ public final class XmlRegexp
         }
 
         if ((ret.determinist != 0) &&
-            (ret.nbCounters == 0) &&
+            (ret.nb_counters == 0) &&
             (ctxt.negs == 0) &&
             (ret.atoms != null) &&
             (ret.atoms[0] != null) &&
             (ret.atoms[0].type == XML_REGEXP_STRING))
         {
             int i, j, nbstates = 0, nbatoms = 0;
-            int[] stateRemap;
-            int[] stringRemap;
+            int[] state_remap;
+            int[] string_remap;
             int[] transitions;
             Object[] transdata;
-            String[] stringMap;
+            String[] string_map;
             String value;
 
             /*
@@ -652,22 +652,22 @@ public final class XmlRegexp
              * 3/ build a table state x atom for the transitions
              */
 
-            stateRemap = new int[ret.nbStates];
-            for (i = 0; i < ret.nbStates; i++)
+            state_remap = new int[ret.nb_states];
+            for (i = 0; i < ret.nb_states; i++)
             {
                 if (ret.states[i] != null)
                 {
-                    stateRemap[i] = nbstates;
+                    state_remap[i] = nbstates;
                     nbstates++;
                 }
                 else
                 {
-                    stateRemap[i] = -1;
+                    state_remap[i] = -1;
                 }
             }
-            stringMap = new String[ret.nbAtoms];
-            stringRemap = new int[ret.nbAtoms];
-            for (i = 0; i < ret.nbAtoms; i++)
+            string_map = new String[ret.nb_atoms];
+            string_remap = new int[ret.nb_atoms];
+            for (i = 0; i < ret.nb_atoms; i++)
             {
                 if ((ret.atoms[i].type == XML_REGEXP_STRING) &&
                     (ret.atoms[i].quant == XML_REGEXP_QUANT_ONCE))
@@ -675,17 +675,17 @@ public final class XmlRegexp
                     value = (String) ret.atoms[i].valuep;
                     for (j = 0; j < nbatoms; j++)
                     {
-                        if (regStrEqual(stringMap[j], value) != 0)
+                        if (regStrEqual(string_map[j], value) != 0)
                         {
-                            stringRemap[i] = j;
+                            string_remap[i] = j;
                             break;
                         }
                     }
                     if (j >= nbatoms)
                     {
-                        stringRemap[i] = nbatoms;
-                        stringMap[nbatoms] = regStrdup(value);
-                        if (stringMap[nbatoms] == null)
+                        string_remap[i] = nbatoms;
+                        string_map[nbatoms] = regStrdup(value);
+                        if (string_map[nbatoms] == null)
                         {
                             /* C: strdup(NULL) fails, the regexp is lost. */
                             return null;
@@ -711,25 +711,25 @@ public final class XmlRegexp
              */
             transdata = null;
 
-            for (i = 0; i < ret.nbStates; i++)
+            for (i = 0; i < ret.nb_states; i++)
             {
                 int stateno, atomno, targetno, prev;
                 XmlAutomataState state;
                 RegTrans trans;
 
-                stateno = stateRemap[i];
+                stateno = state_remap[i];
                 if (stateno == -1)
                     continue;
                 state = ret.states[i];
 
                 transitions[stateno * (nbatoms + 1)] = state.type;
 
-                for (j = 0; j < state.nbTrans; j++)
+                for (j = 0; j < state.nb_trans; j++)
                 {
                     trans = state.trans[j];
                     if ((trans.to < 0) || (trans.atom == null))
                         continue;
-                    atomno = stringRemap[trans.atom.no];
+                    atomno = string_remap[trans.atom.no];
                     if ((trans.atom.data != null) && (transdata == null))
                     {
                         int nbd = regCalloc2(nbstates, nbatoms);
@@ -740,7 +740,7 @@ public final class XmlRegexp
                         }
                         transdata = new Object[nbd];
                     }
-                    targetno = stateRemap[trans.to];
+                    targetno = state_remap[trans.to];
                     /*
                      * if the same atom can generate transitions to 2 different
                      * states then it means the automata is not deterministic and
@@ -770,13 +770,13 @@ public final class XmlRegexp
              * Cleanup of the old data
              */
             ret.states = null;
-            ret.nbStates = 0;
+            ret.nb_states = 0;
             ret.atoms = null;
-            ret.nbAtoms = 0;
+            ret.nb_atoms = 0;
 
             ret.compact = transitions;
             ret.transdata = transdata;
-            ret.stringMap = stringMap;
+            ret.string_map = string_map;
             ret.nbstrings = nbatoms;
             ret.nbstates = nbstates;
         }
@@ -787,11 +787,11 @@ public final class XmlRegexp
     private static XmlRegexp notDeterm(XmlAutomata ctxt, XmlRegexp ret)
     {
         ctxt.string = null;
-        ctxt.nbStates = 0;
+        ctxt.nb_states = 0;
         ctxt.states = null;
-        ctxt.nbAtoms = 0;
+        ctxt.nb_atoms = 0;
         ctxt.atoms = null;
-        ctxt.nbCounters = 0;
+        ctxt.nb_counters = 0;
         ctxt.counters = null;
         return ret;
     }
@@ -855,9 +855,9 @@ public final class XmlRegexp
             return null;
 
         ret = regNewRange(ctxt, range.neg, range.type, range.start, range.end);
-        if (range.blockName != null)
+        if (range.block_name != null)
         {
-            ret.blockName = regStrdup(range.blockName);
+            ret.block_name = regStrdup(range.block_name);
         }
         return ret;
     }
@@ -899,12 +899,12 @@ public final class XmlRegexp
         ret.quant = atom.quant;
         ret.min = atom.min;
         ret.max = atom.max;
-        if (atom.nbRanges > 0)
+        if (atom.nb_ranges > 0)
         {
             int i;
 
-            ret.ranges = new RegRange[atom.nbRanges];
-            for (i = 0; i < atom.nbRanges; i++)
+            ret.ranges = new RegRange[atom.nb_ranges];
+            for (i = 0; i < atom.nb_ranges; i++)
             {
                 ret.ranges[i] = regCopyRange(ctxt, atom.ranges[i]);
                 if (ret.ranges[i] == null)
@@ -912,7 +912,7 @@ public final class XmlRegexp
                     regFreeAtom(ret);
                     return null;
                 }
-                ret.nbRanges = i + 1;
+                ret.nb_ranges = i + 1;
             }
         }
         return ret;
@@ -952,7 +952,7 @@ public final class XmlRegexp
     /* Port of xmlRegAtomAddRange. */
     private static RegRange regAtomAddRange(XmlAutomata ctxt, RegAtom atom,
                                             int neg, int type, int start, int end,
-                                            String blockName)
+                                            String block_name)
     {
         RegRange range;
 
@@ -966,22 +966,22 @@ public final class XmlRegexp
             ERROR(ctxt, "add range: atom is not ranges");
             return null;
         }
-        if (atom.nbRanges >= atom.maxRanges)
+        if (atom.nb_ranges >= atom.max_ranges)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(atom.maxRanges, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(atom.max_ranges, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return null;
             }
-            atom.ranges = atom.ranges == null ? new RegRange[newSize] : Arrays.copyOf(atom.ranges, newSize);
-            atom.maxRanges = newSize;
+            atom.ranges = atom.ranges == null ? new RegRange[new_size] : Arrays.copyOf(atom.ranges, new_size);
+            atom.max_ranges = new_size;
         }
         range = regNewRange(ctxt, neg, type, start, end);
-        range.blockName = blockName;
-        atom.ranges[atom.nbRanges++] = range;
+        range.block_name = block_name;
+        atom.ranges[atom.nb_ranges++] = range;
 
         return range;
     }
@@ -990,23 +990,23 @@ public final class XmlRegexp
     /* Port of xmlRegGetCounter. */
     private static int regGetCounter(XmlAutomata ctxt)
     {
-        if (ctxt.nbCounters >= ctxt.maxCounters)
+        if (ctxt.nb_counters >= ctxt.max_counters)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(ctxt.maxCounters, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(ctxt.max_counters, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return -1;
             }
-            ctxt.counters = ctxt.counters == null ? new RegCounter[newSize] : Arrays.copyOf(ctxt.counters, newSize);
-            ctxt.maxCounters = newSize;
+            ctxt.counters = ctxt.counters == null ? new RegCounter[new_size] : Arrays.copyOf(ctxt.counters, new_size);
+            ctxt.max_counters = new_size;
         }
-        ctxt.counters[ctxt.nbCounters] = new RegCounter();
-        ctxt.counters[ctxt.nbCounters].min = -1;
-        ctxt.counters[ctxt.nbCounters].max = -1;
-        return ctxt.nbCounters++;
+        ctxt.counters[ctxt.nb_counters] = new RegCounter();
+        ctxt.counters[ctxt.nb_counters].min = -1;
+        ctxt.counters[ctxt.nb_counters].max = -1;
+        return ctxt.nb_counters++;
     }
 
     // xml_reg_atom_push
@@ -1018,21 +1018,21 @@ public final class XmlRegexp
             ERROR(ctxt, "atom push: atom is NULL");
             return -1;
         }
-        if (ctxt.nbAtoms >= ctxt.maxAtoms)
+        if (ctxt.nb_atoms >= ctxt.max_atoms)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(ctxt.maxAtoms, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(ctxt.max_atoms, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return -1;
             }
-            ctxt.atoms = ctxt.atoms == null ? new RegAtom[newSize] : Arrays.copyOf(ctxt.atoms, newSize);
-            ctxt.maxAtoms = newSize;
+            ctxt.atoms = ctxt.atoms == null ? new RegAtom[new_size] : Arrays.copyOf(ctxt.atoms, new_size);
+            ctxt.max_atoms = new_size;
         }
-        atom.no = ctxt.nbAtoms;
-        ctxt.atoms[ctxt.nbAtoms++] = atom;
+        atom.no = ctxt.nb_atoms;
+        ctxt.atoms[ctxt.nb_atoms++] = atom;
         return 0;
     }
 
@@ -1040,21 +1040,21 @@ public final class XmlRegexp
     /* Port of xmlRegStateAddTransTo. */
     private static void regStateAddTransTo(XmlAutomata ctxt, XmlAutomataState target, int from)
     {
-        if (target.nbTransTo >= target.maxTransTo)
+        if (target.nb_trans_to >= target.max_trans_to)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(target.maxTransTo, 8, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(target.max_trans_to, 8, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return;
             }
-            target.transTo = target.transTo == null ? new int[newSize] : Arrays.copyOf(target.transTo, newSize);
-            target.maxTransTo = newSize;
+            target.trans_to = target.trans_to == null ? new int[new_size] : Arrays.copyOf(target.trans_to, new_size);
+            target.max_trans_to = new_size;
         }
-        target.transTo[target.nbTransTo] = from;
-        target.nbTransTo++;
+        target.trans_to[target.nb_trans_to] = from;
+        target.nb_trans_to++;
     }
 
     // xml_reg_state_add_trans
@@ -1081,7 +1081,7 @@ public final class XmlRegexp
          * so, silently ignore this request.
          */
 
-        for (nrtrans = state.nbTrans - 1; nrtrans >= 0; nrtrans--)
+        for (nrtrans = state.nb_trans - 1; nrtrans >= 0; nrtrans--)
         {
             RegTrans trans = state.trans[nrtrans];
             if ((trans.atom == atom) &&
@@ -1093,28 +1093,28 @@ public final class XmlRegexp
             }
         }
 
-        if (state.nbTrans >= state.maxTrans)
+        if (state.nb_trans >= state.max_trans)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(state.maxTrans, 8, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(state.max_trans, 8, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return;
             }
-            state.trans = state.trans == null ? new RegTrans[newSize] : Arrays.copyOf(state.trans, newSize);
-            state.maxTrans = newSize;
+            state.trans = state.trans == null ? new RegTrans[new_size] : Arrays.copyOf(state.trans, new_size);
+            state.max_trans = new_size;
         }
 
-        if (state.trans[state.nbTrans] == null)
-            state.trans[state.nbTrans] = new RegTrans();
-        state.trans[state.nbTrans].atom = atom;
-        state.trans[state.nbTrans].to = target.no;
-        state.trans[state.nbTrans].counter = counter;
-        state.trans[state.nbTrans].count = count;
-        state.trans[state.nbTrans].nd = 0;
-        state.nbTrans++;
+        if (state.trans[state.nb_trans] == null)
+            state.trans[state.nb_trans] = new RegTrans();
+        state.trans[state.nb_trans].atom = atom;
+        state.trans[state.nb_trans].to = target.no;
+        state.trans[state.nb_trans].counter = counter;
+        state.trans[state.nb_trans].count = count;
+        state.trans[state.nb_trans].nd = 0;
+        state.nb_trans++;
         regStateAddTransTo(ctxt, target, state.no);
     }
 
@@ -1124,24 +1124,24 @@ public final class XmlRegexp
     {
         XmlAutomataState state;
 
-        if (ctxt.nbStates >= ctxt.maxStates)
+        if (ctxt.nb_states >= ctxt.max_states)
         {
-            int newSize;
+            int new_size;
 
-            newSize = regGrowCapacity(ctxt.maxStates, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(ctxt.max_states, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 regexpErrMemory(ctxt);
                 return null;
             }
-            ctxt.states = ctxt.states == null ? new XmlAutomataState[newSize] : Arrays.copyOf(ctxt.states, newSize);
-            ctxt.maxStates = newSize;
+            ctxt.states = ctxt.states == null ? new XmlAutomataState[new_size] : Arrays.copyOf(ctxt.states, new_size);
+            ctxt.max_states = new_size;
         }
 
         state = regNewState(ctxt);
 
-        state.no = ctxt.nbStates;
-        ctxt.states[ctxt.nbStates++] = state;
+        state.no = ctxt.nb_states;
+        ctxt.states[ctxt.nb_states++] = state;
 
         return state;
     }
@@ -1472,7 +1472,7 @@ public final class XmlRegexp
         {
             from.type = XML_REGEXP_FINAL_STATE;
         }
-        for (transnr = 0; transnr < to.nbTrans; transnr++)
+        for (transnr = 0; transnr < to.nb_trans; transnr++)
         {
             RegTrans t1 = to.trans[transnr];
             int tcounter;
@@ -1528,7 +1528,7 @@ public final class XmlRegexp
             return;
 
         to.mark = XML_REGEXP_MARK_NORMAL;
-        for (transnr = 0; transnr < to.nbTrans; transnr++)
+        for (transnr = 0; transnr < to.nb_trans; transnr++)
         {
             RegTrans t1 = to.trans[transnr];
             if ((t1.to >= 0) && (t1.atom == null))
@@ -1562,12 +1562,12 @@ public final class XmlRegexp
         int statenr, i, j, newto;
         XmlAutomataState state, tmp;
 
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if (state == null)
                 continue;
-            if (state.nbTrans != 1)
+            if (state.nb_trans != 1)
                 continue;
             if (state.type == XML_REGEXP_UNREACH_STATE ||
                 state.type == XML_REGEXP_FINAL_STATE)
@@ -1586,10 +1586,10 @@ public final class XmlRegexp
                 }
                 else
                 {
-                    for (i = 0; i < state.nbTransTo; i++)
+                    for (i = 0; i < state.nb_trans_to; i++)
                     {
-                        tmp = ctxt.states[state.transTo[i]];
-                        for (j = 0; j < tmp.nbTrans; j++)
+                        tmp = ctxt.states[state.trans_to[i]];
+                        for (j = 0; j < tmp.nb_trans; j++)
                         {
                             if (tmp.trans[j].to == statenr)
                             {
@@ -1604,7 +1604,7 @@ public final class XmlRegexp
                     if (state.type == XML_REGEXP_FINAL_STATE)
                         ctxt.states[newto].type = XML_REGEXP_FINAL_STATE;
                     /* eliminate the transition completely */
-                    state.nbTrans = 0;
+                    state.nb_trans = 0;
 
                     state.type = XML_REGEXP_UNREACH_STATE;
 
@@ -1629,7 +1629,7 @@ public final class XmlRegexp
          * states.
          */
         faEliminateSimpleEpsilonTransitions(ctxt);
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if ((state != null) && (state.type == XML_REGEXP_UNREACH_STATE))
@@ -1649,17 +1649,17 @@ public final class XmlRegexp
          * there is long cascading epsilon chains this minimize the
          * recursions and transition compares when adding the new ones
          */
-        for (statenr = ctxt.nbStates - 1; statenr >= 0; statenr--)
+        for (statenr = ctxt.nb_states - 1; statenr >= 0; statenr--)
         {
             state = ctxt.states[statenr];
             if (state == null)
                 continue;
-            if ((state.nbTrans == 0) &&
+            if ((state.nb_trans == 0) &&
                 (state.type != XML_REGEXP_FINAL_STATE))
             {
                 state.type = XML_REGEXP_SINK_STATE;
             }
-            for (transnr = 0; transnr < state.nbTrans; transnr++)
+            for (transnr = 0; transnr < state.nb_trans; transnr++)
             {
                 if ((state.trans[transnr].atom == null) &&
                     (state.trans[transnr].to >= 0))
@@ -1688,12 +1688,12 @@ public final class XmlRegexp
          */
         if (has_epsilon != 0)
         {
-            for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+            for (statenr = 0; statenr < ctxt.nb_states; statenr++)
             {
                 state = ctxt.states[statenr];
                 if (state == null)
                     continue;
-                for (transnr = 0; transnr < state.nbTrans; transnr++)
+                for (transnr = 0; transnr < state.nb_trans; transnr++)
                 {
                     RegTrans trans = state.trans[transnr];
                     if ((trans.atom == null) &&
@@ -1709,7 +1709,7 @@ public final class XmlRegexp
         /*
          * Use this pass to detect unreachable states too
          */
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if (state != null)
@@ -1725,7 +1725,7 @@ public final class XmlRegexp
             /*
              * Mark all states reachable from the current reachable state
              */
-            for (transnr = 0; transnr < state.nbTrans; transnr++)
+            for (transnr = 0; transnr < state.nb_trans; transnr++)
             {
                 if ((state.trans[transnr].to >= 0) &&
                     ((state.trans[transnr].atom != null) ||
@@ -1748,7 +1748,7 @@ public final class XmlRegexp
              */
             if (target == null)
             {
-                for (statenr = 1; statenr < ctxt.nbStates; statenr++)
+                for (statenr = 1; statenr < ctxt.nb_states; statenr++)
                 {
                     state = ctxt.states[statenr];
                     if ((state != null) && (state.reached ==
@@ -1761,7 +1761,7 @@ public final class XmlRegexp
             }
             state = target;
         }
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if ((state != null) && (state.reached == XML_REGEXP_MARK_NORMAL))
@@ -1835,7 +1835,7 @@ public final class XmlRegexp
             {
                 ret = regCheckCharacterRange(range2.type, codepoint,
                                              0, range2.start, range2.end,
-                                             range2.blockName);
+                                             range2.block_name);
                 if (ret < 0)
                     return -1;
                 if (((neg == 1) && (ret == 0)) ||
@@ -1850,7 +1850,7 @@ public final class XmlRegexp
         {
             if (range1.type == range2.type)
             {
-                ret = regStrEqual(range1.blockName, range2.blockName);
+                ret = regStrEqual(range1.block_name, range2.block_name);
             }
             else
             {
@@ -2286,9 +2286,9 @@ public final class XmlRegexp
                  */
                 ret = 0;
             done:
-                for (i = 0; i < atom1.nbRanges; i++)
+                for (i = 0; i < atom1.nb_ranges; i++)
                 {
-                    for (j = 0; j < atom2.nbRanges; j++)
+                    for (j = 0; j < atom2.nb_ranges; j++)
                     {
                         r1 = atom1.ranges[i];
                         r2 = atom2.ranges[j];
@@ -2329,7 +2329,7 @@ public final class XmlRegexp
     {
         int ret = 1;
         int res;
-        int transnr, nbTrans;
+        int transnr, nb_trans;
         RegTrans t1;
         int deep = 1;
 
@@ -2345,8 +2345,8 @@ public final class XmlRegexp
          * don't recurse on transitions potentially added in the course of
          * the elimination.
          */
-        nbTrans = state.nbTrans;
-        for (transnr = 0; transnr < nbTrans; transnr++)
+        nb_trans = state.nb_trans;
+        for (transnr = 0; transnr < nb_trans; transnr++)
         {
             t1 = state.trans[transnr];
             /*
@@ -2386,7 +2386,7 @@ public final class XmlRegexp
      */
     private static void faFinishRecurseDeterminism(XmlAutomata ctxt, XmlAutomataState state)
     {
-        int transnr, nbTrans;
+        int transnr, nb_trans;
 
         if (state == null)
             return;
@@ -2394,8 +2394,8 @@ public final class XmlRegexp
             return;
         state.markd = XML_REGEXP_MARK_NORMAL;
 
-        nbTrans = state.nbTrans;
-        for (transnr = 0; transnr < nbTrans; transnr++)
+        nb_trans = state.nb_trans;
+        for (transnr = 0; transnr < nb_trans; transnr++)
         {
             RegTrans t1 = state.trans[transnr];
             if ((t1.atom == null) && (t1.to >= 0))
@@ -2428,14 +2428,14 @@ public final class XmlRegexp
         /*
          * First cleanup the automata removing cancelled transitions
          */
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if (state == null)
                 continue;
-            if (state.nbTrans < 2)
+            if (state.nb_trans < 2)
                 continue;
-            for (transnr = 0; transnr < state.nbTrans; transnr++)
+            for (transnr = 0; transnr < state.nb_trans; transnr++)
             {
                 t1 = state.trans[transnr];
                 /*
@@ -2476,15 +2476,15 @@ public final class XmlRegexp
          * Check for all states that there aren't 2 transitions
          * with the same atom and a different target.
          */
-        for (statenr = 0; statenr < ctxt.nbStates; statenr++)
+        for (statenr = 0; statenr < ctxt.nb_states; statenr++)
         {
             state = ctxt.states[statenr];
             if (state == null)
                 continue;
-            if (state.nbTrans < 2)
+            if (state.nb_trans < 2)
                 continue;
             last = null;
-            for (transnr = 0; transnr < state.nbTrans; transnr++)
+            for (transnr = 0; transnr < state.nb_trans; transnr++)
             {
                 t1 = state.trans[transnr];
                 /*
@@ -2589,7 +2589,7 @@ public final class XmlRegexp
     // xml_reg_check_character_range
     /* Port of xmlRegCheckCharacterRange. */
     private static int regCheckCharacterRange(int type, int codepoint, int neg,
-                                              int start, int end, String blockName)
+                                              int start, int end, String block_name)
     {
         int ret = 0;
 
@@ -2756,7 +2756,7 @@ public final class XmlRegexp
             ret = 0;
             break;
         case XML_REGEXP_BLOCK_NAME:
-            ret = XmlUnicode.ucsIsBlock(codepoint, blockName);
+            ret = XmlUnicode.ucsIsBlock(codepoint, block_name);
             break;
         default:
             break;
@@ -2787,14 +2787,14 @@ public final class XmlRegexp
         {
             int accept = 0;
 
-            for (i = 0; i < atom.nbRanges; i++)
+            for (i = 0; i < atom.nb_ranges; i++)
             {
                 range = atom.ranges[i];
                 if (range.neg == 2)
                 {
                     ret = regCheckCharacterRange(range.type, codepoint,
                                                  0, range.start, range.end,
-                                                 range.blockName);
+                                                 range.block_name);
                     if (ret != 0)
                         return 0; /* excluded char */
                 }
@@ -2802,7 +2802,7 @@ public final class XmlRegexp
                 {
                     ret = regCheckCharacterRange(range.type, codepoint,
                                                  0, range.start, range.end,
-                                                 range.blockName);
+                                                 range.block_name);
                     if (ret == 0)
                         accept = 1;
                     else
@@ -2812,7 +2812,7 @@ public final class XmlRegexp
                 {
                     ret = regCheckCharacterRange(range.type, codepoint,
                                                  0, range.start, range.end,
-                                                 range.blockName);
+                                                 range.block_name);
                     if (ret != 0)
                         accept = 1; /* might still be excluded */
                 }
@@ -2890,42 +2890,42 @@ public final class XmlRegexp
     /* Port of xmlFARegExecSave. */
     private static void faRegExecSave(XmlRegExecCtxt exec)
     {
-        if (exec.nbPush > MAX_PUSH)
+        if (exec.nb_push > MAX_PUSH)
         {
             exec.status = XML_REGEXP_INTERNAL_LIMIT;
             return;
         }
-        exec.nbPush++;
+        exec.nb_push++;
 
-        if (exec.nbRollbacks >= exec.maxRollbacks)
+        if (exec.nb_rollbacks >= exec.max_rollbacks)
         {
-            int newSize;
-            int len = exec.nbRollbacks;
+            int new_size;
+            int len = exec.nb_rollbacks;
 
-            newSize = regGrowCapacity(exec.maxRollbacks, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(exec.max_rollbacks, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 exec.status = XML_REGEXP_OUT_OF_MEMORY;
                 return;
             }
-            exec.rollbacks = exec.rollbacks == null ? new RegExecRollback[newSize] : Arrays.copyOf(exec.rollbacks, newSize);
-            exec.maxRollbacks = newSize;
-            for (int k = len; k < exec.maxRollbacks; k++)
+            exec.rollbacks = exec.rollbacks == null ? new RegExecRollback[new_size] : Arrays.copyOf(exec.rollbacks, new_size);
+            exec.max_rollbacks = new_size;
+            for (int k = len; k < exec.max_rollbacks; k++)
                 exec.rollbacks[k] = new RegExecRollback();
         }
-        exec.rollbacks[exec.nbRollbacks].state = exec.state;
-        exec.rollbacks[exec.nbRollbacks].index = exec.index;
-        exec.rollbacks[exec.nbRollbacks].nextbranch = exec.transno + 1;
-        if (exec.comp.nbCounters > 0)
+        exec.rollbacks[exec.nb_rollbacks].state = exec.state;
+        exec.rollbacks[exec.nb_rollbacks].index = exec.index;
+        exec.rollbacks[exec.nb_rollbacks].nextbranch = exec.transno + 1;
+        if (exec.comp.nb_counters > 0)
         {
-            if (exec.rollbacks[exec.nbRollbacks].counts == null)
+            if (exec.rollbacks[exec.nb_rollbacks].counts == null)
             {
-                exec.rollbacks[exec.nbRollbacks].counts = new int[exec.comp.nbCounters];
+                exec.rollbacks[exec.nb_rollbacks].counts = new int[exec.comp.nb_counters];
             }
-            System.arraycopy(exec.counts, 0, exec.rollbacks[exec.nbRollbacks].counts, 0,
-                             exec.comp.nbCounters);
+            System.arraycopy(exec.counts, 0, exec.rollbacks[exec.nb_rollbacks].counts, 0,
+                             exec.comp.nb_counters);
         }
-        exec.nbRollbacks++;
+        exec.nb_rollbacks++;
     }
 
     // xml_fa_reg_exec_roll_back
@@ -2934,26 +2934,26 @@ public final class XmlRegexp
     {
         if (exec.status != XML_REGEXP_OK)
             return;
-        if (exec.nbRollbacks <= 0)
+        if (exec.nb_rollbacks <= 0)
         {
             exec.status = XML_REGEXP_NOT_FOUND;
             return;
         }
-        exec.nbRollbacks--;
-        exec.state = exec.rollbacks[exec.nbRollbacks].state;
-        exec.index = exec.rollbacks[exec.nbRollbacks].index;
-        exec.transno = exec.rollbacks[exec.nbRollbacks].nextbranch;
-        if (exec.comp.nbCounters > 0)
+        exec.nb_rollbacks--;
+        exec.state = exec.rollbacks[exec.nb_rollbacks].state;
+        exec.index = exec.rollbacks[exec.nb_rollbacks].index;
+        exec.transno = exec.rollbacks[exec.nb_rollbacks].nextbranch;
+        if (exec.comp.nb_counters > 0)
         {
-            if (exec.rollbacks[exec.nbRollbacks].counts == null)
+            if (exec.rollbacks[exec.nb_rollbacks].counts == null)
             {
                 exec.status = XML_REGEXP_INTERNAL_ERROR;
                 return;
             }
             if (exec.counts != null)
             {
-                System.arraycopy(exec.rollbacks[exec.nbRollbacks].counts, 0, exec.counts, 0,
-                                 exec.comp.nbCounters);
+                System.arraycopy(exec.rollbacks[exec.nb_rollbacks].counts, 0, exec.counts, 0,
+                                 exec.comp.nb_counters);
             }
         }
     }
@@ -2972,27 +2972,27 @@ public final class XmlRegexp
         int ret, codepoint = 0, len, deter;
         int[] lenp = new int[1];
 
-        exec.inputString = content;
+        exec.input_string = content;
         exec.index = 0;
-        exec.nbPush = 0;
+        exec.nb_push = 0;
         exec.determinist = 1;
-        exec.maxRollbacks = 0;
-        exec.nbRollbacks = 0;
+        exec.max_rollbacks = 0;
+        exec.nb_rollbacks = 0;
         exec.rollbacks = null;
         exec.status = XML_REGEXP_OK;
         exec.comp = comp;
         exec.state = comp.states[0];
         exec.transno = 0;
         exec.transcount = 0;
-        exec.inputStack = null;
-        exec.inputStackMax = 0;
-        if (comp.nbCounters > 0)
+        exec.input_stack = null;
+        exec.input_stack_max = 0;
+        if (comp.nb_counters > 0)
         {
-            exec.counts = new int[comp.nbCounters];
+            exec.counts = new int[comp.nb_counters];
         }
         else
             exec.counts = null;
-        byte[] in = exec.inputString;
+        byte[] in = exec.input_string;
     outer:
         while ((exec.status == XML_REGEXP_OK) && (exec.state != null) &&
                ((at(in, exec.index) != 0) ||
@@ -3001,7 +3001,7 @@ public final class XmlRegexp
         {
             RegTrans trans;
             RegAtom atom;
-            boolean doRollback = false;
+            boolean do_rollback = false;
 
             /*
              * If end of input on non-terminal state, rollback, however we may
@@ -3017,25 +3017,25 @@ public final class XmlRegexp
                  * if there is a transition, we must check if
                  *  atom allows minOccurs of 0
                  */
-                if (exec.transno < exec.state.nbTrans)
+                if (exec.transno < exec.state.nb_trans)
                 {
                     trans = exec.state.trans[exec.transno];
                     if (trans.to >= 0)
                     {
                         atom = trans.atom;
                         if (!((atom.min == 0) && (atom.max > 0)))
-                            doRollback = true;
+                            do_rollback = true;
                     }
                 }
                 else
-                    doRollback = true;
+                    do_rollback = true;
             }
 
-            if (!doRollback)
+            if (!do_rollback)
             {
                 exec.transcount = 0;
             transloop:
-                for (; exec.transno < exec.state.nbTrans; exec.transno++)
+                for (; exec.transno < exec.state.nb_trans; exec.transno++)
                 {
                     trans = exec.state.trans[exec.transno];
                     if (trans.to < 0)
@@ -3105,7 +3105,7 @@ public final class XmlRegexp
                                     continue; /* for loop on transitions */
                             }
                             /* Save before incrementing */
-                            if (exec.state.nbTrans > exec.transno + 1)
+                            if (exec.state.nb_trans > exec.transno + 1)
                             {
                                 faRegExecSave(exec);
                                 if (exec.status != XML_REGEXP_OK)
@@ -3172,7 +3172,7 @@ public final class XmlRegexp
                                 ret = 0;
                             if (ret == 0)
                             {
-                                doRollback = true;
+                                do_rollback = true;
                                 break transloop;
                             }
                             if (trans.counter >= 0)
@@ -3208,7 +3208,7 @@ public final class XmlRegexp
                     {
                         if ((trans.nd == 1) ||
                             ((trans.count >= 0) && (deter == 0) &&
-                             (exec.state.nbTrans > exec.transno + 1)))
+                             (exec.state.nb_trans > exec.transno + 1)))
                         {
                             faRegExecSave(exec);
                             if (exec.status != XML_REGEXP_OK)
@@ -3257,7 +3257,7 @@ public final class XmlRegexp
                     }
                 }
             }
-            if (doRollback || (exec.transno != 0) || (exec.state.nbTrans == 0))
+            if (do_rollback || (exec.transno != 0) || (exec.state.nb_trans == 0))
             {
                 /* rollback: */
                 /*
@@ -3303,11 +3303,11 @@ public final class XmlRegexp
         if ((comp.compact == null) && (comp.states == null))
             return null;
         exec = new XmlRegExecCtxt();
-        exec.inputString = null;
+        exec.input_string = null;
         exec.index = 0;
         exec.determinist = 1;
-        exec.maxRollbacks = 0;
-        exec.nbRollbacks = 0;
+        exec.max_rollbacks = 0;
+        exec.nb_rollbacks = 0;
         exec.rollbacks = null;
         exec.status = XML_REGEXP_OK;
         exec.comp = comp;
@@ -3317,27 +3317,27 @@ public final class XmlRegexp
         exec.transcount = 0;
         exec.callback = callback;
         exec.data = data;
-        if (comp.nbCounters > 0)
+        if (comp.nb_counters > 0)
         {
             /*
              * For error handling, exec->counts is allocated twice the size
              * the second half is used to store the data in case of rollback
-             * (here errCounts is a separate array of the same size).
+             * (here err_counts is a separate array of the same size).
              */
-            exec.counts = new int[comp.nbCounters];
-            exec.errCounts = new int[comp.nbCounters];
+            exec.counts = new int[comp.nb_counters];
+            exec.err_counts = new int[comp.nb_counters];
         }
         else
         {
             exec.counts = null;
-            exec.errCounts = null;
+            exec.err_counts = null;
         }
-        exec.inputStackMax = 0;
-        exec.inputStackNr = 0;
-        exec.inputStack = null;
-        exec.errStateNo = -1;
-        exec.errString = null;
-        exec.nbPush = 0;
+        exec.input_stack_max = 0;
+        exec.input_stack_nr = 0;
+        exec.input_stack = null;
+        exec.err_state_no = -1;
+        exec.err_string = null;
+        exec.nb_push = 0;
         return exec;
     }
 
@@ -3357,11 +3357,11 @@ public final class XmlRegexp
     {
         if (value == null)
         {
-            exec.errString = null;
+            exec.err_string = null;
         }
         else
         {
-            exec.errString = regStrdup(value);
+            exec.err_string = regStrdup(value);
         }
         return 0;
     }
@@ -3370,34 +3370,34 @@ public final class XmlRegexp
     /* Port of xmlFARegExecSaveInputString. */
     private static void faRegExecSaveInputString(XmlRegExecCtxt exec, String value, Object data)
     {
-        if (exec.inputStackNr + 1 >= exec.inputStackMax)
+        if (exec.input_stack_nr + 1 >= exec.input_stack_max)
         {
-            int newSize;
-            int old = exec.inputStackMax;
+            int new_size;
+            int old = exec.input_stack_max;
 
-            newSize = regGrowCapacity(exec.inputStackMax, 4, XML_MAX_ITEMS);
-            if (newSize < 0)
+            new_size = regGrowCapacity(exec.input_stack_max, 4, XML_MAX_ITEMS);
+            if (new_size < 0)
             {
                 exec.status = XML_REGEXP_OUT_OF_MEMORY;
                 return;
             }
-            exec.inputStack = exec.inputStack == null ? new RegInputToken[newSize] : Arrays.copyOf(exec.inputStack, newSize);
-            exec.inputStackMax = newSize;
-            for (int k = old; k < newSize; k++)
-                exec.inputStack[k] = new RegInputToken();
+            exec.input_stack = exec.input_stack == null ? new RegInputToken[new_size] : Arrays.copyOf(exec.input_stack, new_size);
+            exec.input_stack_max = new_size;
+            for (int k = old; k < new_size; k++)
+                exec.input_stack[k] = new RegInputToken();
         }
         if (value == null)
         {
-            exec.inputStack[exec.inputStackNr].value = null;
+            exec.input_stack[exec.input_stack_nr].value = null;
         }
         else
         {
-            exec.inputStack[exec.inputStackNr].value = regStrdup(value);
+            exec.input_stack[exec.input_stack_nr].value = regStrdup(value);
         }
-        exec.inputStack[exec.inputStackNr].data = data;
-        exec.inputStackNr++;
-        exec.inputStack[exec.inputStackNr].value = null;
-        exec.inputStack[exec.inputStackNr].data = null;
+        exec.input_stack[exec.input_stack_nr].data = data;
+        exec.input_stack_nr++;
+        exec.input_stack[exec.input_stack_nr].value = null;
+        exec.input_stack[exec.input_stack_nr].data = null;
     }
 
     // xml_reg_str_equal_wildcard
@@ -3405,18 +3405,18 @@ public final class XmlRegexp
      * Port of xmlRegStrEqualWildcard.
      *
      * Checks if both strings are equal or have the same content. "*"
-     * can be used as a wildcard in `valStr`; "|" is used as a separator of
-     * substrings in both `expStr` and `valStr`.
+     * can be used as a wildcard in `val_str`; "|" is used as a separator of
+     * substrings in both `expStr` and `val_str`.
      * returns 1 if the comparison is satisfied and the number of substrings
      * is equal, 0 otherwise.
      */
-    private static int regStrEqualWildcard(String expStr, String valStr)
+    private static int regStrEqualWildcard(String exp_str, String val_str)
     {
-        if (expStr == valStr) return 1;
-        if (expStr == null) return 0;
-        if (valStr == null) return 0;
+        if (exp_str == val_str) return 1;
+        if (exp_str == null) return 0;
+        if (val_str == null) return 0;
         /* e and v are the indexes of the C pointers into exp and val */
-        String exp = expStr, val = valStr;
+        String exp = exp_str, val = val_str;
         int e = 0, v = 0;
         do
         {
@@ -3425,7 +3425,7 @@ public final class XmlRegexp
              */
             if (at(exp, e) != at(val, v))
             {
-                /* if one of them starts with a wildcard make valStr be it */
+                /* if one of them starts with a wildcard make val_str be it */
                 if (at(val, v) == '*')
                 {
                     String tmps = val;
@@ -3470,7 +3470,7 @@ public final class XmlRegexp
         int state = exec.index;
         int i, target;
 
-        if ((comp == null) || (comp.compact == null) || (comp.stringMap == null))
+        if ((comp == null) || (comp.compact == null) || (comp.string_map == null))
             return -1;
 
         if (value == null)
@@ -3493,7 +3493,7 @@ public final class XmlRegexp
             if ((target > 0) && (target <= comp.nbstates))
             {
                 target--; /* to avoid 0 */
-                if (regStrEqualWildcard(comp.stringMap[i], value) != 0)
+                if (regStrEqualWildcard(comp.string_map[i], value) != 0)
                 {
                     exec.index = target;
                     if ((exec.callback != null) && (comp.transdata != null))
@@ -3517,7 +3517,7 @@ public final class XmlRegexp
          * current token
          */
         /* error: */
-        exec.errStateNo = state;
+        exec.err_state_no = state;
         exec.status = XML_REGEXP_NOT_FOUND;
         regExecSetErrString(exec, value);
         return exec.status;
@@ -3543,7 +3543,7 @@ public final class XmlRegexp
 
         if (exec == null)
             return -1;
-        int lastpush = exec.nbPush;
+        int lastpush = exec.nb_push;
         if (exec.comp == null)
             return -1;
         if (exec.status != XML_REGEXP_OK)
@@ -3563,11 +3563,11 @@ public final class XmlRegexp
          * If we have an active rollback stack push the new value there
          * and get back to where we were left
          */
-        if ((value != null) && (exec.inputStackNr > 0))
+        if ((value != null) && (exec.input_stack_nr > 0))
         {
             faRegExecSaveInputString(exec, value, data);
-            value = exec.inputStack[exec.index].value;
-            data = exec.inputStack[exec.index].data;
+            value = exec.input_stack[exec.index].value;
+            data = exec.input_stack[exec.index].data;
         }
 
     outer:
@@ -3576,7 +3576,7 @@ public final class XmlRegexp
                 ((final_ == 1) &&
                  (exec.state.type != XML_REGEXP_FINAL_STATE))))
         {
-            boolean doRollback = false;
+            boolean do_rollback = false;
 
             /*
              * End of input on non-terminal state, rollback, however we may
@@ -3584,13 +3584,13 @@ public final class XmlRegexp
              * on counters, in that case don't break too early.
              */
             if ((value == null) && (exec.counts == null))
-                doRollback = true;
+                do_rollback = true;
 
-            if (!doRollback)
+            if (!do_rollback)
             {
                 exec.transcount = 0;
             transloop:
-                for (; exec.transno < exec.state.nbTrans; exec.transno++)
+                for (; exec.transno < exec.state.nb_trans; exec.transno++)
                 {
                     trans = exec.state.trans[exec.transno];
                     if (trans.to < 0)
@@ -3615,7 +3615,7 @@ public final class XmlRegexp
                         }
                         else if (value != null)
                         {
-                            for (i = 0; i < exec.state.nbTrans; i++)
+                            for (i = 0; i < exec.state.nb_trans; i++)
                             {
                                 t = exec.state.trans[i];
                                 if ((t.counter < 0) || (t == trans))
@@ -3652,7 +3652,7 @@ public final class XmlRegexp
                         /*
                          * Check all counted transitions from the current state
                          */
-                        for (i = 0; i < exec.state.nbTrans; i++)
+                        for (i = 0; i < exec.state.nb_trans; i++)
                         {
                             t = exec.state.trans[i];
                             if ((t.counter < 0) || (t == trans))
@@ -3711,9 +3711,9 @@ public final class XmlRegexp
                             /*
                              * this is a multiple input sequence
                              */
-                            if (exec.state.nbTrans > exec.transno + 1)
+                            if (exec.state.nb_trans > exec.transno + 1)
                             {
-                                if (exec.inputStackNr <= 0)
+                                if (exec.input_stack_nr <= 0)
                                 {
                                     faRegExecSaveInputString(exec, value, data);
                                 }
@@ -3735,11 +3735,11 @@ public final class XmlRegexp
                                  * input stack. No further input has been pushed then, so
                                  * stop like at the end of the input stack below.
                                  */
-                                if (exec.inputStack == null)
+                                if (exec.input_stack == null)
                                     break;
                                 exec.index++;
-                                value = exec.inputStack[exec.index].value;
-                                data = exec.inputStack[exec.index].data;
+                                value = exec.input_stack[exec.index].value;
+                                data = exec.input_stack[exec.index].data;
 
                                 /*
                                  * End of input: stop here
@@ -3759,7 +3759,7 @@ public final class XmlRegexp
                                      */
                                     exec.transno = -1; /* trick */
                                     exec.state = to;
-                                    if (exec.inputStackNr <= 0)
+                                    if (exec.input_stack_nr <= 0)
                                     {
                                         faRegExecSaveInputString(exec, value, data);
                                     }
@@ -3781,7 +3781,7 @@ public final class XmlRegexp
                                 ret = 0;
                             if (ret == 0)
                             {
-                                doRollback = true;
+                                do_rollback = true;
                                 break transloop;
                             }
                         }
@@ -3794,9 +3794,9 @@ public final class XmlRegexp
                             exec.callback.callback(exec, (String) atom.valuep,
                                                    atom.data, data);
                         }
-                        if (exec.state.nbTrans > exec.transno + 1)
+                        if (exec.state.nb_trans > exec.transno + 1)
                         {
-                            if (exec.inputStackNr <= 0)
+                            if (exec.input_stack_nr <= 0)
                             {
                                 faRegExecSaveInputString(exec, value, data);
                             }
@@ -3821,11 +3821,11 @@ public final class XmlRegexp
                              */
                             if (regExecSetErrString(exec, value) < 0)
                                 break outer;
-                            exec.errState = exec.state;
+                            exec.err_state = exec.state;
                             /* libxml2 copies also when there are no counters (NULL pointers). */
-                            if (exec.comp.nbCounters != 0)
-                                System.arraycopy(exec.counts, 0, exec.errCounts, 0,
-                                                 exec.comp.nbCounters);
+                            if (exec.comp.nb_counters != 0)
+                                System.arraycopy(exec.counts, 0, exec.err_counts, 0,
+                                                 exec.comp.nb_counters);
                         }
                         exec.state = exec.comp.states[trans.to];
                         exec.transno = 0;
@@ -3833,22 +3833,22 @@ public final class XmlRegexp
                          * libxml2 2.16 loops forever here on a cycle of all or counter
                          * transitions (no input consumed, no rollback saved). Such a
                          * transition only resets counters, so without a cycle at most
-                         * nbStates * (nbCounters + 1) of them can follow each other
+                         * nb_states * (nb_counters + 1) of them can follow each other
                          * before an input is consumed, a rollback is saved or one is
                          * taken, stop with XML_REGEXP_INTERNAL_LIMIT after that. A cycle
                          * that saves rollbacks is left alone, libxml2 ends it with the
                          * same error at MAX_PUSH.
                          */
-                        if (exec.nbPush != lastpush)
+                        if (exec.nb_push != lastpush)
                         {
                             nonconsuming = 0;
-                            lastpush = exec.nbPush;
+                            lastpush = exec.nb_push;
                         }
                         if (trans.atom == null)
                         {
                             nonconsuming++;
-                            if (nonconsuming > exec.comp.nbStates *
-                                (exec.comp.nbCounters + 1) + 1)
+                            if (nonconsuming > exec.comp.nb_states *
+                                (exec.comp.nb_counters + 1) + 1)
                             {
                                 exec.status = XML_REGEXP_INTERNAL_LIMIT;
                                 break outer;
@@ -3860,13 +3860,13 @@ public final class XmlRegexp
                         }
                         if (trans.atom != null)
                         {
-                            if (exec.inputStack != null)
+                            if (exec.input_stack != null)
                             {
                                 exec.index++;
-                                if (exec.index < exec.inputStackNr)
+                                if (exec.index < exec.input_stack_nr)
                                 {
-                                    value = exec.inputStack[exec.index].value;
-                                    data = exec.inputStack[exec.index].data;
+                                    value = exec.input_stack[exec.index].value;
+                                    data = exec.input_stack[exec.index].data;
                                 }
                                 else
                                 {
@@ -3891,7 +3891,7 @@ public final class XmlRegexp
                     }
                 }
             }
-            if (doRollback || (exec.transno != 0) || (exec.state.nbTrans == 0))
+            if (do_rollback || (exec.transno != 0) || (exec.state.nb_trans == 0))
             {
                 /* rollback: */
                 /*
@@ -3904,10 +3904,10 @@ public final class XmlRegexp
                     progress = 0;
                     if (regExecSetErrString(exec, value) < 0)
                         break;
-                    exec.errState = exec.state;
-                    if (exec.comp.nbCounters != 0)
-                        System.arraycopy(exec.counts, 0, exec.errCounts, 0,
-                                         exec.comp.nbCounters);
+                    exec.err_state = exec.state;
+                    if (exec.comp.nb_counters != 0)
+                        System.arraycopy(exec.counts, 0, exec.err_counts, 0,
+                                         exec.comp.nb_counters);
                 }
 
                 /*
@@ -3916,11 +3916,11 @@ public final class XmlRegexp
                 exec.determinist = 0;
                 nonconsuming = 0;
                 faRegExecRollBack(exec);
-                if ((exec.inputStack != null) &&
+                if ((exec.input_stack != null) &&
                     (exec.status == XML_REGEXP_OK))
                 {
-                    value = exec.inputStack[exec.index].value;
-                    data = exec.inputStack[exec.index].data;
+                    value = exec.input_stack[exec.index].value;
+                    data = exec.input_stack[exec.index].data;
                 }
             }
             continue;
@@ -4015,8 +4015,8 @@ public final class XmlRegexp
 
             if (err != 0)
             {
-                if (exec.errStateNo == -1) return -1;
-                state = exec.errStateNo;
+                if (exec.err_state_no == -1) return -1;
+                state = exec.err_state_no;
             }
             else
             {
@@ -4037,7 +4037,7 @@ public final class XmlRegexp
                     (comp.compact[(target - 1) * (comp.nbstrings + 1)] !=
                      XML_REGEXP_SINK_STATE))
                 {
-                    values[nb++] = comp.stringMap[i];
+                    values[nb++] = comp.string_map[i];
                     nbval[0]++;
                 }
             }
@@ -4048,7 +4048,7 @@ public final class XmlRegexp
                     (comp.compact[(target - 1) * (comp.nbstrings + 1)] ==
                      XML_REGEXP_SINK_STATE))
                 {
-                    values[nb++] = comp.stringMap[i];
+                    values[nb++] = comp.string_map[i];
                     nbneg[0]++;
                 }
             }
@@ -4070,8 +4070,8 @@ public final class XmlRegexp
 
             if (err != 0)
             {
-                if (exec.errState == null) return -1;
-                state = exec.errState;
+                if (exec.err_state == null) return -1;
+                state = exec.err_state;
             }
             else
             {
@@ -4079,7 +4079,7 @@ public final class XmlRegexp
                 state = exec.state;
             }
             for (transno = 0;
-                 (transno < state.nbTrans) && (nb < maxval);
+                 (transno < state.nb_trans) && (nb < maxval);
                  transno++)
             {
                 trans = state.trans[transno];
@@ -4102,7 +4102,7 @@ public final class XmlRegexp
                     int count;
 
                     if (err != 0)
-                        count = exec.errCounts[trans.counter];
+                        count = exec.err_counts[trans.counter];
                     else
                         count = exec.counts[trans.counter];
                     if (exec.comp != null)
@@ -4131,7 +4131,7 @@ public final class XmlRegexp
                 }
             }
             for (transno = 0;
-                 (transno < state.nbTrans) && (nb < maxval);
+                 (transno < state.nb_trans) && (nb < maxval);
                  transno++)
             {
                 trans = state.trans[transno];
@@ -4214,7 +4214,7 @@ public final class XmlRegexp
         if (string != null)
         {
             if (exec.status != XML_REGEXP_OK)
-                string[0] = exec.errString;
+                string[0] = exec.err_string;
             else
                 string[0] = null;
         }
@@ -4231,9 +4231,9 @@ public final class XmlRegexp
     public static void regExecClearErrors(XmlRegExecCtxt exec)
     {
         exec.status = 0;
-        exec.errState = null;
-        exec.errStateNo = -1;
-        exec.errString = null;
+        exec.err_state = null;
+        exec.err_state_no = -1;
+        exec.err_string = null;
     }
 
     /* ***********************************************************************
@@ -4288,7 +4288,7 @@ public final class XmlRegexp
     {
         int cur;
         int type = 0;
-        String blockName = null;
+        String block_name = null;
 
         cur = CUR(ctxt);
         if (cur == 'L')
@@ -4559,8 +4559,8 @@ public final class XmlRegexp
                 }
             }
             type = XML_REGEXP_BLOCK_NAME;
-            blockName = regStrndup(ctxt.string, start, ctxt.cur - start);
-            if (blockName == null)
+            block_name = regStrndup(ctxt.string, start, ctxt.cur - start);
+            if (block_name == null)
                 regexpErrMemory(ctxt);
         }
         else
@@ -4575,11 +4575,11 @@ public final class XmlRegexp
             {
                 return;
             }
-            ctxt.atom.valuep = blockName;
+            ctxt.atom.valuep = block_name;
         }
         else if (ctxt.atom.type == XML_REGEXP_RANGES)
         {
-            regAtomAddRange(ctxt, ctxt.atom, ctxt.neg, type, 0, 0, blockName);
+            regAtomAddRange(ctxt, ctxt.atom, ctxt.neg, type, 0, 0, block_name);
         }
     }
 
@@ -5592,9 +5592,9 @@ public final class XmlRegexp
         am = automataNew();
         if (am == null)
             return -1;
-        am.nbAtoms = comp.nbAtoms;
+        am.nb_atoms = comp.nb_atoms;
         am.atoms = comp.atoms;
-        am.nbStates = comp.nbStates;
+        am.nb_states = comp.nb_states;
         am.states = comp.states;
         am.determinist = -1;
         am.flags = comp.flags;

@@ -53,25 +53,25 @@ final class Cli
         final List<String> args = new ArrayList<>();
 
         // Output settings of to/render commands.
-        boolean compact, escapeTabs, escapeNewlines, escapeNon7bit, preferDoubleQuotes, noFinalNl;
-        boolean omitDecl, renderRaw, addNl;
+        boolean compact, escape_tabs, escape_newlines, escape_non7bit, prefer_double_quotes, no_final_nl;
+        boolean omit_decl, render_raw, add_nl;
         int indent = 4;
         // The coloring, like the C XMQCliCommand use_color, bg_dark_mode, bg_forced
         // and truecolor. Copied from the environment, then changed by --bg=.
-        boolean useColor, bgDarkMode, bgForced, truecolor;
-        String themeSpec;        // --theme= or XMQ_THEME
-        String useId, useClass;  // --id= --class= of render-html
-        boolean onlyStyle;       // --onlystyle
+        boolean use_color, bg_dark_mode, bg_forced, truecolor;
+        String theme_spec;        // --theme= or XMQ_THEME
+        String use_id, use_class;  // --id= --class= of render-html
+        boolean only_style;       // --onlystyle
         // --use-is= --use-es= --use-et= --use-cr= --use-nl= of the render commands.
-        String useIs, useEs, useEt, useCr, useNl;
-        String tokenizeType;
-        int withFile; // replace-entity --with-file (1) or --with-text-file (2)
+        String use_is, use_es, use_et, use_cr, use_nl;
+        String tokenize_type;
+        int with_file; // replace-entity --with-file (1) or --with-text-file (2)
         // transform: the compiled stylesheet and the --stringparam/--param values (xpath expressions).
         org.libxmq.imp.xml.libxslt1.Stylesheet xslt;
-        final java.util.LinkedHashMap<String, String> xsltParams = new java.util.LinkedHashMap<>();
+        final java.util.LinkedHashMap<String, String> xslt_params = new java.util.LinkedHashMap<>();
         // validate: the compiled xsd, its file name and --silent.
         Validate xsd;
-        String xsdName;
+        String xsd_name;
         boolean silent;
     }
 
@@ -84,20 +84,20 @@ final class Cli
     }
 
     // Global settings.
-    boolean trimNone, trimHeuristic, noMerge, lines, noInput, inIsContent;
+    boolean trim_none, trim_heuristic, no_merge, lines, no_input, in_is_content;
     /** --ixml-fail-silent: a rejected ixml input gives an empty document. */
-    boolean ixmlFailSilent;
+    boolean ixml_fail_silent;
     /** An ixml input was rejected, the failure document was output and xmq exits with 1. */
-    boolean ixmlFailed;
+    boolean ixml_failed;
     /** --we-should-stop-using-yaml: no reminder comment before the to-yaml output. */
-    boolean weShouldStopUsingYaml;
-    String inFormat;        // null = detect, else xmq xml html text
+    boolean we_should_stop_using_yaml;
+    String in_format;        // null = detect, else xmq xml html text
     String in;              // file name, "-" for stdin, or the content with -i
-    String ixmlSource;      // --ixml=grammar.ixml or a positional grammar
+    String ixml_source;      // --ixml=grammar.ixml or a positional grammar
     final List<Command> commands = new ArrayList<>();
-    boolean yamlInput;      // The input was loaded as yaml.
-    String loadedContent;   // The content of the current document.
-    byte[] inputBytes;      // The undecoded input file or stdin, null for -i content.
+    boolean yaml_input;      // The input was loaded as yaml.
+    String loaded_content;   // The content of the current document.
+    byte[] input_bytes;      // The undecoded input file or stdin, null for -i content.
 
     static final String[] NOT_IMPLEMENTED = {
         "for-each", "statistics",
@@ -161,7 +161,7 @@ final class Cli
             {
             case "option" -> globalOption(e.attributeValue("name"), value(e));
             case "grammar" -> grammar(e.textContent());
-            case "input" -> { inIsContent = true; in = e.textContent(); }
+            case "input" -> { in_is_content = true; in = e.textContent(); }
             case "file" -> in = e.textContent();
             case "command" -> command(e);
             default -> throw fail("xmq: unexpected " + e.name() + " in the command line tree");
@@ -186,32 +186,32 @@ final class Cli
         switch (name)
         {
         case "help" -> { Main.printHelp(); throw new Exit(0); }
-        case "no-input" -> noInput = true;
+        case "no-input" -> no_input = true;
         case "trim" -> {
-            if ("none".equals(value)) trimNone = true;
-            else if ("heuristic".equals(value)) { trimNone = false; trimHeuristic = true; }
+            if ("none".equals(value)) trim_none = true;
+            else if ("heuristic".equals(value)) { trim_none = false; trim_heuristic = true; }
             else throw fail("No such trim rule \"" + value + "\"!");
         }
-        case "no-merge", "nomerge" -> noMerge = true;
-        case "we-should-stop-using-yaml" -> weShouldStopUsingYaml = true;
+        case "no-merge", "nomerge" -> no_merge = true;
+        case "we-should-stop-using-yaml" -> we_should_stop_using_yaml = true;
         case "lines" -> lines = true;
-        case "xmq", "htmq" -> inFormat = "xmq";
-        case "xml" -> inFormat = "xml";
-        case "html" -> inFormat = "html";
-        case "text" -> inFormat = "text";
+        case "xmq", "htmq" -> in_format = "xmq";
+        case "xml" -> in_format = "xml";
+        case "html" -> in_format = "html";
+        case "text" -> in_format = "text";
         case "ixml" -> {
             if (value == null) throw fail("xmq: --ixml as an input format is not implemented in xmqj yet");
             grammar(value);
         }
-        case "json" -> inFormat = "json";
-        case "clines" -> inFormat = "text"; // Like C, clines input is loaded as text.
-        case "yaml" -> inFormat = "yaml";
+        case "json" -> in_format = "json";
+        case "clines" -> in_format = "text"; // Like C, clines input is loaded as text.
+        case "yaml" -> in_format = "yaml";
         case "root", "ixml-engine", "list-library", "xml-of-ixml" ->
             throw fail("xmq: the global option " + optionString(name, value) + " is not implemented in xmqj yet");
         // Logging and things that do not change the result.
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
              "ixml-all-parses", "ixml-try-to-recover" -> { }
-        case "ixml-fail-silent" -> ixmlFailSilent = true;
+        case "ixml-fail-silent" -> ixml_fail_silent = true;
         case "version" -> { System.out.println("xmqj"); throw new Exit(0); }
         // Like the C version built without any XMQ_NO_... define.
         case "features" -> { System.out.println("xmq-printing json yaml xslt xsd ixml html"); throw new Exit(0); }
@@ -222,11 +222,11 @@ final class Cli
 
     void grammar(String g) throws Exit
     {
-        if (ixmlSource != null) throw fail("You have already specified an ixml grammar!");
+        if (ixml_source != null) throw fail("You have already specified an ixml grammar!");
         if (g.startsWith("ixml:")) throw fail("xmq: library grammars (" + g + ") are not implemented in xmqj yet");
         try
         {
-            ixmlSource = Files.readString(Path.of(g), StandardCharsets.UTF_8);
+            ixml_source = Files.readString(Path.of(g), StandardCharsets.UTF_8);
         }
         catch (IOException e)
         {
@@ -238,11 +238,11 @@ final class Cli
     {
         Command c = new Command();
         c.name = e.attributeValue("name");
-        c.useColor = envUseColor;
-        c.bgDarkMode = envBgDarkMode;
-        c.bgForced = envBgForced;
-        c.truecolor = envTruecolor;
-        c.themeSpec = System.getenv("XMQ_THEME");
+        c.use_color = env_use_color;
+        c.bg_dark_mode = env_bg_dark_mode;
+        c.bg_forced = env_bg_forced;
+        c.truecolor = env_truecolor;
+        c.theme_spec = System.getenv("XMQ_THEME");
         for (String n : NOT_IMPLEMENTED)
         {
             if (n.equals(c.name)) throw fail("xmq: the command " + c.name + " is not implemented in xmqj yet");
@@ -254,11 +254,11 @@ final class Cli
             if (c.name.equals("validate"))
             {
                 // Like handle_option of the validate group in the C version.
-                boolean isOption = p.name().equals("option");
-                String arg = isOption ? optionString(p.attributeValue("name"), value(p)) : p.textContent();
-                if (!validateArg(c, arg, isOption))
+                boolean is_option = p.name().equals("option");
+                String arg = is_option ? optionString(p.attributeValue("name"), value(p)) : p.textContent();
+                if (!validateArg(c, arg, is_option))
                 {
-                    if (isOption) System.out.print("xmq: option \"" + arg + "\" not available for command \"validate\"\n");
+                    if (is_option) System.out.print("xmq: option \"" + arg + "\" not available for command \"validate\"\n");
                     else System.out.print("xmq: bad argument \"" + arg + "\" for command \"validate\"\n");
                     throw new Exit(1);
                 }
@@ -292,7 +292,7 @@ final class Cli
             {
             case "compact" -> { c.compact = true; c.indent = 0; return; }
             case "pretty" -> { c.compact = false; c.indent = c.name.equals("to-json") || c.name.equals("to-yaml") ? 2 : 4; return; }
-            case "no-final-nl" -> { c.noFinalNl = true; return; }
+            case "no-final-nl" -> { c.no_final_nl = true; return; }
             default -> { }
             }
         }
@@ -300,10 +300,10 @@ final class Cli
         {
             switch (name)
             {
-            case "escape-tabs" -> { c.escapeTabs = true; return; }
-            case "escape-newlines" -> { c.escapeNewlines = true; return; }
-            case "escape-non-7bit" -> { c.escapeNon7bit = true; return; }
-            case "prefer-double-quotes" -> { c.preferDoubleQuotes = true; return; }
+            case "escape-tabs" -> { c.escape_tabs = true; return; }
+            case "escape-newlines" -> { c.escape_newlines = true; return; }
+            case "escape-non-7bit" -> { c.escape_non7bit = true; return; }
+            case "prefer-double-quotes" -> { c.prefer_double_quotes = true; return; }
             default -> { }
             }
         }
@@ -313,23 +313,23 @@ final class Cli
             c.indent = Integer.parseInt(value);
             return;
         }
-        if (c.name.equals("to-xml") && name.equals("omit-decl") && value == null) { c.omitDecl = true; return; }
+        if (c.name.equals("to-xml") && name.equals("omit-decl") && value == null) { c.omit_decl = true; return; }
         if (render)
         {
-            if (name.equals("nostyle") && value == null) { c.renderRaw = true; return; }
-            if (name.equals("onlystyle") && value == null) { c.onlyStyle = true; return; }
+            if (name.equals("nostyle") && value == null) { c.render_raw = true; return; }
+            if (name.equals("onlystyle") && value == null) { c.only_style = true; return; }
             if (value != null)
             {
                 switch (name)
                 {
-                case "theme" -> { c.themeSpec = value; return; }
-                case "class" -> { c.useClass = value; return; }
-                case "id" -> { c.useId = value; return; }
-                case "use-is" -> { c.useIs = value; return; }
-                case "use-es" -> { c.useEs = value; return; }
-                case "use-et" -> { c.useEt = value; return; }
-                case "use-cr" -> { c.useCr = value; return; }
-                case "use-nl" -> { c.useNl = value; return; }
+                case "theme" -> { c.theme_spec = value; return; }
+                case "class" -> { c.use_class = value; return; }
+                case "id" -> { c.use_id = value; return; }
+                case "use-is" -> { c.use_is = value; return; }
+                case "use-es" -> { c.use_es = value; return; }
+                case "use-et" -> { c.use_et = value; return; }
+                case "use-cr" -> { c.use_cr = value; return; }
+                case "use-nl" -> { c.use_nl = value; return; }
                 default -> { }
                 }
             }
@@ -337,9 +337,9 @@ final class Cli
             {
                 switch (value)
                 {
-                case "light" -> { c.useColor = true; c.bgDarkMode = false; c.bgForced = true; }
-                case "dark" -> { c.useColor = true; c.bgDarkMode = true; c.bgForced = true; }
-                case "mono" -> { c.useColor = false; c.bgDarkMode = false; }
+                case "light" -> { c.use_color = true; c.bg_dark_mode = false; c.bg_forced = true; }
+                case "dark" -> { c.use_color = true; c.bg_dark_mode = true; c.bg_forced = true; }
+                case "mono" -> { c.use_color = false; c.bg_dark_mode = false; }
                 default -> throw fail("xmq: unknown bg setting \"" + value + "\"");
                 }
                 return;
@@ -365,15 +365,15 @@ final class Cli
                 char q = sq ? '"' : '\'';
                 val = q + val + q;
             }
-            c.xsltParams.put(key, val);
+            c.xslt_params.put(key, val);
             return;
         }
-        if (c.name.equals("tokenize") && name.equals("type") && value != null) { c.tokenizeType = value; return; }
-        if ((c.name.equals("quote-c") || c.name.equals("unquote-c")) && name.equals("add-nl") && value == null) { c.addNl = true; return; }
+        if (c.name.equals("tokenize") && name.equals("type") && value != null) { c.tokenize_type = value; return; }
+        if ((c.name.equals("quote-c") || c.name.equals("unquote-c")) && name.equals("add-nl") && value == null) { c.add_nl = true; return; }
         if (c.name.equals("replace-entity") && value == null)
         {
-            if (name.equals("with-file")) { c.withFile = 1; return; }
-            if (name.equals("with-text-file")) { c.withFile = 2; return; }
+            if (name.equals("with-file")) { c.with_file = 1; return; }
+            if (name.equals("with-text-file")) { c.with_file = 2; return; }
         }
         throw fail("xmq: option \"" + optionString(name, value) + "\" not available for command \"" + c.name + "\"");
     }
@@ -384,23 +384,23 @@ final class Cli
     {
         // Like the C command line: add to-xmq when there is no to/render/tokenize
         // command and print when there is no output command.
-        boolean hasTo = false, hasOutput = false, doPrint = true;
+        boolean has_to = false, has_output = false, do_print = true;
         for (Command c : commands)
         {
             if (c.name.equals("help")) { Main.printHelp(); return; }
-            if (isTo(c.name)) { hasTo = true; doPrint = true; }
-            if (c.name.equals("no-output")) doPrint = false;
-            if (c.name.equals("print") || c.name.equals("save-to") || c.name.equals("no-output")) hasOutput = true;
+            if (isTo(c.name)) { has_to = true; do_print = true; }
+            if (c.name.equals("no-output")) do_print = false;
+            if (c.name.equals("print") || c.name.equals("save-to") || c.name.equals("no-output")) has_output = true;
         }
-        if (!hasTo && doPrint)
+        if (!has_to && do_print)
         {
             Command to = new Command();
             to.name = "to-xmq";
-            to.useColor = envUseColor;
-            to.bgDarkMode = envBgDarkMode;
-            to.bgForced = envBgForced;
-            to.truecolor = envTruecolor;
-            to.themeSpec = System.getenv("XMQ_THEME");
+            to.use_color = env_use_color;
+            to.bg_dark_mode = env_bg_dark_mode;
+            to.bg_forced = env_bg_forced;
+            to.truecolor = env_truecolor;
+            to.theme_spec = System.getenv("XMQ_THEME");
             int at = commands.size();
             for (int i = 0; i < commands.size(); i++)
             {
@@ -409,7 +409,7 @@ final class Cli
             }
             commands.add(at, to);
         }
-        if (!hasOutput && doPrint)
+        if (!has_output && do_print)
         {
             Command print = new Command();
             print.name = "print";
@@ -418,11 +418,11 @@ final class Cli
 
         String content = readInput();
         IXMLAnalyzer ixml = null;
-        if (ixmlSource != null)
+        if (ixml_source != null)
         {
             try
             {
-                ixml = IXMLAnalyzer.compileParser(ixmlSource);
+                ixml = IXMLAnalyzer.compileParser(ixml_source);
             }
             catch (IllegalArgumentException e)
             {
@@ -432,7 +432,7 @@ final class Cli
         if (!lines)
         {
             performOn(content, ixml);
-            if (ixmlFailed) throw new Exit(1);
+            if (ixml_failed) throw new Exit(1);
             return;
         }
         int start = 0;
@@ -443,13 +443,13 @@ final class Cli
             performOn(content.substring(start, stop), ixml);
             start = stop + 1;
         }
-        if (ixmlFailed) throw new Exit(1);
+        if (ixml_failed) throw new Exit(1);
     }
 
     String readInput() throws Exit
     {
-        if (noInput) return null;
-        if (inIsContent) return in;
+        if (no_input) return null;
+        if (in_is_content) return in;
         try
         {
             byte[] b = (in == null || in.equals("-")) ? System.in.readAllBytes() : Files.readAllBytes(Path.of(in));
@@ -458,7 +458,7 @@ final class Cli
                 // Like skip_any_potential_bom in the C version: UTF-16 with a bom cannot be handled.
                 throw new Exit(1);
             }
-            inputBytes = b;
+            input_bytes = b;
             // Invalid UTF-8 becomes U+FFFD, the xml parser gets the bytes and reports it.
             return new String(b, StandardCharsets.UTF_8);
         }
@@ -470,8 +470,8 @@ final class Cli
 
     void performOn(String content, IXMLAnalyzer ixml) throws Exit
     {
-        String source = in == null || (!inIsContent && in.equals("-")) ? "stdin" : inIsContent ? "-i argument" : in;
-        loadedContent = content;
+        String source = in == null || (!in_is_content && in.equals("-")) ? "stdin" : in_is_content ? "-i argument" : in;
+        loaded_content = content;
         // Like C, tokenize works on the content and nothing is loaded before it.
         for (Command c : commands)
         {
@@ -521,11 +521,11 @@ final class Cli
         {
             // A rejected input is output as a failure document, ixml(ixml:state=failed){info=...},
             // like in the C version, and xmq exits with 1.
-            XmlDocument d = ixml.parseInputOrFailure(content, ixmlFailSilent);
-            if (IXMLAnalyzer.isFailure(d)) ixmlFailed = true;
+            XmlDocument d = ixml.parseInputOrFailure(content, ixml_fail_silent);
+            if (IXMLAnalyzer.isFailure(d)) ixml_failed = true;
             return d;
         }
-        if ("text".equals(inFormat))
+        if ("text".equals(in_format))
         {
             XmlDocument d = new XmlDocument();
             d.appendRaw(new XmlText(content));
@@ -533,20 +533,20 @@ final class Cli
         }
         try
         {
-            String format = "json".equals(inFormat) || "yaml".equals(inFormat) ? inFormat : null;
+            String format = "json".equals(in_format) || "yaml".equals(in_format) ? in_format : null;
             // A file with a .yml or .yaml extension is yaml, like in C.
-            if (inFormat == null && in != null && !inIsContent)
+            if (in_format == null && in != null && !in_is_content)
             {
                 String lower = in.toLowerCase(java.util.Locale.ROOT);
                 if (lower.endsWith(".yml") || lower.endsWith(".yaml")) format = "yaml";
             }
-            yamlInput = "yaml".equals(format);
+            yaml_input = "yaml".equals(format);
             // The xml parser detects the encoding from the bytes, unless the input is split into lines.
-            byte[] raw = !lines && inputBytes != null ? inputBytes : null;
-            XmlDocument d = Main.load(content, raw, source, trimNone, noMerge, format);
+            byte[] raw = !lines && input_bytes != null ? input_bytes : null;
+            XmlDocument d = Main.load(content, raw, source, trim_none, no_merge, format);
             // Like C, an explicit --trim=heuristic trims any input, not only xml and html
             // (which Main.load already trims). Trimming twice changes nothing.
-            if (d != null && trimHeuristic) XmlTrim.trimWhitespace(d);
+            if (d != null && trim_heuristic) XmlTrim.trimWhitespace(d);
             return d;
         }
         catch (ParseException e)
@@ -568,9 +568,9 @@ final class Cli
     }
 
     /** Like cli_xsd_parse_message: the schema cannot be parsed, print the first error and exit. */
-    static void xsdParseMessage(Object ctx, String message, boolean isWarning)
+    static void xsdParseMessage(Object ctx, String message, boolean is_warning)
     {
-        if (isWarning)
+        if (is_warning)
         {
             System.err.print("xmq: " + ctx + " parse warning\n");
             xsdPut(message);
@@ -582,9 +582,9 @@ final class Cli
     }
 
     /** Like cli_xsd_validate_message: the document is not valid, print the first error and exit. */
-    static void xsdValidateMessage(Object ctx, String message, boolean isWarning)
+    static void xsdValidateMessage(Object ctx, String message, boolean is_warning)
     {
-        if (isWarning)
+        if (is_warning)
         {
             System.out.print("xmq: validation warning\n");
             xsdPut(message);
@@ -596,20 +596,20 @@ final class Cli
     }
 
     /** Like cli_xsd_silent_message: exit at the first error without a message. */
-    static void xsdSilentMessage(Object ctx, String message, boolean isWarning)
+    static void xsdSilentMessage(Object ctx, String message, boolean is_warning)
     {
-        if (!isWarning) throw new ExitNow(1);
+        if (!is_warning) throw new ExitNow(1);
     }
 
     /** Like the validate group of handle_option in the C version: the xsd is loaded and compiled here. */
-    boolean validateArg(Command c, String arg, boolean isOption)
+    boolean validateArg(Command c, String arg, boolean is_option)
     {
         if (arg.startsWith("--silent"))
         {
             c.silent = true;
             return true;
         }
-        if (!isOption && c.xsd == null)
+        if (!is_option && c.xsd == null)
         {
             String[] error = new String[1];
             XmlDocument doq = loadForXslt(arg, null, error);
@@ -618,7 +618,7 @@ final class Cli
                 System.err.print((error[0] != null ? error[0] : "xmq: parse error") + "\n");
                 return false;
             }
-            c.xsdName = arg;
+            c.xsd_name = arg;
             c.xsd = Validate.compile(doq, Cli::xsdParseMessage, arg);
             return true;
         }
@@ -633,7 +633,7 @@ final class Cli
             System.err.print("xmq: Schema xsd not valid, cannot be used to validate document.\n");
             throw new ExitNow(1);
         }
-        c.xsd.setMessageCallback(c.silent ? Cli::xsdSilentMessage : Cli::xsdValidateMessage, c.xsdName);
+        c.xsd.setMessageCallback(c.silent ? Cli::xsdSilentMessage : Cli::xsdValidateMessage, c.xsd_name);
         int status = c.xsd.validate(doc);
         if (status == Validate.ERROR_XSD_COMPILE)
         {
@@ -652,7 +652,7 @@ final class Cli
     // ------------------------------------------------------------ xslt
 
     /** Load a document for xslt like xmqParseFileWithType(doc, path, NULL, XMQ_CONTENT_DETECT, XMQ_FLAG_TRIM_NONE). */
-    static XmlDocument loadForXslt(String path, boolean[] isXmq, String[] error)
+    static XmlDocument loadForXslt(String path, boolean[] is_xmq, String[] error)
     {
         byte[] b;
         try
@@ -666,7 +666,7 @@ final class Cli
             return null;
         }
         String content = new String(b, StandardCharsets.UTF_8);
-        if (isXmq != null) isXmq[0] = isXmqContent(content);
+        if (is_xmq != null) is_xmq[0] = isXmqContent(content);
         try
         {
             XmlDocument d = Main.load(content, b, path, true, false, null);
@@ -722,7 +722,7 @@ final class Cli
         }
         org.libxmq.imp.xml.libxslt1.Stylesheet[] style = new org.libxmq.imp.xml.libxslt1.Stylesheet[1];
         org.libxmq.imp.xml.libxslt1.Settings settings = new org.libxmq.imp.xml.libxslt1.Settings();
-        settings.messageCallback = m -> System.err.print(m);
+        settings.message_callback = m -> System.err.print(m);
         settings.loader = (uri, type) -> xsltLoader(style[0], uri, type);
         style[0] = org.libxmq.imp.xml.libxslt1.Xslt.compile(dom, settings);
         return style[0];
@@ -762,9 +762,9 @@ final class Cli
     /** Like cmd_transform in the C version. */
     XmlDocument transform(XmlDocument doc, Command c, String source)
     {
-        String[] params = new String[2 * c.xsltParams.size()];
+        String[] params = new String[2 * c.xslt_params.size()];
         int k = 0;
-        for (var e : c.xsltParams.entrySet())
+        for (var e : c.xslt_params.entrySet())
         {
             params[k++] = e.getKey();
             params[k++] = e.getValue();
@@ -941,8 +941,8 @@ final class Cli
         XmlNode tree = null;
         try
         {
-            if (c.withFile == 2) text = Files.readString(Path.of(arg), StandardCharsets.UTF_8);
-            if (c.withFile == 1)
+            if (c.with_file == 2) text = Files.readString(Path.of(arg), StandardCharsets.UTF_8);
+            if (c.with_file == 1)
             {
                 XmlDocument d = Main.load(Files.readString(Path.of(arg), StandardCharsets.UTF_8), arg, true, false);
                 if (d == null) throw new Exit(1);
@@ -1011,7 +1011,7 @@ final class Cli
         StringBuilder text = new StringBuilder();
         for (XmlNode n = doc.firstChild(); n != null; n = n.next()) text.append(n.textContent());
         String value = c.name.equals("quote-c") ? quoteC(text.toString()) : unquoteC(text.toString());
-        if (c.addNl && c.name.equals("quote-c")) value += "\n";
+        if (c.add_nl && c.name.equals("quote-c")) value += "\n";
         XmlDocument out = new XmlDocument();
         out.appendRaw(new XmlText(value));
         return out;
@@ -1062,28 +1062,28 @@ final class Cli
         if (!isXmqContent(content))
         {
             // Like C xmqTokenizeFile and xmqTokenizeBuffer.
-            System.err.println(inIsContent ? "xmq: you can only tokenize the xmq format" : "You can only tokenize xmq!");
+            System.err.println(in_is_content ? "xmq: you can only tokenize the xmq format" : "You can only tokenize xmq!");
             throw new Exit(1);
         }
-        if (!lines && inputBytes != null)
+        if (!lines && input_bytes != null)
         {
             // The xmq source must be valid UTF-8, like xmqTokenizeBuffer in the C version.
-            ParseException bad = Main.invalidUtf8(inputBytes, source);
+            ParseException bad = Main.invalidUtf8(input_bytes, source);
             if (bad != null)
             {
                 System.err.print(tokenizeError(bad));
                 throw new Exit(1);
             }
         }
-        String type = c.tokenizeType;
+        String type = c.tokenize_type;
         if (type == null || type.equals("terminal") || type.equals("html") || type.equals("tex"))
         {
             colorTokens(content, source, c);
             return;
         }
         XMQParseIntoTokens t = new XMQParseIntoTokens();
-        if ("debugtokens".equals(c.tokenizeType)) t.debugTokens();
-        else if ("debugcontent".equals(c.tokenizeType)) t.debugContent();
+        if ("debugtokens".equals(c.tokenize_type)) t.debugTokens();
+        else if ("debugcontent".equals(c.tokenize_type)) t.debugContent();
         // The debug tokens are printed while parsing. Like C, which buffers the
         // output, nothing is printed when the parse fails.
         java.io.PrintStream stdout = System.out;
@@ -1134,10 +1134,10 @@ final class Cli
     void colorTokens(String content, String source, Command c) throws Exit
     {
         XMQPrintState.RenderTo to = XMQPrintState.RenderTo.TERMINAL;
-        if ("html".equals(c.tokenizeType)) to = XMQPrintState.RenderTo.HTML;
-        if ("tex".equals(c.tokenizeType)) to = XMQPrintState.RenderTo.TEX;
-        if ("terminal".equals(c.tokenizeType)) c.useColor = true;
-        c.themeSpec = envUseColor ? System.getenv("XMQ_THEME") : null;
+        if ("html".equals(c.tokenize_type)) to = XMQPrintState.RenderTo.HTML;
+        if ("tex".equals(c.tokenize_type)) to = XMQPrintState.RenderTo.TEX;
+        if ("terminal".equals(c.tokenize_type)) c.use_color = true;
+        c.theme_spec = env_use_color ? System.getenv("XMQ_THEME") : null;
         XMQPrintState ps = new XMQPrintState();
         setupRender(ps, c, to);
         XMQParseIntoColoredTokens t = new XMQParseIntoColoredTokens(ps.theme, to);
@@ -1170,16 +1170,16 @@ final class Cli
         OutputSettings os = new OutputSettings()
             .setIndentAmount(c.indent)
             .setCompact(c.compact)
-            .setEscapeTabs(c.escapeTabs)
+            .setEscapeTabs(c.escape_tabs)
             // Compact mode always escapes newlines (see C xmq.c).
-            .setEscapeNewlines(c.escapeNewlines || c.compact)
-            .setEscapeNon7bit(c.escapeNon7bit)
-            .setPreferDoubleQuotes(c.preferDoubleQuotes)
+            .setEscapeNewlines(c.escape_newlines || c.compact)
+            .setEscapeNon7bit(c.escape_non7bit)
+            .setPreferDoubleQuotes(c.prefer_double_quotes)
             .setHtmq(c.name.equals("to-htmq"));
         // A yaml input that does not end with a newline is written without a final newline, like C.
-        boolean noFinalNl = c.noFinalNl
-            || (yamlInput && loadedContent != null && !loadedContent.isEmpty() && !loadedContent.endsWith("\n"));
-        String nl = noFinalNl ? "" : "\n";
+        boolean no_final_nl = c.no_final_nl
+            || (yaml_input && loaded_content != null && !loaded_content.isEmpty() && !loaded_content.endsWith("\n"));
+        String nl = no_final_nl ? "" : "\n";
         switch (c.name)
         {
         case "to-html" -> {
@@ -1190,7 +1190,7 @@ final class Cli
         case "to-xml" -> {
             XmlTrim.fixupHtmlBeforeWriteout(doc);
             String x = XmlSave.docDump(doc, "utf-8");
-            if (c.omitDecl && x.startsWith("<?xml"))
+            if (c.omit_decl && x.startsWith("<?xml"))
             {
                 int eol = x.indexOf('\n');
                 x = eol < 0 ? "" : x.substring(eol + 1);
@@ -1201,13 +1201,13 @@ final class Cli
             return Clines.print(doc);
         }
         case "to-json" -> {
-            return new JsonPrinter().toJson(doc, os, !noFinalNl);
+            return new JsonPrinter().toJson(doc, os, !no_final_nl);
         }
         case "to-yaml" -> {
-            String yaml = YamlPrinter.print(doc, c.indent, !noFinalNl);
+            String yaml = YamlPrinter.print(doc, c.indent, !no_final_nl);
             // Like C: the reminder first, unless --we-should-stop-using-yaml or it is already there.
             String note = "# we should stop using yaml\n";
-            if (!weShouldStopUsingYaml && !yaml.startsWith(note)) yaml = note + yaml;
+            if (!we_should_stop_using_yaml && !yaml.startsWith(note)) yaml = note + yaml;
             return yaml;
         }
         case "to-text" -> {
@@ -1219,7 +1219,7 @@ final class Cli
             XMQPrintState ps = new XMQPrintState();
             ps.output_settings = os;
             setupRender(ps, c, null);
-            if (c.onlyStyle)
+            if (c.only_style)
             {
                 // Like C xmqSetupDefaultColors, print the style and exit.
                 XMQThemeStrings st = ps.theme.style;
@@ -1233,7 +1233,7 @@ final class Cli
         default -> {
             XMQPrintState ps = new XMQPrintState();
             ps.output_settings = os;
-            if (c.useColor)
+            if (c.use_color)
             {
                 // Like C, xmq printed to a terminal is colored with the theme.
                 setupRender(ps, c, XMQPrintState.RenderTo.TERMINAL);
@@ -1249,11 +1249,11 @@ final class Cli
 
     // The coloring found in the environment, like C lookup_bg and detect_truecolor,
     // turned off when the output is not a terminal.
-    boolean envUseColor, envBgDarkMode, envBgForced, envTruecolor;
+    boolean env_use_color, env_bg_dark_mode, env_bg_forced, env_truecolor;
     {
         lookupBg();
-        envTruecolor = detectTruecolor();
-        if (!isTerminal()) envUseColor = false;
+        env_truecolor = detectTruecolor();
+        if (!isTerminal()) env_use_color = false;
     }
 
     /** True if the output is a terminal, like C isatty(1). */
@@ -1279,27 +1279,27 @@ final class Cli
     {
         String term = System.getenv("TERM");
         if (term == null) term = "NULL";
-        envBgForced = false;
+        env_bg_forced = false;
         String bg = System.getenv("XMQ_BG");
         if (bg != null)
         {
-            if (bg.equals("mono")) { envUseColor = false; envBgDarkMode = false; return; }
-            envUseColor = true;
-            if (bg.equals("light")) { envBgDarkMode = false; envBgForced = true; return; }
-            if (bg.equals("dark")) { envBgDarkMode = true; envBgForced = true; return; }
-            envUseColor = false;
-            envBgDarkMode = false;
+            if (bg.equals("mono")) { env_use_color = false; env_bg_dark_mode = false; return; }
+            env_use_color = true;
+            if (bg.equals("light")) { env_bg_dark_mode = false; env_bg_forced = true; return; }
+            if (bg.equals("dark")) { env_bg_dark_mode = true; env_bg_forced = true; return; }
+            env_use_color = false;
+            env_bg_dark_mode = false;
             return;
         }
-        envUseColor = true;
-        envBgDarkMode = true;
+        env_use_color = true;
+        env_bg_dark_mode = true;
         if (term.equals("linux") || term.equals("xterm-256color") || term.equals("xterm")) return;
         String colorfgbg = System.getenv("COLORFGBG");
         if (colorfgbg != null)
         {
             // If the string ends with ;0 then it is dark mode.
             int p = colorfgbg.lastIndexOf(';');
-            envBgDarkMode = p < 0 || colorfgbg.substring(p + 1).equals("0");
+            env_bg_dark_mode = p < 0 || colorfgbg.substring(p + 1).equals("0");
         }
     }
 
@@ -1337,14 +1337,14 @@ final class Cli
         };
         // compute_color_mode: 0 mono, 1 dark, 2 light, 3 auto (html follows the browser).
         int mode;
-        if (c.bgForced) mode = c.bgDarkMode ? 1 : 2;
-        else if (!c.useColor) mode = 0;
+        if (c.bg_forced) mode = c.bg_dark_mode ? 1 : 2;
+        else if (!c.use_color) mode = 0;
         else if (to == XMQPrintState.RenderTo.HTML) mode = 3;
-        else mode = c.bgDarkMode ? 1 : 2;
+        else mode = c.bg_dark_mode ? 1 : 2;
 
         boolean use_color = mode != 0;
         boolean dark_mode = mode == 1 || mode == 3;
-        String spec = c.themeSpec;
+        String spec = c.theme_spec;
         if (spec == null)
         {
             if (to == XMQPrintState.RenderTo.TEX) dark_mode = false;
@@ -1375,23 +1375,23 @@ final class Cli
         case HTML -> {
             ps.indentation_space = " ";
             ps.explicit_nl = "\n";
-            theme.setupHtmlColoring(c.renderRaw, mode == 1 ? 1 : mode == 2 ? 2 : 0, c.useId, c.useClass);
+            theme.setupHtmlColoring(c.render_raw, mode == 1 ? 1 : mode == 2 ? 2 : 0, c.use_id, c.use_class);
         }
         case TEX -> {
             ps.indentation_space = "\\xmqI ";
             ps.explicit_space = " ";
             ps.explicit_nl = "\\linebreak\n";
-            theme.setupTexColoring(dark_mode, c.renderRaw);
+            theme.setupTexColoring(dark_mode, c.render_raw);
         }
         default -> { }
         }
 
         // Like C xmqOverrideSettings.
-        if (c.useIs != null) ps.indentation_space = c.useIs;
-        if (c.useEs != null) ps.explicit_space = c.useEs;
-        if (c.useEt != null) ps.explicit_tab = c.useEt;
-        if (c.useCr != null) ps.explicit_cr = c.useCr;
-        if (c.useNl != null) ps.explicit_nl = c.useNl;
+        if (c.use_is != null) ps.indentation_space = c.use_is;
+        if (c.use_es != null) ps.explicit_space = c.use_es;
+        if (c.use_et != null) ps.explicit_tab = c.use_et;
+        if (c.use_cr != null) ps.explicit_cr = c.use_cr;
+        if (c.use_nl != null) ps.explicit_nl = c.use_nl;
     }
 
     // Like text_print_node in xmq.c.

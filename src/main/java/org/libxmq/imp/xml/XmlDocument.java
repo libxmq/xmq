@@ -32,7 +32,7 @@ package org.libxmq.imp.xml;
 public class XmlDocument extends XmlNode
 {
     boolean html_;
-    XmlDtd intSubset_;
+    XmlDtd int_subset_;
     String version_ = "1.0";
     String encoding_;
     int standalone_ = -1;
@@ -119,7 +119,7 @@ public class XmlDocument extends XmlNode
      */
     public XmlDtd intSubset()
     {
-        return intSubset_;
+        return int_subset_;
     }
 
     /**
@@ -130,11 +130,11 @@ public class XmlDocument extends XmlNode
      */
     public void setIntSubset(XmlDtd dtd)
     {
-        if (intSubset_ != null && intSubset_ != dtd && intSubset_.parent_ == this)
+        if (int_subset_ != null && int_subset_ != dtd && int_subset_.parent_ == this)
         {
-            intSubset_.unlink();
+            int_subset_.unlink();
         }
-        intSubset_ = dtd;
+        int_subset_ = dtd;
         if (dtd == null) return;
         if (dtd.parent_ == null)
         {
@@ -153,7 +153,7 @@ public class XmlDocument extends XmlNode
                 if (next == null) appendRaw(dtd);
                 else next.addPrevSibling(dtd);
             }
-            intSubset_ = dtd;
+            int_subset_ = dtd;
         }
         dtd.setDocRecursive(this);
     }
@@ -165,7 +165,7 @@ public class XmlDocument extends XmlNode
      */
     public void setIntSubsetRef(XmlDtd dtd)
     {
-        intSubset_ = dtd;
+        int_subset_ = dtd;
     }
 
     /**
@@ -175,8 +175,8 @@ public class XmlDocument extends XmlNode
      */
     public XmlEntityDecl getEntity(String name)
     {
-        if (intSubset_ == null) return null;
-        return intSubset_.getEntity(name);
+        if (int_subset_ == null) return null;
+        return int_subset_.getEntity(name);
     }
 
     /**

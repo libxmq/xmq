@@ -70,5 +70,5 @@ final class DocInfo
     XmlDocument doc;
     int owned;              // Loaded by document().
     KeyTable keys;
-    int nbKeysComputed;
+    int nb_keys_computed;
 }

@@ -101,12 +101,12 @@ public final class Xsd10Valid
 
     // xml_xsd10_assemble_by_location
     /** Port of xml_xsd10_assemble_by_location. Expands an existing schema by an additional schema. */
-    static int assembleByLocation(Xsd10ValidCtxt vctxt, Xsd10Schema schema, XmlNode node, String nsName, String location)
+    static int assembleByLocation(Xsd10ValidCtxt vctxt, Xsd10Schema schema, XmlNode node, String ns_name, String location)
     {
         int ret = 0;
         Xsd10ParserCtxt pctxt;
         Xsd10Bucket[] bucket = new Xsd10Bucket[] { null };
-        String baseURI = null;
+        String base_uri = null;
 
         if ((vctxt == null) || (schema == null))
         {
@@ -128,13 +128,13 @@ public final class Xsd10Valid
         * Acquire the schema document.
         * (The streaming modes are not ported: node is never NULL here.)
         */
-        location = buildAbsoluteUri(pctxt.dict, location, node, baseURI);
+        location = buildAbsoluteUri(pctxt.dict, location, node, base_uri);
         /*
         * Note that we pass XML_SCHEMA_SCHEMA_IMPORT here;
         * the process will automatically change this to
         * XML_SCHEMA_SCHEMA_MAIN if it is the first schema document.
         */
-        ret = addSchemaDoc(pctxt, XML_XSD10_SCHEMA_SCHEMA_IMPORT, location, null, null, 0, node, null, nsName, bucket);
+        ret = addSchemaDoc(pctxt, XML_XSD10_SCHEMA_SCHEMA_IMPORT, location, null, null, 0, node, null, ns_name, bucket);
         if (ret != 0)
         {
             return ret;
@@ -214,16 +214,16 @@ public final class Xsd10Valid
 
     // xml_xsd10_get_meta_attr_info
     /** Port of xmlSchemaGetMetaAttrInfo. */
-    static Xsd10AttrInfo getMetaAttrInfo(Xsd10ValidCtxt vctxt, int metaType)
+    static Xsd10AttrInfo getMetaAttrInfo(Xsd10ValidCtxt vctxt, int meta_type)
     {
-        if (vctxt.nbAttrInfos == 0)
+        if (vctxt.nb_attr_infos == 0)
         {
             return null;
         }
-        for (int i = 0; i < vctxt.nbAttrInfos; i++)
+        for (int i = 0; i < vctxt.nb_attr_infos; i++)
         {
-            Xsd10AttrInfo iattr = vctxt.attrInfos[i];
-            if (iattr.metaType == metaType)
+            Xsd10AttrInfo iattr = vctxt.attr_infos[i];
+            if (iattr.meta_type == meta_type)
             {
                 return iattr;
             }
@@ -259,7 +259,7 @@ public final class Xsd10Valid
         cur = 0;
         do
         {
-            if (iattr.metaType == XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC)
+            if (iattr.meta_type == XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC)
             {
                 /*
                 * Get the namespace name.
@@ -295,7 +295,7 @@ public final class Xsd10Valid
             }
             if (end == cur)
             {
-                if (iattr.metaType == XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC)
+                if (iattr.meta_type == XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC)
                 {
                     /*
                     * If using @schemaLocation then tuples are expected.
@@ -324,7 +324,7 @@ public final class Xsd10Valid
     /** Port of xmlSchemaLookupNamespace. */
     static String lookupNamespace(Xsd10ValidCtxt vctxt, String prefix)
     {
-        /* The SAX (nsBindings) and reader branches are not ported. */
+        /* The SAX (ns_bindings) and reader branches are not ported. */
         XmlNs ns;
 
         if ((vctxt.inode.node == null) || (nodeDom(vctxt.inode.node) == null))
@@ -345,7 +345,7 @@ public final class Xsd10Valid
     */
     // xml_xsd10_validate_notation
     /** Port of xmlSchemaValidateNotation. */
-    static int validateNotation(Xsd10ValidCtxt vctxt, Xsd10Schema schema, XmlNode node, String value, Xsd10Val[] val, int valNeeded)
+    static int validateNotation(Xsd10ValidCtxt vctxt, Xsd10Schema schema, XmlNode node, String value, Xsd10Val[] val, int val_needed)
     {
         int ret;
 
@@ -359,39 +359,39 @@ public final class Xsd10Valid
         {
             return ret;
         }
-        String localName;
+        String local_name;
         String[] prefix = new String[] { null };
 
-        localName = treeSplitQname2(value, prefix);
+        local_name = treeSplitQname2(value, prefix);
         if (prefix[0] != null)
         {
-            String nsName = null;
+            String ns_name = null;
 
             if (vctxt != null)
             {
-                nsName = lookupNamespace(vctxt, prefix[0]);
+                ns_name = lookupNamespace(vctxt, prefix[0]);
             }
             else if (node != null)
             {
                 XmlNs ns = treeSearchNs(node, prefix[0]);
                 if (ns != null)
                 {
-                    nsName = nsHref(ns);
+                    ns_name = nsHref(ns);
                 }
             }
             else
             {
                 return 1;
             }
-            if (nsName == null)
+            if (ns_name == null)
             {
                 return 1;
             }
-            if (getNotation(schema, localName, nsName) != null)
+            if (getNotation(schema, local_name, ns_name) != null)
             {
-                if ((valNeeded != 0) && (val != null))
+                if ((val_needed != 0) && (val != null))
                 {
-                    val[0] = newNotationValue(strdup(localName), strdup(nsName));
+                    val[0] = newNotationValue(strdup(local_name), strdup(ns_name));
                     if (val[0] == null)
                     {
                         ret = -1;
@@ -407,7 +407,7 @@ public final class Xsd10Valid
         {
             if (getNotation(schema, value, null) != null)
             {
-                if ((valNeeded != 0) && (val != null))
+                if ((val_needed != 0) && (val != null))
                 {
                     val[0] = newNotationValue(strdup(value), null);
                     if (val[0] == null)
@@ -443,25 +443,25 @@ public final class Xsd10Valid
                 return -1;
             }
         }
-        for (i = 0; i < vctxt.nodeQNames.nbItems; i += 2)
+        for (i = 0; i < vctxt.node_q_names.nb_items; i += 2)
         {
-            if (Objects.equals(vctxt.nodeQNames.items[i], lname) &&
-                Objects.equals(vctxt.nodeQNames.items[i + 1], nsname))
+            if (Objects.equals(vctxt.node_q_names.items[i], lname) &&
+                Objects.equals(vctxt.node_q_names.items[i + 1], nsname))
             {
                 /* Already there */
                 return i;
             }
         }
         /* Add new entry. */
-        i = vctxt.nodeQNames.nbItems;
-        if (itemListAdd(vctxt.nodeQNames, lname) < 0)
+        i = vctxt.node_q_names.nb_items;
+        if (itemListAdd(vctxt.node_q_names, lname) < 0)
         {
             vErrMemory(vctxt);
             return -1;
         }
-        if (itemListAdd(vctxt.nodeQNames, nsname) < 0)
+        if (itemListAdd(vctxt.node_q_names, nsname) < 0)
         {
-            vctxt.nodeQNames.nbItems--;
+            vctxt.node_q_names.nb_items--;
             vErrMemory(vctxt);
             return -1;
         }
@@ -478,13 +478,13 @@ public final class Xsd10Valid
     /** Port of xmlSchemaAugmentIDC. Creates an augmented IDC definition item. */
     static void augmentIdc(Object payload, Object data, String name)
     {
-        Xsd10IDC idcDef = (Xsd10IDC) payload;
+        Xsd10IDC idc_def = (Xsd10IDC) payload;
         Xsd10ValidCtxt vctxt = (Xsd10ValidCtxt) data;
         Xsd10IDCAug aidc;
 
         aidc = new Xsd10IDCAug();
-        aidc.keyrefDepth = -1;
-        aidc.def = idcDef;
+        aidc.keyref_depth = -1;
+        aidc.def = idc_def;
         aidc.next = null;
         if (vctxt.aidcs == null)
         {
@@ -498,9 +498,9 @@ public final class Xsd10Valid
         /*
         * Save if we have keyrefs at all.
         */
-        if ((vctxt.hasKeyrefs == 0) && (idcDef.type == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF))
+        if ((vctxt.has_keyrefs == 0) && (idc_def.type == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF))
         {
-            vctxt.hasKeyrefs = 1;
+            vctxt.has_keyrefs = 1;
         }
     }
 
@@ -510,18 +510,18 @@ public final class Xsd10Valid
     {
         Xsd10Import imported = (Xsd10Import) payload;
         Xsd10ValidCtxt vctxt = (Xsd10ValidCtxt) data;
-        if (imported.schema.idcDef != null)
+        if (imported.schema.idc_def != null)
         {
-            hashScan(imported.schema.idcDef, Xsd10Valid::augmentIdc, vctxt);
+            hashScan(imported.schema.idc_def, Xsd10Valid::augmentIdc, vctxt);
         }
     }
 
     // xml_xsd10_idc_new_binding
     /** Port of xmlSchemaIDCNewBinding. Creates a new IDC binding. */
-    static Xsd10PSVIIDCBinding idcNewBinding(Xsd10IDC idcDef)
+    static Xsd10PSVIIDCBinding idcNewBinding(Xsd10IDC idc_def)
     {
         Xsd10PSVIIDCBinding ret = new Xsd10PSVIIDCBinding();
-        ret.definition = idcDef;
+        ret.definition = idc_def;
         return ret;
     }
 
@@ -532,19 +532,19 @@ public final class Xsd10Valid
         /*
         * Add to global list.
         */
-        if (vctxt.sizeIdcNodes <= vctxt.nbIdcNodes)
+        if (vctxt.size_idc_nodes <= vctxt.nb_idc_nodes)
         {
-            int newSize = growCapacity(vctxt.sizeIdcNodes, PTR_SIZE, 20, XML_XSD10_MAX_ITEMS);
-            if (newSize < 0)
+            int new_size = growCapacity(vctxt.size_idc_nodes, PTR_SIZE, 20, XML_XSD10_MAX_ITEMS);
+            if (new_size < 0)
             {
                 vErrMemory(vctxt);
                 return -1;
             }
-            vctxt.idcNodes = (vctxt.idcNodes == null) ? new Xsd10PSVIIDCNode[newSize] : Arrays.copyOf(vctxt.idcNodes, newSize);
-            vctxt.sizeIdcNodes = newSize;
+            vctxt.idc_nodes = (vctxt.idc_nodes == null) ? new Xsd10PSVIIDCNode[new_size] : Arrays.copyOf(vctxt.idc_nodes, new_size);
+            vctxt.size_idc_nodes = new_size;
         }
 
-        vctxt.idcNodes[vctxt.nbIdcNodes++] = item;
+        vctxt.idc_nodes[vctxt.nb_idc_nodes++] = item;
         return 0;
     }
 
@@ -555,39 +555,39 @@ public final class Xsd10Valid
         /*
         * Add to global list.
         */
-        if (vctxt.sizeIdcKeys <= vctxt.nbIdcKeys)
+        if (vctxt.size_idc_keys <= vctxt.nb_idc_keys)
         {
-            int newSize = growCapacity(vctxt.sizeIdcKeys, PTR_SIZE, 20, XML_XSD10_MAX_ITEMS);
-            if (newSize < 0)
+            int new_size = growCapacity(vctxt.size_idc_keys, PTR_SIZE, 20, XML_XSD10_MAX_ITEMS);
+            if (new_size < 0)
             {
                 vErrMemory(vctxt);
                 return -1;
             }
-            vctxt.idcKeys = (vctxt.idcKeys == null) ? new Xsd10PSVIIDCKey[newSize] : Arrays.copyOf(vctxt.idcKeys, newSize);
-            vctxt.sizeIdcKeys = newSize;
+            vctxt.idc_keys = (vctxt.idc_keys == null) ? new Xsd10PSVIIDCKey[new_size] : Arrays.copyOf(vctxt.idc_keys, new_size);
+            vctxt.size_idc_keys = new_size;
         }
 
-        vctxt.idcKeys[vctxt.nbIdcKeys++] = key;
+        vctxt.idc_keys[vctxt.nb_idc_keys++] = key;
         return 0;
     }
 
     // xml_xsd10_idc_append_node_table_item
     /** Port of xmlSchemaIDCAppendNodeTableItem. */
-    static int idcAppendNodeTableItem(Xsd10PSVIIDCBinding bind, Xsd10PSVIIDCNode ntItem)
+    static int idcAppendNodeTableItem(Xsd10PSVIIDCBinding bind, Xsd10PSVIIDCNode nt_item)
     {
-        if (bind.sizeNodes <= bind.nbNodes)
+        if (bind.size_nodes <= bind.nb_nodes)
         {
-            int newSize = growCapacity(bind.sizeNodes, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
-            if (newSize < 0)
+            int new_size = growCapacity(bind.size_nodes, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
+            if (new_size < 0)
             {
                 vErrMemory(null);
                 return -1;
             }
-            bind.nodeTable = (bind.nodeTable == null) ? new Xsd10PSVIIDCNode[newSize] : Arrays.copyOf(bind.nodeTable, newSize);
-            bind.sizeNodes = newSize;
+            bind.node_table = (bind.node_table == null) ? new Xsd10PSVIIDCNode[new_size] : Arrays.copyOf(bind.node_table, new_size);
+            bind.size_nodes = new_size;
         }
 
-        bind.nodeTable[bind.nbNodes++] = ntItem;
+        bind.node_table[bind.nb_nodes++] = nt_item;
         return 0;
     }
 
@@ -597,20 +597,20 @@ public final class Xsd10Valid
     {
         Xsd10NodeInfo ielem;
 
-        ielem = vctxt.elemInfos[matcher.depth];
+        ielem = vctxt.elem_infos[matcher.depth];
 
-        if (ielem.idcTable == null)
+        if (ielem.idc_table == null)
         {
-            ielem.idcTable = idcNewBinding(matcher.aidc.def);
-            if (ielem.idcTable == null)
+            ielem.idc_table = idcNewBinding(matcher.aidc.def);
+            if (ielem.idc_table == null)
             {
                 return null;
             }
-            return ielem.idcTable;
+            return ielem.idc_table;
         }
         else
         {
-            Xsd10PSVIIDCBinding bind = ielem.idcTable;
+            Xsd10PSVIIDCBinding bind = ielem.idc_table;
             do
             {
                 if (bind.definition == matcher.aidc.def)
@@ -661,7 +661,7 @@ public final class Xsd10Valid
     /** Port of xmlSchemaIDCFreeBinding. Note that the node table-items are not freed. */
     static void idcFreeBinding(Xsd10PSVIIDCBinding bind)
     {
-        bind.nodeTable = null;
+        bind.node_table = null;
         if (bind.dupls != null)
         {
             itemListFree(bind.dupls);
@@ -698,7 +698,7 @@ public final class Xsd10Valid
         while (matcher != null)
         {
             next = matcher.next;
-            matcher.keySeqs = null;
+            matcher.key_seqs = null;
             if (matcher.targets != null)
             {
                 itemListFree(matcher.targets);
@@ -720,14 +720,14 @@ public final class Xsd10Valid
         while (matcher != null)
         {
             next = matcher.next;
-            if (matcher.keySeqs != null)
+            if (matcher.key_seqs != null)
             {
                 /*
                 * Don't free the array, but only the content.
                 */
-                for (int i = 0; i < matcher.sizeKeySeqs; i++)
+                for (int i = 0; i < matcher.size_key_seqs; i++)
                 {
-                    matcher.keySeqs[i] = null;
+                    matcher.key_seqs[i] = null;
                 }
             }
             if (matcher.targets != null)
@@ -744,11 +744,11 @@ public final class Xsd10Valid
             /*
             * Cache the matcher.
             */
-            if (vctxt.idcMatcherCache != null)
+            if (vctxt.idc_matcher_cache != null)
             {
-                matcher.nextCached = vctxt.idcMatcherCache;
+                matcher.next_cached = vctxt.idc_matcher_cache;
             }
-            vctxt.idcMatcherCache = matcher;
+            vctxt.idc_matcher_cache = matcher;
 
             matcher = next;
         }
@@ -763,10 +763,10 @@ public final class Xsd10Valid
         /*
         * Reuse the state objects from the pool.
         */
-        if (vctxt.xpathStatePool != null)
+        if (vctxt.xpath_state_pool != null)
         {
-            sto = vctxt.xpathStatePool;
-            vctxt.xpathStatePool = sto.next;
+            sto = vctxt.xpath_state_pool;
+            vctxt.xpath_state_pool = sto.next;
             sto.next = null;
         }
         else
@@ -779,25 +779,25 @@ public final class Xsd10Valid
         /*
         * Add to global list.
         */
-        if (vctxt.xpathStates != null)
+        if (vctxt.xpath_states != null)
         {
-            sto.next = vctxt.xpathStates;
+            sto.next = vctxt.xpath_states;
         }
-        vctxt.xpathStates = sto;
+        vctxt.xpath_states = sto;
 
         /*
         * Free the old xpath validation context.
         */
-        if (sto.xpathCtxt != null)
+        if (sto.xpath_ctxt != null)
         {
-            XmlPattern.streamCtxtFree((XmlStreamCtxt) sto.xpathCtxt);
+            XmlPattern.streamCtxtFree((XmlStreamCtxt) sto.xpath_ctxt);
         }
 
         /*
         * Create a new XPath (pattern) validation context.
         */
-        sto.xpathCtxt = XmlPattern.patternGetStreamCtxt((XmlPattern) sel.xpathComp);
-        if (sto.xpathCtxt == null)
+        sto.xpath_ctxt = XmlPattern.patternGetStreamCtxt((XmlPattern) sel.xpath_comp);
+        if (sto.xpath_ctxt == null)
         {
             verrorInt(vctxt, "xmlSchemaIDCAddStateObject", "failed to create an XPath validation context");
             return -1;
@@ -806,14 +806,14 @@ public final class Xsd10Valid
         sto.depth = vctxt.depth;
         sto.matcher = matcher;
         sto.sel = sel;
-        sto.nbHistory = 0;
+        sto.nb_history = 0;
 
         return 0;
     }
 
     // xml_xsd10_x_path_evaluate
     /** Port of xmlSchemaXPathEvaluate. Evaluates all active XPath state objects. */
-    static int xPathEvaluate(Xsd10ValidCtxt vctxt, int nodeType)
+    static int xPathEvaluate(Xsd10ValidCtxt vctxt, int node_type)
     {
         Xsd10IDCStateObj sto;
         Xsd10IDCStateObj head = null;
@@ -822,29 +822,29 @@ public final class Xsd10Valid
         int resolved = 0;
         int depth = vctxt.depth;
 
-        if (vctxt.xpathStates == null)
+        if (vctxt.xpath_states == null)
         {
             return 0;
         }
 
-        if (nodeType == ATTRIBUTE)
+        if (node_type == ATTRIBUTE)
         {
             depth++;
         }
         /*
         * Process all active XPath state objects.
         */
-        first = vctxt.xpathStates;
+        first = vctxt.xpath_states;
         sto = first;
         while (sto != head)
         {
-            if (nodeType == ELEMENT)
+            if (node_type == ELEMENT)
             {
-                res = XmlPattern.streamPush((XmlStreamCtxt) sto.xpathCtxt, vctxt.inode.localName, vctxt.inode.nsName);
+                res = XmlPattern.streamPush((XmlStreamCtxt) sto.xpath_ctxt, vctxt.inode.local_name, vctxt.inode.ns_name);
             }
             else
             {
-                res = XmlPattern.streamPushAttr((XmlStreamCtxt) sto.xpathCtxt, vctxt.inode.localName, vctxt.inode.nsName);
+                res = XmlPattern.streamPushAttr((XmlStreamCtxt) sto.xpath_ctxt, vctxt.inode.local_name, vctxt.inode.ns_name);
             }
 
             if (res == -1)
@@ -860,18 +860,18 @@ public final class Xsd10Valid
                 /*
                 * Register a match in the state object history.
                 */
-                if (sto.sizeHistory <= sto.nbHistory)
+                if (sto.size_history <= sto.nb_history)
                 {
-                    int newSize = growCapacity(sto.sizeHistory, 4, 5, XML_XSD10_MAX_ITEMS);
-                    if (newSize < 0)
+                    int new_size = growCapacity(sto.size_history, 4, 5, XML_XSD10_MAX_ITEMS);
+                    if (new_size < 0)
                     {
                         vErrMemory(vctxt);
                         return -1;
                     }
-                    sto.history = (sto.history == null) ? new int[newSize] : Arrays.copyOf(sto.history, newSize);
-                    sto.sizeHistory = newSize;
+                    sto.history = (sto.history == null) ? new int[new_size] : Arrays.copyOf(sto.history, new_size);
+                    sto.size_history = new_size;
                 }
-                sto.history[sto.nbHistory++] = depth;
+                sto.history[sto.nb_history++] = depth;
 
                 if (sto.type == XSD10_XPATH_STATE_OBJ_TYPE_IDC_SELECTOR)
                 {
@@ -916,7 +916,7 @@ public final class Xsd10Valid
                 * Evaluate field state objects created on this node as well.
                 */
                 head = first;
-                sto = vctxt.xpathStates;
+                sto = vctxt.xpath_states;
             }
             else
             {
@@ -991,14 +991,14 @@ public final class Xsd10Valid
         Xsd10IDCStateObj sto;
         int res;
 
-        if (vctxt.xpathStates == null)
+        if (vctxt.xpath_states == null)
         {
             return 0;
         }
-        sto = vctxt.xpathStates;
+        sto = vctxt.xpath_states;
         do
         {
-            res = XmlPattern.streamPop((XmlStreamCtxt) sto.xpathCtxt);
+            res = XmlPattern.streamPop((XmlStreamCtxt) sto.xpath_ctxt);
             if (res == -1)
             {
                 return -1;
@@ -1015,23 +1015,23 @@ public final class Xsd10Valid
         Xsd10IDCStateObj sto;
         Xsd10IDCStateObj nextsto;
         int res;
-        int matchDepth;
+        int match_depth;
         Xsd10PSVIIDCKey key = null;
-        Xsd10Type type = vctxt.inode.typeDef;
-        Xsd10Type simpleType = null;
+        Xsd10Type type = vctxt.inode.type_def;
+        Xsd10Type simple_type = null;
 
-        if (vctxt.xpathStates == null)
+        if (vctxt.xpath_states == null)
         {
             return 0;
         }
-        sto = vctxt.xpathStates;
+        sto = vctxt.xpath_states;
 
         /*
         * Evaluate the state objects.
         */
         while (sto != null)
         {
-            res = XmlPattern.streamPop((XmlStreamCtxt) sto.xpathCtxt);
+            res = XmlPattern.streamPop((XmlStreamCtxt) sto.xpath_ctxt);
             if (res == -1)
             {
                 verrorInt(vctxt, "xmlSchemaXPathProcessHistory", "calling xmlStreamPop()");
@@ -1039,17 +1039,17 @@ public final class Xsd10Valid
             }
             deregister_check:
             {
-                if (sto.nbHistory == 0)
+                if (sto.nb_history == 0)
                 {
                     break deregister_check;
                 }
 
-                matchDepth = sto.history[sto.nbHistory - 1];
+                match_depth = sto.history[sto.nb_history - 1];
 
                 /*
                 * Only matches at the current depth are of interest.
                 */
-                if (matchDepth != depth)
+                if (match_depth != depth)
                 {
                     sto = sto.next;
                     continue;
@@ -1069,8 +1069,8 @@ public final class Xsd10Valid
                             /*
                             * Sanity check for complex types with simple content.
                             */
-                            simpleType = type.contentTypeDef;
-                            if (simpleType == null)
+                            simple_type = type.content_type_def;
+                            if (simple_type == null)
                             {
                                 verrorInt(vctxt, "xmlSchemaXPathProcessHistory",
                                     "field resolves to a CT with simple content " +
@@ -1080,14 +1080,14 @@ public final class Xsd10Valid
                         }
                         else
                         {
-                            simpleType = null;
+                            simple_type = null;
                         }
                     }
                     else
                     {
-                        simpleType = type;
+                        simple_type = type;
                     }
-                    if (simpleType == null)
+                    if (simple_type == null)
                     {
                         String[] str = new String[] { null };
 
@@ -1101,7 +1101,7 @@ public final class Xsd10Valid
                             "non-simple type",
                             sto.sel.xpath,
                             getIdcDesignation(str, sto.matcher.aidc.def));
-                        sto.nbHistory--;
+                        sto.nb_history--;
                         break deregister_check;
                     }
 
@@ -1115,13 +1115,13 @@ public final class Xsd10Valid
                             sto.matcher.aidc.def,
                             "Warning: No precomputed value available, the value " +
                             "was either invalid or something strange happened");
-                        sto.nbHistory--;
+                        sto.nb_history--;
                         break deregister_check;
                     }
                     else
                     {
                         Xsd10IDCMatcher matcher = sto.matcher;
-                        Xsd10PSVIIDCKey[] keySeq;
+                        Xsd10PSVIIDCKey[] key_seq;
                         int pos;
                         int idx;
 
@@ -1141,33 +1141,33 @@ public final class Xsd10Valid
                         /*
                         * Create/grow the array of key-sequences.
                         */
-                        if (pos >= matcher.sizeKeySeqs)
+                        if (pos >= matcher.size_key_seqs)
                         {
-                            int newSize = growCapacity(pos, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
-                            if (newSize < 0)
+                            int new_size = growCapacity(pos, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
+                            if (new_size < 0)
                             {
                                 vErrMemory(vctxt);
                                 return -1;
                             }
                             /* The array needs to be NULLed (copyOf does). */
-                            matcher.keySeqs = (matcher.keySeqs == null) ? new Xsd10PSVIIDCKey[newSize][] : Arrays.copyOf(matcher.keySeqs, newSize);
-                            matcher.sizeKeySeqs = newSize;
+                            matcher.key_seqs = (matcher.key_seqs == null) ? new Xsd10PSVIIDCKey[new_size][] : Arrays.copyOf(matcher.key_seqs, new_size);
+                            matcher.size_key_seqs = new_size;
                         }
 
                         /*
                         * Get/create the key-sequence.
                         */
-                        keySeq = matcher.keySeqs[pos];
-                        if (keySeq == null)
+                        key_seq = matcher.key_seqs[pos];
+                        if (key_seq == null)
                         {
                             // create_sequence:
                             /*
                             * Create a key-sequence.
                             */
-                            keySeq = new Xsd10PSVIIDCKey[Math.max(0, matcher.aidc.def.nbFields)];
-                            matcher.keySeqs[pos] = keySeq;
+                            key_seq = new Xsd10PSVIIDCKey[Math.max(0, matcher.aidc.def.nb_fields)];
+                            matcher.key_seqs[pos] = key_seq;
                         }
-                        else if ((idx < keySeq.length) && (keySeq[idx] != null))
+                        else if ((idx < key_seq.length) && (key_seq[idx] != null))
                         {
                             String[] str = new String[] { null };
                             /*
@@ -1186,7 +1186,7 @@ public final class Xsd10Valid
                                 "node-set with more than one member",
                                 sto.sel.xpath,
                                 getIdcDesignation(str, matcher.aidc.def));
-                            sto.nbHistory--;
+                            sto.nb_history--;
                             break deregister_check;
                         }
                         // create_key:
@@ -1199,7 +1199,7 @@ public final class Xsd10Valid
                             /*
                             * Consume the compiled value.
                             */
-                            key.type = simpleType;
+                            key.type = simple_type;
                             key.val = vctxt.inode.val;
                             vctxt.inode.val = null;
                             /*
@@ -1211,25 +1211,25 @@ public final class Xsd10Valid
                                 return -1;
                             }
                         }
-                        if (idx < keySeq.length)
+                        if (idx < key_seq.length)
                         {
-                            keySeq[idx] = key;
+                            key_seq[idx] = key;
                         }
                     }
                 }
                 else if (sto.type == XSD10_XPATH_STATE_OBJ_TYPE_IDC_SELECTOR)
                 {
-                    /* keySeq of C: &(matcher->keySeqs[pos]), valid when keySeqSet. */
-                    boolean keySeqSet = false;
-                    Xsd10PSVIIDCNode ntItem;
+                    /* key_seq of C: &(matcher->key_seqs[pos]), valid when key_seq_set. */
+                    boolean key_seq_set = false;
+                    Xsd10PSVIIDCNode nt_item;
                     Xsd10IDCMatcher matcher;
                     Xsd10IDC idc;
                     Xsd10ItemList targets;
                     int pos;
                     int i;
                     int j;
-                    int nbKeys;
-                    boolean keyError = false;
+                    int nb_keys;
+                    boolean key_error = false;
                     /*
                     * Here we have the following scenario:
                     * An IDC 'selector' state object resolved to a target node,
@@ -1243,7 +1243,7 @@ public final class Xsd10Valid
                     */
                     matcher = sto.matcher;
                     idc = matcher.aidc.def;
-                    nbKeys = idc.nbFields;
+                    nb_keys = idc.nb_fields;
                     pos = depth - matcher.depth;
                     selector:
                     {
@@ -1251,21 +1251,21 @@ public final class Xsd10Valid
                         * Check if the matcher has any key-sequences at all, plus
                         * if it has a key-sequence for the current target node.
                         */
-                        if ((matcher.keySeqs == null) || (matcher.sizeKeySeqs <= pos) || (pos < 0))
+                        if ((matcher.key_seqs == null) || (matcher.size_key_seqs <= pos) || (pos < 0))
                         {
-                            keyError = (idc.type == XML_XSD10_SCHEMA_TYPE_IDC_KEY);
+                            key_error = (idc.type == XML_XSD10_SCHEMA_TYPE_IDC_KEY);
                             break selector;
                         }
 
-                        keySeqSet = true;
-                        Xsd10PSVIIDCKey[] ks = matcher.keySeqs[pos];
+                        key_seq_set = true;
+                        Xsd10PSVIIDCKey[] ks = matcher.key_seqs[pos];
                         if (ks == null)
                         {
-                            keyError = (idc.type == XML_XSD10_SCHEMA_TYPE_IDC_KEY);
+                            key_error = (idc.type == XML_XSD10_SCHEMA_TYPE_IDC_KEY);
                             break selector;
                         }
 
-                        for (i = 0; i < nbKeys; i++)
+                        for (i = 0; i < nb_keys; i++)
                         {
                             if ((i >= ks.length) || (ks[i] == null))
                             {
@@ -1277,7 +1277,7 @@ public final class Xsd10Valid
                                     /*
                                     * All fields of a "key" IDC must resolve.
                                     */
-                                    keyError = true;
+                                    key_error = true;
                                 }
                                 break selector;
                             }
@@ -1301,11 +1301,11 @@ public final class Xsd10Valid
                             return -1;
                         }
 
-                        if ((idc.type != XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) && (targets.nbItems != 0))
+                        if ((idc.type != XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) && (targets.nb_items != 0))
                         {
                             Xsd10PSVIIDCKey ckey;
                             Xsd10PSVIIDCKey bkey;
-                            Xsd10PSVIIDCKey[] bkeySeq;
+                            Xsd10PSVIIDCKey[] bkey_seq;
                             Xsd10IDCHashEntry e;
 
                             res = 0;
@@ -1317,7 +1317,7 @@ public final class Xsd10Valid
                             else
                             {
                                 String[] value = new String[] { null };
-                                hashKeySequence(vctxt, value, ks, nbKeys);
+                                hashKeySequence(vctxt, value, ks, nb_keys);
                                 e = (Xsd10IDCHashEntry) hashLookup(matcher.htab, value[0]);
                             }
 
@@ -1326,11 +1326,11 @@ public final class Xsd10Valid
                             */
                             for (; e != null; e = e.next)
                             {
-                                bkeySeq = ((Xsd10PSVIIDCNode) targets.items[e.index]).keys;
-                                for (j = 0; j < nbKeys; j++)
+                                bkey_seq = ((Xsd10PSVIIDCNode) targets.items[e.index]).keys;
+                                for (j = 0; j < nb_keys; j++)
                                 {
                                     ckey = ks[j];
-                                    bkey = bkeySeq[j];
+                                    bkey = bkey_seq[j];
                                     res = areValuesEqual(ckey.val, bkey.val);
                                     if (res == -1)
                                     {
@@ -1356,34 +1356,34 @@ public final class Xsd10Valid
                             if (e != null)
                             {
                                 String[] str = new String[] { null };
-                                String[] strB = new String[] { null };
+                                String[] str_b = new String[] { null };
                                 /*
                                 * TODO: Try to report the key-sequence.
                                 */
                                 customErr(vctxt, XML_XSD10_SCHEMAV_CVC_IDC, null,
                                     idc,
                                     "Duplicate key-sequence %s in %s",
-                                    formatIdcKeySequence(vctxt, str, ks, nbKeys),
-                                    getIdcDesignation(strB, idc));
+                                    formatIdcKeySequence(vctxt, str, ks, nb_keys),
+                                    getIdcDesignation(str_b, idc));
                                 break selector;
                             }
                         }
                         /*
                         * Add a node-table item to the IDC binding.
                         */
-                        ntItem = new Xsd10PSVIIDCNode();
+                        nt_item = new Xsd10PSVIIDCNode();
 
                         /*
                         * Store the node-table item in a global list.
                         */
                         if (idc.type != XML_XSD10_SCHEMA_TYPE_IDC_KEYREF)
                         {
-                            if (idcStoreNodeTableItem(vctxt, ntItem) == -1)
+                            if (idcStoreNodeTableItem(vctxt, nt_item) == -1)
                             {
-                                matcher.keySeqs[pos] = null;
+                                matcher.key_seqs[pos] = null;
                                 return -1;
                             }
-                            ntItem.nodeQNameID = -1;
+                            nt_item.node_q_name_id = -1;
                         }
                         else
                         {
@@ -1391,10 +1391,10 @@ public final class Xsd10Valid
                             * Save a cached QName for this node on the IDC node, to be
                             * able to report it, even if the node is not saved.
                             */
-                            ntItem.nodeQNameID = vAddNodeQName(vctxt, vctxt.inode.localName, vctxt.inode.nsName);
-                            if (ntItem.nodeQNameID == -1)
+                            nt_item.node_q_name_id = vAddNodeQName(vctxt, vctxt.inode.local_name, vctxt.inode.ns_name);
+                            if (nt_item.node_q_name_id == -1)
                             {
-                                matcher.keySeqs[pos] = null;
+                                matcher.key_seqs[pos] = null;
                                 return -1;
                             }
                         }
@@ -1402,11 +1402,11 @@ public final class Xsd10Valid
                         * Init the node-table item: Save the node, position and
                         * consume the key-sequence.
                         */
-                        ntItem.node = vctxt.node;
-                        ntItem.nodeLine = vctxt.inode.nodeLine;
-                        ntItem.keys = ks;
-                        matcher.keySeqs[pos] = null;
-                        if (itemListAdd(targets, ntItem) == -1)
+                        nt_item.node = vctxt.node;
+                        nt_item.node_line = vctxt.inode.node_line;
+                        nt_item.keys = ks;
+                        matcher.key_seqs[pos] = null;
+                        if (itemListAdd(targets, nt_item) == -1)
                         {
                             return -1;
                         }
@@ -1419,9 +1419,9 @@ public final class Xsd10Valid
                             {
                                 matcher.htab = hashCreate(4);
                             }
-                            hashKeySequence(vctxt, value, ntItem.keys, nbKeys);
+                            hashKeySequence(vctxt, value, nt_item.keys, nb_keys);
                             e = new Xsd10IDCHashEntry();
-                            e.index = targets.nbItems - 1;
+                            e.index = targets.nb_items - 1;
                             r = (Xsd10IDCHashEntry) hashLookup(matcher.htab, value[0]);
                             if (r != null)
                             {
@@ -1439,7 +1439,7 @@ public final class Xsd10Valid
                         }
                         // goto selector_leave
                     }
-                    if (keyError)
+                    if (key_error)
                     {
                         // selector_key_error:
                         String[] str = new String[] { null };
@@ -1458,21 +1458,21 @@ public final class Xsd10Valid
                     /*
                     * Free the key-sequence if not added to the IDC table.
                     */
-                    if (keySeqSet && (matcher.keySeqs[pos] != null))
+                    if (key_seq_set && (matcher.key_seqs[pos] != null))
                     {
-                        matcher.keySeqs[pos] = null;
+                        matcher.key_seqs[pos] = null;
                     }
                 } /* if selector */
 
-                sto.nbHistory--;
+                sto.nb_history--;
             }
             // deregister_check:
             /*
             * Deregister state objects if they reach the depth of creation.
             */
-            if ((sto.nbHistory == 0) && (sto.depth == depth))
+            if ((sto.nb_history == 0) && (sto.depth == depth))
             {
-                if (vctxt.xpathStates != sto)
+                if (vctxt.xpath_states != sto)
                 {
                     verrorInt(vctxt, "xmlSchemaXPathProcessHistory",
                         "The state object to be removed is not the first " +
@@ -1482,12 +1482,12 @@ public final class Xsd10Valid
                 /*
                 * Unlink from the list of active XPath state objects.
                 */
-                vctxt.xpathStates = sto.next;
-                sto.next = vctxt.xpathStatePool;
+                vctxt.xpath_states = sto.next;
+                sto.next = vctxt.xpath_state_pool;
                 /*
                 * Link it to the pool of reusable state objects.
                 */
-                vctxt.xpathStatePool = sto;
+                vctxt.xpath_state_pool = sto;
                 sto = nextsto;
             }
             else
@@ -1500,21 +1500,21 @@ public final class Xsd10Valid
 
     // xml_xsd10_idc_register_matchers
     /** Port of xmlSchemaIDCRegisterMatchers. Creates helper objects to evaluate IDC selectors/fields successively. */
-    static int idcRegisterMatchers(Xsd10ValidCtxt vctxt, Xsd10Element elemDecl)
+    static int idcRegisterMatchers(Xsd10ValidCtxt vctxt, Xsd10Element elem_decl)
     {
         Xsd10IDCMatcher matcher;
         Xsd10IDCMatcher last = null;
         Xsd10IDC idc;
-        Xsd10IDC refIdc;
+        Xsd10IDC ref_idc;
         Xsd10IDCAug aidc;
 
-        idc = (Xsd10IDC) elemDecl.idcs;
+        idc = (Xsd10IDC) elem_decl.idcs;
         if (idc == null)
         {
             return 0;
         }
 
-        if (vctxt.inode.idcMatchers != null)
+        if (vctxt.inode.idc_matchers != null)
         {
             verrorInt(vctxt, "xmlSchemaIDCRegisterMatchers", "The chain of IDC matchers is expected to be empty");
             return -1;
@@ -1527,23 +1527,23 @@ public final class Xsd10Valid
                 * Since IDCs bubbles are expensive we need to know the
                 * depth at which the bubbles should stop; this will be
                 * the depth of the top-most keyref IDC. If no keyref
-                * references a key/unique IDC, the keyrefDepth will
+                * references a key/unique IDC, the keyref_depth will
                 * be -1, indicating that no bubbles are needed.
                 */
-                refIdc = (idc.ref.item instanceof Xsd10IDC) ? (Xsd10IDC) idc.ref.item : null;
-                if (refIdc != null)
+                ref_idc = (idc.ref.item instanceof Xsd10IDC) ? (Xsd10IDC) idc.ref.item : null;
+                if (ref_idc != null)
                 {
                     /*
                     * Remember that we have keyrefs on this node.
                     */
-                    vctxt.inode.hasKeyrefs = 1;
+                    vctxt.inode.has_keyrefs = 1;
                     /*
                     * Lookup the referenced augmented IDC info.
                     */
                     aidc = vctxt.aidcs;
                     while (aidc != null)
                     {
-                        if (aidc.def == refIdc)
+                        if (aidc.def == ref_idc)
                         {
                             break;
                         }
@@ -1556,9 +1556,9 @@ public final class Xsd10Valid
                             "definition");
                         return -1;
                     }
-                    if ((aidc.keyrefDepth == -1) || (vctxt.depth < aidc.keyrefDepth))
+                    if ((aidc.keyref_depth == -1) || (vctxt.depth < aidc.keyref_depth))
                     {
-                        aidc.keyrefDepth = vctxt.depth;
+                        aidc.keyref_depth = vctxt.depth;
                     }
                 }
             }
@@ -1583,14 +1583,14 @@ public final class Xsd10Valid
             /*
             * Create an IDC matcher for every IDC definition.
             */
-            if (vctxt.idcMatcherCache != null)
+            if (vctxt.idc_matcher_cache != null)
             {
                 /*
                 * Reuse a cached matcher.
                 */
-                matcher = vctxt.idcMatcherCache;
-                vctxt.idcMatcherCache = matcher.nextCached;
-                matcher.nextCached = null;
+                matcher = vctxt.idc_matcher_cache;
+                vctxt.idc_matcher_cache = matcher.next_cached;
+                matcher.next_cached = null;
             }
             else
             {
@@ -1598,7 +1598,7 @@ public final class Xsd10Valid
             }
             if (last == null)
             {
-                vctxt.inode.idcMatchers = matcher;
+                vctxt.inode.idc_matchers = matcher;
             }
             else
             {
@@ -1609,7 +1609,7 @@ public final class Xsd10Valid
             matcher.type = XSD10_IDC_MATCHER;
             matcher.depth = vctxt.depth;
             matcher.aidc = aidc;
-            matcher.idcType = aidc.def.type;
+            matcher.idc_type = aidc.def.type;
             /*
             * Init the automaton state object.
             */
@@ -1623,7 +1623,7 @@ public final class Xsd10Valid
         return 0;
     }
 
-    /** Equality of two IDC key sequences of nbFields keys (helper for the repeated C loops). */
+    /** Equality of two IDC key sequences of nb_fields keys (helper for the repeated C loops). */
     private static Xsd10PSVIIDCNode idcNodeAt(Object[] items, int i)
     {
         return (Xsd10PSVIIDCNode) items[i];
@@ -1638,17 +1638,17 @@ public final class Xsd10Valid
         int i;
         int j;
         int k;
-        int nbTargets;
-        int nbFields;
-        int nbDupls;
-        int nbNodeTable;
+        int nb_targets;
+        int nb_fields;
+        int nb_dupls;
+        int nb_node_table;
         Xsd10PSVIIDCKey[] keys;
         Xsd10PSVIIDCKey[] ntkeys;
         Object[] targets;
         Object[] dupls;
 
-        Xsd10IDCMatcher matcher = ielem.idcMatchers;
-        /* vctxt->createIDCNodeTables */
+        Xsd10IDCMatcher matcher = ielem.idc_matchers;
+        /* vctxt->create_idc_node_tables */
         while (matcher != null)
         {
             /*
@@ -1664,9 +1664,9 @@ public final class Xsd10Valid
             * If we _want_ the IDC node-table to be created in any case
             * then do so. Otherwise create them only if keyrefs need them.
             */
-            if ((vctxt.createIDCNodeTables == 0) &&
-                ((matcher.aidc.keyrefDepth == -1) ||
-                 (matcher.aidc.keyrefDepth > vctxt.depth)))
+            if ((vctxt.create_idc_node_tables == 0) &&
+                ((matcher.aidc.keyref_depth == -1) ||
+                 (matcher.aidc.keyref_depth > vctxt.depth)))
             {
                 matcher = matcher.next;
                 continue;
@@ -1683,41 +1683,41 @@ public final class Xsd10Valid
             if (wxsIlistIsEmpty(bind.dupls) == 0)
             {
                 dupls = bind.dupls.items;
-                nbDupls = bind.dupls.nbItems;
+                nb_dupls = bind.dupls.nb_items;
             }
             else
             {
                 dupls = null;
-                nbDupls = 0;
+                nb_dupls = 0;
             }
-            if (bind.nodeTable != null)
+            if (bind.node_table != null)
             {
-                nbNodeTable = bind.nbNodes;
+                nb_node_table = bind.nb_nodes;
             }
             else
             {
-                nbNodeTable = 0;
+                nb_node_table = 0;
             }
 
-            if ((nbNodeTable == 0) && (nbDupls == 0))
+            if ((nb_node_table == 0) && (nb_dupls == 0))
             {
                 /*
                 * Transfer all IDC target-nodes to the IDC node-table.
                 */
                 Object[] titems = matcher.targets.items;
-                int tsize = matcher.targets.sizeItems;
-                Xsd10PSVIIDCNode[] nt = new Xsd10PSVIIDCNode[Math.max(tsize, matcher.targets.nbItems)];
-                for (int t = 0; t < matcher.targets.nbItems; t++)
+                int tsize = matcher.targets.size_items;
+                Xsd10PSVIIDCNode[] nt = new Xsd10PSVIIDCNode[Math.max(tsize, matcher.targets.nb_items)];
+                for (int t = 0; t < matcher.targets.nb_items; t++)
                 {
                     nt[t] = (Xsd10PSVIIDCNode) titems[t];
                 }
-                bind.nodeTable = nt;
-                bind.sizeNodes = tsize;
-                bind.nbNodes = matcher.targets.nbItems;
+                bind.node_table = nt;
+                bind.size_nodes = tsize;
+                bind.nb_nodes = matcher.targets.nb_items;
 
                 matcher.targets.items = null;
-                matcher.targets.sizeItems = 0;
-                matcher.targets.nbItems = 0;
+                matcher.targets.size_items = 0;
+                matcher.targets.nb_items = 0;
                 if (matcher.htab != null)
                 {
                     hashFree(matcher.htab, Xsd10Valid::freeIdcHashEntry);
@@ -1729,16 +1729,16 @@ public final class Xsd10Valid
                 /*
                 * Compare the key-sequences and add to the IDC node-table.
                 */
-                nbTargets = matcher.targets.nbItems;
+                nb_targets = matcher.targets.nb_items;
                 targets = matcher.targets.items;
-                nbFields = matcher.aidc.def.nbFields;
+                nb_fields = matcher.aidc.def.nb_fields;
                 i = 0;
                 do
                 {
                     next_target:
                     {
                         keys = idcNodeAt(targets, i).keys;
-                        if (nbDupls != 0)
+                        if (nb_dupls != 0)
                         {
                             /*
                             * Search in already found duplicates first.
@@ -1746,7 +1746,7 @@ public final class Xsd10Valid
                             j = 0;
                             do
                             {
-                                if (nbFields == 1)
+                                if (nb_fields == 1)
                                 {
                                     res = areValuesEqual(keys[0].val, idcNodeAt(dupls, j).keys[0].val);
                                     if (res == -1)
@@ -1765,7 +1765,7 @@ public final class Xsd10Valid
                                 {
                                     res = 0;
                                     ntkeys = idcNodeAt(dupls, j).keys;
-                                    for (k = 0; k < nbFields; k++)
+                                    for (k = 0; k < nb_fields; k++)
                                     {
                                         res = areValuesEqual(keys[k].val, ntkeys[k].val);
                                         if (res == -1)
@@ -1789,18 +1789,18 @@ public final class Xsd10Valid
                                     }
                                 }
                                 j++;
-                            } while (j < nbDupls);
+                            } while (j < nb_dupls);
                         }
-                        if (bind.nbNodes != 0)
+                        if (bind.nb_nodes != 0)
                         {
                             j = 0;
                             do
                             {
                                 next_node_table_entry:
                                 {
-                                    if (nbFields == 1)
+                                    if (nb_fields == 1)
                                     {
-                                        res = areValuesEqual(keys[0].val, bind.nodeTable[j].keys[0].val);
+                                        res = areValuesEqual(keys[0].val, bind.node_table[j].keys[0].val);
                                         if (res == -1)
                                         {
                                             return -1;
@@ -1816,8 +1816,8 @@ public final class Xsd10Valid
                                     else
                                     {
                                         res = 0;
-                                        ntkeys = bind.nodeTable[j].keys;
-                                        for (k = 0; k < nbFields; k++)
+                                        ntkeys = bind.node_table[j].keys;
+                                        for (k = 0; k < nb_fields; k++)
                                         {
                                             res = areValuesEqual(keys[k].val, ntkeys[k].val);
                                             if (res == -1)
@@ -1844,7 +1844,7 @@ public final class Xsd10Valid
                                             return -1;
                                         }
                                     }
-                                    if (itemListAdd(bind.dupls, bind.nodeTable[j]) == -1)
+                                    if (itemListAdd(bind.dupls, bind.node_table[j]) == -1)
                                     {
                                         return -1;
                                     }
@@ -1852,14 +1852,14 @@ public final class Xsd10Valid
                                     /*
                                     * Remove the duplicate entry from the IDC node-table.
                                     */
-                                    bind.nodeTable[j] = bind.nodeTable[bind.nbNodes - 1];
-                                    bind.nbNodes--;
+                                    bind.node_table[j] = bind.node_table[bind.nb_nodes - 1];
+                                    bind.nb_nodes--;
 
                                     break next_target;
                                 }
                                 // next_node_table_entry:
                                 j++;
-                            } while (j < bind.nbNodes);
+                            } while (j < bind.nb_nodes);
                         }
                         /*
                         * If everything is fine, then add the IDC target-node to
@@ -1872,7 +1872,7 @@ public final class Xsd10Valid
                     }
                     // next_target:
                     i++;
-                } while (i < nbTargets);
+                } while (i < nb_targets);
             }
             matcher = matcher.next;
         }
@@ -1887,29 +1887,29 @@ public final class Xsd10Valid
     static int bubbleIdcNodeTables(Xsd10ValidCtxt vctxt)
     {
         Xsd10PSVIIDCBinding bind; /* IDC bindings of the current node. */
-        Xsd10NodeInfo parTable; /* holder of the parent IDC bindings (C: &parent->idcTable) */
-        Xsd10PSVIIDCBinding parBind = null; /* parent IDC bindings. */
+        Xsd10NodeInfo par_table; /* holder of the parent IDC bindings (C: &parent->idc_table) */
+        Xsd10PSVIIDCBinding par_bind = null; /* parent IDC bindings. */
         Xsd10PSVIIDCNode node;
-        Xsd10PSVIIDCNode parNode = null;
+        Xsd10PSVIIDCNode par_node = null;
         Object[] dupls;
-        Xsd10PSVIIDCNode[] parNodes;
+        Xsd10PSVIIDCNode[] par_nodes;
         Xsd10IDCAug aidc;
         int i;
         int j;
         int k;
         int ret = 0;
-        int nbFields;
-        int oldNum;
-        int oldDupls;
+        int nb_fields;
+        int old_num;
+        int old_dupls;
 
-        bind = vctxt.inode.idcTable;
+        bind = vctxt.inode.idc_table;
         if (bind == null)
         {
             /* Fine, no table, no bubbles. */
             return 0;
         }
 
-        parTable = vctxt.elemInfos[vctxt.depth - 1];
+        par_table = vctxt.elem_infos[vctxt.depth - 1];
         /*
         * Walk all bindings; create new or add to existing bindings.
         * Remove duplicate key-sequences.
@@ -1918,14 +1918,14 @@ public final class Xsd10Valid
         {
             next_binding:
             {
-                if ((bind.nbNodes == 0) && (wxsIlistIsEmpty(bind.dupls) != 0))
+                if ((bind.nb_nodes == 0) && (wxsIlistIsEmpty(bind.dupls) != 0))
                 {
                     break next_binding;
                 }
                 /*
                 * Check if the key/unique IDC table needs to be bubbled.
                 */
-                if (vctxt.createIDCNodeTables == 0)
+                if (vctxt.create_idc_node_tables == 0)
                 {
                     aidc = vctxt.aidcs;
                     do
@@ -1936,7 +1936,7 @@ public final class Xsd10Valid
                         }
                         if (aidc.def == bind.definition)
                         {
-                            if ((aidc.keyrefDepth == -1) || (aidc.keyrefDepth >= vctxt.depth))
+                            if ((aidc.keyref_depth == -1) || (aidc.keyref_depth >= vctxt.depth))
                             {
                                 break next_binding;
                             }
@@ -1946,48 +1946,48 @@ public final class Xsd10Valid
                     } while (aidc != null);
                 }
 
-                if (parTable != null)
+                if (par_table != null)
                 {
-                    parBind = parTable.idcTable;
+                    par_bind = par_table.idc_table;
                 }
                 /*
                 * Search a matching parent binding for the
                 * IDC definition.
                 */
-                while (parBind != null)
+                while (par_bind != null)
                 {
-                    if (parBind.definition == bind.definition)
+                    if (par_bind.definition == bind.definition)
                     {
                         break;
                     }
-                    parBind = parBind.next;
+                    par_bind = par_bind.next;
                 }
 
-                if (parBind != null)
+                if (par_bind != null)
                 {
                     /*
                     * Compare every node-table entry of the child node,
                     * i.e. the key-sequence within, ...
                     */
-                    oldNum = parBind.nbNodes; /* Skip newly added items. */
+                    old_num = par_bind.nb_nodes; /* Skip newly added items. */
 
-                    if (wxsIlistIsEmpty(parBind.dupls) == 0)
+                    if (wxsIlistIsEmpty(par_bind.dupls) == 0)
                     {
-                        oldDupls = parBind.dupls.nbItems;
-                        dupls = parBind.dupls.items;
+                        old_dupls = par_bind.dupls.nb_items;
+                        dupls = par_bind.dupls.items;
                     }
                     else
                     {
                         dupls = null;
-                        oldDupls = 0;
+                        old_dupls = 0;
                     }
 
-                    parNodes = parBind.nodeTable;
-                    nbFields = bind.definition.nbFields;
+                    par_nodes = par_bind.node_table;
+                    nb_fields = bind.definition.nb_fields;
 
-                    for (i = 0; i < bind.nbNodes; i++)
+                    for (i = 0; i < bind.nb_nodes; i++)
                     {
-                        node = bind.nodeTable[i];
+                        node = bind.node_table[i];
                         if (node == null)
                         {
                             continue;
@@ -1996,12 +1996,12 @@ public final class Xsd10Valid
                         * ...with every key-sequence of the parent node, already
                         * evaluated to be a duplicate key-sequence.
                         */
-                        if (oldDupls != 0)
+                        if (old_dupls != 0)
                         {
                             j = 0;
-                            while (j < oldDupls)
+                            while (j < old_dupls)
                             {
-                                if (nbFields == 1)
+                                if (nb_fields == 1)
                                 {
                                     ret = areValuesEqual(node.keys[0].val, idcNodeAt(dupls, j).keys[0].val);
                                     if (ret == -1)
@@ -2016,10 +2016,10 @@ public final class Xsd10Valid
                                 }
                                 else
                                 {
-                                    parNode = idcNodeAt(dupls, j);
-                                    for (k = 0; k < nbFields; k++)
+                                    par_node = idcNodeAt(dupls, j);
+                                    for (k = 0; k < nb_fields; k++)
                                     {
-                                        ret = areValuesEqual(node.keys[k].val, parNode.keys[k].val);
+                                        ret = areValuesEqual(node.keys[k].val, par_node.keys[k].val);
                                         if (ret == -1)
                                         {
                                             return -1;
@@ -2037,7 +2037,7 @@ public final class Xsd10Valid
                                 }
                                 j++;
                             }
-                            if (j != oldDupls)
+                            if (j != old_dupls)
                             {
                                 /* Duplicate found. Skip this entry. */
                                 continue;
@@ -2046,15 +2046,15 @@ public final class Xsd10Valid
                         /*
                         * ... and with every key-sequence of the parent node.
                         */
-                        if (oldNum != 0)
+                        if (old_num != 0)
                         {
                             j = 0;
-                            while (j < oldNum)
+                            while (j < old_num)
                             {
-                                parNode = parNodes[j];
-                                if (nbFields == 1)
+                                par_node = par_nodes[j];
+                                if (nb_fields == 1)
                                 {
-                                    ret = areValuesEqual(node.keys[0].val, parNode.keys[0].val);
+                                    ret = areValuesEqual(node.keys[0].val, par_node.keys[0].val);
                                     if (ret == -1)
                                     {
                                         return -1;
@@ -2067,9 +2067,9 @@ public final class Xsd10Valid
                                 }
                                 else
                                 {
-                                    for (k = 0; k < nbFields; k++)
+                                    for (k = 0; k < nb_fields; k++)
                                     {
-                                        ret = areValuesEqual(node.keys[k].val, parNode.keys[k].val);
+                                        ret = areValuesEqual(node.keys[k].val, par_node.keys[k].val);
                                         if (ret == -1)
                                         {
                                             return -1;
@@ -2087,38 +2087,38 @@ public final class Xsd10Valid
                                 }
                                 j++;
                             }
-                            if (j != oldNum)
+                            if (j != old_num)
                             {
                                 /*
                                 * Handle duplicates. Move the duplicate in
                                 * the parent's node-table to the list of
                                 * duplicates.
                                 */
-                                oldNum--;
-                                parBind.nbNodes--;
+                                old_num--;
+                                par_bind.nb_nodes--;
                                 /*
                                 * Move last old item to pos of duplicate.
                                 */
-                                parNodes[j] = parNodes[oldNum];
+                                par_nodes[j] = par_nodes[old_num];
 
-                                if (parBind.nbNodes != oldNum)
+                                if (par_bind.nb_nodes != old_num)
                                 {
                                     /*
                                     * If new items exist, move last new item to
                                     * last of old items.
                                     */
-                                    parNodes[oldNum] = parNodes[parBind.nbNodes];
+                                    par_nodes[old_num] = par_nodes[par_bind.nb_nodes];
                                 }
-                                if (parBind.dupls == null)
+                                if (par_bind.dupls == null)
                                 {
-                                    parBind.dupls = itemListCreate();
-                                    if (parBind.dupls == null)
+                                    par_bind.dupls = itemListCreate();
+                                    if (par_bind.dupls == null)
                                     {
                                         return -1;
                                     }
                                 }
-                                itemListAdd(parBind.dupls, parNode);
-                                dupls = parBind.dupls.items;
+                                itemListAdd(par_bind.dupls, par_node);
+                                dupls = par_bind.dupls.items;
                             }
                             else
                             {
@@ -2126,23 +2126,23 @@ public final class Xsd10Valid
                                 * Add the node-table entry (node and key-sequence) of
                                 * the child node to the node table of the parent node.
                                 */
-                                if (parBind.nbNodes >= parBind.sizeNodes)
+                                if (par_bind.nb_nodes >= par_bind.size_nodes)
                                 {
-                                    int newSize = growCapacity(parBind.sizeNodes, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
-                                    if (newSize < 0)
+                                    int new_size = growCapacity(par_bind.size_nodes, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
+                                    if (new_size < 0)
                                     {
                                         vErrMemory(vctxt);
                                         return -1;
                                     }
-                                    parBind.nodeTable = (parBind.nodeTable == null) ? new Xsd10PSVIIDCNode[newSize] : Arrays.copyOf(parBind.nodeTable, newSize);
-                                    parBind.sizeNodes = newSize;
+                                    par_bind.node_table = (par_bind.node_table == null) ? new Xsd10PSVIIDCNode[new_size] : Arrays.copyOf(par_bind.node_table, new_size);
+                                    par_bind.size_nodes = new_size;
                                 }
-                                parNodes = parBind.nodeTable;
+                                par_nodes = par_bind.node_table;
                                 /*
                                 * Append the new node-table entry to the 'new node-table
                                 * entries' section.
                                 */
-                                parNodes[parBind.nbNodes++] = node;
+                                par_nodes[par_bind.nb_nodes++] = node;
                             }
                         }
                     }
@@ -2153,18 +2153,18 @@ public final class Xsd10Valid
                     * No binding for the IDC was found: create a new one and
                     * copy all node-tables.
                     */
-                    parBind = idcNewBinding(bind.definition);
-                    if (parBind == null)
+                    par_bind = idcNewBinding(bind.definition);
+                    if (par_bind == null)
                     {
                         return -1;
                     }
 
-                    if (bind.nbNodes != 0)
+                    if (bind.nb_nodes != 0)
                     {
                         /*
                         * Add all IDC node-table entries.
                         */
-                        if (vctxt.psviExposeIDCNodeTables == 0)
+                        if (vctxt.psvi_expose_idc_node_tables == 0)
                         {
                             /*
                             * Just move the entries.
@@ -2172,21 +2172,21 @@ public final class Xsd10Valid
                             * all the keyref lookups have already been
                             * performed.
                             */
-                            parBind.nodeTable = bind.nodeTable;
-                            bind.nodeTable = null;
-                            parBind.sizeNodes = bind.sizeNodes;
-                            bind.sizeNodes = 0;
-                            parBind.nbNodes = bind.nbNodes;
-                            bind.nbNodes = 0;
+                            par_bind.node_table = bind.node_table;
+                            bind.node_table = null;
+                            par_bind.size_nodes = bind.size_nodes;
+                            bind.size_nodes = 0;
+                            par_bind.nb_nodes = bind.nb_nodes;
+                            bind.nb_nodes = 0;
                         }
                         else
                         {
                             /*
                             * Copy the entries.
                             */
-                            parBind.nodeTable = Arrays.copyOf(bind.nodeTable, bind.nbNodes);
-                            parBind.sizeNodes = bind.nbNodes;
-                            parBind.nbNodes = bind.nbNodes;
+                            par_bind.node_table = Arrays.copyOf(bind.node_table, bind.nb_nodes);
+                            par_bind.size_nodes = bind.nb_nodes;
+                            par_bind.nb_nodes = bind.nb_nodes;
                         }
                     }
                     if (bind.dupls != null)
@@ -2194,23 +2194,23 @@ public final class Xsd10Valid
                         /*
                         * Move the duplicates.
                         */
-                        if (parBind.dupls != null)
+                        if (par_bind.dupls != null)
                         {
-                            itemListFree(parBind.dupls);
+                            itemListFree(par_bind.dupls);
                         }
-                        parBind.dupls = bind.dupls;
+                        par_bind.dupls = bind.dupls;
                         bind.dupls = null;
                     }
-                    if (parTable != null)
+                    if (par_table != null)
                     {
-                        if (parTable.idcTable == null)
+                        if (par_table.idc_table == null)
                         {
-                            parTable.idcTable = parBind;
+                            par_table.idc_table = par_bind;
                         }
                         else
                         {
-                            parBind.next = parTable.idcTable;
-                            parTable.idcTable = parBind;
+                            par_bind.next = par_table.idc_table;
+                            par_table.idc_table = par_bind;
                         }
                     }
                 }
@@ -2228,33 +2228,33 @@ public final class Xsd10Valid
         Xsd10IDCMatcher matcher;
         Xsd10PSVIIDCBinding bind;
 
-        matcher = vctxt.inode.idcMatchers;
+        matcher = vctxt.inode.idc_matchers;
         /*
         * Find a keyref.
         */
         while (matcher != null)
         {
-            if ((matcher.idcType == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) &&
+            if ((matcher.idc_type == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) &&
                 (matcher.targets != null) &&
-                (matcher.targets.nbItems != 0))
+                (matcher.targets.nb_items != 0))
             {
                 int i;
                 int j;
                 int k;
                 int res;
-                int nbFields;
-                int hasDupls;
-                Xsd10PSVIIDCKey[] refKeys;
+                int nb_fields;
+                int has_dupls;
+                Xsd10PSVIIDCKey[] ref_keys;
                 Xsd10PSVIIDCKey[] keys;
-                Xsd10PSVIIDCNode refNode = null;
+                Xsd10PSVIIDCNode ref_node = null;
                 Xsd10Hash table = null;
 
-                nbFields = matcher.aidc.def.nbFields;
+                nb_fields = matcher.aidc.def.nb_fields;
 
                 /*
                 * Find the IDC node-table for the referenced IDC key/unique.
                 */
-                bind = vctxt.inode.idcTable;
+                bind = vctxt.inode.idc_table;
                 while (bind != null)
                 {
                     if (matcher.aidc.def.ref.item == bind.definition)
@@ -2263,20 +2263,20 @@ public final class Xsd10Valid
                     }
                     bind = bind.next;
                 }
-                hasDupls = ((bind != null) && (bind.dupls != null) && (bind.dupls.nbItems != 0)) ? 1 : 0;
+                has_dupls = ((bind != null) && (bind.dupls != null) && (bind.dupls.nb_items != 0)) ? 1 : 0;
                 /*
                 * Search for a matching key-sequences.
                 */
                 if (bind != null)
                 {
-                    table = hashCreate(bind.nbNodes * 2);
-                    for (j = 0; j < bind.nbNodes; j++)
+                    table = hashCreate(bind.nb_nodes * 2);
+                    for (j = 0; j < bind.nb_nodes; j++)
                     {
                         String[] value = new String[] { null };
                         Xsd10IDCHashEntry r;
                         Xsd10IDCHashEntry e;
-                        keys = bind.nodeTable[j].keys;
-                        hashKeySequence(vctxt, value, keys, nbFields);
+                        keys = bind.node_table[j].keys;
+                        hashKeySequence(vctxt, value, keys, nb_fields);
                         e = new Xsd10IDCHashEntry();
                         e.index = j;
                         r = (Xsd10IDCHashEntry) hashLookup(table, value[0]);
@@ -2295,24 +2295,24 @@ public final class Xsd10Valid
                         }
                     }
                 }
-                for (i = 0; i < matcher.targets.nbItems; i++)
+                for (i = 0; i < matcher.targets.nb_items; i++)
                 {
                     res = 0;
-                    refNode = (Xsd10PSVIIDCNode) matcher.targets.items[i];
+                    ref_node = (Xsd10PSVIIDCNode) matcher.targets.items[i];
                     if (bind != null)
                     {
                         String[] value = new String[] { null };
                         Xsd10IDCHashEntry e;
-                        refKeys = refNode.keys;
-                        hashKeySequence(vctxt, value, refKeys, nbFields);
+                        ref_keys = ref_node.keys;
+                        hashKeySequence(vctxt, value, ref_keys, nb_fields);
                         e = (Xsd10IDCHashEntry) hashLookup(table, value[0]);
                         res = 0;
                         for (; e != null; e = e.next)
                         {
-                            keys = bind.nodeTable[e.index].keys;
-                            for (k = 0; k < nbFields; k++)
+                            keys = bind.node_table[e.index].keys;
+                            for (k = 0; k < nb_fields; k++)
                             {
-                                res = areValuesEqual(keys[k].val, refKeys[k].val);
+                                res = areValuesEqual(keys[k].val, ref_keys[k].val);
                                 if (res == 0)
                                 {
                                     break;
@@ -2330,17 +2330,17 @@ public final class Xsd10Valid
                                 break;
                             }
                         }
-                        if ((res == 0) && (hasDupls != 0))
+                        if ((res == 0) && (has_dupls != 0))
                         {
                             /*
                             * Search in duplicates
                             */
-                            for (j = 0; j < bind.dupls.nbItems; j++)
+                            for (j = 0; j < bind.dupls.nb_items; j++)
                             {
                                 keys = ((Xsd10PSVIIDCNode) bind.dupls.items[j]).keys;
-                                for (k = 0; k < nbFields; k++)
+                                for (k = 0; k < nb_fields; k++)
                                 {
-                                    res = areValuesEqual(keys[k].val, refKeys[k].val);
+                                    res = areValuesEqual(keys[k].val, ref_keys[k].val);
                                     if (res == 0)
                                     {
                                         break;
@@ -2356,14 +2356,14 @@ public final class Xsd10Valid
                                     * Match in duplicates found.
                                     */
                                     String[] str = new String[] { null };
-                                    String[] strB = new String[] { null };
+                                    String[] str_b = new String[] { null };
                                     keyrefErr(vctxt,
-                                        XML_XSD10_SCHEMAV_CVC_IDC, refNode,
+                                        XML_XSD10_SCHEMAV_CVC_IDC, ref_node,
                                         matcher.aidc.def,
                                         "More than one match found for " +
                                         "key-sequence %s of keyref '%s'",
-                                        formatIdcKeySequence(vctxt, str, refNode.keys, nbFields),
-                                        getComponentQName(strB, matcher.aidc.def));
+                                        formatIdcKeySequence(vctxt, str, ref_node.keys, nb_fields),
+                                        getComponentQName(str_b, matcher.aidc.def));
                                     break;
                                 }
                             }
@@ -2373,13 +2373,13 @@ public final class Xsd10Valid
                     if (res == 0)
                     {
                         String[] str = new String[] { null };
-                        String[] strB = new String[] { null };
+                        String[] str_b = new String[] { null };
                         keyrefErr(vctxt,
-                            XML_XSD10_SCHEMAV_CVC_IDC, refNode,
+                            XML_XSD10_SCHEMAV_CVC_IDC, ref_node,
                             matcher.aidc.def,
                             "No match found for key-sequence %s of keyref '%s'",
-                            formatIdcKeySequence(vctxt, str, refNode.keys, nbFields),
-                            getComponentQName(strB, matcher.aidc.def));
+                            formatIdcKeySequence(vctxt, str, ref_node.keys, nb_fields),
+                            getComponentQName(str_b, matcher.aidc.def));
                     }
                 }
                 if (table != null)
@@ -2407,29 +2407,29 @@ public final class Xsd10Valid
         /*
         * Grow/create list of attribute infos.
         */
-        if (vctxt.sizeAttrInfos <= vctxt.nbAttrInfos)
+        if (vctxt.size_attr_infos <= vctxt.nb_attr_infos)
         {
-            int oldSize = vctxt.sizeAttrInfos;
-            int newSize = growCapacity(oldSize, PTR_SIZE, 5, XML_XSD10_MAX_ITEMS);
-            if (newSize < 0)
+            int old_size = vctxt.size_attr_infos;
+            int new_size = growCapacity(old_size, PTR_SIZE, 5, XML_XSD10_MAX_ITEMS);
+            if (new_size < 0)
             {
                 vErrMemory(vctxt);
                 return null;
             }
-            vctxt.attrInfos = (vctxt.attrInfos == null) ? new Xsd10AttrInfo[newSize] : Arrays.copyOf(vctxt.attrInfos, newSize);
-            vctxt.sizeAttrInfos = newSize;
+            vctxt.attr_infos = (vctxt.attr_infos == null) ? new Xsd10AttrInfo[new_size] : Arrays.copyOf(vctxt.attr_infos, new_size);
+            vctxt.size_attr_infos = new_size;
         }
 
-        iattr = vctxt.attrInfos[vctxt.nbAttrInfos];
+        iattr = vctxt.attr_infos[vctxt.nb_attr_infos];
         if (iattr != null)
         {
-            if (iattr.localName != null)
+            if (iattr.local_name != null)
             {
                 verrorInt(vctxt, "xmlSchemaGetFreshAttrInfo", "attr info not cleared");
                 return null;
             }
-            iattr.nodeType = ATTRIBUTE;
-            vctxt.nbAttrInfos++;
+            iattr.node_type = ATTRIBUTE;
+            vctxt.nb_attr_infos++;
             return iattr;
         }
 
@@ -2437,15 +2437,15 @@ public final class Xsd10Valid
         * Create an attribute info.
         */
         iattr = new Xsd10AttrInfo();
-        iattr.nodeType = ATTRIBUTE;
-        vctxt.attrInfos[vctxt.nbAttrInfos++] = iattr;
+        iattr.node_type = ATTRIBUTE;
+        vctxt.attr_infos[vctxt.nb_attr_infos++] = iattr;
 
         return iattr;
     }
 
     // xml_xsd10_validator_push_attribute
     /** Port of xmlSchemaValidatorPushAttribute. */
-    static int validatorPushAttribute(Xsd10ValidCtxt vctxt, XmlNode attrNode, int nodeLine, String localName, String nsName, int ownedNames, String value, int ownedValue)
+    static int validatorPushAttribute(Xsd10ValidCtxt vctxt, XmlNode attr_node, int node_line, String local_name, String ns_name, int owned_names, String value, int owned_value)
     {
         Xsd10AttrInfo attr;
 
@@ -2455,59 +2455,59 @@ public final class Xsd10Valid
             verrorInt(vctxt, "xmlSchemaPushAttribute", "calling xmlSchemaGetFreshAttrInfo()");
             return -1;
         }
-        attr.node = attrNode;
-        attr.nodeLine = nodeLine;
+        attr.node = attr_node;
+        attr.node_line = node_line;
         attr.state = XML_XSD10_SCHEMAS_ATTR_UNKNOWN;
-        attr.localName = localName;
-        attr.nsName = nsName;
-        if (ownedNames != 0)
+        attr.local_name = local_name;
+        attr.ns_name = ns_name;
+        if (owned_names != 0)
         {
             attr.flags |= XML_XSD10_SCHEMA_NODE_INFO_FLAG_OWNED_NAMES;
         }
         /*
         * Evaluate if it's an XSI attribute.
         */
-        if (nsName != null)
+        if (ns_name != null)
         {
-            if (strEqual(localName, "nil") != 0)
+            if (strEqual(local_name, "nil") != 0)
             {
-                if (strEqual(attr.nsName, XML_XSD10_INSTANCE_NS) != 0)
+                if (strEqual(attr.ns_name, XML_XSD10_INSTANCE_NS) != 0)
                 {
-                    attr.metaType = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_NIL;
+                    attr.meta_type = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_NIL;
                 }
             }
-            else if (strEqual(localName, "type") != 0)
+            else if (strEqual(local_name, "type") != 0)
             {
-                if (strEqual(attr.nsName, XML_XSD10_INSTANCE_NS) != 0)
+                if (strEqual(attr.ns_name, XML_XSD10_INSTANCE_NS) != 0)
                 {
-                    attr.metaType = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_TYPE;
+                    attr.meta_type = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_TYPE;
                 }
             }
-            else if (strEqual(localName, "schemaLocation") != 0)
+            else if (strEqual(local_name, "schemaLocation") != 0)
             {
-                if (strEqual(attr.nsName, XML_XSD10_INSTANCE_NS) != 0)
+                if (strEqual(attr.ns_name, XML_XSD10_INSTANCE_NS) != 0)
                 {
-                    attr.metaType = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC;
+                    attr.meta_type = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_SCHEMA_LOC;
                 }
             }
-            else if (strEqual(localName, "noNamespaceSchemaLocation") != 0)
+            else if (strEqual(local_name, "noNamespaceSchemaLocation") != 0)
             {
-                if (strEqual(attr.nsName, XML_XSD10_INSTANCE_NS) != 0)
+                if (strEqual(attr.ns_name, XML_XSD10_INSTANCE_NS) != 0)
                 {
-                    attr.metaType = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_NO_NS_SCHEMA_LOC;
+                    attr.meta_type = XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_NO_NS_SCHEMA_LOC;
                 }
             }
-            else if (strEqual(attr.nsName, XML_XSD10_NAMESPACE_NS) != 0)
+            else if (strEqual(attr.ns_name, XML_XSD10_NAMESPACE_NS) != 0)
             {
-                attr.metaType = XML_XSD10_SCHEMA_ATTR_INFO_META_XMLNS;
+                attr.meta_type = XML_XSD10_SCHEMA_ATTR_INFO_META_XMLNS;
             }
         }
         attr.value = value;
-        if (ownedValue != 0)
+        if (owned_value != 0)
         {
             attr.flags |= XML_XSD10_SCHEMA_NODE_INFO_FLAG_OWNED_VALUES;
         }
-        if (attr.metaType != 0)
+        if (attr.meta_type != 0)
         {
             attr.state = XML_XSD10_SCHEMAS_ATTR_META;
         }
@@ -2517,27 +2517,27 @@ public final class Xsd10Valid
     /** C memset(info, 0, sizeof(XmlXsd10NodeInfo)) of the shared node info fields. */
     private static void zeroNodeInfo(Xsd10NodeInfo info)
     {
-        info.nodeType = 0;
+        info.node_type = 0;
         info.node = null;
-        info.nodeLine = 0;
-        info.localName = null;
-        info.nsName = null;
+        info.node_line = 0;
+        info.local_name = null;
+        info.ns_name = null;
         info.value = null;
         info.val = null;
-        info.typeDef = null;
+        info.type_def = null;
         info.flags = 0;
-        info.valNeeded = 0;
-        info.normVal = 0;
+        info.val_needed = 0;
+        info.norm_val = 0;
         setDecl(info, null);
         info.depth = 0;
-        info.idcTable = null;
-        info.idcMatchers = null;
-        info.regexCtxt = null;
-        info.nsBindings = null;
-        info.nbNsBindings = 0;
-        info.sizeNsBindings = 0;
-        info.hasKeyrefs = 0;
-        info.appliedXPath = 0;
+        info.idc_table = null;
+        info.idc_matchers = null;
+        info.regex_ctxt = null;
+        info.ns_bindings = null;
+        info.nb_ns_bindings = 0;
+        info.size_ns_bindings = 0;
+        info.has_keyrefs = 0;
+        info.applied_x_path = 0;
     }
 
     /** C memset(attr, 0, sizeof(XmlXsd10AttrInfo)). */
@@ -2547,8 +2547,8 @@ public final class Xsd10Valid
         attr.decl = null;
         attr.use = null;
         attr.state = 0;
-        attr.metaType = 0;
-        attr.vcValue = null;
+        attr.meta_type = 0;
+        attr.vc_value = null;
         attr.parent = null;
     }
 
@@ -2556,10 +2556,10 @@ public final class Xsd10Valid
     /** Port of xmlSchemaClearElemInfo. */
     static void clearElemInfo(Xsd10ValidCtxt vctxt, Xsd10NodeInfo ielem)
     {
-        ielem.hasKeyrefs = 0;
-        ielem.appliedXPath = 0;
-        ielem.localName = null;
-        ielem.nsName = null;
+        ielem.has_keyrefs = 0;
+        ielem.applied_x_path = 0;
+        ielem.local_name = null;
+        ielem.ns_name = null;
         ielem.value = null;
         if (ielem.val != null)
         {
@@ -2570,33 +2570,33 @@ public final class Xsd10Valid
             freeValue(ielem.val);
             ielem.val = null;
         }
-        if (ielem.idcMatchers != null)
+        if (ielem.idc_matchers != null)
         {
             /*
             * REVISIT OPTIMIZE TODO: Use a pool of IDC matchers.
             *   Does it work?
             */
-            idcReleaseMatcherList(vctxt, ielem.idcMatchers);
-            ielem.idcMatchers = null;
+            idcReleaseMatcherList(vctxt, ielem.idc_matchers);
+            ielem.idc_matchers = null;
         }
-        if (ielem.idcTable != null)
+        if (ielem.idc_table != null)
         {
             /*
             * OPTIMIZE TODO: Use a pool of IDC tables??.
             */
-            idcFreeIdcTable(ielem.idcTable);
-            ielem.idcTable = null;
+            idcFreeIdcTable(ielem.idc_table);
+            ielem.idc_table = null;
         }
-        if (ielem.regexCtxt != null)
+        if (ielem.regex_ctxt != null)
         {
-            XmlRegexp.regExecFree(ielem.regexCtxt);
-            ielem.regexCtxt = null;
+            XmlRegexp.regExecFree(ielem.regex_ctxt);
+            ielem.regex_ctxt = null;
         }
-        if (ielem.nsBindings != null)
+        if (ielem.ns_bindings != null)
         {
-            ielem.nsBindings = null;
-            ielem.nbNsBindings = 0;
-            ielem.sizeNsBindings = 0;
+            ielem.ns_bindings = null;
+            ielem.nb_ns_bindings = 0;
+            ielem.size_ns_bindings = 0;
         }
     }
 
@@ -2606,16 +2606,16 @@ public final class Xsd10Valid
     {
         Xsd10NodeInfo info = null;
 
-        if (vctxt.depth > vctxt.sizeElemInfos)
+        if (vctxt.depth > vctxt.size_elem_infos)
         {
             verrorInt(vctxt, "xmlSchemaGetFreshElemInfo", "inconsistent depth encountered");
             return null;
         }
-        if (vctxt.sizeElemInfos <= vctxt.depth)
+        if (vctxt.size_elem_infos <= vctxt.depth)
         {
-            int oldSize = vctxt.sizeElemInfos;
-            int newSize = growCapacity(oldSize, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
-            if (newSize < 0)
+            int old_size = vctxt.size_elem_infos;
+            int new_size = growCapacity(old_size, PTR_SIZE, 10, XML_XSD10_MAX_ITEMS);
+            if (new_size < 0)
             {
                 vErrMemory(vctxt);
                 return null;
@@ -2623,29 +2623,29 @@ public final class Xsd10Valid
             /*
             * We need the new memory to be NULLed.
             */
-            vctxt.elemInfos = (vctxt.elemInfos == null) ? new Xsd10NodeInfo[newSize] : Arrays.copyOf(vctxt.elemInfos, newSize);
-            vctxt.sizeElemInfos = newSize;
+            vctxt.elem_infos = (vctxt.elem_infos == null) ? new Xsd10NodeInfo[new_size] : Arrays.copyOf(vctxt.elem_infos, new_size);
+            vctxt.size_elem_infos = new_size;
         }
         else
         {
-            info = vctxt.elemInfos[vctxt.depth];
+            info = vctxt.elem_infos[vctxt.depth];
         }
 
         if (info == null)
         {
             info = new Xsd10NodeInfo();
-            vctxt.elemInfos[vctxt.depth] = info;
+            vctxt.elem_infos[vctxt.depth] = info;
         }
         else
         {
-            if (info.localName != null)
+            if (info.local_name != null)
             {
                 verrorInt(vctxt, "xmlSchemaGetFreshElemInfo", "elem info has not been cleared");
                 return null;
             }
         }
         zeroNodeInfo(info);
-        info.nodeType = ELEMENT;
+        info.node_type = ELEMENT;
         info.depth = vctxt.depth;
 
         return info;
@@ -2654,25 +2654,25 @@ public final class Xsd10Valid
     // XSD10_ACTIVATE_ELEM
     private static void activateElem(Xsd10ValidCtxt vctxt)
     {
-        vctxt.inode = vctxt.elemInfos[vctxt.depth];
+        vctxt.inode = vctxt.elem_infos[vctxt.depth];
     }
 
     // XSD10_ACTIVATE_PARENT_ELEM
     private static void activateParentElem(Xsd10ValidCtxt vctxt)
     {
-        vctxt.inode = vctxt.elemInfos[vctxt.depth - 1];
+        vctxt.inode = vctxt.elem_infos[vctxt.depth - 1];
     }
 
     // xml_xsd10_validate_facets
     /** Port of xmlSchemaValidateFacets. */
-    static int validateFacets(Xsd10AbstractCtxt actxt, XmlNode node, Xsd10Type type, int valType, String value, Xsd10Val val, long length, int fireErrors)
+    static int validateFacets(Xsd10AbstractCtxt actxt, XmlNode node, Xsd10Type type, int val_type, String value, Xsd10Val val, long length, int fire_errors)
     {
         int ret;
         int error = 0;
         int found;
 
-        Xsd10Type tmpType;
-        Xsd10FacetLink facetLink;
+        Xsd10Type tmp_type;
+        Xsd10FacetLink facet_link;
         Xsd10Facet facet;
         long[] len = new long[] { 0 };
         int ws;
@@ -2686,34 +2686,34 @@ public final class Xsd10Valid
         }
 
         /*
-        * NOTE: Do not jump away, if the facetSet of the given type is
+        * NOTE: Do not jump away, if the facet_set of the given type is
         * empty: until now, "pattern" and "enumeration" facets of the
         * *base types* need to be checked as well.
         */
-        boolean doAtomic = true;
-        boolean doList = true;
-        if (type.facetSet == null)
+        boolean do_atomic = true;
+        boolean do_list = true;
+        if (type.facet_set == null)
         {
-            doAtomic = false;
-            doList = false;
+            do_atomic = false;
+            do_list = false;
         }
         else if (wxsIsAtomic(type) == 0)
         {
-            doAtomic = false;
+            do_atomic = false;
             if (wxsIsList(type) == 0)
             {
-                doList = false;
+                do_list = false;
             }
         }
 
-        if (doAtomic)
+        if (do_atomic)
         {
             /*
             * Whitespace handling is only of importance for string-based
             * types.
             */
-            tmpType = getPrimitiveType(type);
-            if ((tmpType.builtInType == XML_XSD10_SCHEMAS_STRING) || (wxsIsAnySimpleType(tmpType) != 0))
+            tmp_type = getPrimitiveType(type);
+            if ((tmp_type.built_in_type == XML_XSD10_SCHEMAS_STRING) || (wxsIsAnySimpleType(tmp_type) != 0))
             {
                 ws = getWhiteSpaceFacetValue(type);
             }
@@ -2729,17 +2729,17 @@ public final class Xsd10Valid
             */
             if (val != null)
             {
-                valType = getValType(val);
+                val_type = getValType(val);
             }
 
             ret = 0;
-            for (facetLink = type.facetSet; facetLink != null; facetLink = facetLink.next)
+            for (facet_link = type.facet_set; facet_link != null; facet_link = facet_link.next)
             {
                 /*
                 * Skip the pattern "whiteSpace": it is used to
                 * format the character content beforehand.
                 */
-                switch (facetLink.facet.type)
+                switch (facet_link.facet.type)
                 {
                     case XML_XSD10_SCHEMA_FACET_WHITESPACE:
                     case XML_XSD10_SCHEMA_FACET_PATTERN:
@@ -2748,10 +2748,10 @@ public final class Xsd10Valid
                     case XML_XSD10_SCHEMA_FACET_LENGTH:
                     case XML_XSD10_SCHEMA_FACET_MINLENGTH:
                     case XML_XSD10_SCHEMA_FACET_MAXLENGTH:
-                        ret = validateLengthFacetWhtsp(facetLink.facet, valType, value, val, len, ws);
+                        ret = validateLengthFacetWhtsp(facet_link.facet, val_type, value, val, len, ws);
                         break;
                     default:
-                        ret = validateFacetWhtsp(facetLink.facet, ws, valType, value, val, ws);
+                        ret = validateFacetWhtsp(facet_link.facet, ws, val_type, value, val, ws);
                         break;
                 }
                 if (ret < 0)
@@ -2761,9 +2761,9 @@ public final class Xsd10Valid
                 }
                 else if (ret > 0)
                 {
-                    if (fireErrors != 0)
+                    if (fire_errors != 0)
                     {
-                        facetErr(actxt, ret, node, value, len[0], type, facetLink.facet, null, null, null);
+                        facetErr(actxt, ret, node, value, len[0], type, facet_link.facet, null, null, null);
                     }
                     else
                     {
@@ -2779,20 +2779,20 @@ public final class Xsd10Valid
         }
 
         // XSD10_WXS_IS_LIST:
-        if (doList && (wxsIsList(type) != 0))
+        if (do_list && (wxsIsList(type) != 0))
         {
             /*
             * "length", "minLength" and "maxLength" of list types.
             */
             ret = 0;
-            for (facetLink = type.facetSet; facetLink != null; facetLink = facetLink.next)
+            for (facet_link = type.facet_set; facet_link != null; facet_link = facet_link.next)
             {
-                switch (facetLink.facet.type)
+                switch (facet_link.facet.type)
                 {
                     case XML_XSD10_SCHEMA_FACET_LENGTH:
                     case XML_XSD10_SCHEMA_FACET_MINLENGTH:
                     case XML_XSD10_SCHEMA_FACET_MAXLENGTH:
-                        ret = validateListSimpleTypeFacet(facetLink.facet, value, length, null);
+                        ret = validateListSimpleTypeFacet(facet_link.facet, value, length, null);
                         break;
                     default:
                         continue;
@@ -2804,9 +2804,9 @@ public final class Xsd10Valid
                 }
                 else if (ret > 0)
                 {
-                    if (fireErrors != 0)
+                    if (fire_errors != 0)
                     {
-                        facetErr(actxt, ret, node, value, length, type, facetLink.facet, null, null, null);
+                        facetErr(actxt, ret, node, value, length, type, facet_link.facet, null, null, null);
                     }
                     else
                     {
@@ -2831,10 +2831,10 @@ public final class Xsd10Valid
         * is used for validation.
         */
         ret = 0;
-        tmpType = type;
+        tmp_type = type;
         do
         {
-            for (facet = tmpType.facets; facet != null; facet = facet.next)
+            for (facet = tmp_type.facets; facet != null; facet = facet.next)
             {
                 if (facet.type != XML_XSD10_SCHEMA_FACET_ENUMERATION)
                 {
@@ -2866,12 +2866,12 @@ public final class Xsd10Valid
             {
                 break;
             }
-            tmpType = tmpType.baseType;
-        } while ((tmpType != null) && (tmpType.type != XML_XSD10_SCHEMA_TYPE_BASIC));
+            tmp_type = tmp_type.base_type;
+        } while ((tmp_type != null) && (tmp_type.type != XML_XSD10_SCHEMA_TYPE_BASIC));
         if ((found != 0) && (ret == 0))
         {
             ret = XML_XSD10_SCHEMAV_CVC_ENUMERATION_VALID;
-            if (fireErrors != 0)
+            if (fire_errors != 0)
             {
                 facetErr(actxt, ret, node, value, 0, type, null, null, null, null);
             }
@@ -2889,14 +2889,14 @@ public final class Xsd10Valid
         * Process patters. Pattern facets are ORed at type level
         * and ANDed if derived. Walk the base type axis.
         */
-        tmpType = type;
+        tmp_type = type;
         facet = null;
         do
         {
             found = 0;
-            for (facetLink = tmpType.facetSet; facetLink != null; facetLink = facetLink.next)
+            for (facet_link = tmp_type.facet_set; facet_link != null; facet_link = facet_link.next)
             {
-                if (facetLink.facet.type != XML_XSD10_SCHEMA_FACET_PATTERN)
+                if (facet_link.facet.type != XML_XSD10_SCHEMA_FACET_PATTERN)
                 {
                     continue;
                 }
@@ -2905,7 +2905,7 @@ public final class Xsd10Valid
                 * NOTE that for patterns, @value needs to be the
                 * normalized value.
                 */
-                ret = XmlRegexp.regexpExec((XmlRegexp) facetLink.facet.regexp, value);
+                ret = XmlRegexp.regexpExec((XmlRegexp) facet_link.facet.regexp, value);
                 if (ret == 1)
                 {
                     break;
@@ -2920,13 +2920,13 @@ public final class Xsd10Valid
                     /*
                     * Save the last non-validating facet.
                     */
-                    facet = facetLink.facet;
+                    facet = facet_link.facet;
                 }
             }
             if ((found != 0) && (ret != 1))
             {
                 ret = XML_XSD10_SCHEMAV_CVC_PATTERN_VALID;
-                if (fireErrors != 0)
+                if (fire_errors != 0)
                 {
                     facetErr(actxt, ret, node, value, 0, type, facet, null, null, null);
                 }
@@ -2940,8 +2940,8 @@ public final class Xsd10Valid
                 }
                 break;
             }
-            tmpType = tmpType.baseType;
-        } while ((tmpType != null) && (tmpType.type != XML_XSD10_SCHEMA_TYPE_BASIC));
+            tmp_type = tmp_type.base_type;
+        } while ((tmp_type != null) && (tmp_type.type != XML_XSD10_SCHEMA_TYPE_BASIC));
 
         return error;
     }
@@ -2963,11 +2963,11 @@ public final class Xsd10Valid
 
     // xml_xsd10_validate_q_name
     /** Port of xmlSchemaValidateQName. */
-    static int validateQName(Xsd10ValidCtxt vctxt, String value, Xsd10Val[] val, int valNeeded)
+    static int validateQName(Xsd10ValidCtxt vctxt, String value, Xsd10Val[] val, int val_needed)
     {
         int ret;
         String stripped;
-        String nsName;
+        String ns_name;
         String local;
         String[] prefix = new String[] { null };
 
@@ -2997,7 +2997,7 @@ public final class Xsd10Valid
         *  - is there any namespace binding?
         *  - is there a default namespace?
         */
-        nsName = lookupNamespace(vctxt, prefix[0]);
+        ns_name = lookupNamespace(vctxt, prefix[0]);
 
         if (prefix[0] != null)
         {
@@ -3005,7 +3005,7 @@ public final class Xsd10Valid
             * A namespace must be found if the prefix is
             * NOT NULL.
             */
-            if (nsName == null)
+            if (ns_name == null)
             {
                 ret = XML_XSD10_SCHEMAV_CVC_DATATYPE_VALID_1_2_1;
                 customErr(vctxt, ret, null,
@@ -3016,11 +3016,11 @@ public final class Xsd10Valid
                 return ret;
             }
         }
-        if ((valNeeded != 0) && (val != null))
+        if ((val_needed != 0) && (val != null))
         {
-            if (nsName != null)
+            if (ns_name != null)
             {
-                val[0] = newQnameValue(strdup(nsName), local);
+                val[0] = newQnameValue(strdup(ns_name), local);
             }
             else
             {
@@ -3046,7 +3046,7 @@ public final class Xsd10Valid
             return null;
         }
         doc = nodeDom(node);
-        for (i = 0; i < pctxt.constructor.buckets.nbItems; i++)
+        for (i = 0; i < pctxt.constructor.buckets.nb_items; i++)
         {
             Xsd10Bucket bucket = (Xsd10Bucket) pctxt.constructor.buckets.items[i];
             if ((bucket != null) && (bucket.doc == doc))
@@ -3066,18 +3066,18 @@ public final class Xsd10Valid
     */
     // xml_xsd10_v_check_cvc_simple_type
     /** Port of xmlSchemaVCheckCVCSimpleType. */
-    static int vCheckCvcSimpleType(Xsd10AbstractCtxt actxt, XmlNode node, Xsd10Type type, String value, Xsd10Val[] retVal, int fireErrors, int normalize, int isNormalized)
+    static int vCheckCvcSimpleType(Xsd10AbstractCtxt actxt, XmlNode node, Xsd10Type type, String value, Xsd10Val[] ret_val, int fire_errors, int normalize, int is_normalized)
     {
         int ret = 0;
-        int valNeeded = (retVal != null) ? 1 : 0;
+        int val_needed = (ret_val != null) ? 1 : 0;
         Xsd10Val[] val = new Xsd10Val[] { null };
         /* xmlSchemaWhitespaceValueType ws; */
-        String normValue = null;
+        String norm_value = null;
 
-        if ((retVal != null) && (retVal[0] != null))
+        if ((ret_val != null) && (ret_val[0] != null))
         {
-            freeValue(retVal[0]);
-            retVal[0] = null;
+            freeValue(ret_val[0]);
+            ret_val[0] = null;
         }
         /*
         * 3.14.4 Simple Type Definition Validation Rules
@@ -3101,9 +3101,9 @@ public final class Xsd10Valid
         /*
         * 2.3 otherwise no further condition applies.
         */
-        if ((valNeeded == 0) && ((type.flags & XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE) != 0))
+        if ((val_needed == 0) && ((type.flags & XML_XSD10_SCHEMAS_TYPE_FACETSNEEDVALUE) != 0))
         {
-            valNeeded = 1;
+            val_needed = 1;
         }
         if (value == null)
         {
@@ -3111,7 +3111,7 @@ public final class Xsd10Valid
         }
         if ((wxsIsAnySimpleType(type) != 0) || (wxsIsAtomic(type) != 0))
         {
-            Xsd10Type biType; /* The built-in type. */
+            Xsd10Type bi_type; /* The built-in type. */
             /*
             * SPEC (1.2.1) "if {variety} is `atomic` then the string must `match`
             * a literal in the `lexical space` of {base type definition}"
@@ -3120,27 +3120,27 @@ public final class Xsd10Valid
             * Whitespace-normalize.
             */
             // XSD10_NORMALIZE(type)
-            if ((isNormalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
+            if ((is_normalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
             {
-                normValue = normalizeValue(type, value);
-                if (normValue != null)
+                norm_value = normalizeValue(type, value);
+                if (norm_value != null)
                 {
-                    value = normValue;
+                    value = norm_value;
                 }
-                isNormalized = 1;
+                is_normalized = 1;
             }
             if (type.type != XML_XSD10_SCHEMA_TYPE_BASIC)
             {
                 /*
                 * Get the built-in type.
                 */
-                biType = type.baseType;
-                while ((biType != null) && (biType.type != XML_XSD10_SCHEMA_TYPE_BASIC))
+                bi_type = type.base_type;
+                while ((bi_type != null) && (bi_type.type != XML_XSD10_SCHEMA_TYPE_BASIC))
                 {
-                    biType = biType.baseType;
+                    bi_type = bi_type.base_type;
                 }
 
-                if (biType == null)
+                if (bi_type == null)
                 {
                     aerrorInt(actxt, "xmlSchemaVCheckCVCSimpleType", "could not get the built-in type");
                     return -1;
@@ -3148,7 +3148,7 @@ public final class Xsd10Valid
             }
             else
             {
-                biType = type;
+                bi_type = type;
             }
             /*
             * NOTATIONs need to be processed here, since they need
@@ -3156,44 +3156,44 @@ public final class Xsd10Valid
             */
             if (actxt.type == XML_XSD10_SCHEMA_CTXT_VALIDATOR)
             {
-                switch (biType.builtInType)
+                switch (bi_type.built_in_type)
                 {
                     case XML_XSD10_SCHEMAS_NOTATION:
-                        ret = validateNotation((Xsd10ValidCtxt) actxt, ((Xsd10ValidCtxt) actxt).schema, null, value, val, valNeeded);
+                        ret = validateNotation((Xsd10ValidCtxt) actxt, ((Xsd10ValidCtxt) actxt).schema, null, value, val, val_needed);
                         break;
                     case XML_XSD10_SCHEMAS_QNAME:
-                        ret = validateQName((Xsd10ValidCtxt) actxt, value, val, valNeeded);
+                        ret = validateQName((Xsd10ValidCtxt) actxt, value, val, val_needed);
                         break;
                     default:
                         /* ws = xmlSchemaGetWhiteSpaceFacetValue(type); */
-                        if (valNeeded != 0)
+                        if (val_needed != 0)
                         {
-                            ret = valPredefTypeNodeNoNormIds(biType, value, val, node, ((Xsd10ValidCtxt) actxt).ids);
+                            ret = valPredefTypeNodeNoNormIds(bi_type, value, val, node, ((Xsd10ValidCtxt) actxt).ids);
                         }
                         else
                         {
-                            ret = valPredefTypeNodeNoNormIds(biType, value, null, node, ((Xsd10ValidCtxt) actxt).ids);
+                            ret = valPredefTypeNodeNoNormIds(bi_type, value, null, node, ((Xsd10ValidCtxt) actxt).ids);
                         }
                         break;
                 }
             }
             else if (actxt.type == XML_XSD10_SCHEMA_CTXT_PARSER)
             {
-                switch (biType.builtInType)
+                switch (bi_type.built_in_type)
                 {
                     case XML_XSD10_SCHEMAS_NOTATION:
-                        ret = validateNotation(null, ((Xsd10ParserCtxt) actxt).schema, node, value, val, valNeeded);
+                        ret = validateNotation(null, ((Xsd10ParserCtxt) actxt).schema, node, value, val, val_needed);
                         break;
                     default:
                         /* ws = xmlSchemaGetWhiteSpaceFacetValue(type); */
-                        if (valNeeded != 0)
+                        if (val_needed != 0)
                         {
-                            ret = valPredefTypeNodeNoNormIds(biType, value, val, node,
+                            ret = valPredefTypeNodeNoNormIds(bi_type, value, val, node,
                                 validSchemaDocIds((Xsd10ParserCtxt) actxt, node));
                         }
                         else
                         {
-                            ret = valPredefTypeNodeNoNormIds(biType, value, null, node,
+                            ret = valPredefTypeNodeNoNormIds(bi_type, value, null, node,
                                 validSchemaDocIds((Xsd10ParserCtxt) actxt, node));
                         }
                         break;
@@ -3227,7 +3227,7 @@ public final class Xsd10Valid
                 /*
                 * Check facets.
                 */
-                ret = validateFacets(actxt, node, type, biType.builtInType, value, val[0], 0, fireErrors);
+                ret = validateFacets(actxt, node, type, bi_type.built_in_type, value, val[0], 0, fire_errors);
                 if (ret != 0)
                 {
                     if (ret < 0)
@@ -3245,20 +3245,20 @@ public final class Xsd10Valid
                     }
                 }
             }
-            else if ((fireErrors != 0) && (ret > 0))
+            else if ((fire_errors != 0) && (ret > 0))
             {
                 simpleTypeErr(actxt, ret, node, value, type, 1);
             }
         }
         else if (wxsIsList(type) != 0)
         {
-            Xsd10Type itemType;
+            Xsd10Type item_type;
             int cur;
             int end;
-            String tmpValue = null;
+            String tmp_value = null;
             long len = 0;
-            Xsd10Val prevVal = null;
-            Xsd10Val[] curVal = new Xsd10Val[] { null };
+            Xsd10Val prev_val = null;
+            Xsd10Val[] cur_val = new Xsd10Val[] { null };
             /* 1.2.2 if {variety} is `list` then the string must be a sequence
             * of white space separated tokens, each of which `match`es a literal
             * in the `lexical space` of {item type definition}
@@ -3268,20 +3268,20 @@ public final class Xsd10Valid
             * the list type has an enum or pattern facet.
             */
             // XSD10_NORMALIZE(type)
-            if ((isNormalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
+            if ((is_normalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
             {
-                normValue = normalizeValue(type, value);
-                if (normValue != null)
+                norm_value = normalizeValue(type, value);
+                if (norm_value != null)
                 {
-                    value = normValue;
+                    value = norm_value;
                 }
-                isNormalized = 1;
+                is_normalized = 1;
             }
             /*
             * VAL TODO: Optimize validation of empty values.
             * VAL TODO: We do not have computed values for lists.
             */
-            itemType = wxsListItemtype(type);
+            item_type = wxsListItemtype(type);
             cur = 0;
             do
             {
@@ -3298,33 +3298,33 @@ public final class Xsd10Valid
                 {
                     break;
                 }
-                tmpValue = value.substring(cur, end);
+                tmp_value = value.substring(cur, end);
                 len++;
 
-                if (valNeeded != 0)
+                if (val_needed != 0)
                 {
-                    ret = vCheckCvcSimpleType(actxt, node, itemType, tmpValue, curVal, fireErrors, 0, 1);
+                    ret = vCheckCvcSimpleType(actxt, node, item_type, tmp_value, cur_val, fire_errors, 0, 1);
                 }
                 else
                 {
-                    ret = vCheckCvcSimpleType(actxt, node, itemType, tmpValue, null, fireErrors, 0, 1);
+                    ret = vCheckCvcSimpleType(actxt, node, item_type, tmp_value, null, fire_errors, 0, 1);
                 }
-                tmpValue = null;
-                if (curVal[0] != null)
+                tmp_value = null;
+                if (cur_val[0] != null)
                 {
                     /*
                     * Add to list of computed values.
                     */
                     if (val[0] == null)
                     {
-                        val[0] = curVal[0];
+                        val[0] = cur_val[0];
                     }
                     else
                     {
-                        valueAppend(prevVal, curVal[0]);
+                        valueAppend(prev_val, cur_val[0]);
                     }
-                    prevVal = curVal[0];
-                    curVal[0] = null;
+                    prev_val = cur_val[0];
+                    cur_val[0] = null;
                 }
                 if (ret != 0)
                 {
@@ -3343,7 +3343,7 @@ public final class Xsd10Valid
                 /*
                 * Apply facets (pattern, enumeration).
                 */
-                ret = validateFacets(actxt, node, type, XML_XSD10_SCHEMAS_UNKNOWN, value, val[0], len, fireErrors);
+                ret = validateFacets(actxt, node, type, XML_XSD10_SCHEMAS_UNKNOWN, value, val[0], len, fire_errors);
                 if (ret != 0)
                 {
                     if (ret < 0)
@@ -3354,28 +3354,28 @@ public final class Xsd10Valid
                     ret = XML_XSD10_SCHEMAV_CVC_DATATYPE_VALID_1_2_2;
                 }
             }
-            if ((fireErrors != 0) && (ret > 0))
+            if ((fire_errors != 0) && (ret > 0))
             {
                 /*
                 * Report the normalized value.
                 */
                 normalize = 1;
                 // XSD10_NORMALIZE(type)
-                if ((isNormalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
+                if ((is_normalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
                 {
-                    normValue = normalizeValue(type, value);
-                    if (normValue != null)
+                    norm_value = normalizeValue(type, value);
+                    if (norm_value != null)
                     {
-                        value = normValue;
+                        value = norm_value;
                     }
-                    isNormalized = 1;
+                    is_normalized = 1;
                 }
                 simpleTypeErr(actxt, ret, node, value, type, 1);
             }
         }
         else if (wxsIsUnion(type) != 0)
         {
-            Xsd10TypeLink memberLink;
+            Xsd10TypeLink member_link;
             /*
             * TODO: For all datatypes `derived` by `union`  whiteSpace does
             * not apply directly; however, the normalization behavior of `union`
@@ -3392,8 +3392,8 @@ public final class Xsd10Valid
             * literal in the `lexical space` of at least one member of
             * {member type definitions}
             */
-            memberLink = getUnionSimpleTypeMemberTypes(type);
-            if (memberLink == null)
+            member_link = getUnionSimpleTypeMemberTypes(type);
+            if (member_link == null)
             {
                 aerrorInt(actxt, "xmlSchemaVCheckCVCSimpleType", "union simple type has no member types");
                 return -1;
@@ -3404,21 +3404,21 @@ public final class Xsd10Valid
             * itself; otherwise a later value-comparison would be
             * not possible.
             */
-            while (memberLink != null)
+            while (member_link != null)
             {
-                if (valNeeded != 0)
+                if (val_needed != 0)
                 {
-                    ret = vCheckCvcSimpleType(actxt, node, (Xsd10Type) memberLink.type, value, val, 0, 1, 0);
+                    ret = vCheckCvcSimpleType(actxt, node, (Xsd10Type) member_link.type, value, val, 0, 1, 0);
                 }
                 else
                 {
-                    ret = vCheckCvcSimpleType(actxt, node, (Xsd10Type) memberLink.type, value, null, 0, 1, 0);
+                    ret = vCheckCvcSimpleType(actxt, node, (Xsd10Type) member_link.type, value, null, 0, 1, 0);
                 }
                 if (ret <= 0)
                 {
                     break;
                 }
-                memberLink = memberLink.next;
+                member_link = member_link.next;
             }
             if (ret != 0)
             {
@@ -3439,17 +3439,17 @@ public final class Xsd10Valid
                 * the value of whiteSpace on that one of the `memberTypes`
                 * against which the `union` is successfully validated.
                 */
-                // XSD10_NORMALIZE(memberLink->type)
-                if ((isNormalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
+                // XSD10_NORMALIZE(member_link->type)
+                if ((is_normalized == 0) && ((normalize != 0) || ((type.flags & XML_XSD10_SCHEMAS_TYPE_NORMVALUENEEDED) != 0)))
                 {
-                    normValue = normalizeValue((Xsd10Type) memberLink.type, value);
-                    if (normValue != null)
+                    norm_value = normalizeValue((Xsd10Type) member_link.type, value);
+                    if (norm_value != null)
                     {
-                        value = normValue;
+                        value = norm_value;
                     }
-                    isNormalized = 1;
+                    is_normalized = 1;
                 }
-                ret = validateFacets(actxt, node, type, XML_XSD10_SCHEMAS_UNKNOWN, value, val[0], 0, fireErrors);
+                ret = validateFacets(actxt, node, type, XML_XSD10_SCHEMAS_UNKNOWN, value, val[0], 0, fire_errors);
                 if (ret != 0)
                 {
                     if (ret < 0)
@@ -3460,7 +3460,7 @@ public final class Xsd10Valid
                     ret = XML_XSD10_SCHEMAV_CVC_DATATYPE_VALID_1_2_3;
                 }
             }
-            if ((fireErrors != 0) && (ret > 0))
+            if ((fire_errors != 0) && (ret > 0))
             {
                 simpleTypeErr(actxt, ret, node, value, type, 1);
             }
@@ -3468,9 +3468,9 @@ public final class Xsd10Valid
 
         if (ret == 0)
         {
-            if (retVal != null)
+            if (ret_val != null)
             {
-                retVal[0] = val[0];
+                ret_val[0] = val[0];
             }
             else if (val[0] != null)
             {
@@ -3486,16 +3486,16 @@ public final class Xsd10Valid
 
     // xml_xsd10_v_expand_q_name
     /** Port of xmlSchemaVExpandQName. */
-    static int vExpandQName(Xsd10ValidCtxt vctxt, String value, String[] nsName, String[] localName)
+    static int vExpandQName(Xsd10ValidCtxt vctxt, String value, String[] ns_name, String[] local_name)
     {
         int ret = 0;
 
-        if ((nsName == null) || (localName == null))
+        if ((ns_name == null) || (local_name == null))
         {
             return -1;
         }
-        nsName[0] = null;
-        localName[0] = null;
+        ns_name[0] = null;
+        local_name[0] = null;
 
         ret = treeValidateQname(value, 1);
         if (ret == -1)
@@ -3518,21 +3518,21 @@ public final class Xsd10Valid
         local = treeSplitQname2(value, prefix);
         if (local == null)
         {
-            localName[0] = dictLookup(vctxt.dict, value, -1);
+            local_name[0] = dictLookup(vctxt.dict, value, -1);
         }
         else
         {
-            localName[0] = dictLookup(vctxt.dict, local, -1);
+            local_name[0] = dictLookup(vctxt.dict, local, -1);
         }
 
-        nsName[0] = lookupNamespace(vctxt, prefix[0]);
+        ns_name[0] = lookupNamespace(vctxt, prefix[0]);
 
         if (prefix[0] != null)
         {
             /*
             * A namespace must be found if the prefix is NOT NULL.
             */
-            if (nsName[0] == null)
+            if (ns_name[0] == null)
             {
                 customErr(vctxt, XML_XSD10_SCHEMAV_CVC_DATATYPE_VALID_1_2_1, null,
                     getBuiltInType(XML_XSD10_SCHEMAS_QNAME),
@@ -3547,7 +3547,7 @@ public final class Xsd10Valid
 
     // xml_xsd10_process_xsi_type
     /** Port of xmlSchemaProcessXSIType. */
-    static int processXsiType(Xsd10ValidCtxt vctxt, Xsd10AttrInfo iattr, Xsd10Type[] localType, Xsd10Element elemDecl)
+    static int processXsiType(Xsd10ValidCtxt vctxt, Xsd10AttrInfo iattr, Xsd10Type[] local_type, Xsd10Element elem_decl)
     {
         int ret = 0;
         /*
@@ -3557,18 +3557,18 @@ public final class Xsd10Valid
         *   (1.2.1.2.1) - (1.2.1.2.4)
         * Handle 'xsi:type'.
         */
-        if (localType == null)
+        if (local_type == null)
         {
             return -1;
         }
-        localType[0] = null;
+        local_type[0] = null;
         if (iattr == null)
         {
             return 0;
         }
         exit:
         {
-            String[] nsName = new String[] { null };
+            String[] ns_name = new String[] { null };
             String[] local = new String[] { null };
             /*
             * TODO: We should report a *warning* that the type was overridden
@@ -3579,7 +3579,7 @@ public final class Xsd10Valid
             * (cvc-elt) (3.3.4) : (4.1)
             * (cvc-assess-elt) (1.2.1.2.2)
             */
-            ret = vExpandQName(vctxt, iattr.value, nsName, local);
+            ret = vExpandQName(vctxt, iattr.value, ns_name, local);
             if (ret != 0)
             {
                 if (ret < 0)
@@ -3596,8 +3596,8 @@ public final class Xsd10Valid
             * (cvc-elt) (3.3.4) : (4.2)
             * (cvc-assess-elt) (1.2.1.2.3)
             */
-            localType[0] = getType(vctxt.schema, local[0], nsName[0]);
-            if (localType[0] == null)
+            local_type[0] = getType(vctxt.schema, local[0], ns_name[0]);
+            if (local_type[0] == null)
             {
                 String[] str = new String[] { null };
 
@@ -3605,11 +3605,11 @@ public final class Xsd10Valid
                     getBuiltInType(XML_XSD10_SCHEMAS_QNAME),
                     "The QName value '%s' of the xsi:type attribute does not " +
                     "resolve to a type definition",
-                    formatQName(str, nsName[0], local[0]), null);
+                    formatQName(str, ns_name[0], local[0]), null);
                 ret = vctxt.err;
                 break exit;
             }
-            if (elemDecl != null)
+            if (elem_decl != null)
             {
                 int set = 0;
 
@@ -3628,14 +3628,14 @@ public final class Xsd10Valid
                 * {disallowed substitutions}: the "block" on the element decl.
                 * {prohibited substitutions}: the "block" on the type def.
                 */
-                if (((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_BLOCK_EXTENSION) != 0) ||
-                    ((elemDecl.subtypes.flags & XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION) != 0))
+                if (((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_BLOCK_EXTENSION) != 0) ||
+                    ((elem_decl.subtypes.flags & XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION) != 0))
                 {
                     set |= XSD10_SUBSET_EXTENSION;
                 }
 
-                if (((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_BLOCK_RESTRICTION) != 0) ||
-                    ((elemDecl.subtypes.flags & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) != 0))
+                if (((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_BLOCK_RESTRICTION) != 0) ||
+                    ((elem_decl.subtypes.flags & XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION) != 0))
                 {
                     set |= XSD10_SUBSET_RESTRICTION;
                 }
@@ -3647,7 +3647,7 @@ public final class Xsd10Valid
                 * the parser context anymore.
                 */
 
-                if (checkCosDerivedOk(vctxt, localType[0], elemDecl.subtypes, set) != 0)
+                if (checkCosDerivedOk(vctxt, local_type[0], elem_decl.subtypes, set) != 0)
                 {
                     String[] str = new String[] { null };
 
@@ -3655,10 +3655,10 @@ public final class Xsd10Valid
                         "The type definition '%s', specified by xsi:type, is " +
                         "blocked or not validly derived from the type definition " +
                         "of the element declaration",
-                        formatQName(str, localType[0].targetNamespace, localType[0].name),
+                        formatQName(str, local_type[0].target_namespace, local_type[0].name),
                         null);
                     ret = vctxt.err;
-                    localType[0] = null;
+                    local_type[0] = null;
                 }
             }
         }
@@ -3671,32 +3671,32 @@ public final class Xsd10Valid
     /** Port of xmlSchemaValidateElemDecl. */
     static int validateElemDecl(Xsd10ValidCtxt vctxt)
     {
-        Xsd10Element elemDecl = vctxt.inode.decl;
-        Xsd10Type actualType;
+        Xsd10Element elem_decl = vctxt.inode.decl;
+        Xsd10Type actual_type;
 
         /*
         * cvc-elt (3.3.4) : 1
         */
-        if (elemDecl == null)
+        if (elem_decl == null)
         {
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_ELT_1, null, "No matching declaration available");
             return vctxt.err;
         }
-        actualType = wxsElemTypedef(elemDecl);
+        actual_type = wxsElemTypedef(elem_decl);
         /*
         * cvc-elt (3.3.4) : 2
         */
-        if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0)
+        if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_ABSTRACT) != 0)
         {
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_ELT_2, null, "The element declaration is abstract");
             return vctxt.err;
         }
-        if (actualType == null)
+        if (actual_type == null)
         {
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_TYPE_1, null, "The type definition is absent");
             return XML_XSD10_SCHEMAV_CVC_TYPE_1;
         }
-        if (vctxt.nbAttrInfos != 0)
+        if (vctxt.nb_attr_infos != 0)
         {
             int ret;
             Xsd10AttrInfo iattr;
@@ -3726,7 +3726,7 @@ public final class Xsd10Valid
                 }
                 if (ret == 0)
                 {
-                    if ((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_NILLABLE) == 0)
+                    if ((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_NILLABLE) == 0)
                     {
                         /*
                         * cvc-elt (3.3.4) : 3.1
@@ -3741,7 +3741,7 @@ public final class Xsd10Valid
                             /*
                             * cvc-elt (3.3.4) : 3.2.2
                             */
-                            if (((elemDecl.flags & XML_XSD10_SCHEMAS_ELEM_FIXED) != 0) && (elemDecl.value != null))
+                            if (((elem_decl.flags & XML_XSD10_SCHEMAS_ELEM_FIXED) != 0) && (elem_decl.value != null))
                             {
                                 verror(vctxt, XML_XSD10_SCHEMAV_CVC_ELT_3_2_2, null,
                                     "The element cannot be 'nilled' because " +
@@ -3764,9 +3764,9 @@ public final class Xsd10Valid
             iattr = getMetaAttrInfo(vctxt, XML_XSD10_SCHEMA_ATTR_INFO_META_XSI_TYPE);
             if (iattr != null)
             {
-                Xsd10Type[] localType = new Xsd10Type[] { null };
+                Xsd10Type[] local_type = new Xsd10Type[] { null };
 
-                ret = processXsiType(vctxt, iattr, localType, elemDecl);
+                ret = processXsiType(vctxt, iattr, local_type, elem_decl);
                 if (ret != 0)
                 {
                     if (ret == -1)
@@ -3778,24 +3778,24 @@ public final class Xsd10Valid
                     }
                     /* Does not return an error on purpose. */
                 }
-                if (localType[0] != null)
+                if (local_type[0] != null)
                 {
                     vctxt.inode.flags |= XML_XSD10_SCHEMA_ELEM_INFO_LOCAL_TYPE;
-                    actualType = localType[0];
+                    actual_type = local_type[0];
                 }
             }
         }
         /*
         * IDC: Register identity-constraint XPath matchers.
         */
-        if ((elemDecl.idcs != null) && (idcRegisterMatchers(vctxt, elemDecl) == -1))
+        if ((elem_decl.idcs != null) && (idcRegisterMatchers(vctxt, elem_decl) == -1))
         {
             return -1;
         }
         /*
         * No actual type definition.
         */
-        if (actualType == null)
+        if (actual_type == null)
         {
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_TYPE_1, null, "The type definition is absent");
             return XML_XSD10_SCHEMAV_CVC_TYPE_1;
@@ -3803,7 +3803,7 @@ public final class Xsd10Valid
         /*
         * Remember the actual type definition.
         */
-        vctxt.inode.typeDef = actualType;
+        vctxt.inode.type_def = actual_type;
 
         return 0;
     }
@@ -3823,14 +3823,14 @@ public final class Xsd10Valid
         * whose local name is one of type, nil, schemaLocation or
         * noNamespaceSchemaLocation."
         */
-        if (vctxt.nbAttrInfos == 0)
+        if (vctxt.nb_attr_infos == 0)
         {
             return 0;
         }
-        for (i = 0; i < vctxt.nbAttrInfos; i++)
+        for (i = 0; i < vctxt.nb_attr_infos; i++)
         {
-            iattr = vctxt.attrInfos[i];
-            if (iattr.metaType == 0)
+            iattr = vctxt.attr_infos[i];
+            if (iattr.meta_type == 0)
             {
                 vctxt.inode = iattr;
                 illegalAttrErr(vctxt, XML_XSD10_SCHEMAV_CVC_TYPE_3_1_1, iattr, null);
@@ -3851,13 +3851,13 @@ public final class Xsd10Valid
         int i;
         Xsd10AttrInfo attr;
 
-        if (vctxt.nbAttrInfos == 0)
+        if (vctxt.nb_attr_infos == 0)
         {
             return;
         }
-        for (i = 0; i < vctxt.nbAttrInfos; i++)
+        for (i = 0; i < vctxt.nb_attr_infos; i++)
         {
-            attr = vctxt.attrInfos[i];
+            attr = vctxt.attr_infos[i];
             if (attr.val != null)
             {
                 freeValue(attr.val);
@@ -3865,7 +3865,7 @@ public final class Xsd10Valid
             }
             zeroAttrInfo(attr);
         }
-        vctxt.nbAttrInfos = 0;
+        vctxt.nb_attr_infos = 0;
     }
 
     /*
@@ -3873,7 +3873,7 @@ public final class Xsd10Valid
     * in inode->decl. Xsd10NodeInfo.decl is typed Xsd10Element, so a wildcard stored there is
     * kept in this side table (identity keyed, weak, so dropped node infos are collected).
     */
-    private static final java.util.Map<Xsd10NodeInfo, Xsd10Wildcard> wildDecls =
+    private static final java.util.Map<Xsd10NodeInfo, Xsd10Wildcard> wild_decls =
         java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
     /** C inode->decl as the generic item it really is (Element, Wildcard or null). */
@@ -3883,7 +3883,7 @@ public final class Xsd10Valid
         {
             return inode.decl;
         }
-        return wildDecls.get(inode);
+        return wild_decls.get(inode);
     }
 
     /** C inode->decl = item. */
@@ -3892,14 +3892,14 @@ public final class Xsd10Valid
         if (item instanceof Xsd10Wildcard)
         {
             inode.decl = null;
-            wildDecls.put(inode, (Xsd10Wildcard) item);
+            wild_decls.put(inode, (Xsd10Wildcard) item);
         }
         else
         {
             inode.decl = (item instanceof Xsd10Element) ? (Xsd10Element) item : null;
-            if (!wildDecls.isEmpty())
+            if (!wild_decls.isEmpty())
             {
-                wildDecls.remove(inode);
+                wild_decls.remove(inode);
             }
         }
     }
@@ -3917,22 +3917,22 @@ public final class Xsd10Valid
      */
     static int vAttributesComplex(Xsd10ValidCtxt vctxt)
     {
-        Xsd10Type type = vctxt.inode.typeDef;
-        Xsd10ItemList attrUseList;
-        Xsd10AttributeUse attrUse = null;
-        Xsd10Attribute attrDecl = null;
+        Xsd10Type type = vctxt.inode.type_def;
+        Xsd10ItemList attr_use_list;
+        Xsd10AttributeUse attr_use = null;
+        Xsd10Attribute attr_decl = null;
         Xsd10AttrInfo iattr;
         Xsd10AttrInfo tmpiattr;
         int i;
         int j;
         int found;
-        int nbAttrs;
-        int nbUses;
-        int xpathRes = 0;
+        int nb_attrs;
+        int nb_uses;
+        int xpath_res = 0;
         int res;
-        int wildIDs = 0;
+        int wild_i_ds = 0;
         int fixed;
-        XmlNode defAttrOwnerElem = null;
+        XmlNode def_attr_owner_elem = null;
 
         /*
         * SPEC (cvc-attribute)
@@ -3953,44 +3953,44 @@ public final class Xsd10Valid
         * must be true:
         *
         */
-        attrUseList = (Xsd10ItemList) type.attrUses;
+        attr_use_list = (Xsd10ItemList) type.attr_uses;
         /*
-        * @nbAttrs is the number of attributes present in the instance.
+        * @nb_attrs is the number of attributes present in the instance.
         */
-        nbAttrs = vctxt.nbAttrInfos;
-        if (attrUseList != null)
+        nb_attrs = vctxt.nb_attr_infos;
+        if (attr_use_list != null)
         {
-            nbUses = attrUseList.nbItems;
+            nb_uses = attr_use_list.nb_items;
         }
         else
         {
-            nbUses = 0;
+            nb_uses = 0;
         }
-        for (i = 0; i < nbUses; i++)
+        for (i = 0; i < nb_uses; i++)
         {
             found = 0;
-            attrUse = (Xsd10AttributeUse) attrUseList.items[i];
-            attrDecl = wxsAttruseDecl(attrUse);
-            for (j = 0; j < nbAttrs; j++)
+            attr_use = (Xsd10AttributeUse) attr_use_list.items[i];
+            attr_decl = wxsAttruseDecl(attr_use);
+            for (j = 0; j < nb_attrs; j++)
             {
-                iattr = vctxt.attrInfos[j];
+                iattr = vctxt.attr_infos[j];
                 /*
                 * SPEC (cvc-complex-type) (3)
                 * Skip meta attributes.
                 */
-                if (iattr.metaType != 0)
+                if (iattr.meta_type != 0)
                 {
                     continue;
                 }
-                if (at(iattr.localName, 0) != at(attrDecl.name, 0))
+                if (at(iattr.local_name, 0) != at(attr_decl.name, 0))
                 {
                     continue;
                 }
-                if (strEqual(iattr.localName, attrDecl.name) == 0)
+                if (strEqual(iattr.local_name, attr_decl.name) == 0)
                 {
                     continue;
                 }
-                if (strEqual(iattr.nsName, attrDecl.targetNamespace) == 0)
+                if (strEqual(iattr.ns_name, attr_decl.target_namespace) == 0)
                 {
                     continue;
                 }
@@ -4012,12 +4012,12 @@ public final class Xsd10Valid
                 * Assessment Outcome (Attribute) ($3.2.5).
                 */
                 iattr.state = XML_XSD10_SCHEMAS_ATTR_ASSESSED;
-                iattr.use = attrUse;
+                iattr.use = attr_use;
                 /*
                 * Context-determined declaration.
                 */
-                iattr.decl = attrDecl;
-                iattr.typeDef = attrDecl.subtypes;
+                iattr.decl = attr_decl;
+                iattr.type_def = attr_decl.subtypes;
                 break;
             }
 
@@ -4026,7 +4026,7 @@ public final class Xsd10Valid
                 continue;
             }
 
-            if (attrUse.occurs == XML_XSD10_SCHEMAS_ATTR_USE_REQUIRED)
+            if (attr_use.occurs == XML_XSD10_SCHEMAS_ATTR_USE_REQUIRED)
             {
                 /*
                 * Handle non-existent, required attributes.
@@ -4044,11 +4044,11 @@ public final class Xsd10Valid
                     return -1;
                 }
                 tmpiattr.state = XML_XSD10_SCHEMAS_ATTR_ERR_MISSING;
-                tmpiattr.use = attrUse;
-                tmpiattr.decl = attrDecl;
+                tmpiattr.use = attr_use;
+                tmpiattr.decl = attr_decl;
             }
-            else if ((attrUse.occurs == XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL) &&
-                ((attrUse.defValue != null) || (attrDecl.defValue != null)))
+            else if ((attr_use.occurs == XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL) &&
+                ((attr_use.def_value != null) || (attr_decl.def_value != null)))
             {
                 /*
                 * Handle non-existent, optional, default/fixed attributes.
@@ -4060,30 +4060,30 @@ public final class Xsd10Valid
                     return -1;
                 }
                 tmpiattr.state = XML_XSD10_SCHEMAS_ATTR_DEFAULT;
-                tmpiattr.use = attrUse;
-                tmpiattr.decl = attrDecl;
-                tmpiattr.typeDef = attrDecl.subtypes;
-                tmpiattr.localName = attrDecl.name;
-                tmpiattr.nsName = attrDecl.targetNamespace;
+                tmpiattr.use = attr_use;
+                tmpiattr.decl = attr_decl;
+                tmpiattr.type_def = attr_decl.subtypes;
+                tmpiattr.local_name = attr_decl.name;
+                tmpiattr.ns_name = attr_decl.target_namespace;
             }
         }
 
-        if (vctxt.nbAttrInfos == 0)
+        if (vctxt.nb_attr_infos == 0)
         {
             return 0;
         }
         /*
         * Validate against the wildcard.
         */
-        if (type.attributeWildcard != null)
+        if (type.attribute_wildcard != null)
         {
             /*
             * SPEC (cvc-complex-type)
             * (3.2.1) "There must be an {attribute wildcard}."
             */
-            for (i = 0; i < nbAttrs; i++)
+            for (i = 0; i < nb_attrs; i++)
             {
-                iattr = vctxt.attrInfos[i];
+                iattr = vctxt.attr_infos[i];
                 /*
                 * SPEC (cvc-complex-type) (3)
                 * Skip meta attributes.
@@ -4102,18 +4102,18 @@ public final class Xsd10Valid
                 * the wildcard constraint, as defined in Wildcard allows
                 * Namespace Name ($3.10.4)."
                 */
-                if (checkCvcWildcardNamespace(type.attributeWildcard, iattr.nsName) == 0)
+                if (checkCvcWildcardNamespace(type.attribute_wildcard, iattr.ns_name) == 0)
                 {
                     /*
-                    * Handle processContents.
+                    * Handle process_contents.
                     *
                     * SPEC (cvc-wildcard):
-                    * processContents | context-determined declaration:
+                    * process_contents | context-determined declaration:
                     * "strict"          "mustFind"
                     * "lax"             "none"
                     * "skip"            "skip"
                     */
-                    if (type.attributeWildcard.processContents == XML_XSD10_SCHEMAS_ANY_SKIP)
+                    if (type.attribute_wildcard.process_contents == XML_XSD10_SCHEMAS_ANY_SKIP)
                     {
                         /*
                         * context-determined declaration = "skip"
@@ -4128,7 +4128,7 @@ public final class Xsd10Valid
                     /*
                     * Find an attribute declaration.
                     */
-                    iattr.decl = getAttributeDecl(vctxt.schema, iattr.localName, iattr.nsName);
+                    iattr.decl = getAttributeDecl(vctxt.schema, iattr.local_name, iattr.ns_name);
                     if (iattr.decl != null)
                     {
                         iattr.state = XML_XSD10_SCHEMAS_ATTR_ASSESSED;
@@ -4145,20 +4145,20 @@ public final class Xsd10Valid
                         * or is derived from ID. Then all of the following
                         * must be true:"
                         */
-                        iattr.typeDef = wxsAttrTypedef(iattr.decl);
-                        if (isDerivedFromBuiltInType(iattr.typeDef, XML_XSD10_SCHEMAS_ID) != 0)
+                        iattr.type_def = wxsAttrTypedef(iattr.decl);
+                        if (isDerivedFromBuiltInType(iattr.type_def, XML_XSD10_SCHEMAS_ID) != 0)
                         {
                             /*
                             * SPEC (5.1) "There must be no more than one
                             * item in `wild IDs`."
                             */
-                            if (wildIDs != 0)
+                            if (wild_i_ds != 0)
                             {
                                 /* VAL TODO */
                                 iattr.state = XML_XSD10_SCHEMAS_ATTR_ERR_WILD_DUPLICATE_ID;
                                 continue;
                             }
-                            wildIDs++;
+                            wild_i_ds++;
                             /*
                             * SPEC (cvc-complex-type)
                             * (5.2) "If `wild IDs` is non-empty, there must not
@@ -4166,12 +4166,12 @@ public final class Xsd10Valid
                             * whose {attribute declaration}'s {type definition}
                             * is or is derived from ID."
                             */
-                            if (attrUseList != null)
+                            if (attr_use_list != null)
                             {
-                                for (j = 0; j < attrUseList.nbItems; j++)
+                                for (j = 0; j < attr_use_list.nb_items; j++)
                                 {
                                     if (isDerivedFromBuiltInType(
-                                        wxsAttruseTypedef((Xsd10BasicItem) attrUseList.items[j]),
+                                        wxsAttruseTypedef((Xsd10BasicItem) attr_use_list.items[j]),
                                         XML_XSD10_SCHEMAS_ID) != 0)
                                     {
                                         /* URGENT VAL TODO: implement */
@@ -4182,7 +4182,7 @@ public final class Xsd10Valid
                             }
                         }
                     }
-                    else if (type.attributeWildcard.processContents == XML_XSD10_SCHEMAS_ANY_LAX)
+                    else if (type.attribute_wildcard.process_contents == XML_XSD10_SCHEMAS_ANY_LAX)
                     {
                         iattr.state = XML_XSD10_SCHEMAS_ATTR_WILD_LAX_NO_DECL;
                         /*
@@ -4199,7 +4199,7 @@ public final class Xsd10Valid
             }
         }
 
-        if (vctxt.nbAttrInfos == 0)
+        if (vctxt.nb_attr_infos == 0)
         {
             return 0;
         }
@@ -4210,18 +4210,18 @@ public final class Xsd10Valid
         */
         if ((vctxt.options & XML_XSD10_SCHEMA_VAL_VC_I_CREATE) != 0)
         {
-            Xsd10NodeInfo ielem = vctxt.elemInfos[vctxt.depth];
+            Xsd10NodeInfo ielem = vctxt.elem_infos[vctxt.depth];
             if ((ielem != null) && (ielem.node != null) && (nodeDom(ielem.node) != null))
             {
-                defAttrOwnerElem = ielem.node;
+                def_attr_owner_elem = ielem.node;
             }
         }
         /*
         * Validate values, create default attributes, evaluate IDCs.
         */
-        for (i = 0; i < vctxt.nbAttrInfos; i++)
+        for (i = 0; i < vctxt.nb_attr_infos; i++)
         {
-            iattr = vctxt.attrInfos[i];
+            iattr = vctxt.attr_infos[i];
             /*
             * VAL TODO: Note that we won't try to resolve IDCs to
             * "lax" and "skip" validated attributes. Check what to
@@ -4235,7 +4235,7 @@ public final class Xsd10Valid
             /*
             * VAL TODO: What to do if the type definition is missing?
             */
-            if (iattr.typeDef == null)
+            if (iattr.type_def == null)
             {
                 iattr.state = XML_XSD10_SCHEMAS_ATTR_ERR_NO_TYPE;
                 continue;
@@ -4243,15 +4243,15 @@ public final class Xsd10Valid
 
             vctxt.inode = iattr;
             fixed = 0;
-            xpathRes = 0;
+            xpath_res = 0;
 
-            if (vctxt.xpathStates != null)
+            if (vctxt.xpath_states != null)
             {
                 /*
                 * Evaluate IDCs.
                 */
-                xpathRes = xPathEvaluate(vctxt, ATTRIBUTE);
-                if (xpathRes == -1)
+                xpath_res = xPathEvaluate(vctxt, ATTRIBUTE);
+                if (xpath_res == -1)
                 {
                     verrorInt(vctxt, "xmlSchemaVAttributesComplex", "calling xmlSchemaXPathEvaluate()");
                     activateElem(vctxt);
@@ -4268,17 +4268,17 @@ public final class Xsd10Valid
                     * We need the value only if we need to resolve IDCs or
                     * will create default attributes.
                     */
-                    if ((xpathRes != 0) || (defAttrOwnerElem != null))
+                    if ((xpath_res != 0) || (def_attr_owner_elem != null))
                     {
-                        if (iattr.use.defValue != null)
+                        if (iattr.use.def_value != null)
                         {
-                            iattr.value = iattr.use.defValue;
-                            iattr.val = iattr.use.defVal;
+                            iattr.value = iattr.use.def_value;
+                            iattr.val = iattr.use.def_val;
                         }
                         else
                         {
-                            iattr.value = iattr.decl.defValue;
-                            iattr.val = iattr.decl.defVal;
+                            iattr.value = iattr.decl.def_value;
+                            iattr.val = iattr.decl.def_val;
                         }
                         /*
                         * IDCs will consume the precomputed default value,
@@ -4306,24 +4306,24 @@ public final class Xsd10Valid
                     *   uses the *initial* value.
                     */
 
-                    if (defAttrOwnerElem != null)
+                    if (def_attr_owner_elem != null)
                     {
-                        String normValue;
+                        String norm_value;
                         String value;
 
                         value = iattr.value;
                         /*
                         * Normalize the value.
                         */
-                        normValue = normalizeValue(iattr.typeDef, iattr.value);
-                        if (normValue != null)
+                        norm_value = normalizeValue(iattr.type_def, iattr.value);
+                        if (norm_value != null)
                         {
-                            value = normValue;
+                            value = norm_value;
                         }
 
-                        if (iattr.nsName == null)
+                        if (iattr.ns_name == null)
                         {
-                            if (nodeAppendAttr(defAttrOwnerElem, iattr.localName, null, value) == null)
+                            if (nodeAppendAttr(def_attr_owner_elem, iattr.local_name, null, value) == null)
                             {
                                 verrorInt(vctxt, "xmlSchemaVAttributesComplex", "calling xmlNewProp()");
                                 activateElem(vctxt);
@@ -4334,7 +4334,7 @@ public final class Xsd10Valid
                         {
                             XmlNs ns;
 
-                            ns = treeSearchNsByHref(defAttrOwnerElem, iattr.nsName);
+                            ns = treeSearchNsByHref(def_attr_owner_elem, iattr.ns_name);
                             if (ns == null)
                             {
                                 String prefix;
@@ -4347,7 +4347,7 @@ public final class Xsd10Valid
                                 do
                                 {
                                     prefix = "p" + (counter++);
-                                    ns = treeSearchNs(defAttrOwnerElem, prefix);
+                                    ns = treeSearchNs(def_attr_owner_elem, prefix);
                                     if (counter > 1000)
                                     {
                                         verrorInt(vctxt, "xmlSchemaVAttributesComplex",
@@ -4357,7 +4357,7 @@ public final class Xsd10Valid
                                         return -1;
                                     }
                                 } while (ns != null);
-                                ns = nsDeclare(vctxt.validationRoot, prefix, iattr.nsName);
+                                ns = nsDeclare(vctxt.validation_root, prefix, iattr.ns_name);
                             }
                             /*
                             * TODO:
@@ -4365,7 +4365,7 @@ public final class Xsd10Valid
                             * If we have QNames: do we need to ensure there's a
                             * prefix defined for the QName?
                             */
-                            nodeAppendAttr(defAttrOwnerElem, iattr.localName, ns, value);
+                            nodeAppendAttr(def_attr_owner_elem, iattr.local_name, ns, value);
                         }
                     }
                     /*
@@ -4406,19 +4406,19 @@ public final class Xsd10Valid
                 * VAL TODO: Do we already have the
                 * "normalized attribute value" here?
                 */
-                if ((xpathRes != 0) || (fixed != 0))
+                if ((xpath_res != 0) || (fixed != 0))
                 {
                     iattr.flags |= XML_XSD10_SCHEMA_NODE_INFO_VALUE_NEEDED;
                     /*
                     * Request a computed value.
                     */
                     Xsd10Val[] aval = new Xsd10Val[] { iattr.val };
-                    res = vCheckCvcSimpleType(vctxt, iattr.node, iattr.typeDef, iattr.value, aval, 1, 1, 0);
+                    res = vCheckCvcSimpleType(vctxt, iattr.node, iattr.type_def, iattr.value, aval, 1, 1, 0);
                     iattr.val = aval[0];
                 }
                 else
                 {
-                    res = vCheckCvcSimpleType(vctxt, iattr.node, iattr.typeDef, iattr.value, null, 1, 0, 0);
+                    res = vCheckCvcSimpleType(vctxt, iattr.node, iattr.type_def, iattr.value, null, 1, 0, 0);
                 }
 
                 if (res != 0)
@@ -4461,28 +4461,28 @@ public final class Xsd10Valid
                         /* VAL TODO: A value was not precomputed. */
                         break eval_idcs;
                     }
-                    if ((iattr.use != null) && (iattr.use.defValue != null))
+                    if ((iattr.use != null) && (iattr.use.def_value != null))
                     {
-                        if (iattr.use.defVal == null)
+                        if (iattr.use.def_val == null)
                         {
                             /* VAL TODO: A default value was not precomputed. */
                             break eval_idcs;
                         }
-                        iattr.vcValue = iattr.use.defValue;
-                        if (areValuesEqual(iattr.val, iattr.use.defVal) == 0)
+                        iattr.vc_value = iattr.use.def_value;
+                        if (areValuesEqual(iattr.val, iattr.use.def_val) == 0)
                         {
                             iattr.state = XML_XSD10_SCHEMAS_ATTR_ERR_FIXED_VALUE;
                         }
                     }
                     else
                     {
-                        if (iattr.decl.defVal == null)
+                        if (iattr.decl.def_val == null)
                         {
                             /* VAL TODO: A default value was not precomputed. */
                             break eval_idcs;
                         }
-                        iattr.vcValue = iattr.decl.defValue;
-                        if (areValuesEqual(iattr.val, iattr.decl.defVal) == 0)
+                        iattr.vc_value = iattr.decl.def_value;
+                        if (areValuesEqual(iattr.val, iattr.decl.def_val) == 0)
                         {
                             iattr.state = XML_XSD10_SCHEMAS_ATTR_ERR_FIXED_VALUE;
                         }
@@ -4496,7 +4496,7 @@ public final class Xsd10Valid
             /*
             * Evaluate IDCs.
             */
-            if (xpathRes != 0)
+            if (xpath_res != 0)
             {
                 if (xPathProcessHistory(vctxt, vctxt.depth + 1) == -1)
                 {
@@ -4505,7 +4505,7 @@ public final class Xsd10Valid
                     return -1;
                 }
             }
-            else if (vctxt.xpathStates != null)
+            else if (vctxt.xpath_states != null)
             {
                 xPathPop(vctxt);
             }
@@ -4514,9 +4514,9 @@ public final class Xsd10Valid
         /*
         * Report errors.
         */
-        for (i = 0; i < vctxt.nbAttrInfos; i++)
+        for (i = 0; i < vctxt.nb_attr_infos; i++)
         {
-            iattr = vctxt.attrInfos[i];
+            iattr = vctxt.attr_infos[i];
             if ((iattr.state == XML_XSD10_SCHEMAS_ATTR_META) ||
                 (iattr.state == XML_XSD10_SCHEMAS_ATTR_ASSESSED) ||
                 (iattr.state == XML_XSD10_SCHEMAS_ATTR_WILD_SKIP) ||
@@ -4533,7 +4533,7 @@ public final class Xsd10Valid
                     activateElem(vctxt);
                     customErr(vctxt, XML_XSD10_SCHEMAV_CVC_COMPLEX_TYPE_4, null, null,
                         "The attribute '%s' is required but missing",
-                        formatQName(str, iattr.decl.targetNamespace, iattr.decl.name),
+                        formatQName(str, iattr.decl.target_namespace, iattr.decl.name),
                         null);
                     break;
                 }
@@ -4544,7 +4544,7 @@ public final class Xsd10Valid
                     customErr(vctxt, XML_XSD10_SCHEMAV_CVC_AU, null, null,
                         "The value '%s' does not match the fixed " +
                         "value constraint '%s'",
-                        iattr.value, iattr.vcValue);
+                        iattr.value, iattr.vc_value);
                     break;
                 case XML_XSD10_SCHEMAS_ATTR_ERR_WILD_STRICT_NO_DECL:
                     verror(vctxt, XML_XSD10_SCHEMAV_CVC_WILDCARD, null,
@@ -4552,7 +4552,7 @@ public final class Xsd10Valid
                         "demanded by the strict wildcard");
                     break;
                 case XML_XSD10_SCHEMAS_ATTR_UNKNOWN:
-                    if (iattr.metaType != 0)
+                    if (iattr.meta_type != 0)
                     {
                         break;
                     }
@@ -4560,7 +4560,7 @@ public final class Xsd10Valid
                     * MAYBE VAL TODO: One might report different error messages
                     * for the following errors.
                     */
-                    if (type.attributeWildcard == null)
+                    if (type.attribute_wildcard == null)
                     {
                         illegalAttrErr(vctxt, XML_XSD10_SCHEMAV_CVC_COMPLEX_TYPE_3_2_1, iattr, null);
                     }
@@ -4594,7 +4594,7 @@ public final class Xsd10Valid
             return -1;
         }
         skip[0] = 0;
-        if (wild.processContents == XML_XSD10_SCHEMAS_ANY_SKIP)
+        if (wild.process_contents == XML_XSD10_SCHEMAS_ANY_SKIP)
         {
             /*
             * URGENT VAL TODO: Either we need to position the stream to the
@@ -4604,14 +4604,14 @@ public final class Xsd10Valid
             return 0;
         }
         {
-            Xsd10Element decl = getElem(vctxt.schema, vctxt.inode.localName, vctxt.inode.nsName);
+            Xsd10Element decl = getElem(vctxt.schema, vctxt.inode.local_name, vctxt.inode.ns_name);
             if (decl != null)
             {
                 setDecl(vctxt.inode, decl);
                 return 0;
             }
         }
-        if (wild.processContents == XML_XSD10_SCHEMAS_ANY_STRICT)
+        if (wild.process_contents == XML_XSD10_SCHEMAS_ANY_STRICT)
         {
             /* VAL TODO: Change to proper error code. */
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_ELT_1, null, /* WXS_BASIC_CAST wild */
@@ -4619,7 +4619,7 @@ public final class Xsd10Valid
                 "demanded by the strict wildcard");
             return vctxt.err;
         }
-        if (vctxt.nbAttrInfos != 0)
+        if (vctxt.nb_attr_infos != 0)
         {
             Xsd10AttrInfo iattr;
             /*
@@ -4632,9 +4632,9 @@ public final class Xsd10Valid
             if (iattr != null)
             {
                 Xsd10NodeInfo ielem = vctxt.inode;
-                Xsd10Type[] lt = new Xsd10Type[] { ielem.typeDef };
+                Xsd10Type[] lt = new Xsd10Type[] { ielem.type_def };
                 int r = processXsiType(vctxt, iattr, lt, null);
-                ielem.typeDef = lt[0];
+                ielem.type_def = lt[0];
                 if (r == -1)
                 {
                     verrorInt(vctxt, "xmlSchemaValidateElemWildcard",
@@ -4653,7 +4653,7 @@ public final class Xsd10Valid
         *
         * Fallback to "anyType".
         */
-        vctxt.inode.typeDef = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
+        vctxt.inode.type_def = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
         return 0;
     }
 
@@ -4676,7 +4676,7 @@ public final class Xsd10Valid
         * For a string to be a valid default with respect to a type
         * definition the appropriate case among the following must be true:
         */
-        if (wxsIsComplex(inode.typeDef) != 0)
+        if (wxsIsComplex(inode.type_def) != 0)
         {
             /*
             * Complex type.
@@ -4687,8 +4687,8 @@ public final class Xsd10Valid
             * type}'s particle must be `emptiable` as defined by
             * Particle Emptiable ($3.9.6)."
             */
-            if ((wxsHasSimpleContent(inode.typeDef) == 0) &&
-                ((wxsHasMixedContent(inode.typeDef) == 0) || (wxsEmptiable(inode.typeDef) == 0)))
+            if ((wxsHasSimpleContent(inode.type_def) == 0) &&
+                ((wxsHasMixedContent(inode.type_def) == 0) || (wxsEmptiable(inode.type_def) == 0)))
             {
                 ret = XML_XSD10_SCHEMAP_COS_VALID_DEFAULT_2_1;
                 /* NOTE that this covers (2.2.2) as well. */
@@ -4710,13 +4710,13 @@ public final class Xsd10Valid
         * string must be `valid` with respect to that simple type definition
         * as defined by String Valid ($3.14.4).
         */
-        if (wxsIsSimple(inode.typeDef) != 0)
+        if (wxsIsSimple(inode.type_def) != 0)
         {
-            ret = vCheckCvcSimpleType(vctxt, null, inode.typeDef, value, val, 1, 1, 0);
+            ret = vCheckCvcSimpleType(vctxt, null, inode.type_def, value, val, 1, 1, 0);
         }
-        else if (wxsHasSimpleContent(inode.typeDef) != 0)
+        else if (wxsHasSimpleContent(inode.type_def) != 0)
         {
-            ret = vCheckCvcSimpleType(vctxt, null, inode.typeDef.contentTypeDef, value, val, 1, 1, 0);
+            ret = vCheckCvcSimpleType(vctxt, null, inode.type_def.content_type_def, value, val, 1, 1, 0);
         }
         if (ret < 0)
         {
@@ -4743,7 +4743,7 @@ public final class Xsd10Valid
             verrorInt(vctxt, "xmlSchemaValidatorPushElem", "calling xmlSchemaGetFreshElemInfo()");
             return -1;
         }
-        vctxt.nbAttrInfos = 0;
+        vctxt.nb_attr_infos = 0;
         return 0;
     }
 
@@ -4783,7 +4783,7 @@ public final class Xsd10Valid
         int ret = 0;
         Xsd10NodeInfo inode = vctxt.inode;
 
-        if (vctxt.nbAttrInfos != 0)
+        if (vctxt.nb_attr_infos != 0)
         {
             clearAttrInfos(vctxt);
         }
@@ -4796,10 +4796,10 @@ public final class Xsd10Valid
                 * we will not validate child elements of broken parents.
                 * Skip validation of all content of the parent.
                 */
-                vctxt.skipDepth = vctxt.depth - 1;
+                vctxt.skip_depth = vctxt.depth - 1;
                 break end_elem;
             }
-            if ((inode.typeDef == null) || ((inode.flags & XML_XSD10_SCHEMA_NODE_INFO_ERR_BAD_TYPE) != 0))
+            if ((inode.type_def == null) || ((inode.flags & XML_XSD10_SCHEMA_NODE_INFO_ERR_BAD_TYPE) != 0))
             {
                 /*
                 * 1. the type definition might be missing if the element was
@@ -4808,19 +4808,19 @@ public final class Xsd10Valid
                 */
                 break end_elem;
             }
-            boolean characterContent = false;
+            boolean character_content = false;
             /*
             * Check the content model.
             */
-            if ((inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) ||
-                (inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS))
+            if ((inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) ||
+                (inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS))
             {
                 /*
                 * Workaround for "anyType".
                 */
-                if (inode.typeDef.builtInType == XML_XSD10_SCHEMAS_ANYTYPE)
+                if (inode.type_def.built_in_type == XML_XSD10_SCHEMAS_ANYTYPE)
                 {
-                    characterContent = true;
+                    character_content = true;
                 }
                 else if ((inode.flags & XML_XSD10_SCHEMA_ELEM_INFO_ERR_BAD_CONTENT) == 0)
                 {
@@ -4831,13 +4831,13 @@ public final class Xsd10Valid
 
                     skip_nilled:
                     {
-                        if (inode.regexCtxt == null)
+                        if (inode.regex_ctxt == null)
                         {
                             /*
                             * Create the regex context.
                             */
-                            inode.regexCtxt = XmlRegexp.regExecNew((XmlRegexp) inode.typeDef.contModel, CONTENT_MODEL_CALLBACK, vctxt);
-                            if (inode.regexCtxt == null)
+                            inode.regex_ctxt = XmlRegexp.regExecNew((XmlRegexp) inode.type_def.cont_model, CONTENT_MODEL_CALLBACK, vctxt);
+                            if (inode.regex_ctxt == null)
                             {
                                 verrorInt(vctxt, "xmlSchemaValidatorPopElem", "failed to create a regex context");
                                 vctxt.err = -1;
@@ -4858,8 +4858,8 @@ public final class Xsd10Valid
                         * Get hold of the still expected content, since a further
                         * call to xmlRegExecPushString() will lose this information.
                         */
-                        XmlRegexp.regExecNextValues(inode.regexCtxt, nbval, nbneg, values, terminal);
-                        ret = XmlRegexp.regExecPushString(inode.regexCtxt, null, null);
+                        XmlRegexp.regExecNextValues(inode.regex_ctxt, nbval, nbneg, values, terminal);
+                        ret = XmlRegexp.regExecPushString(inode.regex_ctxt, null, null);
                         if ((ret < 0) || ((ret == 0) && (inodeNilled(inode) == 0)))
                         {
                             /*
@@ -4882,10 +4882,10 @@ public final class Xsd10Valid
                 }
             }
 
-            if (!characterContent)
+            if (!character_content)
             {
                 // skip_nilled:
-                if (inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)
+                if (inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)
                 {
                     break end_elem;
                 }
@@ -4905,13 +4905,13 @@ public final class Xsd10Valid
                 /*
                 * Speedup if no declaration exists.
                 */
-                if (wxsIsSimple(inode.typeDef) != 0)
+                if (wxsIsSimple(inode.type_def) != 0)
                 {
-                    ret = vCheckINodeDataType(vctxt, inode, inode.typeDef, inode.value);
+                    ret = vCheckINodeDataType(vctxt, inode, inode.type_def, inode.value);
                 }
-                else if (wxsHasSimpleContent(inode.typeDef) != 0)
+                else if (wxsHasSimpleContent(inode.type_def) != 0)
                 {
-                    ret = vCheckINodeDataType(vctxt, inode, inode.typeDef.contentTypeDef, inode.value);
+                    ret = vCheckINodeDataType(vctxt, inode, inode.type_def.content_type_def, inode.value);
                 }
                 if (ret < 0)
                 {
@@ -4979,13 +4979,13 @@ public final class Xsd10Valid
                     * `actual type definition` as defined by Element Locally Valid (Type)
                     * ($3.3.4).
                     */
-                    if (wxsIsSimple(inode.typeDef) != 0)
+                    if (wxsIsSimple(inode.type_def) != 0)
                     {
-                        ret = vCheckINodeDataType(vctxt, inode, inode.typeDef, inode.decl.value);
+                        ret = vCheckINodeDataType(vctxt, inode, inode.type_def, inode.decl.value);
                     }
-                    else if (wxsHasSimpleContent(inode.typeDef) != 0)
+                    else if (wxsHasSimpleContent(inode.type_def) != 0)
                     {
-                        ret = vCheckINodeDataType(vctxt, inode, inode.typeDef.contentTypeDef, inode.decl.value);
+                        ret = vCheckINodeDataType(vctxt, inode, inode.type_def.content_type_def, inode.decl.value);
                     }
                     if (ret != 0)
                     {
@@ -5005,21 +5005,21 @@ public final class Xsd10Valid
                 */
                 if (((vctxt.options & XML_XSD10_SCHEMA_VAL_VC_I_CREATE) != 0) && (inode.node != null))
                 {
-                    XmlNode textChild;
-                    String normValue;
+                    XmlNode text_child;
+                    String norm_value;
                     /*
                     * VAL TODO: Normalize the value.
                     */
-                    normValue = normalizeValue(inode.typeDef, inode.decl.value);
-                    if (normValue != null)
+                    norm_value = normalizeValue(inode.type_def, inode.decl.value);
+                    if (norm_value != null)
                     {
-                        textChild = nodeNewText(nodeDom(inode.node), normValue);
+                        text_child = nodeNewText(nodeDom(inode.node), norm_value);
                     }
                     else
                     {
-                        textChild = nodeNewText(nodeDom(inode.node), inode.decl.value);
+                        text_child = nodeNewText(nodeDom(inode.node), inode.decl.value);
                     }
-                    if (textChild == null)
+                    if (text_child == null)
                     {
                         verrorInt(vctxt, "xmlSchemaValidatorPopElem", "calling xmlNewDocText()");
                         vctxt.err = -1;
@@ -5027,7 +5027,7 @@ public final class Xsd10Valid
                     }
                     else
                     {
-                        nodeAddChild(inode.node, textChild);
+                        nodeAddChild(inode.node, text_child);
                     }
                 }
             }
@@ -5038,7 +5038,7 @@ public final class Xsd10Valid
                 * to the `actual type definition` as defined by Element Locally
                 * Valid (Type) ($3.3.4).
                 */
-                if (wxsIsSimple(inode.typeDef) != 0)
+                if (wxsIsSimple(inode.type_def) != 0)
                 {
                     /*
                     * SPEC (cvc-type) (3.1)
@@ -5048,9 +5048,9 @@ public final class Xsd10Valid
                     * must be `valid` with respect to the type definition as defined
                     * by String Valid ($3.14.4).
                     */
-                    ret = vCheckINodeDataType(vctxt, inode, inode.typeDef, inode.value);
+                    ret = vCheckINodeDataType(vctxt, inode, inode.type_def, inode.value);
                 }
-                else if (wxsHasSimpleContent(inode.typeDef) != 0)
+                else if (wxsHasSimpleContent(inode.type_def) != 0)
                 {
                     /*
                     * SPEC (cvc-type) (3.2) "If the type definition is a complex type
@@ -5064,7 +5064,7 @@ public final class Xsd10Valid
                     * `valid` with respect to that simple type definition as
                     * defined by String Valid ($3.14.4)."
                     */
-                    ret = vCheckINodeDataType(vctxt, inode, inode.typeDef.contentTypeDef, inode.value);
+                    ret = vCheckINodeDataType(vctxt, inode, inode.type_def.content_type_def, inode.value);
                 }
                 if (ret != 0)
                 {
@@ -5104,7 +5104,7 @@ public final class Xsd10Valid
                         * 5.2.2.2 The appropriate case among the following must
                         * be true:
                         */
-                        if (wxsHasMixedContent(inode.typeDef) != 0)
+                        if (wxsHasMixedContent(inode.type_def) != 0)
                         {
                             /*
                             * 5.2.2.2.1 If the {content type} of the `actual type
@@ -5131,7 +5131,7 @@ public final class Xsd10Valid
                                 break end_elem;
                             }
                         }
-                        else if (wxsHasSimpleContent(inode.typeDef) != 0)
+                        else if (wxsHasSimpleContent(inode.type_def) != 0)
                         {
                             /*
                             * 5.2.2.2.2 If the {content type} of the `actual type
@@ -5166,14 +5166,14 @@ public final class Xsd10Valid
             /* TODO: raise error? */
             return 0;
         }
-        if (vctxt.depth == vctxt.skipDepth)
+        if (vctxt.depth == vctxt.skip_depth)
         {
-            vctxt.skipDepth = -1;
+            vctxt.skip_depth = -1;
         }
         /*
         * Evaluate the history of XPath state objects.
         */
-        if ((inode.appliedXPath != 0) && (xPathProcessHistory(vctxt, vctxt.depth) == -1))
+        if ((inode.applied_x_path != 0) && (xPathProcessHistory(vctxt, vctxt.depth) == -1))
         {
             vctxt.err = -1;
             return -1;
@@ -5194,7 +5194,7 @@ public final class Xsd10Valid
         /*
         * Add the current IDC target-nodes to the IDC node-tables.
         */
-        if ((inode.idcMatchers != null) && ((vctxt.hasKeyrefs != 0) || (vctxt.createIDCNodeTables != 0)))
+        if ((inode.idc_matchers != null) && ((vctxt.has_keyrefs != 0) || (vctxt.create_idc_node_tables != 0)))
         {
             if (idcFillNodeTables(vctxt, inode) == -1)
             {
@@ -5205,7 +5205,7 @@ public final class Xsd10Valid
         /*
         * Validate IDC keyrefs.
         */
-        if (vctxt.inode.hasKeyrefs != 0)
+        if (vctxt.inode.has_keyrefs != 0)
         {
             if (checkCvcidcKeyRef(vctxt) == -1)
             {
@@ -5216,9 +5216,9 @@ public final class Xsd10Valid
         /*
         * Merge/free the IDC table.
         */
-        if (inode.idcTable != null)
+        if (inode.idc_table != null)
         {
-            if ((vctxt.depth > 0) && ((vctxt.hasKeyrefs != 0) || (vctxt.createIDCNodeTables != 0)))
+            if ((vctxt.depth > 0) && ((vctxt.has_keyrefs != 0) || (vctxt.create_idc_node_tables != 0)))
             {
                 /*
                 * Merge the IDC node table with the table of the parent node.
@@ -5246,27 +5246,27 @@ public final class Xsd10Valid
             return 0;
         }
         /*
-        * Reset the keyrefDepth if needed.
+        * Reset the keyref_depth if needed.
         */
         if (vctxt.aidcs != null)
         {
             Xsd10IDCAug aidc = vctxt.aidcs;
             do
             {
-                if (aidc.keyrefDepth == vctxt.depth)
+                if (aidc.keyref_depth == vctxt.depth)
                 {
                     /*
-                    * A 'keyrefDepth' of a key/unique IDC matches the current
+                    * A 'keyref_depth' of a key/unique IDC matches the current
                     * depth, this means that we are leaving the scope of the
                     * top-most keyref IDC which refers to this IDC.
                     */
-                    aidc.keyrefDepth = -1;
+                    aidc.keyref_depth = -1;
                 }
                 aidc = aidc.next;
             } while (aidc != null);
         }
         vctxt.depth--;
-        vctxt.inode = vctxt.elemInfos[vctxt.depth];
+        vctxt.inode = vctxt.elem_infos[vctxt.depth];
         /*
         * VAL TODO: 7 If the element information item is the `validation root`, it must be
         * `valid` per Validation Root Valid (ID/IDREF) ($3.3.4).
@@ -5291,7 +5291,7 @@ public final class Xsd10Valid
             verrorInt(vctxt, "xmlSchemaValidateChildElem", "not intended for the validation root");
             return -1;
         }
-        pielem = vctxt.elemInfos[vctxt.depth - 1];
+        pielem = vctxt.elem_infos[vctxt.depth - 1];
         if ((pielem.flags & XML_XSD10_SCHEMA_ELEM_INFO_EMPTY) != 0)
         {
             pielem.flags ^= XML_XSD10_SCHEMA_ELEM_INFO_EMPTY;
@@ -5315,16 +5315,16 @@ public final class Xsd10Valid
                 break unexpected_elem;
             }
 
-            ptype = pielem.typeDef;
+            ptype = pielem.type_def;
 
-            if (ptype.builtInType == XML_XSD10_SCHEMAS_ANYTYPE)
+            if (ptype.built_in_type == XML_XSD10_SCHEMAS_ANYTYPE)
             {
                 /*
                 * Workaround for "anyType": we have currently no content model
                 * assigned for "anyType", so handle it explicitly.
                 * "anyType" has an unbounded, lax "any" wildcard.
                 */
-                setDecl(vctxt.inode, getElem(vctxt.schema, vctxt.inode.localName, vctxt.inode.nsName));
+                setDecl(vctxt.inode, getElem(vctxt.schema, vctxt.inode.local_name, vctxt.inode.ns_name));
 
                 if (getDecl(vctxt.inode) == null)
                 {
@@ -5337,9 +5337,9 @@ public final class Xsd10Valid
                     if (iattr != null)
                     {
                         Xsd10NodeInfo ielem = vctxt.inode;
-                        Xsd10Type[] lt = new Xsd10Type[] { ielem.typeDef };
+                        Xsd10Type[] lt = new Xsd10Type[] { ielem.type_def };
                         ret = processXsiType(vctxt, iattr, lt, null);
-                        ielem.typeDef = lt[0];
+                        ielem.type_def = lt[0];
                         if (ret != 0)
                         {
                             if (ret == -1)
@@ -5364,13 +5364,13 @@ public final class Xsd10Valid
                         * skip by `validating` with respect to the `ur-type
                         * definition` as per Element Locally Valid (Type) ($3.3.4)."
                         */
-                        vctxt.inode.typeDef = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
+                        vctxt.inode.type_def = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
                     }
                 }
                 return 0;
             }
 
-            switch (ptype.contentType)
+            switch (ptype.content_type)
             {
                 case XML_XSD10_SCHEMA_CONTENT_EMPTY:
                     /*
@@ -5389,7 +5389,7 @@ public final class Xsd10Valid
                 case XML_XSD10_SCHEMA_CONTENT_MIXED:
                 case XML_XSD10_SCHEMA_CONTENT_ELEMENTS:
                 {
-                    XmlRegExecCtxt regexCtxt;
+                    XmlRegExecCtxt regex_ctxt;
                     String[] values = new String[10];
                     int[] terminal = new int[] { 0 };
                     int[] nbval = new int[] { 10 };
@@ -5397,7 +5397,7 @@ public final class Xsd10Valid
 
                     /* VAL TODO: Optimized "anyType" validation.*/
 
-                    if (ptype.contModel == null)
+                    if (ptype.cont_model == null)
                     {
                         verrorInt(vctxt, "xmlSchemaValidateChildElem", "type has elem content but no content model");
                         return -1;
@@ -5412,19 +5412,19 @@ public final class Xsd10Valid
                         return -1;
                     }
 
-                    regexCtxt = pielem.regexCtxt;
-                    if (regexCtxt == null)
+                    regex_ctxt = pielem.regex_ctxt;
+                    if (regex_ctxt == null)
                     {
                         /*
                         * Create the regex context.
                         */
-                        regexCtxt = XmlRegexp.regExecNew((XmlRegexp) ptype.contModel, CONTENT_MODEL_CALLBACK, vctxt);
-                        if (regexCtxt == null)
+                        regex_ctxt = XmlRegexp.regExecNew((XmlRegexp) ptype.cont_model, CONTENT_MODEL_CALLBACK, vctxt);
+                        if (regex_ctxt == null)
                         {
                             verrorInt(vctxt, "xmlSchemaValidateChildElem", "failed to create a regex context");
                             return -1;
                         }
-                        pielem.regexCtxt = regexCtxt;
+                        pielem.regex_ctxt = regex_ctxt;
                     }
 
                     /*
@@ -5435,7 +5435,7 @@ public final class Xsd10Valid
                     * particle, as defined in Element Sequence Locally Valid
                     * (Particle) ($3.9.4)."
                     */
-                    ret = XmlRegexp.regExecPushString2(regexCtxt, vctxt.inode.localName, vctxt.inode.nsName, vctxt.inode);
+                    ret = XmlRegexp.regExecPushString2(regex_ctxt, vctxt.inode.local_name, vctxt.inode.ns_name, vctxt.inode);
                     if (vctxt.err == XML_XSD10_SCHEMAV_INTERNAL)
                     {
                         verrorInt(vctxt, "xmlSchemaValidateChildElem", "calling xmlRegExecPushString2()");
@@ -5443,7 +5443,7 @@ public final class Xsd10Valid
                     }
                     if (ret < 0)
                     {
-                        XmlRegexp.regExecErrInfo(regexCtxt, null, nbval, nbneg, values, terminal);
+                        XmlRegexp.regExecErrInfo(regex_ctxt, null, nbval, nbneg, values, terminal);
                         complexTypeErr(vctxt, XML_XSD10_SCHEMAV_ELEMENT_CONTENT, null, null,
                             "This element is not expected",
                             nbval[0], nbneg[0], values);
@@ -5492,10 +5492,10 @@ public final class Xsd10Valid
         }
         // unexpected_elem:
         /*
-        * Pop this element and set the skipDepth to skip
+        * Pop this element and set the skip_depth to skip
         * all further content of the parent element.
         */
-        vctxt.skipDepth = vctxt.depth;
+        vctxt.skip_depth = vctxt.depth;
         vctxt.inode.flags |= XML_XSD10_SCHEMA_NODE_INFO_ERR_NOT_EXPECTED;
         pielem.flags |= XML_XSD10_SCHEMA_ELEM_INFO_ERR_BAD_CONTENT;
         return ret;
@@ -5507,7 +5507,7 @@ public final class Xsd10Valid
 
     // xml_xsd10_v_push_text
     /** Port of xmlSchemaVPushText. */
-    static int vPushText(Xsd10ValidCtxt vctxt, int nodeType, String value, int len, int mode, int[] consumed)
+    static int vPushText(Xsd10ValidCtxt vctxt, int node_type, String value, int len, int mode, int[] consumed)
     {
         /*
         * Unfortunately we have to duplicate the text sometimes.
@@ -5539,7 +5539,7 @@ public final class Xsd10Valid
         * element information item has no character or element
         * information item [children]."
         */
-        if (vctxt.inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_EMPTY)
+        if (vctxt.inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_EMPTY)
         {
             verror(vctxt, XML_XSD10_SCHEMAV_CVC_COMPLEX_TYPE_2_1, null,
                 "Character content is not allowed, " +
@@ -5547,9 +5547,9 @@ public final class Xsd10Valid
             return vctxt.err;
         }
 
-        if (vctxt.inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)
+        if (vctxt.inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_ELEMENTS)
         {
-            if ((nodeType != TEXT) || (isBlank(value, len) == 0))
+            if ((node_type != TEXT) || (isBlank(value, len) == 0))
             {
                 /*
                 * SPEC cvc-complex-type (2.3)
@@ -5576,7 +5576,7 @@ public final class Xsd10Valid
         * NOTE that even if the content type is *mixed*, we need the
         * *initial value* for default/fixed value constraints.
         */
-        if ((vctxt.inode.typeDef.contentType == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
+        if ((vctxt.inode.type_def.content_type == XML_XSD10_SCHEMA_CONTENT_MIXED) &&
             ((vctxt.inode.decl == null) || (vctxt.inode.decl.value == null)))
         {
             return 0;
@@ -5656,19 +5656,19 @@ public final class Xsd10Valid
     {
         int ret = 0;
 
-        if ((vctxt.skipDepth != -1) && (vctxt.depth >= vctxt.skipDepth))
+        if ((vctxt.skip_depth != -1) && (vctxt.depth >= vctxt.skip_depth))
         {
             verrorInt(vctxt, "xmlSchemaValidateElem", "in skip-state");
             return -1;
         }
         exit:
         {
-            if (vctxt.xsiAssemble != 0)
+            if (vctxt.xsi_assemble != 0)
             {
                 /*
                 * We will stop validation if there was an error during
                 * dynamic schema construction.
-                * Note that we simply set @skipDepth to 0, this could
+                * Note that we simply set @skip_depth to 0, this could
                 * mean that a streaming document via SAX would be
                 * still read to the end but it won't be validated any more.
                 * TODO: If we are sure how to stop the validation at once
@@ -5682,14 +5682,14 @@ public final class Xsd10Valid
                     {
                         return -1;
                     }
-                    vctxt.skipDepth = 0;
+                    vctxt.skip_depth = 0;
                     return ret;
                 }
                 /*
                  * Augment the IDC definitions for the main schema and all imported ones
                  * NOTE: main schema is the first in the imported list
                  */
-                hashScan(vctxt.schema.schemasImports, Xsd10Valid::augmentImportedIdc, vctxt);
+                hashScan(vctxt.schema.schemas_imports, Xsd10Valid::augmentImportedIdc, vctxt);
             }
             if (vctxt.depth > 0)
             {
@@ -5707,11 +5707,11 @@ public final class Xsd10Valid
                     }
                     break exit;
                 }
-                if (vctxt.depth == vctxt.skipDepth)
+                if (vctxt.depth == vctxt.skip_depth)
                 {
                     break exit;
                 }
-                if ((getDecl(vctxt.inode) == null) && (vctxt.inode.typeDef == null))
+                if ((getDecl(vctxt.inode) == null) && (vctxt.inode.type_def == null))
                 {
                     verrorInt(vctxt, "xmlSchemaValidateElem",
                         "the child element was valid but neither the " +
@@ -5724,7 +5724,7 @@ public final class Xsd10Valid
                 /*
                 * Get the declaration of the validation root.
                 */
-                setDecl(vctxt.inode, getElem(vctxt.schema, vctxt.inode.localName, vctxt.inode.nsName));
+                setDecl(vctxt.inode, getElem(vctxt.schema, vctxt.inode.local_name, vctxt.inode.ns_name));
                 if (getDecl(vctxt.inode) == null)
                 {
                     ret = XML_XSD10_SCHEMAV_CVC_ELT_1;
@@ -5760,12 +5760,12 @@ public final class Xsd10Valid
                     }
                     if (skip[0] != 0)
                     {
-                        vctxt.skipDepth = vctxt.depth;
+                        vctxt.skip_depth = vctxt.depth;
                         break exit;
                     }
                     /*
                     * The declaration might be set by the wildcard validation,
-                    * when the processContents is "lax" or "strict".
+                    * when the process_contents is "lax" or "strict".
                     */
                     if (getDecl(vctxt.inode).type != XML_XSD10_SCHEMA_TYPE_ELEMENT)
                     {
@@ -5795,14 +5795,14 @@ public final class Xsd10Valid
             */
             // type_validation:
 
-            if (vctxt.inode.typeDef == null)
+            if (vctxt.inode.type_def == null)
             {
                 vctxt.inode.flags |= XML_XSD10_SCHEMA_NODE_INFO_ERR_BAD_TYPE;
                 ret = XML_XSD10_SCHEMAV_CVC_TYPE_1;
                 verror(vctxt, ret, null, "The type definition is absent");
                 break exit;
             }
-            if ((vctxt.inode.typeDef.flags & XML_XSD10_SCHEMAS_TYPE_ABSTRACT) != 0)
+            if ((vctxt.inode.type_def.flags & XML_XSD10_SCHEMAS_TYPE_ABSTRACT) != 0)
             {
                 vctxt.inode.flags |= XML_XSD10_SCHEMA_NODE_INFO_ERR_BAD_TYPE;
                 ret = XML_XSD10_SCHEMAV_CVC_TYPE_2;
@@ -5814,10 +5814,10 @@ public final class Xsd10Valid
             * during validation against the declaration. This must be done
             * _before_ attribute validation.
             */
-            if (vctxt.xpathStates != null)
+            if (vctxt.xpath_states != null)
             {
                 ret = xPathEvaluate(vctxt, ELEMENT);
-                vctxt.inode.appliedXPath = 1;
+                vctxt.inode.applied_x_path = 1;
                 if (ret == -1)
                 {
                     verrorInt(vctxt, "xmlSchemaValidateElem", "calling xmlSchemaXPathEvaluate()");
@@ -5827,21 +5827,21 @@ public final class Xsd10Valid
             /*
             * Validate attributes.
             */
-            if (wxsIsComplex(vctxt.inode.typeDef) != 0)
+            if (wxsIsComplex(vctxt.inode.type_def) != 0)
             {
-                if ((vctxt.nbAttrInfos != 0) || (vctxt.inode.typeDef.attrUses != null))
+                if ((vctxt.nb_attr_infos != 0) || (vctxt.inode.type_def.attr_uses != null))
                 {
                     ret = vAttributesComplex(vctxt);
                 }
             }
-            else if (vctxt.nbAttrInfos != 0)
+            else if (vctxt.nb_attr_infos != 0)
             {
                 ret = vAttributesSimple(vctxt);
             }
             /*
             * Clear registered attributes.
             */
-            if (vctxt.nbAttrInfos != 0)
+            if (vctxt.nb_attr_infos != 0)
             {
                 clearAttrInfos(vctxt);
             }
@@ -5858,7 +5858,7 @@ public final class Xsd10Valid
         // exit:
         if (ret != 0)
         {
-            vctxt.skipDepth = vctxt.depth;
+            vctxt.skip_depth = vctxt.depth;
         }
         return ret;
     }
@@ -5886,8 +5886,8 @@ public final class Xsd10Valid
             freeValidCtxt(ret);
             return null;
         }
-        ret.nodeQNames = itemListCreate();
-        if (ret.nodeQNames == null)
+        ret.node_q_names = itemListCreate();
+        if (ret.node_q_names == null)
         {
             freeValidCtxt(ret);
             return null;
@@ -5938,10 +5938,10 @@ public final class Xsd10Valid
         *   and assumes that the options remain the same.
         */
         vctxt.flags = 0;
-        vctxt.validationRoot = null;
+        vctxt.validation_root = null;
         vctxt.doc = null;
         /* (The reader field is not ported.) */
-        vctxt.hasKeyrefs = 0;
+        vctxt.has_keyrefs = 0;
         /* The ID table of the validated document (libxml2 keeps them in doc->ids). */
         if (vctxt.ids != null)
         {
@@ -5959,47 +5959,47 @@ public final class Xsd10Valid
         */
         vctxt.aidcs = null;
 
-        if (vctxt.idcNodes != null)
+        if (vctxt.idc_nodes != null)
         {
-            vctxt.idcNodes = null;
-            vctxt.nbIdcNodes = 0;
-            vctxt.sizeIdcNodes = 0;
+            vctxt.idc_nodes = null;
+            vctxt.nb_idc_nodes = 0;
+            vctxt.size_idc_nodes = 0;
         }
 
-        if (vctxt.idcKeys != null)
+        if (vctxt.idc_keys != null)
         {
-            for (int i = 0; i < vctxt.nbIdcKeys; i++)
+            for (int i = 0; i < vctxt.nb_idc_keys; i++)
             {
-                idcFreeKey(vctxt.idcKeys[i]);
+                idcFreeKey(vctxt.idc_keys[i]);
             }
-            vctxt.idcKeys = null;
-            vctxt.nbIdcKeys = 0;
-            vctxt.sizeIdcKeys = 0;
+            vctxt.idc_keys = null;
+            vctxt.nb_idc_keys = 0;
+            vctxt.size_idc_keys = 0;
         }
 
         /*
         * Note that we won't delete the XPath state pool here.
         */
-        if (vctxt.xpathStates != null)
+        if (vctxt.xpath_states != null)
         {
-            freeIdcStateObjList(vctxt.xpathStates);
-            vctxt.xpathStates = null;
+            freeIdcStateObjList(vctxt.xpath_states);
+            vctxt.xpath_states = null;
         }
         /*
         * Attribute info.
         */
-        if (vctxt.nbAttrInfos != 0)
+        if (vctxt.nb_attr_infos != 0)
         {
             clearAttrInfos(vctxt);
         }
         /*
         * Element info.
         */
-        if (vctxt.elemInfos != null)
+        if (vctxt.elem_infos != null)
         {
-            for (int i = 0; i < vctxt.sizeElemInfos; i++)
+            for (int i = 0; i < vctxt.size_elem_infos; i++)
             {
-                Xsd10NodeInfo ei = vctxt.elemInfos[i];
+                Xsd10NodeInfo ei = vctxt.elem_infos[i];
                 if (ei == null)
                 {
                     break;
@@ -6007,7 +6007,7 @@ public final class Xsd10Valid
                 clearElemInfo(vctxt, ei);
             }
         }
-        itemListClear(vctxt.nodeQNames);
+        itemListClear(vctxt.node_q_names);
         /* Recreate the dict. */
         dictFree(vctxt.dict);
         /*
@@ -6022,18 +6022,18 @@ public final class Xsd10Valid
          * Note that some cleanup functions can move items to the cache,
          * so the cache shouldn't be freed too early.
          */
-        if (vctxt.idcMatcherCache != null)
+        if (vctxt.idc_matcher_cache != null)
         {
-            Xsd10IDCMatcher matcher = vctxt.idcMatcherCache;
+            Xsd10IDCMatcher matcher = vctxt.idc_matcher_cache;
             Xsd10IDCMatcher tmp;
 
             while (matcher != null)
             {
                 tmp = matcher;
-                matcher = matcher.nextCached;
+                matcher = matcher.next_cached;
                 idcFreeMatcherList(tmp);
             }
-            vctxt.idcMatcherCache = null;
+            vctxt.idc_matcher_cache = null;
         }
     }
 
@@ -6057,38 +6057,38 @@ public final class Xsd10Valid
         {
             freeParserCtxt(ctxt.pctxt);
         }
-        if (ctxt.idcKeys != null)
+        if (ctxt.idc_keys != null)
         {
-            for (int i = 0; i < ctxt.nbIdcKeys; i++)
+            for (int i = 0; i < ctxt.nb_idc_keys; i++)
             {
-                idcFreeKey(ctxt.idcKeys[i]);
+                idcFreeKey(ctxt.idc_keys[i]);
             }
         }
 
-        if (ctxt.xpathStates != null)
+        if (ctxt.xpath_states != null)
         {
-            freeIdcStateObjList(ctxt.xpathStates);
-            ctxt.xpathStates = null;
+            freeIdcStateObjList(ctxt.xpath_states);
+            ctxt.xpath_states = null;
         }
-        if (ctxt.xpathStatePool != null)
+        if (ctxt.xpath_state_pool != null)
         {
-            freeIdcStateObjList(ctxt.xpathStatePool);
-            ctxt.xpathStatePool = null;
+            freeIdcStateObjList(ctxt.xpath_state_pool);
+            ctxt.xpath_state_pool = null;
         }
 
-        if (ctxt.attrInfos != null)
+        if (ctxt.attr_infos != null)
         {
             /* Just a paranoid call to the cleanup. */
-            if (ctxt.nbAttrInfos != 0)
+            if (ctxt.nb_attr_infos != 0)
             {
                 clearAttrInfos(ctxt);
             }
         }
-        if (ctxt.elemInfos != null)
+        if (ctxt.elem_infos != null)
         {
-            for (int i = 0; i < ctxt.sizeElemInfos; i++)
+            for (int i = 0; i < ctxt.size_elem_infos; i++)
             {
-                Xsd10NodeInfo ei = ctxt.elemInfos[i];
+                Xsd10NodeInfo ei = ctxt.elem_infos[i];
                 if (ei == null)
                 {
                     break;
@@ -6096,9 +6096,9 @@ public final class Xsd10Valid
                 clearElemInfo(ctxt, ei);
             }
         }
-        if (ctxt.nodeQNames != null)
+        if (ctxt.node_q_names != null)
         {
-            itemListFree(ctxt.nodeQNames);
+            itemListFree(ctxt.node_q_names);
         }
         if (ctxt.dict != null)
         {
@@ -6121,27 +6121,27 @@ public final class Xsd10Valid
         int ret = 0;
         Xsd10NodeInfo ielem = null;
         XmlNode node;
-        XmlNode valRoot;
-        String nsName;
+        XmlNode val_root;
+        String ns_name;
 
         /* DOC VAL TODO: Move this to the start function. */
-        if (vctxt.validationRoot != null)
+        if (vctxt.validation_root != null)
         {
-            valRoot = vctxt.validationRoot;
+            val_root = vctxt.validation_root;
         }
         else
         {
-            valRoot = domRootElement(vctxt.doc);
+            val_root = domRootElement(vctxt.doc);
         }
-        if (valRoot == null)
+        if (val_root == null)
         {
             /* VAL TODO: Error code? */
             verror(vctxt, 1, null, "The document has no document element");
             return 1;
         }
         vctxt.depth = -1;
-        vctxt.validationRoot = valRoot;
-        node = valRoot;
+        vctxt.validation_root = val_root;
+        node = val_root;
         /* 0: loop body, 1: leave_node, 2: next_sibling (the C gotos) */
         int state = 0;
         while (node != null)
@@ -6149,7 +6149,7 @@ public final class Xsd10Valid
             if (state == 0)
             {
                 state = 1;
-                if ((vctxt.skipDepth != -1) && (vctxt.depth >= vctxt.skipDepth))
+                if ((vctxt.skip_depth != -1) && (vctxt.depth >= vctxt.skip_depth))
                 {
                     state = 2;
                 }
@@ -6165,11 +6165,11 @@ public final class Xsd10Valid
                     }
                     ielem = vctxt.inode;
                     ielem.node = node;
-                    ielem.nodeLine = nodeLine(node);
-                    ielem.localName = nodeName(node);
+                    ielem.node_line = nodeLine(node);
+                    ielem.local_name = nodeName(node);
                     if (nodeNs(node) != null)
                     {
-                        ielem.nsName = nodeNsUri(node);
+                        ielem.ns_name = nodeNsUri(node);
                     }
                     ielem.flags |= XML_XSD10_SCHEMA_ELEM_INFO_EMPTY;
                     /*
@@ -6177,7 +6177,7 @@ public final class Xsd10Valid
                     * DOC VAL TODO: We do not register namespace declaration
                     * attributes yet.
                     */
-                    vctxt.nbAttrInfos = 0;
+                    vctxt.nb_attr_infos = 0;
                     if (nodeFirstAttr(node) != null)
                     {
                         attr = nodeFirstAttr(node);
@@ -6187,11 +6187,11 @@ public final class Xsd10Valid
 
                             if (nodeNs(attrNode(attr)) != null)
                             {
-                                nsName = nodeNsUri(attrNode(attr));
+                                ns_name = nodeNsUri(attrNode(attr));
                             }
                             else
                             {
-                                nsName = null;
+                                ns_name = null;
                             }
                             content = treeNodeGetContent(attrNode(attr));
                             ret = validatorPushAttribute(vctxt,
@@ -6200,8 +6200,8 @@ public final class Xsd10Valid
                                 * Note that we give it the line number of the
                                 * parent element.
                                 */
-                                ielem.nodeLine,
-                                attrName(attr), nsName, 0,
+                                ielem.node_line,
+                                attrName(attr), ns_name, 0,
                                 content, 1);
                             if (ret == -1)
                             {
@@ -6228,7 +6228,7 @@ public final class Xsd10Valid
                         */
                         // goto leave_node
                     }
-                    else if (!((vctxt.skipDepth != -1) && (vctxt.depth >= vctxt.skipDepth)))
+                    else if (!((vctxt.skip_depth != -1) && (vctxt.depth >= vctxt.skip_depth)))
                     {
                         state = 0;
                     }
@@ -6309,7 +6309,7 @@ public final class Xsd10Valid
                             return -1;
                         }
                     }
-                    if (node == valRoot)
+                    if (node == val_root)
                     {
                         return ret;
                     }
@@ -6343,9 +6343,9 @@ public final class Xsd10Valid
         vctxt.err = 0;
         vctxt.nberrors = 0;
         vctxt.depth = -1;
-        vctxt.skipDepth = -1;
-        vctxt.hasKeyrefs = 0;
-        vctxt.createIDCNodeTables = 0;
+        vctxt.skip_depth = -1;
+        vctxt.has_keyrefs = 0;
+        vctxt.create_idc_node_tables = 0;
         /*
         * The ID table of the instance (replaces libxml2 doc->ids).
         */
@@ -6365,7 +6365,7 @@ public final class Xsd10Valid
         {
             Xsd10ParserCtxt pctxt;
 
-            vctxt.xsiAssemble = 1;
+            vctxt.xsi_assemble = 1;
             /*
             * If not schema was given then we will create a schema
             * dynamically using XSI schema locations.
@@ -6377,7 +6377,7 @@ public final class Xsd10Valid
                 return -1;
             }
             pctxt = vctxt.pctxt;
-            pctxt.xsiAssemble = 1;
+            pctxt.xsi_assemble = 1;
             /*
             * Create the schema.
             */
@@ -6394,17 +6394,17 @@ public final class Xsd10Valid
             {
                 return -1;
             }
-            pctxt.constructor.mainSchema = vctxt.schema;
+            pctxt.constructor.main_schema = vctxt.schema;
             /*
             * Take ownership of the constructor to be able to free it.
             */
-            pctxt.ownsConstructor = 1;
+            pctxt.owns_constructor = 1;
         }
         /*
         * Augment the IDC definitions for the main schema and all imported ones
         * NOTE: main schema if the first in the imported list
         */
-        hashScan(vctxt.schema.schemasImports, Xsd10Valid::augmentImportedIdc, vctxt);
+        hashScan(vctxt.schema.schemas_imports, Xsd10Valid::augmentImportedIdc, vctxt);
 
         return 0;
     }
@@ -6413,7 +6413,7 @@ public final class Xsd10Valid
     /** Port of xmlSchemaPostRun. */
     static void postRun(Xsd10ValidCtxt vctxt)
     {
-        if (vctxt.xsiAssemble != 0)
+        if (vctxt.xsi_assemble != 0)
         {
             if (vctxt.schema != null)
             {
@@ -6480,7 +6480,7 @@ public final class Xsd10Valid
 
         ctxt.doc = nodeDom(elem);
         ctxt.node = elem;
-        ctxt.validationRoot = elem;
+        ctxt.validation_root = elem;
         return vStart(ctxt);
     }
 
@@ -6509,7 +6509,7 @@ public final class Xsd10Valid
                 "The document has no document element", null, null);
             return ctxt.err;
         }
-        ctxt.validationRoot = ctxt.node;
+        ctxt.validation_root = ctxt.node;
         return vStart(ctxt);
     }
 }

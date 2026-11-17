@@ -69,10 +69,10 @@ final class AttrSet
     static final int RESOLVING = 1;
     static final int RESOLVED = 2;
 
-    AttrSet nextInOrder;    // The sets of a stylesheet in declaration order.
+    AttrSet next_in_order;    // The sets of a stylesheet in declaration order.
     String name;
     String ns;
     int state;
     AttrElem attrs;
-    UseAttrSet useAttrSets;
+    UseAttrSet use_attr_sets;
 }

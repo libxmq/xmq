@@ -190,22 +190,22 @@ public final class Xsd10Parse
 
     // XSD10_WXS_FIND_GLOBAL_ITEM
     private static Object findGlobalItem(Xsd10Schema schema, Function<Xsd10Schema, Xsd10Hash> slot,
-                                         String name, String nsName)
+                                         String name, String ns_name)
     {
         Object ret = null;
 
-        if (strEqual(nsName, schema.targetNamespace) != 0)
+        if (strEqual(ns_name, schema.target_namespace) != 0)
         {
             ret = hashLookup(slot.apply(schema), name);
             if (ret != null) return ret;
         }
-        if (hashSize(schema.schemasImports) > 1)
+        if (hashSize(schema.schemas_imports) > 1)
         {
             Xsd10Import imp;
-            if (nsName == null)
-                imp = as(hashLookup(schema.schemasImports, XML_XSD10_SCHEMAS_NO_NAMESPACE), Xsd10Import.class);
+            if (ns_name == null)
+                imp = as(hashLookup(schema.schemas_imports, XML_XSD10_SCHEMAS_NO_NAMESPACE), Xsd10Import.class);
             else
-                imp = as(hashLookup(schema.schemasImports, nsName), Xsd10Import.class);
+                imp = as(hashLookup(schema.schemas_imports, ns_name), Xsd10Import.class);
             if (imp == null)
                 return ret;
             if (imp.schema == null)
@@ -217,25 +217,25 @@ public final class Xsd10Parse
 
     // xml_xsd10_get_elem
     /** Port of xml_xsd10_get_elem. */
-    static Xsd10Element getElem(Xsd10Schema schema, String name, String nsName)
+    static Xsd10Element getElem(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.elemDecl, name, nsName), Xsd10Element.class);
+        return as(findGlobalItem(schema, s -> s.elem_decl, name, ns_name), Xsd10Element.class);
     }
 
     // xml_xsd10_get_type
     /** Port of xmlSchemaGetType. */
-    static Xsd10Type getType(Xsd10Schema schema, String name, String nsName)
+    static Xsd10Type getType(Xsd10Schema schema, String name, String ns_name)
     {
         Xsd10Type ret = null;
 
         if (name == null)
             return null;
         /* First try the built-in types. */
-        if ((nsName != null) && (strEqual(nsName, XML_XSD10_NS) != 0))
+        if ((ns_name != null) && (strEqual(ns_name, XML_XSD10_NS) != 0))
         {
-            ret = getPredefinedType(name, nsName);
+            ret = getPredefinedType(name, ns_name);
             if (ret != null)
                 return ret;
             /*
@@ -246,66 +246,66 @@ public final class Xsd10Parse
         }
         if (schema != null)
         {
-            ret = as(findGlobalItem(schema, s -> s.typeDecl, name, nsName), Xsd10Type.class);
+            ret = as(findGlobalItem(schema, s -> s.type_decl, name, ns_name), Xsd10Type.class);
         }
         return ret;
     }
 
     // xml_xsd10_get_attribute_decl
     /** Port of xmlSchemaGetAttributeDecl. */
-    static Xsd10Attribute getAttributeDecl(Xsd10Schema schema, String name, String nsName)
+    static Xsd10Attribute getAttributeDecl(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.attrDecl, name, nsName), Xsd10Attribute.class);
+        return as(findGlobalItem(schema, s -> s.attr_decl, name, ns_name), Xsd10Attribute.class);
     }
 
     // xml_xsd10_get_attribute_group
     /** Port of xmlSchemaGetAttributeGroup. */
-    static Xsd10AttributeGroup getAttributeGroup(Xsd10Schema schema, String name, String nsName)
+    static Xsd10AttributeGroup getAttributeGroup(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.attrgrpDecl, name, nsName), Xsd10AttributeGroup.class);
+        return as(findGlobalItem(schema, s -> s.attrgrp_decl, name, ns_name), Xsd10AttributeGroup.class);
     }
 
     // xml_xsd10_get_group
     /** Port of xmlSchemaGetGroup. */
-    static Xsd10ModelGroupDef getGroup(Xsd10Schema schema, String name, String nsName)
+    static Xsd10ModelGroupDef getGroup(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.groupDecl, name, nsName), Xsd10ModelGroupDef.class);
+        return as(findGlobalItem(schema, s -> s.group_decl, name, ns_name), Xsd10ModelGroupDef.class);
     }
 
     // xml_xsd10_get_notation
     /** Port of xmlSchemaGetNotation. */
-    static Xsd10Notation getNotation(Xsd10Schema schema, String name, String nsName)
+    static Xsd10Notation getNotation(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.notaDecl, name, nsName), Xsd10Notation.class);
+        return as(findGlobalItem(schema, s -> s.nota_decl, name, ns_name), Xsd10Notation.class);
     }
 
     // xml_xsd10_get_idc
     /** Port of xmlSchemaGetIDC. */
-    static Xsd10IDC getIdc(Xsd10Schema schema, String name, String nsName)
+    static Xsd10IDC getIdc(Xsd10Schema schema, String name, String ns_name)
     {
         if ((name == null) || (schema == null))
             return null;
-        return as(findGlobalItem(schema, s -> s.idcDef, name, nsName), Xsd10IDC.class);
+        return as(findGlobalItem(schema, s -> s.idc_def, name, ns_name), Xsd10IDC.class);
     }
 
     // xml_xsd10_get_named_component
     /** Port of xmlSchemaGetNamedComponent. */
-    static Xsd10BasicItem getNamedComponent(Xsd10Schema schema, int itemType, String name, String targetNs)
+    static Xsd10BasicItem getNamedComponent(Xsd10Schema schema, int item_type, String name, String target_ns)
     {
-        switch (itemType)
+        switch (item_type)
         {
         case XML_XSD10_SCHEMA_TYPE_GROUP:
-            return getGroup(schema, name, targetNs);
+            return getGroup(schema, name, target_ns);
         case XML_XSD10_SCHEMA_TYPE_ELEMENT:
-            return getElem(schema, name, targetNs);
+            return getElem(schema, name, target_ns);
         default:
             /* TODO */
             return null;
@@ -340,19 +340,19 @@ public final class Xsd10Parse
 
     // xml_xsd10_find_redef_comp_in_graph
     /** Port of xmlSchemaFindRedefCompInGraph. */
-    static Xsd10BasicItem findRedefCompInGraph(Xsd10Bucket bucket, int type, String name, String nsName)
+    static Xsd10BasicItem findRedefCompInGraph(Xsd10Bucket bucket, int type, String name, String ns_name)
     {
         Xsd10BasicItem ret;
         int i;
 
         if ((bucket == null) || (name == null))
             return null;
-        if ((bucket.globals != null) && (bucket.globals.nbItems != 0))
+        if ((bucket.globals != null) && (bucket.globals.nb_items != 0))
         {
             /*
             * Search in global components.
             */
-            for (i = 0; i < bucket.globals.nbItems; i++)
+            for (i = 0; i < bucket.globals.nb_items; i++)
             {
                 ret = as(bucket.globals.items[i], Xsd10BasicItem.class);
                 if ((ret != null) && (ret.type == type))
@@ -363,7 +363,7 @@ public final class Xsd10Parse
                     case XML_XSD10_SCHEMA_TYPE_SIMPLE:
                         if ((ret instanceof Xsd10Type t) &&
                             Objects.equals(t.name, name) &&
-                            Objects.equals(t.targetNamespace, nsName))
+                            Objects.equals(t.target_namespace, ns_name))
                         {
                             return ret;
                         }
@@ -371,7 +371,7 @@ public final class Xsd10Parse
                     case XML_XSD10_SCHEMA_TYPE_GROUP:
                         if ((ret instanceof Xsd10ModelGroupDef g) &&
                             Objects.equals(g.name, name) &&
-                            Objects.equals(g.targetNamespace, nsName))
+                            Objects.equals(g.target_namespace, ns_name))
                         {
                             return ret;
                         }
@@ -379,7 +379,7 @@ public final class Xsd10Parse
                     case XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP:
                         if ((ret instanceof Xsd10AttributeGroup ag) &&
                             Objects.equals(ag.name, name) &&
-                            Objects.equals(ag.targetNamespace, nsName))
+                            Objects.equals(ag.target_namespace, ns_name))
                         {
                             return ret;
                         }
@@ -409,7 +409,7 @@ public final class Xsd10Parse
                 if ((rel.bucket != null) &&
                     ((rel.bucket.flags & XML_XSD10_SCHEMA_BUCKET_MARKED) == 0))
                 {
-                    ret = findRedefCompInGraph(rel.bucket, type, name, nsName);
+                    ret = findRedefCompInGraph(rel.bucket, type, name, ns_name);
                     if (ret != null)
                         return ret;
                 }
@@ -422,7 +422,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_notation
     /** Port of xmlSchemaAddNotation. */
-    static Xsd10Notation addNotation(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String nsName, XmlNode node)
+    static Xsd10Notation addNotation(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String ns_name, XmlNode node)
     {
         Xsd10Notation ret;
 
@@ -432,7 +432,7 @@ public final class Xsd10Parse
         ret = new Xsd10Notation();
         ret.type = XML_XSD10_SCHEMA_TYPE_NOTATION;
         ret.name = name;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
         /* TODO: do we need the node to be set?
         * ret->node = node;*/
         ret = wxsAddGlobal(ctxt, ret);
@@ -441,7 +441,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_attribute
     /** Port of xmlSchemaAddAttribute. */
-    static Xsd10Attribute addAttribute(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String nsName, XmlNode node, int topLevel)
+    static Xsd10Attribute addAttribute(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String ns_name, XmlNode node, int top_level)
     {
         Xsd10Attribute ret;
 
@@ -452,9 +452,9 @@ public final class Xsd10Parse
         ret.type = XML_XSD10_SCHEMA_TYPE_ATTRIBUTE;
         ret.node = node;
         ret.name = name;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
 
-        if (topLevel != 0)
+        if (top_level != 0)
             ret = wxsAddGlobal(ctxt, ret);
         else
             ret = wxsAddLocal(ctxt, ret);
@@ -481,27 +481,27 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_redef
     /** Port of xmlSchemaAddRedef. */
-    static Xsd10Redef addRedef(Xsd10ParserCtxt pctxt, Xsd10Bucket targetBucket, Object item, String refName, String refTargetNs)
+    static Xsd10Redef addRedef(Xsd10ParserCtxt pctxt, Xsd10Bucket target_bucket, Object item, String ref_name, String ref_target_ns)
     {
         Xsd10Redef ret;
 
         ret = new Xsd10Redef();
         ret.item = (Xsd10BasicItem) item;
-        ret.targetBucket = targetBucket;
-        ret.refName = refName;
-        ret.refTargetNs = refTargetNs;
+        ret.target_bucket = target_bucket;
+        ret.ref_name = ref_name;
+        ret.ref_target_ns = ref_target_ns;
         if (wxsConstructor(pctxt).redefs == null)
             wxsConstructor(pctxt).redefs = ret;
         else
-            wxsConstructor(pctxt).lastRedef.next = ret;
-        wxsConstructor(pctxt).lastRedef = ret;
+            wxsConstructor(pctxt).last_redef.next = ret;
+        wxsConstructor(pctxt).last_redef = ret;
 
         return ret;
     }
 
     // xml_xsd10_add_attribute_group_definition
     /** Port of xmlSchemaAddAttributeGroupDefinition. */
-    static Xsd10AttributeGroup addAttributeGroupDefinition(Xsd10ParserCtxt pctxt, Xsd10Schema schema, String name, String nsName, XmlNode node)
+    static Xsd10AttributeGroup addAttributeGroupDefinition(Xsd10ParserCtxt pctxt, Xsd10Schema schema, String name, String ns_name, XmlNode node)
     {
         Xsd10AttributeGroup ret;
 
@@ -511,17 +511,17 @@ public final class Xsd10Parse
         ret = new Xsd10AttributeGroup();
         ret.type = XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP;
         ret.name = name;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
         ret.node = node;
 
         /* TODO: Remove the flag. */
         ret.flags |= XML_XSD10_SCHEMAS_ATTRGROUP_GLOBAL;
-        if (pctxt.isRedefine != 0)
+        if (pctxt.is_redefine != 0)
         {
-            pctxt.redef = addRedef(pctxt, pctxt.redefined, ret, name, nsName);
+            pctxt.redef = addRedef(pctxt, pctxt.redefined, ret, name, ns_name);
             if (pctxt.redef == null)
                 return null;
-            pctxt.redefCounter = 0;
+            pctxt.redef_counter = 0;
         }
         ret = wxsAddGlobal(pctxt, ret);
         wxsAddPending(pctxt, ret);
@@ -530,7 +530,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_element
     /** Port of xmlSchemaAddElement. */
-    static Xsd10Element addElement(Xsd10ParserCtxt ctxt, String name, String nsName, XmlNode node, int topLevel)
+    static Xsd10Element addElement(Xsd10ParserCtxt ctxt, String name, String ns_name, XmlNode node, int top_level)
     {
         Xsd10Element ret;
 
@@ -540,10 +540,10 @@ public final class Xsd10Parse
         ret = new Xsd10Element();
         ret.type = XML_XSD10_SCHEMA_TYPE_ELEMENT;
         ret.name = name;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
         ret.node = node;
 
-        if (topLevel != 0)
+        if (top_level != 0)
             ret = wxsAddGlobal(ctxt, ret);
         else
             ret = wxsAddLocal(ctxt, ret);
@@ -553,7 +553,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_type
     /** Port of xmlSchemaAddType. */
-    static Xsd10Type addType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, int type, String name, String nsName, XmlNode node, int topLevel)
+    static Xsd10Type addType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, int type, String name, String ns_name, XmlNode node, int top_level)
     {
         Xsd10Type ret;
 
@@ -563,16 +563,16 @@ public final class Xsd10Parse
         ret = new Xsd10Type();
         ret.type = type;
         ret.name = name;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
         ret.node = node;
-        if (topLevel != 0)
+        if (top_level != 0)
         {
-            if (ctxt.isRedefine != 0)
+            if (ctxt.is_redefine != 0)
             {
-                ctxt.redef = addRedef(ctxt, ctxt.redefined, ret, name, nsName);
+                ctxt.redef = addRedef(ctxt, ctxt.redefined, ret, name, ns_name);
                 if (ctxt.redef == null)
                     return null;
-                ctxt.redefCounter = 0;
+                ctxt.redef_counter = 0;
             }
             ret = wxsAddGlobal(ctxt, ret);
         }
@@ -584,17 +584,17 @@ public final class Xsd10Parse
 
     // xml_xsd10_new_q_name_ref
     /** Port of xmlSchemaNewQNameRef. */
-    static Xsd10QNameRef newQNameRef(Xsd10ParserCtxt pctxt, int refType, String refName, String refNs)
+    static Xsd10QNameRef newQNameRef(Xsd10ParserCtxt pctxt, int ref_type, String ref_name, String ref_ns)
     {
         Xsd10QNameRef ret;
 
         ret = new Xsd10QNameRef();
         ret.node = null;
         ret.type = XML_XSD10_SCHEMA_EXTRA_QNAMEREF;
-        ret.name = refName;
-        ret.targetNamespace = refNs;
+        ret.name = ref_name;
+        ret.target_namespace = ref_ns;
         ret.item = null;
-        ret.itemType = refType;
+        ret.item_type = ref_type;
         /*
         * Store the reference item in the schema.
         */
@@ -645,8 +645,8 @@ public final class Xsd10Parse
         ret.type = XML_XSD10_SCHEMA_TYPE_PARTICLE;
         ret.annot = null;
         ret.node = node;
-        ret.minOccurs = min;
-        ret.maxOccurs = max;
+        ret.min_occurs = min;
+        ret.max_occurs = max;
         ret.next = null;
         ret.children = null;
 
@@ -662,7 +662,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_model_group_definition
     /** Port of xmlSchemaAddModelGroupDefinition. */
-    static Xsd10ModelGroupDef addModelGroupDefinition(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String nsName, XmlNode node)
+    static Xsd10ModelGroupDef addModelGroupDefinition(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String ns_name, XmlNode node)
     {
         Xsd10ModelGroupDef ret;
 
@@ -673,14 +673,14 @@ public final class Xsd10Parse
         ret.name = name;
         ret.type = XML_XSD10_SCHEMA_TYPE_GROUP;
         ret.node = node;
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
 
-        if (ctxt.isRedefine != 0)
+        if (ctxt.is_redefine != 0)
         {
-            ctxt.redef = addRedef(ctxt, ctxt.redefined, ret, name, nsName);
+            ctxt.redef = addRedef(ctxt, ctxt.redefined, ret, name, ns_name);
             if (ctxt.redef == null)
                 return null;
-            ctxt.redefCounter = 0;
+            ctxt.redef_counter = 0;
         }
         ret = wxsAddGlobal(ctxt, ret);
         wxsAddPending(ctxt, ret);
@@ -699,7 +699,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_idc
     /** Port of xmlSchemaAddIDC. */
-    static Xsd10IDC addIdc(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String nsName, int category, XmlNode node)
+    static Xsd10IDC addIdc(Xsd10ParserCtxt ctxt, Xsd10Schema schema, String name, String ns_name, int category, XmlNode node)
     {
         Xsd10IDC ret;
 
@@ -708,7 +708,7 @@ public final class Xsd10Parse
 
         ret = new Xsd10IDC();
         /* The target namespace of the parent element declaration. */
-        ret.targetNamespace = nsName;
+        ret.target_namespace = ns_name;
         ret.name = name;
         ret.type = category;
         ret.node = node;
@@ -747,7 +747,7 @@ public final class Xsd10Parse
         /* Init subst group hash. */
         if (wxsSubstGroups(pctxt) == null)
         {
-            wxsConstructor(pctxt).substGroups = hashCreateDict(10, pctxt.dict);
+            wxsConstructor(pctxt).subst_groups = hashCreateDict(10, pctxt.dict);
             if (wxsSubstGroups(pctxt) == null)
                 return null;
         }
@@ -762,7 +762,7 @@ public final class Xsd10Parse
             return null;
         }
         /* Add subst group to hash. */
-        if (hashAddEntry2(wxsSubstGroups(pctxt), head.name, head.targetNamespace, ret) != 0)
+        if (hashAddEntry2(wxsSubstGroups(pctxt), head.name, head.target_namespace, ret) != 0)
         {
             perrorInt(pctxt, "xmlSchemaSubstGroupAdd",
                 "failed to add a new substitution container");
@@ -778,24 +778,24 @@ public final class Xsd10Parse
     {
         if (wxsSubstGroups(pctxt) == null)
             return null;
-        return as(hashLookup2(wxsSubstGroups(pctxt), head.name, head.targetNamespace), Xsd10SubstGroup.class);
+        return as(hashLookup2(wxsSubstGroups(pctxt), head.name, head.target_namespace), Xsd10SubstGroup.class);
     }
 
     // xml_xsd10_add_element_substitution_member
     /** Port of xmlSchemaAddElementSubstitutionMember. */
     static int addElementSubstitutionMember(Xsd10ParserCtxt pctxt, Xsd10Element head, Xsd10Element member)
     {
-        Xsd10SubstGroup substGroup;
+        Xsd10SubstGroup subst_group;
 
         if ((pctxt == null) || (head == null) || (member == null))
             return -1;
 
-        substGroup = substGroupGet(pctxt, head);
-        if (substGroup == null)
-            substGroup = substGroupAdd(pctxt, head);
-        if (substGroup == null)
+        subst_group = substGroupGet(pctxt, head);
+        if (subst_group == null)
+            subst_group = substGroupAdd(pctxt, head);
+        if (subst_group == null)
             return -1;
-        if (itemListAdd(substGroup.members, member) == -1)
+        if (itemListAdd(subst_group.members, member) == -1)
             return -1;
         return 0;
     }
@@ -808,7 +808,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_node_q_name_value
     /** Port of xmlSchemaPValAttrNodeQNameValue. Arrays: {@code uri} is C {@code const char **}; {@code local} is C {@code const char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrNodeQNameValue(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem ownerItem, XmlNode attr, String value, String[] uri, String[] local)
+    static int pValAttrNodeQNameValue(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem owner_item, XmlNode attr, String value, String[] uri, String[] local)
     {
         String pref;
         XmlNs ns;
@@ -822,7 +822,7 @@ public final class Xsd10Parse
         {
             pSimpleTypeErr(ctxt,
                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
-                ownerItem, attr,
+                owner_item, attr,
                 getBuiltInType(XML_XSD10_SCHEMAS_QNAME),
                 null, value, null, null, null);
             local[0] = value;
@@ -844,7 +844,7 @@ public final class Xsd10Parse
                 * This one takes care of included schemas with no
                 * target namespace.
                 */
-                uri[0] = ctxt.targetNamespace;
+                uri[0] = ctxt.target_namespace;
             }
             local[0] = dictLookup(ctxt.dict, value, -1);
             return 0;
@@ -860,7 +860,7 @@ public final class Xsd10Parse
         {
             pSimpleTypeErr(ctxt,
                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
-                ownerItem, attr,
+                owner_item, attr,
                 getBuiltInType(XML_XSD10_SCHEMAS_QNAME), null, value,
                 "The value '%s' of simple type 'xs:QName' has no " +
                 "corresponding namespace declaration in scope", value, null);
@@ -875,28 +875,28 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_node_q_name
     /** Port of xmlSchemaPValAttrNodeQName. Arrays: {@code uri} is C {@code const char **}; {@code local} is C {@code const char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrNodeQName(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem ownerItem, XmlNode attr, String[] uri, String[] local)
+    static int pValAttrNodeQName(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem owner_item, XmlNode attr, String[] uri, String[] local)
     {
         String value;
 
         value = getNodeContent(ctxt, attr);
-        return pValAttrNodeQNameValue(ctxt, schema, ownerItem, attr, value, uri, local);
+        return pValAttrNodeQNameValue(ctxt, schema, owner_item, attr, value, uri, local);
     }
 
     // xml_xsd10_p_val_attr_q_name
     /** Port of xmlSchemaPValAttrQName. Arrays: {@code uri} is C {@code const char **}; {@code local} is C {@code const char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrQName(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem ownerItem, XmlNode ownerElem, String name, String[] uri, String[] local)
+    static int pValAttrQName(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10BasicItem owner_item, XmlNode owner_elem, String name, String[] uri, String[] local)
     {
         XmlNode attr;
 
-        attr = getPropNode(ownerElem, name);
+        attr = getPropNode(owner_elem, name);
         if (attr == null)
         {
             local[0] = null;
             uri[0] = null;
             return 0;
         }
-        return pValAttrNodeQName(ctxt, schema, ownerItem, attr, uri, local);
+        return pValAttrNodeQName(ctxt, schema, owner_item, attr, uri, local);
     }
 
     // xml_xsd10_p_val_attr_node_id
@@ -973,11 +973,11 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_id
     /** Port of xmlSchemaPValAttrID. */
-    static int pValAttrId(Xsd10ParserCtxt ctxt, XmlNode ownerElem, String name)
+    static int pValAttrId(Xsd10ParserCtxt ctxt, XmlNode owner_elem, String name)
     {
         XmlNode attr;
 
-        attr = getPropNode(ownerElem, name);
+        attr = getPropNode(owner_elem, name);
         if (attr == null)
             return 0;
         return pValAttrNodeId(ctxt, attr);
@@ -1121,7 +1121,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_get_bool_node_value
     /** Port of xmlSchemaPGetBoolNodeValue. */
-    static int pGetBoolNodeValue(Xsd10ParserCtxt ctxt, Xsd10BasicItem ownerItem, XmlNode node)
+    static int pGetBoolNodeValue(Xsd10ParserCtxt ctxt, Xsd10BasicItem owner_item, XmlNode node)
     {
         String value;
         int res = 0;
@@ -1144,7 +1144,7 @@ public final class Xsd10Parse
         {
             pSimpleTypeErr(ctxt,
                 XML_XSD10_SCHEMAP_INVALID_BOOLEAN,
-                ownerItem, node,
+                owner_item, node,
                 getBuiltInType(XML_XSD10_SCHEMAS_BOOLEAN),
                 null, value,
                 null, null, null);
@@ -1194,7 +1194,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_node_value
     /** Port of xmlSchemaPValAttrNodeValue. */
-    static int pValAttrNodeValue(Xsd10ParserCtxt pctxt, Xsd10BasicItem ownerItem, XmlNode attr, String value, Xsd10Type type)
+    static int pValAttrNodeValue(Xsd10ParserCtxt pctxt, Xsd10BasicItem owner_item, XmlNode attr, String value, Xsd10Type type)
     {
         int ret = 0;
 
@@ -1210,7 +1210,7 @@ public final class Xsd10Parse
                 "the given type is not a built-in type");
             return -1;
         }
-        switch (type.builtInType)
+        switch (type.built_in_type)
         {
         case XML_XSD10_SCHEMAS_NCNAME:
         case XML_XSD10_SCHEMAS_QNAME:
@@ -1241,7 +1241,7 @@ public final class Xsd10Parse
             else
                 ret = XML_XSD10_SCHEMAV_CVC_DATATYPE_VALID_1_2_1;
             pSimpleTypeErr(pctxt,
-                ret, ownerItem, attr,
+                ret, owner_item, attr,
                 type, null, value, null, null, null);
         }
         return ret;
@@ -1249,7 +1249,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_node
     /** Port of xmlSchemaPValAttrNode. Arrays: {@code value} is C {@code const char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrNode(Xsd10ParserCtxt ctxt, Xsd10BasicItem ownerItem, XmlNode attr, Xsd10Type type, String[] value)
+    static int pValAttrNode(Xsd10ParserCtxt ctxt, Xsd10BasicItem owner_item, XmlNode attr, Xsd10Type type, String[] value)
     {
         String val;
 
@@ -1260,12 +1260,12 @@ public final class Xsd10Parse
         if (value != null)
             value[0] = val;
 
-        return pValAttrNodeValue(ctxt, ownerItem, attr, val, type);
+        return pValAttrNodeValue(ctxt, owner_item, attr, val, type);
     }
 
     // xml_xsd10_p_val_attr
     /** Port of xmlSchemaPValAttr. Arrays: {@code value} is C {@code const char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttr(Xsd10ParserCtxt ctxt, Xsd10BasicItem ownerItem, XmlNode ownerElem, String name, Xsd10Type type, String[] value)
+    static int pValAttr(Xsd10ParserCtxt ctxt, Xsd10BasicItem owner_item, XmlNode owner_elem, String name, Xsd10Type type, String[] value)
     {
         XmlNode attr;
 
@@ -1279,31 +1279,31 @@ public final class Xsd10Parse
         {
             if (value != null)
                 value[0] = null;
-            pErr(ctxt, ownerElem,
+            pErr(ctxt, owner_elem,
                 XML_XSD10_SCHEMAP_INTERNAL,
                 "Internal error: xmlSchemaPValAttr, the given " +
                 "type '%s' is not a built-in type.\n",
                 type.name, null);
             return -1;
         }
-        attr = getPropNode(ownerElem, name);
+        attr = getPropNode(owner_elem, name);
         if (attr == null)
         {
             if (value != null)
                 value[0] = null;
             return 0;
         }
-        return pValAttrNode(ctxt, ownerItem, attr, type, value);
+        return pValAttrNode(ctxt, owner_item, attr, type, value);
     }
 
     // xml_xsd10_check_reference
     /** Port of xmlSchemaCheckReference. */
-    static int checkReference(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, XmlNode attr, String namespaceName)
+    static int checkReference(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, XmlNode attr, String namespace_name)
     {
         /* TODO: Pointer comparison instead? */
-        if (strEqual(pctxt.targetNamespace, namespaceName) != 0)
+        if (strEqual(pctxt.target_namespace, namespace_name) != 0)
             return 0;
-        if (strEqual(XML_XSD10_NS, namespaceName) != 0)
+        if (strEqual(XML_XSD10_NS, namespace_name) != 0)
             return 0;
         /*
         * Check if the referenced namespace was <import>ed.
@@ -1316,7 +1316,7 @@ public final class Xsd10Parse
             do
             {
                 if ((wxsIsBucketImpmain(rel.type) != 0) &&
-                    (strEqual(namespaceName, rel.importNamespace) != 0))
+                    (strEqual(namespace_name, rel.import_namespace) != 0))
                     return 0;
                 rel = rel.next;
             } while (rel != null);
@@ -1327,7 +1327,7 @@ public final class Xsd10Parse
         {
             XmlNode n = (attr != null) ? attr : node;
 
-            if (namespaceName == null)
+            if (namespace_name == null)
                 customErr(pctxt,
                     XML_XSD10_SCHEMAP_SRC_RESOLVE, n, null,
                     "References from this schema to components in no " +
@@ -1338,14 +1338,14 @@ public final class Xsd10Parse
                     XML_XSD10_SCHEMAP_SRC_RESOLVE, n, null,
                     "References from this schema to components in the " +
                     "namespace '%s' are not allowed, since not indicated by an " +
-                    "import statement", namespaceName, null);
+                    "import statement", namespace_name, null);
         }
         return XML_XSD10_SCHEMAP_SRC_RESOLVE;
     }
 
     // xml_xsd10_parse_local_attributes
-    /** Port of xmlSchemaParseLocalAttributes. Arrays: {@code child} is C {@code XMQNode **}; {@code list} is C {@code XmlXsd10ItemList **}; {@code hasRefs} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int parseLocalAttributes(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode[] child, Xsd10ItemList[] list, int parentType, int[] hasRefs)
+    /** Port of xmlSchemaParseLocalAttributes. Arrays: {@code child} is C {@code XMQNode **}; {@code list} is C {@code XmlXsd10ItemList **}; {@code has_refs} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
+    static int parseLocalAttributes(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode[] child, Xsd10ItemList[] list, int parent_type, int[] has_refs)
     {
         Object item;
 
@@ -1354,13 +1354,13 @@ public final class Xsd10Parse
         {
             if (isSchema(child[0], "attribute") != 0)
             {
-                item = parseLocalAttribute(ctxt, schema, child[0], list[0], parentType);
+                item = parseLocalAttribute(ctxt, schema, child[0], list[0], parent_type);
             }
             else
             {
                 item = parseAttributeGroupRef(ctxt, schema, child[0]);
-                if ((item != null) && (hasRefs != null))
-                    hasRefs[0] = 1;
+                if ((item != null) && (has_refs != null))
+                    has_refs[0] = 1;
             }
             if (item != null)
             {
@@ -1379,13 +1379,13 @@ public final class Xsd10Parse
         return 0;
     }
 
-    /** Runs xmlSchemaParseLocalAttributes on the attrUses (void *) field of a type. */
+    /** Runs xmlSchemaParseLocalAttributes on the attr_uses (void *) field of a type. */
     private static int parseLocalAttributesOfType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode[] child,
-                                                  Xsd10Type type, int parentType)
+                                                  Xsd10Type type, int parent_type)
     {
-        Xsd10ItemList[] l = { as(type.attrUses, Xsd10ItemList.class) };
-        int res = parseLocalAttributes(ctxt, schema, child, l, parentType, null);
-        type.attrUses = l[0];
+        Xsd10ItemList[] l = { as(type.attr_uses, Xsd10ItemList.class) };
+        int res = parseLocalAttributes(ctxt, schema, child, l, parent_type, null);
+        type.attr_uses = l[0];
         return res;
     }
 
@@ -1626,25 +1626,25 @@ public final class Xsd10Parse
     /** Port of xmlSchemaParseWildcardNs. */
     static int parseWildcardNs(Xsd10ParserCtxt ctxt, Xsd10Schema schema, Xsd10Wildcard wildc, XmlNode node)
     {
-        String pc, ns, dictnsItem;
+        String pc, ns, dictns_item;
         int ret = 0;
-        String nsItem;
-        Xsd10WildcardNs tmp, lastNs = null;
+        String ns_item;
+        Xsd10WildcardNs tmp, last_ns = null;
         XmlNode attr;
 
         pc = getProp(ctxt, node, "processContents");
         if ((pc == null)
             || (strEqual(pc, "strict") != 0))
         {
-            wildc.processContents = XML_XSD10_SCHEMAS_ANY_STRICT;
+            wildc.process_contents = XML_XSD10_SCHEMAS_ANY_STRICT;
         }
         else if (strEqual(pc, "skip") != 0)
         {
-            wildc.processContents = XML_XSD10_SCHEMAS_ANY_SKIP;
+            wildc.process_contents = XML_XSD10_SCHEMAS_ANY_SKIP;
         }
         else if (strEqual(pc, "lax") != 0)
         {
-            wildc.processContents = XML_XSD10_SCHEMAS_ANY_LAX;
+            wildc.process_contents = XML_XSD10_SCHEMAS_ANY_LAX;
         }
         else
         {
@@ -1653,7 +1653,7 @@ public final class Xsd10Parse
                 null, node,
                 null, "(strict | skip | lax)", pc,
                 null, null, null);
-            wildc.processContents = XML_XSD10_SCHEMAS_ANY_STRICT;
+            wildc.process_contents = XML_XSD10_SCHEMAS_ANY_STRICT;
             ret = XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE;
         }
         /*
@@ -1667,12 +1667,12 @@ public final class Xsd10Parse
             wildc.any = 1;
         else if (strEqual(ns, "##other") != 0)
         {
-            wildc.negNsSet = newWildcardNsConstraint(ctxt);
-            if (wildc.negNsSet == null)
+            wildc.neg_ns_set = newWildcardNsConstraint(ctxt);
+            if (wildc.neg_ns_set == null)
             {
                 return -1;
             }
-            wildc.negNsSet.value = ctxt.targetNamespace;
+            wildc.neg_ns_set.value = ctxt.target_namespace;
         }
         else
         {
@@ -1688,9 +1688,9 @@ public final class Xsd10Parse
                     end++;
                 if (end == cur)
                     break;
-                nsItem = ns.substring(cur, end);
-                if ((strEqual(nsItem, "##other") != 0) ||
-                    (strEqual(nsItem, "##any") != 0))
+                ns_item = ns.substring(cur, end);
+                if ((strEqual(ns_item, "##other") != 0) ||
+                    (strEqual(ns_item, "##any") != 0))
                 {
                     pSimpleTypeErr(ctxt,
                         XML_XSD10_SCHEMAP_WILDCARD_INVALID_NS_MEMBER,
@@ -1698,18 +1698,18 @@ public final class Xsd10Parse
                         null,
                         "((##any | ##other) | List of (xs:anyURI | " +
                         "(##targetNamespace | ##local)))",
-                        nsItem, null, null, null);
+                        ns_item, null, null, null);
                     ret = XML_XSD10_SCHEMAP_WILDCARD_INVALID_NS_MEMBER;
                 }
                 else
                 {
-                    if (strEqual(nsItem, "##targetNamespace") != 0)
+                    if (strEqual(ns_item, "##targetNamespace") != 0)
                     {
-                        dictnsItem = ctxt.targetNamespace;
+                        dictns_item = ctxt.target_namespace;
                     }
-                    else if (strEqual(nsItem, "##local") != 0)
+                    else if (strEqual(ns_item, "##local") != 0)
                     {
-                        dictnsItem = null;
+                        dictns_item = null;
                     }
                     else
                     {
@@ -1717,16 +1717,16 @@ public final class Xsd10Parse
                         * Validate the item (anyURI).
                         */
                         pValAttrNodeValue(ctxt, null, attr,
-                            nsItem, getBuiltInType(XML_XSD10_SCHEMAS_ANYURI));
-                        dictnsItem = dictLookup(ctxt.dict, nsItem, -1);
+                            ns_item, getBuiltInType(XML_XSD10_SCHEMAS_ANYURI));
+                        dictns_item = dictLookup(ctxt.dict, ns_item, -1);
                     }
                     /*
                     * Avoid duplicate namespaces.
                     */
-                    tmp = wildc.nsSet;
+                    tmp = wildc.ns_set;
                     while (tmp != null)
                     {
-                        if (Objects.equals(dictnsItem, tmp.value))
+                        if (Objects.equals(dictns_item, tmp.value))
                             break;
                         tmp = tmp.next;
                     }
@@ -1737,13 +1737,13 @@ public final class Xsd10Parse
                         {
                             return -1;
                         }
-                        tmp.value = dictnsItem;
+                        tmp.value = dictns_item;
                         tmp.next = null;
-                        if (wildc.nsSet == null)
-                            wildc.nsSet = tmp;
-                        else if (lastNs != null)
-                            lastNs.next = tmp;
-                        lastNs = tmp;
+                        if (wildc.ns_set == null)
+                            wildc.ns_set = tmp;
+                        else if (last_ns != null)
+                            last_ns.next = tmp;
+                        last_ns = tmp;
                     }
 
                 }
@@ -1755,11 +1755,11 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_check_particle_correct_2
     /** Port of xmlSchemaPCheckParticleCorrect_2. */
-    static int pCheckParticleCorrect2(Xsd10ParserCtxt ctxt, Xsd10Particle item, XmlNode node, int minOccurs, int maxOccurs)
+    static int pCheckParticleCorrect2(Xsd10ParserCtxt ctxt, Xsd10Particle item, XmlNode node, int min_occurs, int max_occurs)
     {
-        if ((maxOccurs == 0) && (minOccurs == 0))
+        if ((max_occurs == 0) && (min_occurs == 0))
             return 0;
-        if (maxOccurs != XML_XSD10_UNBOUNDED)
+        if (max_occurs != XML_XSD10_UNBOUNDED)
         {
             /*
             * TODO: Maybe we should better not create the particle,
@@ -1770,7 +1770,7 @@ public final class Xsd10Parse
             * 3.9.6 Schema Component Constraint: Particle Correct
             *
             */
-            if (maxOccurs < 1)
+            if (max_occurs < 1)
             {
                 /*
                 * 2.2 {max occurs} must be greater than or equal to 1.
@@ -1782,7 +1782,7 @@ public final class Xsd10Parse
                     "The value must be greater than or equal to 1");
                 return XML_XSD10_SCHEMAP_P_PROPS_CORRECT_2_2;
             }
-            else if (minOccurs > maxOccurs)
+            else if (min_occurs > max_occurs)
             {
                 /*
                 * 2.1 {min occurs} must not be greater than {max occurs}.
@@ -1838,7 +1838,7 @@ public final class Xsd10Parse
         }
         pValAttrId(ctxt, node, "id");
         /*
-        * minOccurs/maxOccurs.
+        * min_occurs/max_occurs.
         */
         max = getMaxOccurs(ctxt, node, 0, XML_XSD10_UNBOUNDED, 1,
             "(xs:nonNegativeInteger | unbounded)");
@@ -1869,7 +1869,7 @@ public final class Xsd10Parse
                 null, "(annotation?)");
         }
         /*
-        * No component if minOccurs==maxOccurs==0.
+        * No component if min_occurs==max_occurs==0.
         */
         if ((min == 0) && (max == 0))
         {
@@ -1905,7 +1905,7 @@ public final class Xsd10Parse
                 "Notation has no name\n", null, null);
             return null;
         }
-        ret = addNotation(ctxt, schema, name, ctxt.targetNamespace, node);
+        ret = addNotation(ctxt, schema, name, ctxt.target_namespace, node);
         if (ret == null)
             return null;
         pValAttrId(ctxt, node, "id");
@@ -1994,18 +1994,18 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_local_attribute
     /** Port of xmlSchemaParseLocalAttribute. */
-    static Xsd10BasicItem parseLocalAttribute(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, Xsd10ItemList uses, int parentType)
+    static Xsd10BasicItem parseLocalAttribute(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, Xsd10ItemList uses, int parent_type)
     {
-        String attrValue;
+        String attr_value;
         String[] name = { null };
         String ns = null;
         Xsd10AttributeUse use = null;
         XmlNode child;
         XmlNode attr;
-        String[] tmpNs = { null }, tmpName = { null };
-        String defValue = null;
-        int isRef = 0, occurs = XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL;
-        int nberrors, hasForm = 0, defValueType = 0;
+        String[] tmp_ns = { null }, tmp_name = { null };
+        String def_value = null;
+        int is_ref = 0, occurs = XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL;
+        int nberrors, has_form = 0, def_value_type = 0;
 
         /*
          * 3.2.3 Constraints on XML Representations of Attribute Declarations
@@ -2016,13 +2016,13 @@ public final class Xsd10Parse
         attr = getPropNode(node, "ref");
         if (attr != null)
         {
-            if (pValAttrNodeQName(pctxt, schema, null, attr, tmpNs, tmpName) != 0)
+            if (pValAttrNodeQName(pctxt, schema, null, attr, tmp_ns, tmp_name) != 0)
             {
                 return null;
             }
-            if (checkReference(pctxt, schema, node, attr, tmpNs[0]) != 0)
+            if (checkReference(pctxt, schema, node, attr, tmp_ns[0]) != 0)
                 return null;
-            isRef = 1;
+            is_ref = 1;
         }
         nberrors = pctxt.nberrors;
         /*
@@ -2031,70 +2031,70 @@ public final class Xsd10Parse
         attr = parseFirstAttr(node);
         while (attr != null)
         {
-            boolean attrNext = false;
+            boolean attr_next = false;
             if (nodeNsUri(attr) == null)
             {
-                if (isRef != 0)
+                if (is_ref != 0)
                 {
                     if (strEqual(nodeName(attr), "id") != 0)
                     {
                         pValAttrNodeId(pctxt, attr);
-                        attrNext = true;
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "ref") != 0)
                     {
-                        attrNext = true;
+                        attr_next = true;
                     }
                 }
                 else
                 {
                     if (strEqual(nodeName(attr), "name") != 0)
                     {
-                        attrNext = true;
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "id") != 0)
                     {
                         pValAttrNodeId(pctxt, attr);
-                        attrNext = true;
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "type") != 0)
                     {
-                        pValAttrNodeQName(pctxt, schema, null, attr, tmpNs, tmpName);
-                        attrNext = true;
+                        pValAttrNodeQName(pctxt, schema, null, attr, tmp_ns, tmp_name);
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "form") != 0)
                     {
                         /*
                         * Evaluate the target namespace
                         */
-                        hasForm = 1;
-                        attrValue = getNodeContent(pctxt, attr);
-                        if (strEqual(attrValue, "qualified") != 0)
+                        has_form = 1;
+                        attr_value = getNodeContent(pctxt, attr);
+                        if (strEqual(attr_value, "qualified") != 0)
                         {
-                            ns = pctxt.targetNamespace;
+                            ns = pctxt.target_namespace;
                         }
-                        else if (strEqual(attrValue, "unqualified") == 0)
+                        else if (strEqual(attr_value, "unqualified") == 0)
                         {
                             pSimpleTypeErr(pctxt,
                                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                                 null, attr,
                                 null, "(qualified | unqualified)",
-                                attrValue, null, null, null);
+                                attr_value, null, null, null);
                         }
-                        attrNext = true;
+                        attr_next = true;
                     }
                 }
-                if (!attrNext)
+                if (!attr_next)
                 {
                     if (strEqual(nodeName(attr), "use") != 0)
                     {
-                        attrValue = getNodeContent(pctxt, attr);
+                        attr_value = getNodeContent(pctxt, attr);
                         /* TODO: Maybe we need to normalize the value beforehand. */
-                        if (strEqual(attrValue, "optional") != 0)
+                        if (strEqual(attr_value, "optional") != 0)
                             occurs = XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL;
-                        else if (strEqual(attrValue, "prohibited") != 0)
+                        else if (strEqual(attr_value, "prohibited") != 0)
                             occurs = XML_XSD10_SCHEMAS_ATTR_USE_PROHIBITED;
-                        else if (strEqual(attrValue, "required") != 0)
+                        else if (strEqual(attr_value, "required") != 0)
                             occurs = XML_XSD10_SCHEMAS_ATTR_USE_REQUIRED;
                         else
                         {
@@ -2102,9 +2102,9 @@ public final class Xsd10Parse
                                 XML_XSD10_SCHEMAP_INVALID_ATTR_USE,
                                 null, attr,
                                 null, "(optional | prohibited | required)",
-                                attrValue, null, null, null);
+                                attr_value, null, null, null);
                         }
-                        attrNext = true;
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "default") != 0)
                     {
@@ -2112,7 +2112,7 @@ public final class Xsd10Parse
                         * 3.2.3 : 1
                         * default and fixed must not both be present.
                         */
-                        if (defValue != null)
+                        if (def_value != null)
                         {
                             pMutualExclAttrErr(pctxt,
                                 XML_XSD10_SCHEMAP_SRC_ATTRIBUTE_1,
@@ -2120,10 +2120,10 @@ public final class Xsd10Parse
                         }
                         else
                         {
-                            defValue = getNodeContent(pctxt, attr);
-                            defValueType = XSD10_WXS_ATTR_DEF_VAL_DEFAULT;
+                            def_value = getNodeContent(pctxt, attr);
+                            def_value_type = XSD10_WXS_ATTR_DEF_VAL_DEFAULT;
                         }
-                        attrNext = true;
+                        attr_next = true;
                     }
                     else if (strEqual(nodeName(attr), "fixed") != 0)
                     {
@@ -2131,7 +2131,7 @@ public final class Xsd10Parse
                         * 3.2.3 : 1
                         * default and fixed must not both be present.
                         */
-                        if (defValue != null)
+                        if (def_value != null)
                         {
                             pMutualExclAttrErr(pctxt,
                                 XML_XSD10_SCHEMAP_SRC_ATTRIBUTE_1,
@@ -2139,17 +2139,17 @@ public final class Xsd10Parse
                         }
                         else
                         {
-                            defValue = getNodeContent(pctxt, attr);
-                            defValueType = XSD10_WXS_ATTR_DEF_VAL_FIXED;
+                            def_value = getNodeContent(pctxt, attr);
+                            def_value_type = XSD10_WXS_ATTR_DEF_VAL_FIXED;
                         }
-                        attrNext = true;
+                        attr_next = true;
                     }
                 }
             }
             else if (strEqual(nodeNsUri(attr), XML_XSD10_NS) == 0)
-                attrNext = true;
+                attr_next = true;
 
-            if (!attrNext)
+            if (!attr_next)
                 pIllegalAttrErr(pctxt,
                     XML_XSD10_SCHEMAP_S4S_ATTR_NOT_ALLOWED, null, attr);
 
@@ -2161,7 +2161,7 @@ public final class Xsd10Parse
         * If default and use are both present, use must have
         * the actual value optional.
         */
-        if ((defValueType == XSD10_WXS_ATTR_DEF_VAL_DEFAULT) &&
+        if ((def_value_type == XSD10_WXS_ATTR_DEF_VAL_DEFAULT) &&
             (occurs != XML_XSD10_SCHEMAS_ATTR_USE_OPTIONAL))
         {
             pSimpleTypeErr(pctxt,
@@ -2177,13 +2177,13 @@ public final class Xsd10Parse
         */
         if (nberrors != pctxt.nberrors)
             return null;
-        if (isRef == 0)
+        if (is_ref == 0)
         {
-            Xsd10Attribute attrDecl;
+            Xsd10Attribute attr_decl;
 
             /* TODO: move XML_SCHEMAS_QUALIF_ATTR to the parser. */
-            if ((hasForm == 0) && ((schema.flags & XML_XSD10_SCHEMAS_QUALIF_ATTR) != 0))
-                ns = pctxt.targetNamespace;
+            if ((has_form == 0) && ((schema.flags & XML_XSD10_SCHEMAS_QUALIF_ATTR) != 0))
+                ns = pctxt.target_namespace;
             /*
             * 3.2.6 Schema Component Constraint: xsi: Not Allowed
             * TODO: Move this to the component layer.
@@ -2234,23 +2234,23 @@ public final class Xsd10Parse
                 /*
                 * Create the attribute declaration.
                 */
-                attrDecl = addAttribute(pctxt, schema, name[0], ns, node, 0);
-                if (attrDecl == null)
+                attr_decl = addAttribute(pctxt, schema, name[0], ns, node, 0);
+                if (attr_decl == null)
                     return null;
-                if (tmpName[0] != null)
+                if (tmp_name[0] != null)
                 {
-                    attrDecl.typeName = tmpName[0];
-                    attrDecl.typeNs = tmpNs[0];
+                    attr_decl.type_name = tmp_name[0];
+                    attr_decl.type_ns = tmp_ns[0];
                 }
-                use.attrDecl = attrDecl;
+                use.attr_decl = attr_decl;
                 /*
                 * Value constraint.
                 */
-                if (defValue != null)
+                if (def_value != null)
                 {
-                    attrDecl.defValue = defValue;
-                    if (defValueType == XSD10_WXS_ATTR_DEF_VAL_FIXED)
-                        attrDecl.flags |= XML_XSD10_SCHEMAS_ATTR_FIXED;
+                    attr_decl.def_value = def_value;
+                    if (def_value_type == XSD10_WXS_ATTR_DEF_VAL_FIXED)
+                        attr_decl.flags |= XML_XSD10_SCHEMAS_ATTR_FIXED;
                 }
             }
         }
@@ -2273,20 +2273,20 @@ public final class Xsd10Parse
             * Create a QName reference to the attribute declaration.
             */
             ref = newQNameRef(pctxt, XML_XSD10_SCHEMA_TYPE_ATTRIBUTE,
-                tmpName[0], tmpNs[0]);
+                tmp_name[0], tmp_ns[0]);
             if (ref == null)
                 return null;
             /*
             * Assign the reference. This will be substituted for the
             * referenced attribute declaration when the QName is resolved.
             */
-            use.attrDecl = ref;
+            use.attr_decl = ref;
             /*
             * Value constraint.
             */
-            if (defValue != null)
-                use.defValue = defValue;
-            if (defValueType == XSD10_WXS_ATTR_DEF_VAL_FIXED)
+            if (def_value != null)
+                use.def_value = def_value;
+            if (def_value_type == XSD10_WXS_ATTR_DEF_VAL_FIXED)
                 use.flags |= XML_XSD10_SCHEMA_ATTR_USE_FIXED;
         }
 
@@ -2314,7 +2314,7 @@ public final class Xsd10Parse
             /*
             * Check for pointlessness of attribute prohibitions.
             */
-            if (parentType == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP)
+            if (parent_type == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP)
             {
                 customWarning(pctxt,
                     XML_XSD10_SCHEMAP_WARN_ATTR_POINTLESS_PROH,
@@ -2324,7 +2324,7 @@ public final class Xsd10Parse
                     null, null, null);
                 return null;
             }
-            else if (parentType == XML_XSD10_SCHEMA_TYPE_EXTENSION)
+            else if (parent_type == XML_XSD10_SCHEMA_TYPE_EXTENSION)
             {
                 customWarning(pctxt,
                     XML_XSD10_SCHEMAP_WARN_ATTR_POINTLESS_PROH,
@@ -2334,10 +2334,10 @@ public final class Xsd10Parse
                     null, null, null);
                 return null;
             }
-            if (isRef == 0)
+            if (is_ref == 0)
             {
-                tmpName[0] = name[0];
-                tmpNs[0] = ns;
+                tmp_name[0] = name[0];
+                tmp_ns[0] = ns;
             }
             /*
             * Check for duplicate attribute prohibitions.
@@ -2346,13 +2346,13 @@ public final class Xsd10Parse
             {
                 int i;
 
-                for (i = 0; i < uses.nbItems; i++)
+                for (i = 0; i < uses.nb_items; i++)
                 {
                     Xsd10BasicItem u = as(uses.items[i], Xsd10BasicItem.class);
                     if ((u != null) && (u.type == XML_XSD10_SCHEMA_EXTRA_ATTR_USE_PROHIB) &&
                         (u instanceof Xsd10AttributeUseProhib p) &&
-                        Objects.equals(tmpName[0], p.name) &&
-                        Objects.equals(tmpNs[0], p.targetNamespace))
+                        Objects.equals(tmp_name[0], p.name) &&
+                        Objects.equals(tmp_ns[0], p.target_namespace))
                     {
                         String[] str = { null };
 
@@ -2360,7 +2360,7 @@ public final class Xsd10Parse
                             XML_XSD10_SCHEMAP_WARN_ATTR_POINTLESS_PROH,
                             node, null,
                             "Skipping duplicate attribute use prohibition '%s'",
-                            formatQName(str, tmpNs[0], tmpName[0]),
+                            formatQName(str, tmp_ns[0], tmp_name[0]),
                             null, null);
                         return null;
                     }
@@ -2373,9 +2373,9 @@ public final class Xsd10Parse
             if (prohib == null)
                 return null;
             prohib.node = node;
-            prohib.name = tmpName[0];
-            prohib.targetNamespace = tmpNs[0];
-            if (isRef != 0)
+            prohib.name = tmp_name[0];
+            prohib.target_namespace = tmp_ns[0];
+            if (is_ref != 0)
             {
                 /*
                 * We need at least to resolve to the attribute declaration.
@@ -2394,7 +2394,7 @@ public final class Xsd10Parse
                 use.annot = parseAnnotation(pctxt, child, 1);
                 child = parseNext(child);
             }
-            if (isRef != 0)
+            if (is_ref != 0)
             {
                 if (child != null)
                 {
@@ -2420,7 +2420,7 @@ public final class Xsd10Parse
                 if (isSchema(child, "simpleType") != 0)
                 {
                     Xsd10Attribute decl = wxsAttruseDecl(use);
-                    if ((decl != null) && (decl.typeName != null))
+                    if ((decl != null) && (decl.type_name != null))
                     {
                         /*
                         * 3.2.3 : 4
@@ -2452,7 +2452,7 @@ public final class Xsd10Parse
     /** Port of xmlSchemaParseGlobalAttribute. */
     static Xsd10Attribute parseGlobalAttribute(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node)
     {
-        String[] attrValue = { null };
+        String[] attr_value = { null };
         Xsd10Attribute ret;
         XmlNode child;
         XmlNode attr;
@@ -2477,7 +2477,7 @@ public final class Xsd10Parse
             return null;
         }
         if (pValAttrNode(pctxt, null, attr,
-            getBuiltInType(XML_XSD10_SCHEMAS_NCNAME), attrValue) != 0)
+            getBuiltInType(XML_XSD10_SCHEMAS_NCNAME), attr_value) != 0)
         {
             return null;
         }
@@ -2485,7 +2485,7 @@ public final class Xsd10Parse
         * 3.2.6 Schema Component Constraint: xmlns Not Allowed
         * TODO: Move this to the component layer.
         */
-        if (strEqual(attrValue[0], "xmlns") != 0)
+        if (strEqual(attr_value[0], "xmlns") != 0)
         {
             pSimpleTypeErr(pctxt,
                 XML_XSD10_SCHEMAP_NO_XMLNS,
@@ -2501,7 +2501,7 @@ public final class Xsd10Parse
         *       Or better leave it here and add it to the component layer
         *       if we have a schema construction API.
         */
-        if (strEqual(pctxt.targetNamespace, XML_XSD10_INSTANCE_NS) != 0)
+        if (strEqual(pctxt.target_namespace, XML_XSD10_INSTANCE_NS) != 0)
         {
             customErr(pctxt,
                 XML_XSD10_SCHEMAP_NO_XSI, node, null,
@@ -2509,8 +2509,8 @@ public final class Xsd10Parse
                 XML_XSD10_INSTANCE_NS, null);
         }
 
-        ret = addAttribute(pctxt, schema, attrValue[0],
-            pctxt.targetNamespace, node, 1);
+        ret = addAttribute(pctxt, schema, attr_value[0],
+            pctxt.target_namespace, node, 1);
         if (ret == null)
             return null;
         ret.flags |= XML_XSD10_SCHEMAS_ATTR_GLOBAL;
@@ -2543,16 +2543,16 @@ public final class Xsd10Parse
         {
             String[] u = { null }, l = { null };
             pValAttrQName(pctxt, schema, null, node, "type", u, l);
-            ret.typeNs = u[0];
-            ret.typeName = l[0];
+            ret.type_ns = u[0];
+            ret.type_name = l[0];
         }
 
         pValAttrId(pctxt, node, "id");
         /*
         * Attribute "fixed".
         */
-        ret.defValue = getProp(pctxt, node, "fixed");
-        if (ret.defValue != null)
+        ret.def_value = getProp(pctxt, node, "fixed");
+        if (ret.def_value != null)
             ret.flags |= XML_XSD10_SCHEMAS_ATTR_FIXED;
         /*
         * Attribute "default".
@@ -2570,7 +2570,7 @@ public final class Xsd10Parse
                     ret, attr, "default", "fixed");
             }
             else
-                ret.defValue = getNodeContent(pctxt, attr);
+                ret.def_value = getNodeContent(pctxt, attr);
         }
         /*
         * And now for the children...
@@ -2583,7 +2583,7 @@ public final class Xsd10Parse
         }
         if (isSchema(child, "simpleType") != 0)
         {
-            if (ret.typeName != null)
+            if (ret.type_name != null)
             {
                 /*
                 * 3.2.3 : 4
@@ -2613,7 +2613,7 @@ public final class Xsd10Parse
         Xsd10QNameRef ret;
         XmlNode child;
         XmlNode attr;
-        String[] refNs = { null }, ref = { null };
+        String[] ref_ns = { null }, ref = { null };
 
         if ((pctxt == null) || (schema == null) || (node == null))
             return null;
@@ -2626,8 +2626,8 @@ public final class Xsd10Parse
                 null, node, "ref", null);
             return null;
         }
-        pValAttrNodeQName(pctxt, schema, null, attr, refNs, ref);
-        if (checkReference(pctxt, schema, node, attr, refNs[0]) != 0)
+        pValAttrNodeQName(pctxt, schema, null, attr, ref_ns, ref);
+        if (checkReference(pctxt, schema, node, attr, ref_ns[0]) != 0)
             return null;
 
         /*
@@ -2678,11 +2678,11 @@ public final class Xsd10Parse
         /*
         * Handle attribute group redefinitions.
         */
-        if ((pctxt.isRedefine != 0) && (pctxt.redef != null) &&
+        if ((pctxt.is_redefine != 0) && (pctxt.redef != null) &&
             (pctxt.redef.item != null) &&
             (pctxt.redef.item.type == XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP) &&
-            Objects.equals(ref[0], pctxt.redef.refName) &&
-            Objects.equals(refNs[0], pctxt.redef.refTargetNs))
+            Objects.equals(ref[0], pctxt.redef.ref_name) &&
+            Objects.equals(ref_ns[0], pctxt.redef.ref_target_ns))
         {
             /*
             * SPEC src-redefine:
@@ -2691,7 +2691,7 @@ public final class Xsd10Parse
             * as the `actual value` of its own name attribute plus
             * target namespace, then it must have exactly one such group."
             */
-            if (pctxt.redefCounter != 0)
+            if (pctxt.redef_counter != 0)
             {
                 String[] str = { null };
 
@@ -2700,16 +2700,16 @@ public final class Xsd10Parse
                     "The redefining attribute group definition " +
                     "'%s' must not contain more than one " +
                     "reference to the redefined definition",
-                    formatQName(str, refNs[0], ref[0]), null);
+                    formatQName(str, ref_ns[0], ref[0]), null);
                 return null;
             }
-            pctxt.redefCounter++;
+            pctxt.redef_counter++;
             /*
             * URGENT TODO: How to ensure that the reference will not be
             * handled by the normal component resolution mechanism?
             */
             ret = newQNameRef(pctxt,
-                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, ref[0], refNs[0]);
+                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, ref[0], ref_ns[0]);
             if (ret == null)
                 return null;
             ret.node = node;
@@ -2723,7 +2723,7 @@ public final class Xsd10Parse
             * definition.
             */
             ret = newQNameRef(pctxt,
-                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, ref[0], refNs[0]);
+                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, ref[0], ref_ns[0]);
             if (ret == null)
                 return null;
             ret.node = node;
@@ -2741,7 +2741,7 @@ public final class Xsd10Parse
         Xsd10AttributeGroup ret;
         XmlNode child;
         XmlNode attr;
-        int[] hasRefs = { 0 };
+        int[] has_refs = { 0 };
         int res;
 
         if ((pctxt == null) || (schema == null) || (node == null))
@@ -2765,7 +2765,7 @@ public final class Xsd10Parse
             return null;
         }
         ret = addAttributeGroupDefinition(pctxt, schema,
-            name[0], pctxt.targetNamespace, node);
+            name[0], pctxt.target_namespace, node);
         if (ret == null)
             return null;
         /*
@@ -2806,13 +2806,13 @@ public final class Xsd10Parse
         */
         {
             XmlNode[] c = { child };
-            Xsd10ItemList[] l = { as(ret.attrUses, Xsd10ItemList.class) };
+            Xsd10ItemList[] l = { as(ret.attr_uses, Xsd10ItemList.class) };
             res = parseLocalAttributes(pctxt, schema, c, l,
-                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, hasRefs);
-            ret.attrUses = l[0];
+                XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP, has_refs);
+            ret.attr_uses = l[0];
             child = c[0];
         }
-        if (hasRefs[0] != 0)
+        if (has_refs[0] != 0)
             ret.flags |= XML_XSD10_SCHEMAS_ATTRGROUP_HAS_REFS;
         if (res == -1)
             return null;
@@ -2821,7 +2821,7 @@ public final class Xsd10Parse
         */
         if (isSchema(child, "anyAttribute") != 0)
         {
-            ret.attributeWildcard = parseAnyAttribute(pctxt, schema, child);
+            ret.attribute_wildcard = parseAnyAttribute(pctxt, schema, child);
             child = parseNext(child);
         }
         if (child != null)
@@ -2836,12 +2836,12 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_form_default
     /** Port of xmlSchemaPValAttrFormDefault. Arrays: {@code flags} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrFormDefault(String value, int[] flags, int flagQualified)
+    static int pValAttrFormDefault(String value, int[] flags, int flag_qualified)
     {
         if (strEqual(value, "qualified") != 0)
         {
-            if ((flags[0] & flagQualified) == 0)
-                flags[0] |= flagQualified;
+            if ((flags[0] & flag_qualified) == 0)
+                flags[0] |= flag_qualified;
         }
         else if (strEqual(value, "unqualified") == 0)
             return 1;
@@ -2851,7 +2851,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_p_val_attr_block_final
     /** Port of xmlSchemaPValAttrBlockFinal. Arrays: {@code flags} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int pValAttrBlockFinal(String value, int[] flags, int flagAll, int flagExtension, int flagRestriction, int flagSubstitution, int flagList, int flagUnion)
+    static int pValAttrBlockFinal(String value, int[] flags, int flag_all, int flag_extension, int flag_restriction, int flag_substitution, int flag_list, int flag_union)
     {
         int ret = 0;
 
@@ -2864,20 +2864,20 @@ public final class Xsd10Parse
             return 0;
         if (strEqual(value, "#all") != 0)
         {
-            if (flagAll != -1)
-                flags[0] |= flagAll;
+            if (flag_all != -1)
+                flags[0] |= flag_all;
             else
             {
-                if (flagExtension != -1)
-                    flags[0] |= flagExtension;
-                if (flagRestriction != -1)
-                    flags[0] |= flagRestriction;
-                if (flagSubstitution != -1)
-                    flags[0] |= flagSubstitution;
-                if (flagList != -1)
-                    flags[0] |= flagList;
-                if (flagUnion != -1)
-                    flags[0] |= flagUnion;
+                if (flag_extension != -1)
+                    flags[0] |= flag_extension;
+                if (flag_restriction != -1)
+                    flags[0] |= flag_restriction;
+                if (flag_substitution != -1)
+                    flags[0] |= flag_substitution;
+                if (flag_list != -1)
+                    flags[0] |= flag_list;
+                if (flag_union != -1)
+                    flags[0] |= flag_union;
             }
         }
         else
@@ -2897,50 +2897,50 @@ public final class Xsd10Parse
                 item = value.substring(cur, end);
                 if (strEqual(item, "extension") != 0)
                 {
-                    if (flagExtension != -1)
+                    if (flag_extension != -1)
                     {
-                        if ((flags[0] & flagExtension) == 0)
-                            flags[0] |= flagExtension;
+                        if ((flags[0] & flag_extension) == 0)
+                            flags[0] |= flag_extension;
                     }
                     else
                         ret = 1;
                 }
                 else if (strEqual(item, "restriction") != 0)
                 {
-                    if (flagRestriction != -1)
+                    if (flag_restriction != -1)
                     {
-                        if ((flags[0] & flagRestriction) == 0)
-                            flags[0] |= flagRestriction;
+                        if ((flags[0] & flag_restriction) == 0)
+                            flags[0] |= flag_restriction;
                     }
                     else
                         ret = 1;
                 }
                 else if (strEqual(item, "substitution") != 0)
                 {
-                    if (flagSubstitution != -1)
+                    if (flag_substitution != -1)
                     {
-                        if ((flags[0] & flagSubstitution) == 0)
-                            flags[0] |= flagSubstitution;
+                        if ((flags[0] & flag_substitution) == 0)
+                            flags[0] |= flag_substitution;
                     }
                     else
                         ret = 1;
                 }
                 else if (strEqual(item, "list") != 0)
                 {
-                    if (flagList != -1)
+                    if (flag_list != -1)
                     {
-                        if ((flags[0] & flagList) == 0)
-                            flags[0] |= flagList;
+                        if ((flags[0] & flag_list) == 0)
+                            flags[0] |= flag_list;
                     }
                     else
                         ret = 1;
                 }
                 else if (strEqual(item, "union") != 0)
                 {
-                    if (flagUnion != -1)
+                    if (flag_union != -1)
                     {
-                        if ((flags[0] & flagUnion) == 0)
-                            flags[0] |= flagUnion;
+                        if ((flags[0] & flag_union) == 0)
+                            flags[0] |= flag_union;
                     }
                     else
                         ret = 1;
@@ -2956,7 +2956,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_check_c_selector_x_path
     /** Port of xmlSchemaCheckCSelectorXPath. */
-    static int checkCSelectorXPath(Xsd10ParserCtxt ctxt, Xsd10IDC idc, Xsd10IDCSelect selector, XmlNode attr, int isField)
+    static int checkCSelectorXPath(Xsd10ParserCtxt ctxt, Xsd10IDC idc, Xsd10IDCSelect selector, XmlNode attr, int is_field)
     {
         XmlNode node;
 
@@ -2990,8 +2990,8 @@ public final class Xsd10Parse
         }
         else
         {
-            String[] nsArray = null;
-            XmlNs[] nsList;
+            String[] ns_array = null;
+            XmlNs[] ns_list;
             /*
             * Compile the XPath expression.
             */
@@ -3001,38 +3001,38 @@ public final class Xsd10Parse
             * field.
             */
             if (attr == null)
-                nsList = null;
+                ns_list = null;
             else
-                nsList = treeGetNsList(nodeParent(attr));
+                ns_list = treeGetNsList(nodeParent(attr));
             /*
             * Build an array of prefixes and namespaces.
             */
-            if (nsList != null)
+            if (ns_list != null)
             {
                 int i, count = 0;
 
-                for (i = 0; (i < nsList.length) && (nsList[i] != null); i++)
+                for (i = 0; (i < ns_list.length) && (ns_list[i] != null); i++)
                     count++;
 
-                nsArray = new String[count * 2 + 1];
+                ns_array = new String[count * 2 + 1];
                 for (i = 0; i < count; i++)
                 {
-                    nsArray[2 * i] = nsHref(nsList[i]);
-                    nsArray[2 * i + 1] = nsPrefix(nsList[i]);
+                    ns_array[2 * i] = nsHref(ns_list[i]);
+                    ns_array[2 * i + 1] = nsPrefix(ns_list[i]);
                 }
-                nsArray[count * 2] = null;
+                ns_array[count * 2] = null;
             }
             /*
             * TODO: Differentiate between "selector" and "field".
             */
-            if (isField != 0)
-                selector.xpathComp = XmlPattern.patternCompile(selector.xpath,
-                    XmlPattern.XML_PATTERN_FLAG_XSFIELD, nsArray);
+            if (is_field != 0)
+                selector.xpath_comp = XmlPattern.patternCompile(selector.xpath,
+                    XmlPattern.XML_PATTERN_FLAG_XSFIELD, ns_array);
             else
-                selector.xpathComp = XmlPattern.patternCompile(selector.xpath,
-                    XmlPattern.XML_PATTERN_FLAG_XSSEL, nsArray);
+                selector.xpath_comp = XmlPattern.patternCompile(selector.xpath,
+                    XmlPattern.XML_PATTERN_FLAG_XSSEL, ns_array);
 
-            if (selector.xpathComp == null)
+            if (selector.xpath_comp == null)
             {
                 pCustomErr(ctxt,
                     /* TODO: Adjust error code? */
@@ -3063,38 +3063,38 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_annotation
     /** Port of xmlSchemaAddAnnotation. */
-    static Xsd10Annot addAnnotation(Xsd10BasicItem annItem, Xsd10Annot annot)
+    static Xsd10Annot addAnnotation(Xsd10BasicItem ann_item, Xsd10Annot annot)
     {
-        if ((annItem == null) || (annot == null))
+        if ((ann_item == null) || (annot == null))
             return null;
-        switch (annItem.type)
+        switch (ann_item.type)
         {
         case XML_XSD10_SCHEMA_TYPE_ELEMENT:
-            if (annItem instanceof Xsd10Element item)
+            if (ann_item instanceof Xsd10Element item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_ATTRIBUTE:
-            if (annItem instanceof Xsd10Attribute item)
+            if (ann_item instanceof Xsd10Attribute item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_ANY_ATTRIBUTE:
         case XML_XSD10_SCHEMA_TYPE_ANY:
-            if (annItem instanceof Xsd10Wildcard item)
+            if (ann_item instanceof Xsd10Wildcard item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_PARTICLE:
         case XML_XSD10_SCHEMA_TYPE_IDC_KEY:
         case XML_XSD10_SCHEMA_TYPE_IDC_KEYREF:
         case XML_XSD10_SCHEMA_TYPE_IDC_UNIQUE:
-            if (annItem instanceof Xsd10AnnotItem item)
+            if (ann_item instanceof Xsd10AnnotItem item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_ATTRIBUTEGROUP:
-            if (annItem instanceof Xsd10AttributeGroup item)
+            if (ann_item instanceof Xsd10AttributeGroup item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_NOTATION:
-            if (annItem instanceof Xsd10Notation item)
+            if (ann_item instanceof Xsd10Notation item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_FACET_MININCLUSIVE:
@@ -3109,22 +3109,22 @@ public final class Xsd10Parse
         case XML_XSD10_SCHEMA_FACET_LENGTH:
         case XML_XSD10_SCHEMA_FACET_MAXLENGTH:
         case XML_XSD10_SCHEMA_FACET_MINLENGTH:
-            if (annItem instanceof Xsd10Facet item)
+            if (ann_item instanceof Xsd10Facet item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_SIMPLE:
         case XML_XSD10_SCHEMA_TYPE_COMPLEX:
-            if (annItem instanceof Xsd10Type item)
+            if (ann_item instanceof Xsd10Type item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_GROUP:
-            if (annItem instanceof Xsd10ModelGroupDef item)
+            if (ann_item instanceof Xsd10ModelGroupDef item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         case XML_XSD10_SCHEMA_TYPE_SEQUENCE:
         case XML_XSD10_SCHEMA_TYPE_CHOICE:
         case XML_XSD10_SCHEMA_TYPE_ALL:
-            if (annItem instanceof Xsd10ModelGroup item)
+            if (ann_item instanceof Xsd10ModelGroup item)
                 item.annot = addAnnotationToList(item.annot, annot);
             break;
         default:
@@ -3140,7 +3140,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_idc_selector_and_field
     /** Port of xmlSchemaParseIDCSelectorAndField. */
-    static Xsd10IDCSelect parseIdcSelectorAndField(Xsd10ParserCtxt ctxt, Xsd10IDC idc, XmlNode node, int isField)
+    static Xsd10IDCSelect parseIdcSelectorAndField(Xsd10ParserCtxt ctxt, Xsd10IDC idc, XmlNode node, int is_field)
     {
         Xsd10IDCSelect item;
         XmlNode child;
@@ -3190,7 +3190,7 @@ public final class Xsd10Parse
             * URGENT TODO: "field"s have an other syntax than "selector"s.
             */
 
-            if (checkCSelectorXPath(ctxt, idc, item, attr, isField) == -1)
+            if (checkCSelectorXPath(ctxt, idc, item, attr, is_field) == -1)
             {
                 pErr(ctxt,
                     attr,
@@ -3227,13 +3227,13 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_idc
     /** Port of xmlSchemaParseIDC. */
-    static Xsd10IDC parseIdc(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int idcCategory, String targetNamespace)
+    static Xsd10IDC parseIdc(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int idc_category, String target_namespace)
     {
         Xsd10IDC item;
         XmlNode child;
         XmlNode attr;
         String[] name = { null };
-        Xsd10IDCSelect field, lastField = null;
+        Xsd10IDCSelect field, last_field = null;
 
         /*
         * Check for illegal attributes.
@@ -3245,7 +3245,7 @@ public final class Xsd10Parse
             {
                 if ((strEqual(nodeName(attr), "id") == 0) &&
                     (strEqual(nodeName(attr), "name") == 0) &&
-                    ((idcCategory != XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) ||
+                    ((idc_category != XML_XSD10_SCHEMA_TYPE_IDC_KEYREF) ||
                      (strEqual(nodeName(attr), "refer") == 0)))
                 {
                     pIllegalAttrErr(ctxt,
@@ -3278,13 +3278,13 @@ public final class Xsd10Parse
             return null;
         }
         /* Create the component. */
-        item = addIdc(ctxt, schema, name[0], targetNamespace,
-            idcCategory, node);
+        item = addIdc(ctxt, schema, name[0], target_namespace,
+            idc_category, node);
         if (item == null)
             return null;
 
         pValAttrId(ctxt, node, "id");
-        if (idcCategory == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF)
+        if (idc_category == XML_XSD10_SCHEMA_TYPE_IDC_KEYREF)
         {
             /*
             * Attribute "refer" (mandatory).
@@ -3309,10 +3309,10 @@ public final class Xsd10Parse
                 String[] u = { null }, l = { null };
                 pValAttrNodeQName(ctxt, schema,
                     null, attr, u, l);
-                item.ref.targetNamespace = u[0];
+                item.ref.target_namespace = u[0];
                 item.ref.name = l[0];
                 checkReference(ctxt, schema, node, attr,
-                    item.ref.targetNamespace);
+                    item.ref.target_namespace);
             }
         }
         /*
@@ -3351,13 +3351,13 @@ public final class Xsd10Parse
                         item, child, 1);
                     if (field != null)
                     {
-                        field.index = item.nbFields;
-                        item.nbFields++;
-                        if (lastField != null)
-                            lastField.next = field;
+                        field.index = item.nb_fields;
+                        item.nb_fields++;
+                        if (last_field != null)
+                            last_field.next = field;
                         else
                             item.fields = field;
-                        lastField = field;
+                        last_field = field;
                     }
                     child = parseNext(child);
                 } while (isSchema(child, "field") != 0);
@@ -3396,15 +3396,15 @@ public final class Xsd10Parse
     }
 
     // xml_xsd10_parse_element
-    /** Port of xmlSchemaParseElement. Arrays: {@code isElemRef} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static Xsd10BasicItem parseElement(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] isElemRef, int topLevel)
+    /** Port of xmlSchemaParseElement. Arrays: {@code is_elem_ref} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
+    static Xsd10BasicItem parseElement(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] is_elem_ref, int top_level)
     {
         Xsd10Element decl = null;
         Xsd10Particle particle = null;
         Xsd10Annot annot = null;
         XmlNode child;
-        XmlNode attr, nameAttr;
-        int min, max, isRef = 0;
+        XmlNode attr, name_attr;
+        int min, max, is_ref = 0;
 
         /* 3.3.3 Constraints on XML Representations of Element Declarations */
         /* TODO: Complete implementation of 3.3.6 */
@@ -3412,18 +3412,18 @@ public final class Xsd10Parse
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
 
-        if (isElemRef != null)
-            isElemRef[0] = 0;
+        if (is_elem_ref != null)
+            is_elem_ref[0] = 0;
         /*
         * If we get a "ref" attribute on a local <element> we will assume it's
         * a reference - even if there's a "name" attribute; this seems to be more
         * robust.
         */
-        nameAttr = getPropNode(node, "name");
+        name_attr = getPropNode(node, "name");
         attr = getPropNode(node, "ref");
-        if ((topLevel != 0) || (attr == null))
+        if ((top_level != 0) || (attr == null))
         {
-            if (nameAttr == null)
+            if (name_attr == null)
             {
                 pMissingAttrErr(ctxt,
                     XML_XSD10_SCHEMAP_S4S_ATTR_MISSING,
@@ -3432,7 +3432,7 @@ public final class Xsd10Parse
             }
         }
         else
-            isRef = 1;
+            is_ref = 1;
 
         pValAttrId(ctxt, node, "id");
         child = parseFirstChild(node);
@@ -3444,7 +3444,7 @@ public final class Xsd10Parse
         /*
         * Skip particle part if a global declaration.
         */
-        if (topLevel == 0)
+        if (top_level == 0)
         {
             /*
             * The particle part ==================================================
@@ -3458,26 +3458,26 @@ public final class Xsd10Parse
 
             /* ret->flags |= XML_SCHEMAS_ELEM_REF; */
 
-            if (isRef != 0)
+            if (is_ref != 0)
             {
-                String[] refNs = { null }, ref = { null };
+                String[] ref_ns = { null }, ref = { null };
                 Xsd10QNameRef refer;
                 /*
                 * The reference part =============================================
                 */
-                if (isElemRef != null)
-                    isElemRef[0] = 1;
+                if (is_elem_ref != null)
+                    is_elem_ref[0] = 1;
 
                 pValAttrNodeQName(ctxt, schema,
-                    null, attr, refNs, ref);
-                checkReference(ctxt, schema, node, attr, refNs[0]);
+                    null, attr, ref_ns, ref);
+                checkReference(ctxt, schema, node, attr, ref_ns[0]);
                 /*
                 * SPEC (3.3.3 : 2.1) "One of ref or name must be present, but not both"
                 */
-                if (nameAttr != null)
+                if (name_attr != null)
                 {
                     pMutualExclAttrErr(ctxt,
-                        XML_XSD10_SCHEMAP_SRC_ELEMENT_2_1, null, nameAttr, "ref", "name");
+                        XML_XSD10_SCHEMAP_SRC_ELEMENT_2_1, null, name_attr, "ref", "name");
                 }
                 /*
                 * Check for illegal attributes.
@@ -3528,7 +3528,7 @@ public final class Xsd10Parse
                 * Create the reference item and attach it to the particle.
                 */
                 refer = newQNameRef(ctxt, XML_XSD10_SCHEMA_TYPE_ELEMENT,
-                    ref[0], refNs[0]);
+                    ref[0], ref_ns[0]);
                 if (refer == null)
                     return parseElementReturnNull(particle, decl, annot);
                 particle.children = refer;
@@ -3546,43 +3546,43 @@ public final class Xsd10Parse
         */
         /* declaration_part: */
         {
-            String ns = null, fixed, attrValue;
+            String ns = null, fixed, attr_value;
             String[] name = { null };
-            Xsd10IDC curIDC = null, lastIDC = null;
+            Xsd10IDC cur_idc = null, last_idc = null;
 
-            if (pValAttrNode(ctxt, null, nameAttr,
+            if (pValAttrNode(ctxt, null, name_attr,
                 getBuiltInType(XML_XSD10_SCHEMAS_NCNAME), name) != 0)
                 return parseElementReturnNull(particle, decl, annot);
             /*
             * Evaluate the target namespace.
             */
-            if (topLevel != 0)
+            if (top_level != 0)
             {
-                ns = ctxt.targetNamespace;
+                ns = ctxt.target_namespace;
             }
             else
             {
                 attr = getPropNode(node, "form");
                 if (attr != null)
                 {
-                    attrValue = getNodeContent(ctxt, attr);
-                    if (strEqual(attrValue, "qualified") != 0)
+                    attr_value = getNodeContent(ctxt, attr);
+                    if (strEqual(attr_value, "qualified") != 0)
                     {
-                        ns = ctxt.targetNamespace;
+                        ns = ctxt.target_namespace;
                     }
-                    else if (strEqual(attrValue, "unqualified") == 0)
+                    else if (strEqual(attr_value, "unqualified") == 0)
                     {
                         pSimpleTypeErr(ctxt,
                             XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                             null, attr,
                             null, "(qualified | unqualified)",
-                            attrValue, null, null, null);
+                            attr_value, null, null, null);
                     }
                 }
                 else if ((schema.flags & XML_XSD10_SCHEMAS_QUALIF_ELEM) != 0)
-                    ns = ctxt.targetNamespace;
+                    ns = ctxt.target_namespace;
             }
-            decl = addElement(ctxt, name[0], ns, node, topLevel);
+            decl = addElement(ctxt, name[0], ns, node, top_level);
             if (decl == null)
             {
                 return parseElementReturnNull(particle, decl, annot);
@@ -3603,7 +3603,7 @@ public final class Xsd10Parse
                         (strEqual(nodeName(attr), "block") == 0) &&
                         (strEqual(nodeName(attr), "nillable") == 0))
                     {
-                        if (topLevel == 0)
+                        if (top_level == 0)
                         {
                             if ((strEqual(nodeName(attr), "maxOccurs") == 0) &&
                                 (strEqual(nodeName(attr), "minOccurs") == 0) &&
@@ -3634,7 +3634,7 @@ public final class Xsd10Parse
             /*
             * Extract/validate attributes.
             */
-            if (topLevel != 0)
+            if (top_level != 0)
             {
                 /*
                 * Process top attributes of global element declarations here.
@@ -3645,8 +3645,8 @@ public final class Xsd10Parse
                     String[] u = { null }, l = { null };
                     pValAttrQName(ctxt, schema,
                         null, node, "substitutionGroup", u, l);
-                    decl.substGroupNs = u[0];
-                    decl.substGroup = l[0];
+                    decl.subst_group_ns = u[0];
+                    decl.subst_group = l[0];
                 }
                 if (getBooleanProp(ctxt, node, "abstract", 0) != 0)
                     decl.flags |= XML_XSD10_SCHEMAS_ELEM_ABSTRACT;
@@ -3663,9 +3663,9 @@ public final class Xsd10Parse
                 }
                 else
                 {
-                    attrValue = getNodeContent(ctxt, attr);
+                    attr_value = getNodeContent(ctxt, attr);
                     int[] fl = { decl.flags };
-                    int r = pValAttrBlockFinal(attrValue, fl,
+                    int r = pValAttrBlockFinal(attr_value, fl,
                         -1,
                         XML_XSD10_SCHEMAS_ELEM_FINAL_EXTENSION,
                         XML_XSD10_SCHEMAS_ELEM_FINAL_RESTRICTION, -1, -1, -1);
@@ -3676,7 +3676,7 @@ public final class Xsd10Parse
                             XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                             null, attr,
                             null, "(#all | List of (extension | restriction))",
-                            attrValue, null, null, null);
+                            attr_value, null, null, null);
                     }
                 }
             }
@@ -3698,9 +3698,9 @@ public final class Xsd10Parse
             }
             else
             {
-                attrValue = getNodeContent(ctxt, attr);
+                attr_value = getNodeContent(ctxt, attr);
                 int[] fl = { decl.flags };
-                int r = pValAttrBlockFinal(attrValue, fl,
+                int r = pValAttrBlockFinal(attr_value, fl,
                     -1,
                     XML_XSD10_SCHEMAS_ELEM_BLOCK_EXTENSION,
                     XML_XSD10_SCHEMAS_ELEM_BLOCK_RESTRICTION,
@@ -3712,7 +3712,7 @@ public final class Xsd10Parse
                         XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                         null, attr,
                         null, "(#all | List of (extension | " +
-                        "restriction | substitution))", attrValue,
+                        "restriction | substitution))", attr_value,
                         null, null, null);
                 }
             }
@@ -3725,10 +3725,10 @@ public final class Xsd10Parse
                 String[] u = { null }, l = { null };
                 pValAttrNodeQName(ctxt, schema,
                     null, attr, u, l);
-                decl.namedTypeNs = u[0];
-                decl.namedType = l[0];
+                decl.named_type_ns = u[0];
+                decl.named_type = l[0];
                 checkReference(ctxt, schema, node,
-                    attr, decl.namedTypeNs);
+                    attr, decl.named_type_ns);
             }
             decl.value = getProp(ctxt, node, "default");
             attr = getPropNode(node, "fixed");
@@ -3761,7 +3761,7 @@ public final class Xsd10Parse
                 * "type" and either <simpleType> or <complexType> are mutually
                 * exclusive
                 */
-                if (decl.namedType != null)
+                if (decl.named_type != null)
                 {
                     pContentErr(ctxt,
                         XML_XSD10_SCHEMAP_SRC_ELEMENT_3,
@@ -3780,7 +3780,7 @@ public final class Xsd10Parse
                 * "type" and either <simpleType> or <complexType> are
                 * mutually exclusive
                 */
-                if (decl.namedType != null)
+                if (decl.named_type != null)
                 {
                     pContentErr(ctxt,
                         XML_XSD10_SCHEMAP_SRC_ELEMENT_3,
@@ -3797,24 +3797,24 @@ public final class Xsd10Parse
             {
                 if (isSchema(child, "unique") != 0)
                 {
-                    curIDC = parseIdc(ctxt, schema, child,
-                        XML_XSD10_SCHEMA_TYPE_IDC_UNIQUE, decl.targetNamespace);
+                    cur_idc = parseIdc(ctxt, schema, child,
+                        XML_XSD10_SCHEMA_TYPE_IDC_UNIQUE, decl.target_namespace);
                 }
                 else if (isSchema(child, "key") != 0)
                 {
-                    curIDC = parseIdc(ctxt, schema, child,
-                        XML_XSD10_SCHEMA_TYPE_IDC_KEY, decl.targetNamespace);
+                    cur_idc = parseIdc(ctxt, schema, child,
+                        XML_XSD10_SCHEMA_TYPE_IDC_KEY, decl.target_namespace);
                 }
                 else if (isSchema(child, "keyref") != 0)
                 {
-                    curIDC = parseIdc(ctxt, schema, child,
-                        XML_XSD10_SCHEMA_TYPE_IDC_KEYREF, decl.targetNamespace);
+                    cur_idc = parseIdc(ctxt, schema, child,
+                        XML_XSD10_SCHEMA_TYPE_IDC_KEYREF, decl.target_namespace);
                 }
-                if (lastIDC != null)
-                    lastIDC.next = curIDC;
+                if (last_idc != null)
+                    last_idc.next = cur_idc;
                 else
-                    decl.idcs = curIDC;
-                lastIDC = curIDC;
+                    decl.idcs = cur_idc;
+                last_idc = cur_idc;
                 child = parseNext(child);
             }
             if (child != null)
@@ -3831,7 +3831,7 @@ public final class Xsd10Parse
         * NOTE: Element Declaration Representation OK 4. will be checked at a
         * different layer.
         */
-        if (topLevel != 0)
+        if (top_level != 0)
             return decl;
         else
         {
@@ -3852,7 +3852,7 @@ public final class Xsd10Parse
         if ((ctxt == null) || (schema == null) || (node == null))
             return -1;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return -1;
         /*
@@ -3863,7 +3863,7 @@ public final class Xsd10Parse
         * SPEC (Base type) (2) "If the <list> or <union> alternative is chosen,
         * then the `simple ur-type definition`."
         */
-        type.baseType = getBuiltInType(XML_XSD10_SCHEMAS_ANYSIMPLETYPE);
+        type.base_type = getBuiltInType(XML_XSD10_SCHEMAS_ANYSIMPLETYPE);
         /*
         * Check for illegal attributes.
         */
@@ -3888,7 +3888,7 @@ public final class Xsd10Parse
         }
         pValAttrId(ctxt, node, "id");
         /*
-        * Attribute "memberTypes". This is a list of QNames.
+        * Attribute "member_types". This is a list of QNames.
         * TODO: Check the value to contain anything.
         */
         attr = getPropNode(node, "memberTypes");
@@ -3896,8 +3896,8 @@ public final class Xsd10Parse
         {
             int end, pos;
             String tmp;
-            String[] localName = { null }, nsName = { null };
-            Xsd10TypeLink link, lastLink = null;
+            String[] local_name = { null }, ns_name = { null };
+            Xsd10TypeLink link, last_link = null;
             Xsd10QNameRef ref;
 
             cur = getNodeContent(ctxt, attr);
@@ -3916,7 +3916,7 @@ public final class Xsd10Parse
                     break;
                 tmp = cur.substring(pos, end);
                 if (pValAttrNodeQNameValue(ctxt, schema,
-                    null, attr, tmp, nsName, localName) == 0)
+                    null, attr, tmp, ns_name, local_name) == 0)
                 {
                     /*
                     * Create the member type link.
@@ -3928,7 +3928,7 @@ public final class Xsd10Parse
                     * Create a reference item.
                     */
                     ref = newQNameRef(ctxt, XML_XSD10_SCHEMA_TYPE_SIMPLE,
-                        localName[0], nsName[0]);
+                        local_name[0], ns_name[0]);
                     if (ref == null)
                     {
                         pErrMemory(ctxt);
@@ -3940,11 +3940,11 @@ public final class Xsd10Parse
                     */
                     link.type = ref;
 
-                    if (lastLink == null)
-                        type.memberTypes = link;
+                    if (last_link == null)
+                        type.member_types = link;
                     else
-                        lastLink.next = link;
-                    lastLink = link;
+                        last_link.next = link;
+                    last_link = link;
                 }
                 pos = end;
             } while (ch(cur, pos) != 0);
@@ -3999,8 +3999,8 @@ public final class Xsd10Parse
         if ((attr == null) && (type.subtypes == null))
         {
             /*
-            * src-union-memberTypes-or-simpleTypes
-            * Either the memberTypes [attribute] of the <union> element must
+            * src-union-member_types-or-simpleTypes
+            * Either the member_types [attribute] of the <union> element must
             * be non-empty or there must be at least one simpleType [child].
             */
             pCustomErr(ctxt,
@@ -4023,7 +4023,7 @@ public final class Xsd10Parse
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return null;
         /*
@@ -4034,7 +4034,7 @@ public final class Xsd10Parse
         * SPEC (Base type) (2) "If the <list> or <union> alternative is chosen,
         * then the `simple ur-type definition`."
         */
-        type.baseType = getBuiltInType(XML_XSD10_SCHEMAS_ANYSIMPLETYPE);
+        type.base_type = getBuiltInType(XML_XSD10_SCHEMAS_ANYSIMPLETYPE);
         /*
         * Check for illegal attributes.
         */
@@ -4061,17 +4061,17 @@ public final class Xsd10Parse
         pValAttrId(ctxt, node, "id");
 
         /*
-        * Attribute "itemType". NOTE that we will use the "ref" and "refNs"
-        * fields for holding the reference to the itemType.
+        * Attribute "item_type". NOTE that we will use the "ref" and "ref_ns"
+        * fields for holding the reference to the item_type.
         *
-        * REVAMP TODO: Use the "base" and "baseNs" fields, since we will remove
+        * REVAMP TODO: Use the "base" and "base_ns" fields, since we will remove
         * the "ref" fields.
         */
         {
             String[] u = { null }, l = { null };
             pValAttrQName(ctxt, schema, null,
                 node, "itemType", u, l);
-            type.baseNs = u[0];
+            type.base_ns = u[0];
             type.base = l[0];
         }
         /*
@@ -4086,8 +4086,8 @@ public final class Xsd10Parse
         if (isSchema(child, "simpleType") != 0)
         {
             /*
-            * src-list-itemType-or-simpleType
-            * Either the itemType [attribute] or the <simpleType> [child] of
+            * src-list-item_type-or-simpleType
+            * Either the item_type [attribute] or the <simpleType> [child] of
             * the <list> element must be present, but not both.
             */
             if (type.base != null)
@@ -4133,18 +4133,18 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_simple_type
     /** Port of xmlSchemaParseSimpleType. */
-    static Xsd10Type parseSimpleType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int topLevel)
+    static Xsd10Type parseSimpleType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int top_level)
     {
-        Xsd10Type type, oldCtxtType;
+        Xsd10Type type, old_ctxt_type;
         XmlNode child;
-        String[] attrValue = { null };
+        String[] attr_value = { null };
         XmlNode attr;
-        int hasRestriction = 0;
+        int has_restriction = 0;
 
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
 
-        if (topLevel != 0)
+        if (top_level != 0)
         {
             attr = getPropNode(node, "name");
             if (attr == null)
@@ -4159,16 +4159,16 @@ public final class Xsd10Parse
             {
                 if (pValAttrNode(ctxt,
                     null, attr,
-                    getBuiltInType(XML_XSD10_SCHEMAS_NCNAME), attrValue) != 0)
+                    getBuiltInType(XML_XSD10_SCHEMAS_NCNAME), attr_value) != 0)
                     return null;
                 /*
                 * Skip built-in types.
                 */
-                if (ctxt.isS4S != 0)
+                if (ctxt.is_s4_s != 0)
                 {
-                    Xsd10Type biType;
+                    Xsd10Type bi_type;
 
-                    if (ctxt.isRedefine != 0)
+                    if (ctxt.is_redefine != 0)
                     {
                         /*
                         * REDEFINE: Disallow redefinition of built-in-types.
@@ -4181,30 +4181,30 @@ public final class Xsd10Parse
                             "supported", null);
                         return null;
                     }
-                    biType = getPredefinedType(attrValue[0], XML_XSD10_NS);
-                    if (biType != null)
-                        return biType;
+                    bi_type = getPredefinedType(attr_value[0], XML_XSD10_NS);
+                    if (bi_type != null)
+                        return bi_type;
                 }
             }
         }
         /*
         * TargetNamespace:
-        * SPEC "The `actual value` of the targetNamespace [attribute]
+        * SPEC "The `actual value` of the target_namespace [attribute]
         * of the <schema> ancestor element information item if present,
         * otherwise `absent`.
         */
-        if (topLevel == 0)
+        if (top_level == 0)
         {
             /*
             * Parse as local simple type definition.
             */
             type = addType(ctxt, schema,
                 XML_XSD10_SCHEMA_TYPE_SIMPLE,
-                null, ctxt.targetNamespace, node, 0);
+                null, ctxt.target_namespace, node, 0);
             if (type == null)
                 return null;
             type.type = XML_XSD10_SCHEMA_TYPE_SIMPLE;
-            type.contentType = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
+            type.content_type = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
             /*
             * Check for illegal attributes.
             */
@@ -4235,11 +4235,11 @@ public final class Xsd10Parse
             * Note that attrValue is the value of the attribute "name" here.
             */
             type = addType(ctxt, schema, XML_XSD10_SCHEMA_TYPE_SIMPLE,
-                attrValue[0], ctxt.targetNamespace, node, 1);
+                attr_value[0], ctxt.target_namespace, node, 1);
             if (type == null)
                 return null;
             type.type = XML_XSD10_SCHEMA_TYPE_SIMPLE;
-            type.contentType = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
+            type.content_type = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
             type.flags |= XML_XSD10_SCHEMAS_TYPE_GLOBAL;
             /*
             * Check for illegal attributes.
@@ -4279,9 +4279,9 @@ public final class Xsd10Parse
             }
             else
             {
-                attrValue[0] = getProp(ctxt, node, "final");
+                attr_value[0] = getProp(ctxt, node, "final");
                 int[] fl = { type.flags };
-                int r = pValAttrBlockFinal(attrValue[0], fl,
+                int r = pValAttrBlockFinal(attr_value[0], fl,
                     -1, -1, XML_XSD10_SCHEMAS_TYPE_FINAL_RESTRICTION, -1,
                     XML_XSD10_SCHEMAS_TYPE_FINAL_LIST,
                     XML_XSD10_SCHEMAS_TYPE_FINAL_UNION);
@@ -4293,18 +4293,18 @@ public final class Xsd10Parse
                         XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                         type, attr,
                         null, "(#all | List of (list | union | restriction)",
-                        attrValue[0], null, null, null);
+                        attr_value[0], null, null, null);
                 }
             }
         }
-        type.targetNamespace = ctxt.targetNamespace;
+        type.target_namespace = ctxt.target_namespace;
         pValAttrId(ctxt, node, "id");
         /*
         * And now for the children...
         */
-        oldCtxtType = ctxt.ctxtType;
+        old_ctxt_type = ctxt.ctxt_type;
 
-        ctxt.ctxtType = type;
+        ctxt.ctxt_type = type;
 
         child = parseFirstChild(node);
         if (isSchema(child, "annotation") != 0)
@@ -4322,7 +4322,7 @@ public final class Xsd10Parse
         {
             parseRestriction(ctxt, schema, child,
                 XML_XSD10_SCHEMA_TYPE_SIMPLE);
-            hasRestriction = 1;
+            has_restriction = 1;
             child = parseNext(child);
         }
         else if (isSchema(child, "list") != 0)
@@ -4348,14 +4348,14 @@ public final class Xsd10Parse
         * base [attribute] must be the same as the `actual value` of its own
         * name attribute plus target namespace;"
         */
-        if ((topLevel != 0) && (ctxt.isRedefine != 0) && (hasRestriction == 0))
+        if ((top_level != 0) && (ctxt.is_redefine != 0) && (has_restriction == 0))
         {
             pCustomErr(ctxt, XML_XSD10_SCHEMAP_SRC_REDEFINE,
                 null, node, "This is a redefinition, thus the " +
                 "<simpleType> must have a <restriction> child", null);
         }
 
-        ctxt.ctxtType = oldCtxtType;
+        ctxt.ctxt_type = old_ctxt_type;
         return type;
     }
 
@@ -4366,7 +4366,7 @@ public final class Xsd10Parse
         Xsd10Particle item;
         XmlNode child;
         XmlNode attr;
-        String[] ref = { null }, refNs = { null };
+        String[] ref = { null }, ref_ns = { null };
         int min, max;
 
         if ((ctxt == null) || (schema == null) || (node == null))
@@ -4381,11 +4381,11 @@ public final class Xsd10Parse
             return null;
         }
         else if (pValAttrNodeQName(ctxt, schema, null,
-            attr, refNs, ref) != 0)
+            attr, ref_ns, ref) != 0)
         {
             return null;
         }
-        checkReference(ctxt, schema, node, attr, refNs[0]);
+        checkReference(ctxt, schema, node, attr, ref_ns[0]);
         min = getMinOccurs(ctxt, node, 0, -1, 1, "xs:nonNegativeInteger");
         max = getMaxOccurs(ctxt, node, 0, XML_XSD10_UNBOUNDED, 1,
             "(xs:nonNegativeInteger | unbounded)");
@@ -4421,7 +4421,7 @@ public final class Xsd10Parse
         * Create a qname-reference and set as the term; it will be substituted
         * for the model group after the reference has been resolved.
         */
-        item.children = newQNameRef(ctxt, XML_XSD10_SCHEMA_TYPE_GROUP, ref[0], refNs[0]);
+        item.children = newQNameRef(ctxt, XML_XSD10_SCHEMA_TYPE_GROUP, ref[0], ref_ns[0]);
         pCheckParticleCorrect2(ctxt, item, node, min, max);
         /*
         * And now for the children...
@@ -4444,7 +4444,7 @@ public final class Xsd10Parse
                 "(annotation?)");
         }
         /*
-        * Corresponds to no component at all if minOccurs==maxOccurs==0.
+        * Corresponds to no component at all if min_occurs==max_occurs==0.
         */
         if ((min == 0) && (max == 0))
             return null;
@@ -4479,7 +4479,7 @@ public final class Xsd10Parse
             return null;
         }
         item = addModelGroupDefinition(ctxt, schema, name[0],
-            ctxt.targetNamespace, node);
+            ctxt.target_namespace, node);
         if (item == null)
             return null;
         /*
@@ -4590,7 +4590,7 @@ public final class Xsd10Parse
     {
         XmlNode attr;
         String val;
-        int res, oldErrs = ctxt.nberrors;
+        int res, old_errs = ctxt.nberrors;
         int[] fl = new int[1];
 
         /*
@@ -4698,7 +4698,7 @@ public final class Xsd10Parse
         }
 
         /* exit: */
-        if (oldErrs != ctxt.nberrors)
+        if (old_errs != ctxt.nberrors)
             res = ctxt.err;
         return res;
     }
@@ -4709,12 +4709,12 @@ public final class Xsd10Parse
     {
         XmlNode child;
         Xsd10Annot annot;
-        int res = 0, oldErrs, tmpOldErrs;
+        int res = 0, old_errs, tmp_old_errs;
 
         if ((ctxt == null) || (schema == null) || (nodes == null))
             return -1;
 
-        oldErrs = ctxt.nberrors;
+        old_errs = ctxt.nberrors;
         child = nodes;
         exit:
         {
@@ -4733,29 +4733,29 @@ public final class Xsd10Parse
                 }
                 else if (isSchema(child, "import") != 0)
                 {
-                    tmpOldErrs = ctxt.nberrors;
+                    tmp_old_errs = ctxt.nberrors;
                     res = parseImport(ctxt, schema, child);
                     if (res == -1) return -1;
                     if (ctxt.stop != 0) break exit;
-                    if (tmpOldErrs != ctxt.nberrors)
+                    if (tmp_old_errs != ctxt.nberrors)
                         break exit;
                 }
                 else if (isSchema(child, "include") != 0)
                 {
-                    tmpOldErrs = ctxt.nberrors;
+                    tmp_old_errs = ctxt.nberrors;
                     res = parseInclude(ctxt, schema, child);
                     if (res == -1) return -1;
                     if (ctxt.stop != 0) break exit;
-                    if (tmpOldErrs != ctxt.nberrors)
+                    if (tmp_old_errs != ctxt.nberrors)
                         break exit;
                 }
                 else if (isSchema(child, "redefine") != 0)
                 {
-                    tmpOldErrs = ctxt.nberrors;
+                    tmp_old_errs = ctxt.nberrors;
                     res = parseRedefine(ctxt, schema, child);
                     if (res == -1) return -1;
                     if (ctxt.stop != 0) break exit;
-                    if (tmpOldErrs != ctxt.nberrors)
+                    if (tmp_old_errs != ctxt.nberrors)
                         break exit;
                 }
                 child = parseNext(child);
@@ -4826,8 +4826,8 @@ public final class Xsd10Parse
             }
         }
         /* exit: */
-        ctxt.ctxtType = null;
-        if (oldErrs != ctxt.nberrors)
+        ctxt.ctxt_type = null;
+        if (old_errs != ctxt.nberrors)
             res = ctxt.err;
         return res;
     }
@@ -4841,22 +4841,22 @@ public final class Xsd10Parse
 
     // xml_xsd10_get_schema_bucket
     /** Port of xmlSchemaGetSchemaBucket. */
-    static Xsd10Bucket getSchemaBucket(Xsd10ParserCtxt pctxt, String schemaLocation)
+    static Xsd10Bucket getSchemaBucket(Xsd10ParserCtxt pctxt, String schema_location)
     {
         Xsd10Bucket cur;
         Xsd10ItemList list;
 
         list = pctxt.constructor.buckets;
-        if ((list == null) || (list.nbItems == 0))
+        if ((list == null) || (list.nb_items == 0))
             return null;
         else
         {
             int i;
-            for (i = 0; i < list.nbItems; i++)
+            for (i = 0; i < list.nb_items; i++)
             {
                 cur = as(list.items[i], Xsd10Bucket.class);
                 /* Pointer comparison! */
-                if ((cur != null) && Objects.equals(cur.schemaLocation, schemaLocation))
+                if ((cur != null) && Objects.equals(cur.schema_location, schema_location))
                     return cur;
             }
         }
@@ -4865,24 +4865,24 @@ public final class Xsd10Parse
 
     // xml_xsd10_get_chameleon_schema_bucket
     /** Port of xmlSchemaGetChameleonSchemaBucket. */
-    static Xsd10Bucket getChameleonSchemaBucket(Xsd10ParserCtxt pctxt, String schemaLocation, String targetNamespace)
+    static Xsd10Bucket getChameleonSchemaBucket(Xsd10ParserCtxt pctxt, String schema_location, String target_namespace)
     {
         Xsd10Bucket cur;
         Xsd10ItemList list;
 
         list = pctxt.constructor.buckets;
-        if ((list == null) || (list.nbItems == 0))
+        if ((list == null) || (list.nb_items == 0))
             return null;
         else
         {
             int i;
-            for (i = 0; i < list.nbItems; i++)
+            for (i = 0; i < list.nb_items; i++)
             {
                 cur = as(list.items[i], Xsd10Bucket.class);
                 /* Pointer comparison! */
-                if ((cur != null) && (cur.origTargetNamespace == null) &&
-                    Objects.equals(cur.schemaLocation, schemaLocation) &&
-                    Objects.equals(cur.targetNamespace, targetNamespace))
+                if ((cur != null) && (cur.orig_target_namespace == null) &&
+                    Objects.equals(cur.schema_location, schema_location) &&
+                    Objects.equals(cur.target_namespace, target_namespace))
                     return cur;
             }
         }
@@ -4892,27 +4892,27 @@ public final class Xsd10Parse
     // XSD10_IS_BAD_SCHEMA_DOC
     private static boolean isBadSchemaDoc(Xsd10Bucket b)
     {
-        return (b.doc == null) && (b.schemaLocation != null);
+        return (b.doc == null) && (b.schema_location != null);
     }
 
     // xml_xsd10_get_schema_bucket_by_tns
     /** Port of xmlSchemaGetSchemaBucketByTNS. */
-    static Xsd10Bucket getSchemaBucketByTns(Xsd10ParserCtxt pctxt, String targetNamespace, int imported)
+    static Xsd10Bucket getSchemaBucketByTns(Xsd10ParserCtxt pctxt, String target_namespace, int imported)
     {
         Xsd10Bucket cur;
         Xsd10ItemList list;
 
         list = pctxt.constructor.buckets;
-        if ((list == null) || (list.nbItems == 0))
+        if ((list == null) || (list.nb_items == 0))
             return null;
         else
         {
             int i;
-            for (i = 0; i < list.nbItems; i++)
+            for (i = 0; i < list.nb_items; i++)
             {
                 cur = as(list.items[i], Xsd10Bucket.class);
                 if ((cur != null) && (!isBadSchemaDoc(cur)) &&
-                    Objects.equals(cur.origTargetNamespace, targetNamespace) &&
+                    Objects.equals(cur.orig_target_namespace, target_namespace) &&
                     (((imported != 0) && (cur.imported != 0)) ||
                      ((imported == 0) && (cur.imported == 0))))
                     return cur;
@@ -4925,10 +4925,10 @@ public final class Xsd10Parse
     /** Port of xmlSchemaParseNewDocWithContext. */
     static int parseNewDocWithContext(Xsd10ParserCtxt pctxt, Xsd10Schema schema, Xsd10Bucket bucket)
     {
-        int oldFlags;
-        XmlDocument oldDoc;
+        int old_flags;
+        XmlDocument old_doc;
         XmlNode node;
-        int ret, oldErrs;
+        int ret, old_errs;
         Xsd10Bucket oldbucket = pctxt.constructor.bucket;
 
         /*
@@ -4937,8 +4937,8 @@ public final class Xsd10Parse
         * to the parser. Get rid of passing the main schema to the
         * parsing functions.
         */
-        oldFlags = schema.flags;
-        oldDoc = schema.doc;
+        old_flags = schema.flags;
+        old_doc = schema.doc;
         if (schema.flags != 0)
             clearSchemaDefaults(schema);
         schema.doc = bucket.doc;
@@ -4947,16 +4947,16 @@ public final class Xsd10Parse
         * Keep the current target namespace on the parser *not* on the
         * main schema.
         */
-        pctxt.targetNamespace = bucket.targetNamespace;
+        pctxt.target_namespace = bucket.target_namespace;
         wxsConstructor(pctxt).bucket = bucket;
 
-        if ((bucket.targetNamespace != null) &&
-            (strEqual(bucket.targetNamespace, XML_XSD10_NS) != 0))
+        if ((bucket.target_namespace != null) &&
+            (strEqual(bucket.target_namespace, XML_XSD10_NS) != 0))
         {
             /*
             * We are parsing the schema for schemas!
             */
-            pctxt.isS4S = 1;
+            pctxt.is_s4_s = 1;
         }
         /* Mark it as parsed, even if parsing fails. */
         bucket.parsed++;
@@ -4970,7 +4970,7 @@ public final class Xsd10Parse
             /* An empty schema; just get out. */
             if (parseFirstChild(node) == null)
                 break exit;
-            oldErrs = pctxt.nberrors;
+            old_errs = pctxt.nberrors;
             ret = parseSchemaTopLevel(pctxt, schema, parseFirstChild(node));
             if (ret != 0)
                 break exit;
@@ -4979,7 +4979,7 @@ public final class Xsd10Parse
             * as a result of the above functions; so better rely on pctxt->err
             * as well.
             */
-            if ((ret == 0) && (oldErrs != pctxt.nberrors))
+            if ((ret == 0) && (old_errs != pctxt.nberrors))
             {
                 ret = pctxt.err;
                 break exit;
@@ -4989,8 +4989,8 @@ public final class Xsd10Parse
         /* exit: */
         wxsConstructor(pctxt).bucket = oldbucket;
         /* Restore schema values. */
-        schema.doc = oldDoc;
-        schema.flags = oldFlags;
+        schema.doc = old_doc;
+        schema.flags = old_flags;
         return ret;
     }
 
@@ -5022,7 +5022,7 @@ public final class Xsd10Parse
             return -1;
         }
         /* Create and init the temporary parser context. */
-        newpctxt = newParserCtxtUseDict(bucket.schemaLocation, pctxt.dict);
+        newpctxt = newParserCtxtUseDict(bucket.schema_location, pctxt.dict);
         if (newpctxt == null)
             return -1;
         newpctxt.constructor = pctxt.constructor;
@@ -5033,15 +5033,15 @@ public final class Xsd10Parse
         */
         newpctxt.schema = schema;
         setParserErrors(newpctxt, pctxt.error, pctxt.warning,
-            pctxt.errCtxt);
+            pctxt.err_ctxt);
         setParserStructuredErrors(newpctxt, pctxt.serror,
-            pctxt.errCtxt);
+            pctxt.err_ctxt);
         newpctxt.counter = pctxt.counter;
         /* Not in libxml2 (its temporary context loads with the default resource
            loader): the native loader replaces xmlResourceLoader, keep using it for
            the imports/includes of the nested documents. */
-        newpctxt.resourceLoader = pctxt.resourceLoader;
-        newpctxt.resourceCtxt = pctxt.resourceCtxt;
+        newpctxt.resource_loader = pctxt.resource_loader;
+        newpctxt.resource_ctxt = pctxt.resource_ctxt;
 
         res = parseNewDocWithContext(newpctxt, schema, bucket);
 
@@ -5074,7 +5074,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_build_absolute_uri
     /** Port of xmlSchemaBuildAbsoluteURI. */
-    static String buildAbsoluteUri(Xsd10Dict dict, String location, XmlNode ctxtNode, String baseURI)
+    static String buildAbsoluteUri(Xsd10Dict dict, String location, XmlNode ctxt_node, String base_uri)
     {
         /*
         * Build an absolute location URI.
@@ -5083,14 +5083,14 @@ public final class Xsd10Parse
         {
             String URI;
 
-            if (ctxtNode != null)
+            if (ctxt_node != null)
             {
                 String base;
 
-                base = treeNodeGetBase(nodeDom(ctxtNode), ctxtNode);
+                base = treeNodeGetBase(nodeDom(ctxt_node), ctxt_node);
                 if (base == null)
                 {
-                    XmlDocument d = nodeDom(ctxtNode);
+                    XmlDocument d = nodeDom(ctxt_node);
                     URI = XmlUri.build(location, (d == null) ? null : domUrl(d));
                 }
                 else
@@ -5098,9 +5098,9 @@ public final class Xsd10Parse
                     URI = XmlUri.build(location, base);
                 }
             }
-            else if (baseURI != null)
+            else if (base_uri != null)
             {
-                URI = XmlUri.build(location, baseURI);
+                URI = XmlUri.build(location, base_uri);
             }
             else
             {
@@ -5120,12 +5120,12 @@ public final class Xsd10Parse
 
     // xml_xsd10_add_schema_doc
     /** Port of xmlSchemaAddSchemaDoc. Arrays: {@code bucket} is C {@code XmlXsd10Bucket **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int addSchemaDoc(Xsd10ParserCtxt pctxt, int type, String schemaLocation, XmlDocument schemaDoc, String schemaBuffer, int schemaBufferLen, XmlNode invokingNode, String sourceTargetNamespace, String importNamespace, Xsd10Bucket[] bucket)
+    static int addSchemaDoc(Xsd10ParserCtxt pctxt, int type, String schema_location, XmlDocument schema_doc, String schema_buffer, int schema_buffer_len, XmlNode invoking_node, String source_target_namespace, String import_namespace, Xsd10Bucket[] bucket)
     {
-        String targetNamespace = null;
+        String target_namespace = null;
         Xsd10SchemaRelation relation = null;
         XmlDocument doc = null;
-        int res = 0, err = 0, located = 0, preserveDoc = 0;
+        int res = 0, err = 0, located = 0, preserve_doc = 0;
         Xsd10Bucket bkt = null;
         int outcome = ASD_EXIT;
 
@@ -5160,16 +5160,16 @@ public final class Xsd10Parse
                     break docLoad;
 
                 /* Note that we expect the location to be an absolute URI. */
-                if (schemaLocation != null)
+                if (schema_location != null)
                 {
-                    bkt = getSchemaBucket(pctxt, schemaLocation);
+                    bkt = getSchemaBucket(pctxt, schema_location);
                     if ((bkt != null) &&
                         (pctxt.constructor.bucket == bkt))
                     {
                         /* Report self-imports/inclusions/redefinitions. */
 
                         customErr(pctxt, err,
-                            invokingNode, null,
+                            invoking_node, null,
                             "The schema must not import/include/redefine itself",
                             null, null);
                         outcome = ASD_EXIT;
@@ -5190,8 +5190,8 @@ public final class Xsd10Parse
                 */
                 if (wxsIsBucketImpmain(type) != 0)
                 {
-                    relation.importNamespace = importNamespace;
-                    if (schemaLocation == null)
+                    relation.import_namespace = import_namespace;
+                    if (schema_location == null)
                     {
                         /*
                         * No location; this is just an import of the namespace.
@@ -5201,7 +5201,7 @@ public final class Xsd10Parse
                         outcome = ASD_EXIT;
                         break done;
                     }
-                    targetNamespace = importNamespace;
+                    target_namespace = import_namespace;
                 }
 
                 /* Did we already fetch the doc? */
@@ -5213,15 +5213,15 @@ public final class Xsd10Parse
                         * We included/redefined and then try to import a schema,
                         * but the new location provided for import was different.
                         */
-                        if (schemaLocation == null)
-                            schemaLocation = "in_memory_buffer";
-                        if (strEqual(schemaLocation, bkt.schemaLocation) == 0)
+                        if (schema_location == null)
+                            schema_location = "in_memory_buffer";
+                        if (strEqual(schema_location, bkt.schema_location) == 0)
                         {
                             customErr(pctxt, err,
-                                invokingNode, null,
+                                invoking_node, null,
                                 "The schema document '%s' cannot be imported, since " +
                                 "it was already included or redefined",
-                                schemaLocation, null);
+                                schema_location, null);
                             outcome = ASD_EXIT;
                             break done;
                         }
@@ -5233,15 +5233,15 @@ public final class Xsd10Parse
                         * but the new location provided for the include/redefine
                         * was different.
                         */
-                        if (schemaLocation == null)
-                            schemaLocation = "in_memory_buffer";
-                        if (strEqual(schemaLocation, bkt.schemaLocation) == 0)
+                        if (schema_location == null)
+                            schema_location = "in_memory_buffer";
+                        if (strEqual(schema_location, bkt.schema_location) == 0)
                         {
                             customErr(pctxt, err,
-                                invokingNode, null,
+                                invoking_node, null,
                                 "The schema document '%s' cannot be included or " +
                                 "redefined, since it was already imported",
-                                schemaLocation, null);
+                                schema_location, null);
                             outcome = ASD_EXIT;
                             break done;
                         }
@@ -5251,9 +5251,9 @@ public final class Xsd10Parse
                 if (wxsIsBucketImpmain(type) != 0)
                 {
                     /*
-                    * Given that the schemaLocation [attribute] is only a hint, it is open
+                    * Given that the schema_location [attribute] is only a hint, it is open
                     * to applications to ignore all but the first <import> for a given
-                    * namespace, regardless of the `actual value` of schemaLocation, but
+                    * namespace, regardless of the `actual value` of schema_location, but
                     * such a strategy risks missing useful information when new
                     * schemaLocations are offered.
                     *
@@ -5276,35 +5276,35 @@ public final class Xsd10Parse
                         outcome = ASD_EXIT;
                         break done;
                     }
-                    bkt = getSchemaBucketByTns(pctxt, importNamespace, 1);
+                    bkt = getSchemaBucketByTns(pctxt, import_namespace, 1);
 
                     if (bkt != null)
                     {
                         relation.bucket = bkt;
-                        if (bkt.schemaLocation == null)
+                        if (bkt.schema_location == null)
                         {
                             /* First given location of the schema; load the doc. */
-                            bkt.schemaLocation = schemaLocation;
+                            bkt.schema_location = schema_location;
                         }
                         else
                         {
-                            if (strEqual(schemaLocation, bkt.schemaLocation) == 0)
+                            if (strEqual(schema_location, bkt.schema_location) == 0)
                             {
                                 /*
                                 * Additional location given; just skip it.
                                 * URGENT TODO: We should report a warning here.
                                 * res = XML_SCHEMAP_SRC_IMPORT;
                                 */
-                                if (schemaLocation == null)
-                                    schemaLocation = "in_memory_buffer";
+                                if (schema_location == null)
+                                    schema_location = "in_memory_buffer";
 
                                 customWarning(pctxt,
                                     XML_XSD10_SCHEMAP_WARN_SKIP_SCHEMA,
-                                    invokingNode, null,
+                                    invoking_node, null,
                                     "Skipping import of schema located at '%s' for the " +
                                     "namespace '%s', since this namespace was already " +
                                     "imported with the schema located at '%s'",
-                                    schemaLocation, importNamespace, bkt.schemaLocation);
+                                    schema_location, import_namespace, bkt.schema_location);
                             }
                             outcome = ASD_EXIT;
                             break done;
@@ -5321,22 +5321,22 @@ public final class Xsd10Parse
                     if (bkt != null)
                     {
 
-                        if ((bkt.origTargetNamespace == null) &&
-                            !Objects.equals(bkt.targetNamespace, sourceTargetNamespace))
+                        if ((bkt.orig_target_namespace == null) &&
+                            !Objects.equals(bkt.target_namespace, source_target_namespace))
                         {
                             Xsd10Bucket chamel;
 
                             /*
                             * Chameleon include/redefine: skip loading only if it was
-                            * already build for the targetNamespace of the including
+                            * already build for the target_namespace of the including
                             * schema.
                             */
                             /*
                             * URGENT TODO: If the schema is a chameleon-include then copy
                             * the components into the including schema and modify the
-                            * targetNamespace of those components, do nothing otherwise.
+                            * target_namespace of those components, do nothing otherwise.
                             * NOTE: This is currently worked-around by compiling the
-                            * chameleon for every distinct including targetNamespace; thus
+                            * chameleon for every distinct including target_namespace; thus
                             * not performant at the moment.
                             * TODO: Check when the namespace in wildcards for chameleons
                             * needs to be converted: before we built wildcard intersections
@@ -5344,7 +5344,7 @@ public final class Xsd10Parse
                             *   Answer: after!
                             */
                             chamel = getChameleonSchemaBucket(pctxt,
-                                schemaLocation, sourceTargetNamespace);
+                                schema_location, source_target_namespace);
                             if (chamel != null)
                             {
                                 /* A fitting chameleon was already parsed; NOP. */
@@ -5354,10 +5354,10 @@ public final class Xsd10Parse
                             }
                             /*
                             * We need to parse the chameleon again for a different
-                            * targetNamespace.
+                            * target_namespace.
                             * CHAMELEON TODO: Optimize this by only parsing the
                             * chameleon once, and then copying the components to
-                            * the new targetNamespace.
+                            * the new target_namespace.
                             */
                             bkt = null;
                         }
@@ -5383,38 +5383,38 @@ public final class Xsd10Parse
             /*
             * Load the document.
             */
-            if (schemaDoc != null)
+            if (schema_doc != null)
             {
-                doc = schemaDoc;
+                doc = schema_doc;
                 /* Don' free this one, since it was provided by the caller. */
-                preserveDoc = 1;
+                preserve_doc = 1;
                 /* TODO: Does the context or the doc hold the location? */
-                if (domUrl(schemaDoc) != null)
-                    schemaLocation = dictLookup(pctxt.dict, domUrl(schemaDoc), -1);
+                if (domUrl(schema_doc) != null)
+                    schema_location = dictLookup(pctxt.dict, domUrl(schema_doc), -1);
                 else
-                    schemaLocation = "in_memory_buffer";
+                    schema_location = "in_memory_buffer";
             }
-            else if ((schemaLocation != null) || (schemaBuffer != null))
+            else if ((schema_location != null) || (schema_buffer != null))
             {
                 /* The loading via xmlNewParserCtxt/xmlCtxtReadFile/xmlCtxtReadMemory (with the
                    structured error handler and the resource loader of pctxt) is done by
-                   xml_xsd10_p_read_file/xml_xsd10_p_read_memory, notLocated replaces the check
+                   xml_xsd10_p_read_file/xml_xsd10_p_read_memory, not_located replaces the check
                    of the last error for the XML_FROM_IO domain below. */
-                int[] notLocated = { 0 };
+                int[] not_located = { 0 };
 
-                if (schemaLocation != null)
+                if (schema_location != null)
                 {
                     /* Parse from file. */
-                    doc = pReadFile(pctxt, schemaLocation, notLocated);
+                    doc = pReadFile(pctxt, schema_location, not_located);
                 }
-                else if (schemaBuffer != null)
+                else if (schema_buffer != null)
                 {
                     /* Parse from memory buffer. */
-                    doc = pReadMemory(pctxt, schemaBuffer, schemaBufferLen,
-                        notLocated);
-                    schemaLocation = "in_memory_buffer";
+                    doc = pReadMemory(pctxt, schema_buffer, schema_buffer_len,
+                        not_located);
+                    schema_location = "in_memory_buffer";
                     if (doc != null)
-                        domSetUrl(doc, schemaLocation);
+                        domSetUrl(doc, schema_location);
                 }
                 /*
                 * For <import>:
@@ -5437,7 +5437,7 @@ public final class Xsd10Parse
                     * TODO: Try to find specific error codes to react only on
                     * localisation failures.
                     */
-                    if (notLocated[0] == 0)
+                    if (not_located[0] == 0)
                     {
                         /*
                         * We assume a parser error here.
@@ -5446,9 +5446,9 @@ public final class Xsd10Parse
                         /* TODO: Error code ?? */
                         res = XML_XSD10_SCHEMAP_SRC_IMPORT_2_1;
                         customErr(pctxt, res,
-                            invokingNode, null,
+                            invoking_node, null,
                             "Failed to parse the XML resource '%s'",
-                            schemaLocation, null);
+                            schema_location, null);
                     }
                 }
                 if ((doc == null) && (located != 0))
@@ -5472,40 +5472,40 @@ public final class Xsd10Parse
             */
             if (doc != null)
             {
-                XmlNode docElem;
+                XmlNode doc_elem;
 
                 located = 1;
-                docElem = domRootElement(doc);
-                if (docElem == null)
+                doc_elem = domRootElement(doc);
+                if (doc_elem == null)
                 {
                     customErr(pctxt, XML_XSD10_SCHEMAP_NOROOT,
-                        invokingNode, null,
+                        invoking_node, null,
                         "The document '%s' has no document element",
-                        schemaLocation, null);
+                        schema_location, null);
                     outcome = ASD_ERROR;
                     break done;
                 }
                 /*
                 * Remove all the blank text nodes.
                 */
-                cleanupDoc(pctxt, docElem);
+                cleanupDoc(pctxt, doc_elem);
                 /*
                 * Check the schema's top level element.
                 */
-                if (isSchema(docElem, "schema") == 0)
+                if (isSchema(doc_elem, "schema") == 0)
                 {
                     customErr(pctxt, XML_XSD10_SCHEMAP_NOT_SCHEMA,
-                        invokingNode, null,
+                        invoking_node, null,
                         "The XML document '%s' is not a schema document",
-                        schemaLocation, null);
+                        schema_location, null);
                     outcome = ASD_ERROR;
                     break done;
                 }
                 /*
                 * Note that we don't apply a type check for the
-                * targetNamespace value here.
+                * target_namespace value here.
                 */
-                targetNamespace = getProp(pctxt, docElem,
+                target_namespace = getProp(pctxt, doc_elem,
                     "targetNamespace");
             }
 
@@ -5514,7 +5514,7 @@ public final class Xsd10Parse
             {
                 /* Only create a bucket if the schema was located. */
                 bkt = bucketCreate(pctxt, type,
-                    targetNamespace);
+                    target_namespace);
                 if (bkt == null)
                 {
                     outcome = ASD_FAILURE;
@@ -5523,15 +5523,15 @@ public final class Xsd10Parse
             }
             if (bkt != null)
             {
-                bkt.schemaLocation = schemaLocation;
+                bkt.schema_location = schema_location;
                 bkt.located = located;
                 if (doc != null)
                 {
                     bkt.doc = doc;
-                    bkt.targetNamespace = targetNamespace;
-                    bkt.origTargetNamespace = targetNamespace;
-                    if (preserveDoc != 0)
-                        bkt.preserveDoc = 1;
+                    bkt.target_namespace = target_namespace;
+                    bkt.orig_target_namespace = target_namespace;
+                    if (preserve_doc != 0)
+                        bkt.preserve_doc = 1;
                 }
                 if (wxsIsBucketImpmain(type) != 0)
                     bkt.imported++;
@@ -5556,7 +5556,7 @@ public final class Xsd10Parse
                 bucket[0] = bkt;
             return 0;
         case ASD_ERROR:
-            if ((doc != null) && (preserveDoc == 0))
+            if ((doc != null) && (preserve_doc == 0))
             {
                 /* xml_dom_free(doc): the java dom is garbage collected. */
                 if (bkt != null)
@@ -5564,7 +5564,7 @@ public final class Xsd10Parse
             }
             return pctxt.err;
         case ASD_FAILURE:
-            if ((doc != null) && (preserveDoc == 0))
+            if ((doc != null) && (preserve_doc == 0))
             {
                 /* xml_dom_free(doc): the java dom is garbage collected. */
                 if (bkt != null)
@@ -5579,8 +5579,8 @@ public final class Xsd10Parse
     static int parseImport(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node)
     {
         XmlNode child;
-        String[] namespaceName = { null }, schemaLocation = { null };
-        String thisTargetNamespace;
+        String[] namespace_name = { null }, schema_location = { null };
+        String this_target_namespace;
         XmlNode attr;
         int ret;
         Xsd10Bucket[] bucket = { null };
@@ -5616,25 +5616,25 @@ public final class Xsd10Parse
         */
         if (pValAttr(pctxt, null, node,
             "namespace", getBuiltInType(XML_XSD10_SCHEMAS_ANYURI),
-            namespaceName) != 0)
+            namespace_name) != 0)
         {
             pSimpleTypeErr(pctxt,
                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                 null, node,
                 getBuiltInType(XML_XSD10_SCHEMAS_ANYURI),
-                null, namespaceName[0], null, null, null);
+                null, namespace_name[0], null, null, null);
             return pctxt.err;
         }
 
         if (pValAttr(pctxt, null, node,
             "schemaLocation", getBuiltInType(XML_XSD10_SCHEMAS_ANYURI),
-            schemaLocation) != 0)
+            schema_location) != 0)
         {
             pSimpleTypeErr(pctxt,
                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                 null, node,
                 getBuiltInType(XML_XSD10_SCHEMAS_ANYURI),
-                null, schemaLocation[0], null, null, null);
+                null, schema_location[0], null, null, null);
             return pctxt.err;
         }
         /*
@@ -5659,27 +5659,27 @@ public final class Xsd10Parse
         /*
         * Apply additional constraints.
         *
-        * Note that it is important to use the original @targetNamespace
+        * Note that it is important to use the original @target_namespace
         * (or none at all), to rule out imports of schemas _with_ a
-        * @targetNamespace if the importing schema is a chameleon schema
-        * (with no @targetNamespace).
+        * @target_namespace if the importing schema is a chameleon schema
+        * (with no @target_namespace).
         */
-        thisTargetNamespace = wxsBucket(pctxt).origTargetNamespace;
-        if (namespaceName[0] != null)
+        this_target_namespace = wxsBucket(pctxt).orig_target_namespace;
+        if (namespace_name[0] != null)
         {
             /*
             * 1.1 If the namespace [attribute] is present, then its `actual value`
             * must not match the `actual value` of the enclosing <schema>'s
-            * targetNamespace [attribute].
+            * target_namespace [attribute].
             */
-            if (strEqual(thisTargetNamespace, namespaceName[0]) != 0)
+            if (strEqual(this_target_namespace, namespace_name[0]) != 0)
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_SRC_IMPORT_1_1,
                     null, node,
                     "The value of the attribute 'namespace' must not match " +
                     "the target namespace '%s' of the importing schema",
-                    thisTargetNamespace);
+                    this_target_namespace);
                 return pctxt.err;
             }
         }
@@ -5687,9 +5687,9 @@ public final class Xsd10Parse
         {
             /*
             * 1.2 If the namespace [attribute] is not present, then the enclosing
-            * <schema> must have a targetNamespace [attribute].
+            * <schema> must have a target_namespace [attribute].
             */
-            if (thisTargetNamespace == null)
+            if (this_target_namespace == null)
             {
                 pCustomErr(pctxt,
                     XML_XSD10_SCHEMAP_SRC_IMPORT_1_2,
@@ -5703,12 +5703,12 @@ public final class Xsd10Parse
         /*
         * Locate and acquire the schema document.
         */
-        if (schemaLocation[0] != null)
-            schemaLocation[0] = buildAbsoluteUri(pctxt.dict,
-                schemaLocation[0], node, null);
+        if (schema_location[0] != null)
+            schema_location[0] = buildAbsoluteUri(pctxt.dict,
+                schema_location[0], node, null);
         ret = addSchemaDoc(pctxt, XML_XSD10_SCHEMA_SCHEMA_IMPORT,
-            schemaLocation[0], null, null, 0, node, thisTargetNamespace,
-            namespaceName[0], bucket);
+            schema_location[0], null, null, 0, node, this_target_namespace,
+            namespace_name[0], bucket);
 
         if (ret != 0)
             return ret;
@@ -5718,15 +5718,15 @@ public final class Xsd10Parse
         * schema reference strategy to fail."
         * So just don't parse if no schema document was found.
         * Note that we will get no bucket if the schema could not be
-        * located or if there was no schemaLocation.
+        * located or if there was no schema_location.
         */
-        if ((bucket[0] == null) && (schemaLocation[0] != null))
+        if ((bucket[0] == null) && (schema_location[0] != null))
         {
             customWarning(pctxt,
                 XML_XSD10_SCHEMAP_WARN_UNLOCATED_SCHEMA,
                 node, null,
                 "Failed to locate a schema at location '%s'. " +
-                "Skipping the import", schemaLocation[0], null, null);
+                "Skipping the import", schema_location[0], null, null);
         }
 
         if ((bucket[0] != null) && (canParseSchema(bucket[0]) != 0))
@@ -5738,16 +5738,16 @@ public final class Xsd10Parse
     }
 
     // xml_xsd10_parse_include_or_redefine_attrs
-    /** Port of xmlSchemaParseIncludeOrRedefineAttrs. Arrays: {@code schemaLocation} is C {@code char **} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int parseIncludeOrRedefineAttrs(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, String[] schemaLocation, int type)
+    /** Port of xmlSchemaParseIncludeOrRedefineAttrs. Arrays: {@code schema_location} is C {@code char **} (an out param: caller allocated array of length 1; a real C array: the array). */
+    static int parseIncludeOrRedefineAttrs(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, String[] schema_location, int type)
     {
         XmlNode attr;
 
         if ((pctxt == null) || (schema == null) || (node == null) ||
-            (schemaLocation == null))
+            (schema_location == null))
             return -1;
 
-        schemaLocation[0] = null;
+        schema_location[0] = null;
         /*
         * Check for illegal attributes.
         * Applies for both <include> and <redefine>.
@@ -5777,7 +5777,7 @@ public final class Xsd10Parse
         * from the base.
         */
         /*
-        * Attribute "schemaLocation" is mandatory.
+        * Attribute "schema_location" is mandatory.
         */
         attr = getPropNode(node, "schemaLocation");
         if (attr != null)
@@ -5787,17 +5787,17 @@ public final class Xsd10Parse
 
             if (pValAttrNode(pctxt, null, attr,
                 getBuiltInType(XML_XSD10_SCHEMAS_ANYURI),
-                schemaLocation) != 0)
+                schema_location) != 0)
                 return pctxt.err;
             base = treeNodeGetBase(nodeDom(node), node);
             if (base == null)
             {
                 XmlDocument d = nodeDom(node);
-                uri = XmlUri.build(schemaLocation[0], (d == null) ? null : domUrl(d));
+                uri = XmlUri.build(schema_location[0], (d == null) ? null : domUrl(d));
             }
             else
             {
-                uri = XmlUri.build(schemaLocation[0], base);
+                uri = XmlUri.build(schema_location[0], base);
             }
             if (uri == null)
             {
@@ -5805,7 +5805,7 @@ public final class Xsd10Parse
                     "could not build an URI from the schemaLocation");
                 return -1;
             }
-            schemaLocation[0] = dictLookup(pctxt.dict, uri, -1);
+            schema_location[0] = dictLookup(pctxt.dict, uri, -1);
         }
         else
         {
@@ -5817,7 +5817,7 @@ public final class Xsd10Parse
         /*
         * Report self-inclusion and self-redefinition.
         */
-        if (strEqual(schemaLocation[0], pctxt.URL) != 0)
+        if (strEqual(schema_location[0], pctxt.URL) != 0)
         {
             if (type == XML_XSD10_SCHEMA_SCHEMA_REDEFINE)
             {
@@ -5825,7 +5825,7 @@ public final class Xsd10Parse
                     XML_XSD10_SCHEMAP_SRC_REDEFINE,
                     null, node,
                     "The schema document '%s' cannot redefine itself.",
-                    schemaLocation[0]);
+                    schema_location[0]);
             }
             else
             {
@@ -5833,7 +5833,7 @@ public final class Xsd10Parse
                     XML_XSD10_SCHEMAP_SRC_INCLUDE,
                     null, node,
                     "The schema document '%s' cannot include itself.",
-                    schemaLocation[0]);
+                    schema_location[0]);
             }
             return pctxt.err;
         }
@@ -5846,31 +5846,31 @@ public final class Xsd10Parse
     static int parseIncludeOrRedefine(Xsd10ParserCtxt pctxt, Xsd10Schema schema, XmlNode node, int type)
     {
         XmlNode child;
-        String[] schemaLocation = { null };
+        String[] schema_location = { null };
         int res; /* hasRedefinitions = 0 */
-        int isChameleon = 0, wasChameleon = 0;
-        Xsd10Bucket[] bucketOut = { null };
+        int is_chameleon = 0, was_chameleon = 0;
+        Xsd10Bucket[] bucket_out = { null };
         Xsd10Bucket bucket;
 
         if ((pctxt == null) || (schema == null) || (node == null))
             return -1;
 
         /*
-        * Parse attributes. Note that the returned schemaLocation will
+        * Parse attributes. Note that the returned schema_location will
         * be already converted to an absolute URI.
         */
         res = parseIncludeOrRedefineAttrs(pctxt, schema,
-            node, schemaLocation, type);
+            node, schema_location, type);
         if (res != 0)
             return res;
         /*
         * Load and add the schema document.
         */
-        res = addSchemaDoc(pctxt, type, schemaLocation[0], null,
-            null, 0, node, pctxt.targetNamespace, null, bucketOut);
+        res = addSchemaDoc(pctxt, type, schema_location[0], null,
+            null, 0, node, pctxt.target_namespace, null, bucket_out);
         if (res != 0)
             return res;
-        bucket = bucketOut[0];
+        bucket = bucket_out[0];
         /*
         * If we get no schema bucket back, then this means that the schema
         * document could not be located or was broken XML or was not
@@ -5887,7 +5887,7 @@ public final class Xsd10Parse
                 * schema people. I.e. the following spec piece will *not* be
                 * satisfied:
                 * SPEC src-include: "It is not an error for the `actual value` of the
-                * schemaLocation [attribute] to fail to resolve it all, in which
+                * schema_location [attribute] to fail to resolve it all, in which
                 * case no corresponding inclusion is performed.
                 * So do we need a warning report here?"
                 */
@@ -5895,7 +5895,7 @@ public final class Xsd10Parse
                 customErr(pctxt, res,
                     node, null,
                     "Failed to load the document '%s' for inclusion",
-                    schemaLocation[0], null);
+                    schema_location[0], null);
             }
             else
             {
@@ -5906,7 +5906,7 @@ public final class Xsd10Parse
                 * SPEC src-redefine (1)
                 * "If there are any element information items among the [children]
                 * other than <annotation> then the `actual value` of the
-                * schemaLocation [attribute] must successfully resolve."
+                * schema_location [attribute] must successfully resolve."
                 * TODO: Ask the WG if a the location has always to resolve
                 * here as well!
                 */
@@ -5914,25 +5914,25 @@ public final class Xsd10Parse
                 customErr(pctxt, res,
                     node, null,
                     "Failed to load the document '%s' for redefinition",
-                    schemaLocation[0], null);
+                    schema_location[0], null);
             }
         }
         else
         {
             /*
-            * Check targetNamespace sanity before parsing the new schema.
+            * Check target_namespace sanity before parsing the new schema.
             * TODO: Note that we won't check further content if the
-            * targetNamespace was bad.
+            * target_namespace was bad.
             */
-            if (bucket.origTargetNamespace != null)
+            if (bucket.orig_target_namespace != null)
             {
                 /*
                 * SPEC src-include (2.1)
-                * "SII has a targetNamespace [attribute], and its `actual
-                * value` is identical to the `actual value` of the targetNamespace
+                * "SII has a target_namespace [attribute], and its `actual
+                * value` is identical to the `actual value` of the target_namespace
                 * [attribute] of SII' (which must have such an [attribute])."
                 */
-                if (pctxt.targetNamespace == null)
+                if (pctxt.target_namespace == null)
                 {
                     customErr(pctxt,
                         XML_XSD10_SCHEMAP_SRC_INCLUDE,
@@ -5940,11 +5940,11 @@ public final class Xsd10Parse
                         "The target namespace of the included/redefined schema " +
                         "'%s' has to be absent, since the including/redefining " +
                         "schema has no target namespace",
-                        schemaLocation[0], null);
+                        schema_location[0], null);
                     return pctxt.err;
                 }
-                else if (strEqual(bucket.origTargetNamespace,
-                    pctxt.targetNamespace) == 0)
+                else if (strEqual(bucket.orig_target_namespace,
+                    pctxt.target_namespace) == 0)
                 {
                     /* TODO: Change error function. */
                     pCustomErrExt(pctxt,
@@ -5953,19 +5953,19 @@ public final class Xsd10Parse
                         "The target namespace '%s' of the included/redefined " +
                         "schema '%s' differs from '%s' of the " +
                         "including/redefining schema",
-                        bucket.origTargetNamespace, schemaLocation[0],
-                        pctxt.targetNamespace);
+                        bucket.orig_target_namespace, schema_location[0],
+                        pctxt.target_namespace);
                     return pctxt.err;
                 }
             }
-            else if (pctxt.targetNamespace != null)
+            else if (pctxt.target_namespace != null)
             {
                 /*
                 * Chameleons: the original target namespace will
                 * differ from the resulting namespace.
                 */
-                isChameleon = 1;
-                bucket.targetNamespace = pctxt.targetNamespace;
+                is_chameleon = 1;
+                bucket.target_namespace = pctxt.target_namespace;
             }
         }
         /*
@@ -5973,7 +5973,7 @@ public final class Xsd10Parse
         */
         if ((bucket != null) && (bucket.parsed == 0) && (bucket.doc != null))
         {
-            if (isChameleon != 0)
+            if (is_chameleon != 0)
             {
                 /* TODO: Get rid of this flag on the schema itself. */
                 if ((schema.flags & XML_XSD10_SCHEMAS_INCLUDING_CONVERT_NS) == 0)
@@ -5981,11 +5981,11 @@ public final class Xsd10Parse
                     schema.flags |= XML_XSD10_SCHEMAS_INCLUDING_CONVERT_NS;
                 }
                 else
-                    wasChameleon = 1;
+                    was_chameleon = 1;
             }
             parseNewDoc(pctxt, schema, bucket);
             /* Restore chameleon flag. */
-            if ((isChameleon != 0) && (wasChameleon == 0))
+            if ((is_chameleon != 0) && (was_chameleon == 0))
                 schema.flags ^= XML_XSD10_SCHEMAS_INCLUDING_CONVERT_NS;
         }
         /*
@@ -6001,7 +6001,7 @@ public final class Xsd10Parse
             /*
             * How to proceed if the redefined schema was not located?
             */
-            pctxt.isRedefine = 1;
+            pctxt.is_redefine = 1;
             while ((isSchema(child, "annotation") != 0) ||
                    (isSchema(child, "simpleType") != 0) ||
                    (isSchema(child, "complexType") != 0) ||
@@ -6038,7 +6038,7 @@ public final class Xsd10Parse
                 child = parseNext(child);
             }
             pctxt.redefined = null;
-            pctxt.isRedefine = 0;
+            pctxt.is_redefine = 0;
         }
         else
         {
@@ -6097,14 +6097,14 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_model_group
     /** Port of xmlSchemaParseModelGroup. */
-    static Xsd10TreeItem parseModelGroup(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int type, int withParticle)
+    static Xsd10TreeItem parseModelGroup(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int type, int with_particle)
     {
         Xsd10ModelGroup item;
         Xsd10Particle particle = null;
         XmlNode child;
         XmlNode attr;
-        int min = 1, max = 1, hasRefs = 0;
-        int[] isElemRef = { 0 };
+        int min = 1, max = 1, has_refs = 0;
+        int[] is_elem_ref = { 0 };
 
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
@@ -6115,7 +6115,7 @@ public final class Xsd10Parse
         if (item == null)
             return null;
 
-        if (withParticle != 0)
+        if (with_particle != 0)
         {
             if (type == XML_XSD10_SCHEMA_TYPE_ALL)
             {
@@ -6205,7 +6205,7 @@ public final class Xsd10Parse
 
             while (isSchema(child, "element") != 0)
             {
-                part = as(parseElement(ctxt, schema, child, isElemRef, 0), Xsd10Particle.class);
+                part = as(parseElement(ctxt, schema, child, is_elem_ref, 0), Xsd10Particle.class);
                 /*
                 * SPEC cos-all-limited (2)
                 * "The {max occurs} of all the particles in the {particles}
@@ -6213,9 +6213,9 @@ public final class Xsd10Parse
                 */
                 if (part != null)
                 {
-                    if (isElemRef[0] != 0)
-                        hasRefs++;
-                    if (part.minOccurs > 1)
+                    if (is_elem_ref[0] != 0)
+                        has_refs++;
+                    if (part.min_occurs > 1)
                     {
                         pCustomErr(ctxt,
                             XML_XSD10_SCHEMAP_COS_ALL_LIMITED,
@@ -6223,9 +6223,9 @@ public final class Xsd10Parse
                             "Invalid value for minOccurs (must be 0 or 1)",
                             null);
                         /* Reset to 1. */
-                        part.minOccurs = 1;
+                        part.min_occurs = 1;
                     }
-                    if (part.maxOccurs > 1)
+                    if (part.max_occurs > 1)
                     {
                         pCustomErr(ctxt,
                             XML_XSD10_SCHEMAP_COS_ALL_LIMITED,
@@ -6233,7 +6233,7 @@ public final class Xsd10Parse
                             "Invalid value for maxOccurs (must be 0 or 1)",
                             null);
                         /* Reset to 1. */
-                        part.maxOccurs = 1;
+                        part.max_occurs = 1;
                     }
                     if (last == null)
                         item.children = part;
@@ -6265,25 +6265,25 @@ public final class Xsd10Parse
 
                 if (isSchema(child, "element") != 0)
                 {
-                    part = as(parseElement(ctxt, schema, child, isElemRef, 0), Xsd10TreeItem.class);
-                    if ((part != null) && (isElemRef[0] != 0))
-                        hasRefs++;
+                    part = as(parseElement(ctxt, schema, child, is_elem_ref, 0), Xsd10TreeItem.class);
+                    if ((part != null) && (is_elem_ref[0] != 0))
+                        has_refs++;
                 }
                 else if (isSchema(child, "group") != 0)
                 {
                     part = parseModelGroupDefRef(ctxt, schema, child);
                     if (part != null)
-                        hasRefs++;
+                        has_refs++;
                     /*
                     * Handle redefinitions.
                     */
-                    if ((ctxt.isRedefine != 0) && (ctxt.redef != null) &&
+                    if ((ctxt.is_redefine != 0) && (ctxt.redef != null) &&
                         (ctxt.redef.item != null) &&
                         (ctxt.redef.item.type == XML_XSD10_SCHEMA_TYPE_GROUP) &&
                         (part != null) && (part.children instanceof Xsd10QNameRef))
                     {
-                        if (Objects.equals(getQNameRefName(part.children), ctxt.redef.refName) &&
-                            Objects.equals(getQNameRefTargetNs(part.children), ctxt.redef.refTargetNs))
+                        if (Objects.equals(getQNameRefName(part.children), ctxt.redef.ref_name) &&
+                            Objects.equals(getQNameRefTargetNs(part.children), ctxt.redef.ref_target_ns))
                         {
                             /*
                             * SPEC src-redefine:
@@ -6294,7 +6294,7 @@ public final class Xsd10Parse
                             * all of the following must be true:"
                             * (6.1.1) "It must have exactly one such group."
                             */
-                            if (ctxt.redefCounter != 0)
+                            if (ctxt.redef_counter != 0)
                             {
                                 String[] str = { null };
 
@@ -6304,19 +6304,19 @@ public final class Xsd10Parse
                                     "'%s' must not contain more than one " +
                                     "reference to the redefined definition",
                                     formatQName(str,
-                                        ctxt.redef.refTargetNs,
-                                        ctxt.redef.refName),
+                                        ctxt.redef.ref_target_ns,
+                                        ctxt.redef.ref_name),
                                     null);
                                 part = null;
                             }
-                            else if ((wxsParticle(part).minOccurs != 1) ||
-                                     (wxsParticle(part).maxOccurs != 1))
+                            else if ((wxsParticle(part).min_occurs != 1) ||
+                                     (wxsParticle(part).max_occurs != 1))
                             {
                                 String[] str = { null };
                                 /*
                                 * SPEC src-redefine:
                                 * (6.1.2) "The `actual value` of both that
-                                * group's minOccurs and maxOccurs [attribute]
+                                * group's min_occurs and max_occurs [attribute]
                                 * must be 1 (or `absent`).
                                 */
                                 customErr(ctxt,
@@ -6326,13 +6326,13 @@ public final class Xsd10Parse
                                     "redefined definition with a " +
                                     "maxOccurs/minOccurs other than 1",
                                     formatQName(str,
-                                        ctxt.redef.refTargetNs,
-                                        ctxt.redef.refName),
+                                        ctxt.redef.ref_target_ns,
+                                        ctxt.redef.ref_name),
                                     null);
                                 part = null;
                             }
                             ctxt.redef.reference = part;
-                            ctxt.redefCounter++;
+                            ctxt.redef_counter++;
                         }
                     }
                 }
@@ -6370,14 +6370,14 @@ public final class Xsd10Parse
         }
         if ((max == 0) && (min == 0))
             return null;
-        if (hasRefs != 0)
+        if (has_refs != 0)
         {
             /*
             * We need to resolve references.
             */
             wxsAddPending(ctxt, item);
         }
-        if (withParticle != 0)
+        if (with_particle != 0)
             return particle;
         else
             return item;
@@ -6385,7 +6385,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_restriction
     /** Port of xmlSchemaParseRestriction. */
-    static Xsd10Type parseRestriction(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int parentType)
+    static Xsd10Type parseRestriction(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int parent_type)
     {
         Xsd10Type type;
         XmlNode child;
@@ -6394,7 +6394,7 @@ public final class Xsd10Parse
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return null;
         type.flags |= XML_XSD10_SCHEMAS_TYPE_DERIVATION_METHOD_RESTRICTION;
@@ -6439,7 +6439,7 @@ public final class Xsd10Parse
         */
         String[] bns = { null }, bname = { null };
         int qres = pValAttrQName(ctxt, schema, null, node, "base", bns, bname);
-        type.baseNs = bns[0];
+        type.base_ns = bns[0];
         type.base = bname[0];
         if (qres == 0)
         {
@@ -6449,7 +6449,7 @@ public final class Xsd10Parse
                     XML_XSD10_SCHEMAP_S4S_ATTR_MISSING,
                     null, node, "base", null);
             }
-            else if ((ctxt.isRedefine != 0) &&
+            else if ((ctxt.is_redefine != 0) &&
                      ((type.flags & XML_XSD10_SCHEMAS_TYPE_GLOBAL) != 0))
             {
                 if (type.base == null)
@@ -6459,7 +6459,7 @@ public final class Xsd10Parse
                         null, node, "base", null);
                 }
                 else if ((strEqual(type.base, type.name) == 0) ||
-                         (strEqual(type.baseNs, type.targetNamespace) == 0))
+                         (strEqual(type.base_ns, type.target_namespace) == 0))
                 {
                     String[] str1 = { null }, str2 = { null };
                     /*
@@ -6473,12 +6473,12 @@ public final class Xsd10Parse
                         null, node, "This is a redefinition, but the QName " +
                         "value '%s' of the 'base' attribute does not match the " +
                         "type's designation '%s'",
-                        formatQName(str1, type.baseNs, type.base),
-                        formatQName(str2, type.targetNamespace,
+                        formatQName(str1, type.base_ns, type.base),
+                        formatQName(str2, type.target_namespace,
                             type.name), null);
                     /* Avoid confusion and erase the values. */
                     type.base = null;
-                    type.baseNs = null;
+                    type.base_ns = null;
                 }
             }
         }
@@ -6494,7 +6494,7 @@ public final class Xsd10Parse
             addAnnotation(type, parseAnnotation(ctxt, child, 1));
             child = parseNext(child);
         }
-        if (parentType == XML_XSD10_SCHEMA_TYPE_SIMPLE)
+        if (parent_type == XML_XSD10_SCHEMA_TYPE_SIMPLE)
         {
             /*
             * Corresponds to <simpleType><restriction><simpleType>.
@@ -6516,7 +6516,7 @@ public final class Xsd10Parse
                 }
                 else
                 {
-                    type.baseType = parseSimpleType(ctxt, schema, child, 0);
+                    type.base_type = parseSimpleType(ctxt, schema, child, 0);
                 }
                 child = parseNext(child);
             }
@@ -6529,7 +6529,7 @@ public final class Xsd10Parse
                     "must be present", null);
             }
         }
-        else if (parentType == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
+        else if (parent_type == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
         {
             /*
             * Corresponds to <complexType><complexContent><restriction>...
@@ -6568,7 +6568,7 @@ public final class Xsd10Parse
                 child = parseNext(child);
             }
         }
-        else if (parentType == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT)
+        else if (parent_type == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT)
         {
             /*
             * Corresponds to <complexType><simpleContent><restriction>...
@@ -6580,17 +6580,17 @@ public final class Xsd10Parse
             {
                 /*
                 * We will store the to-be-restricted simple type in
-                * type->contentTypeDef *temporarily*.
+                * type->content_type_def *temporarily*.
                 */
-                type.contentTypeDef = parseSimpleType(ctxt, schema, child, 0);
-                if (type.contentTypeDef == null)
+                type.content_type_def = parseSimpleType(ctxt, schema, child, 0);
+                if (type.content_type_def == null)
                     return null;
                 child = parseNext(child);
             }
         }
 
-        if ((parentType == XML_XSD10_SCHEMA_TYPE_SIMPLE) ||
-            (parentType == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT))
+        if ((parent_type == XML_XSD10_SCHEMA_TYPE_SIMPLE) ||
+            (parent_type == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT))
         {
             Xsd10Facet facet, lastfacet = null;
             /*
@@ -6636,19 +6636,19 @@ public final class Xsd10Parse
             */
             if (type.facets != null)
             {
-                Xsd10FacetLink facetLink, lastFacetLink = null;
+                Xsd10FacetLink facet_link, last_facet_link = null;
 
                 facet = type.facets;
                 do
                 {
-                    facetLink = new Xsd10FacetLink();
-                    facetLink.facet = facet;
-                    facetLink.next = null;
-                    if (lastFacetLink == null)
-                        type.facetSet = facetLink;
+                    facet_link = new Xsd10FacetLink();
+                    facet_link.facet = facet;
+                    facet_link.next = null;
+                    if (last_facet_link == null)
+                        type.facet_set = facet_link;
                     else
-                        lastFacetLink.next = facetLink;
-                    lastFacetLink = facetLink;
+                        last_facet_link.next = facet_link;
+                    last_facet_link = facet_link;
                     facet = facet.next;
                 } while (facet != null);
             }
@@ -6669,14 +6669,14 @@ public final class Xsd10Parse
             */
             if (isSchema(child, "anyAttribute") != 0)
             {
-                type.attributeWildcard =
+                type.attribute_wildcard =
                     parseAnyAttribute(ctxt, schema, child);
                 child = parseNext(child);
             }
         }
         if (child != null)
         {
-            if (parentType == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
+            if (parent_type == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
             {
                 pContentErr(ctxt,
                     XML_XSD10_SCHEMAP_S4S_ELEM_NOT_ALLOWED,
@@ -6684,7 +6684,7 @@ public final class Xsd10Parse
                     "annotation?, (group | all | choice | sequence)?, " +
                     "((attribute | attributeGroup)*, anyAttribute?))");
             }
-            else if (parentType == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT)
+            else if (parent_type == XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT)
             {
                 pContentErr(ctxt,
                     XML_XSD10_SCHEMAP_S4S_ELEM_NOT_ALLOWED,
@@ -6711,7 +6711,7 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_extension
     /** Port of xmlSchemaParseExtension. */
-    static Xsd10Type parseExtension(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int parentType)
+    static Xsd10Type parseExtension(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int parent_type)
     {
         Xsd10Type type;
         XmlNode child;
@@ -6720,7 +6720,7 @@ public final class Xsd10Parse
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return null;
         type.flags |= XML_XSD10_SCHEMAS_TYPE_DERIVATION_METHOD_EXTENSION;
@@ -6756,7 +6756,7 @@ public final class Xsd10Parse
         String[] bns = { null }, bname = { null };
         int qres = pValAttrQName(ctxt, schema, null, node,
             "base", bns, bname);
-        type.baseNs = bns[0];
+        type.base_ns = bns[0];
         type.base = bname[0];
         if ((qres == 0) && (type.base == null))
         {
@@ -6776,7 +6776,7 @@ public final class Xsd10Parse
             addAnnotation(type, parseAnnotation(ctxt, child, 1));
             child = parseNext(child);
         }
-        if (parentType == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
+        if (parent_type == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
         {
             /*
             * Corresponds to <complexType><complexContent><extension>... and:
@@ -6827,14 +6827,14 @@ public final class Xsd10Parse
             */
             if (isSchema(child, "anyAttribute") != 0)
             {
-                ctxt.ctxtType.attributeWildcard =
+                ctxt.ctxt_type.attribute_wildcard =
                     parseAnyAttribute(ctxt, schema, child);
                 child = parseNext(child);
             }
         }
         if (child != null)
         {
-            if (parentType == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
+            if (parent_type == XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT)
             {
                 /* Complex content extension. */
                 pContentErr(ctxt,
@@ -6857,22 +6857,22 @@ public final class Xsd10Parse
     }
 
     // xml_xsd10_parse_simple_content
-    /** Port of xmlSchemaParseSimpleContent. Arrays: {@code hasRestrictionOrExtension} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int parseSimpleContent(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] hasRestrictionOrExtension)
+    /** Port of xmlSchemaParseSimpleContent. Arrays: {@code has_restriction_or_extension} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
+    static int parseSimpleContent(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] has_restriction_or_extension)
     {
         Xsd10Type type;
         XmlNode child;
         XmlNode attr;
 
         if ((ctxt == null) || (schema == null) || (node == null) ||
-            (hasRestrictionOrExtension == null))
+            (has_restriction_or_extension == null))
             return -1;
-        hasRestrictionOrExtension[0] = 0;
+        has_restriction_or_extension[0] = 0;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return -1;
-        type.contentType = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
+        type.content_type = XML_XSD10_SCHEMA_CONTENT_SIMPLE;
         /*
         * Check for illegal attributes.
         */
@@ -6927,14 +6927,14 @@ public final class Xsd10Parse
         {
             parseRestriction(ctxt, schema, child,
                 XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT);
-            hasRestrictionOrExtension[0] = 1;
+            has_restriction_or_extension[0] = 1;
             child = parseNext(child);
         }
         else if (isSchema(child, "extension") != 0)
         {
             parseExtension(ctxt, schema, child,
                 XML_XSD10_SCHEMA_TYPE_SIMPLE_CONTENT);
-            hasRestrictionOrExtension[0] = 1;
+            has_restriction_or_extension[0] = 1;
             child = parseNext(child);
         }
         if (child != null)
@@ -6948,19 +6948,19 @@ public final class Xsd10Parse
     }
 
     // xml_xsd10_parse_complex_content
-    /** Port of xmlSchemaParseComplexContent. Arrays: {@code hasRestrictionOrExtension} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
-    static int parseComplexContent(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] hasRestrictionOrExtension)
+    /** Port of xmlSchemaParseComplexContent. Arrays: {@code has_restriction_or_extension} is C {@code int *} (an out param: caller allocated array of length 1; a real C array: the array). */
+    static int parseComplexContent(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int[] has_restriction_or_extension)
     {
         Xsd10Type type;
         XmlNode child;
         XmlNode attr;
 
         if ((ctxt == null) || (schema == null) || (node == null) ||
-            (hasRestrictionOrExtension == null))
+            (has_restriction_or_extension == null))
             return -1;
-        hasRestrictionOrExtension[0] = 0;
+        has_restriction_or_extension[0] = 0;
         /* Not a component, don't create it. */
-        type = ctxt.ctxtType;
+        type = ctxt.ctxt_type;
         if (type == null)
             return -1;
         /*
@@ -7023,14 +7023,14 @@ public final class Xsd10Parse
         {
             parseRestriction(ctxt, schema, child,
                 XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT);
-            hasRestrictionOrExtension[0] = 1;
+            has_restriction_or_extension[0] = 1;
             child = parseNext(child);
         }
         else if (isSchema(child, "extension") != 0)
         {
             parseExtension(ctxt, schema, child,
                 XML_XSD10_SCHEMA_TYPE_COMPLEX_CONTENT);
-            hasRestrictionOrExtension[0] = 1;
+            has_restriction_or_extension[0] = 1;
             child = parseNext(child);
         }
         if (child != null)
@@ -7045,22 +7045,22 @@ public final class Xsd10Parse
 
     // xml_xsd10_parse_complex_type
     /** Port of xmlSchemaParseComplexType. */
-    static Xsd10Type parseComplexType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int topLevel)
+    static Xsd10Type parseComplexType(Xsd10ParserCtxt ctxt, Xsd10Schema schema, XmlNode node, int top_level)
     {
-        Xsd10Type type, ctxtType;
+        Xsd10Type type, ctxt_type;
         XmlNode child;
         String[] name = { null };
         XmlNode attr;
-        String attrValue;
+        String attr_value;
         int final_ = 0, block = 0;
-        int[] hasRestrictionOrExtension = { 0 };
+        int[] has_restriction_or_extension = { 0 };
 
         if ((ctxt == null) || (schema == null) || (node == null))
             return null;
 
-        ctxtType = ctxt.ctxtType;
+        ctxt_type = ctxt.ctxt_type;
 
-        if (topLevel != 0)
+        if (top_level != 0)
         {
             attr = getPropNode(node, "name");
             if (attr == null)
@@ -7076,14 +7076,14 @@ public final class Xsd10Parse
             }
         }
 
-        if (topLevel == 0)
+        if (top_level == 0)
         {
             /*
             * Parse as local complex type definition.
             */
             type = addType(ctxt, schema,
                 XML_XSD10_SCHEMA_TYPE_COMPLEX,
-                null, ctxt.targetNamespace, node, 0);
+                null, ctxt.target_namespace, node, 0);
             if (type == null)
                 return null;
             name[0] = type.name;
@@ -7100,14 +7100,14 @@ public final class Xsd10Parse
             */
             type = addType(ctxt, schema,
                 XML_XSD10_SCHEMA_TYPE_COMPLEX,
-                name[0], ctxt.targetNamespace, node, 1);
+                name[0], ctxt.target_namespace, node, 1);
             if (type == null)
                 return null;
             type.node = node;
             type.type = XML_XSD10_SCHEMA_TYPE_COMPLEX;
             type.flags |= XML_XSD10_SCHEMAS_TYPE_GLOBAL;
         }
-        type.targetNamespace = ctxt.targetNamespace;
+        type.target_namespace = ctxt.target_namespace;
         /*
         * Handle attributes.
         */
@@ -7131,7 +7131,7 @@ public final class Xsd10Parse
                     if (pGetBoolNodeValue(ctxt, null, attr) != 0)
                         type.flags |= XML_XSD10_SCHEMAS_TYPE_MIXED;
                 }
-                else if (topLevel != 0)
+                else if (top_level != 0)
                 {
                     /*
                     * Attributes of global complex type definitions.
@@ -7153,9 +7153,9 @@ public final class Xsd10Parse
                         /*
                         * Attribute "final".
                         */
-                        attrValue = getNodeContent(ctxt, attr);
+                        attr_value = getNodeContent(ctxt, attr);
                         int[] fl = { type.flags };
-                        int r = pValAttrBlockFinal(attrValue,
+                        int r = pValAttrBlockFinal(attr_value,
                             fl,
                             -1,
                             XML_XSD10_SCHEMAS_TYPE_FINAL_EXTENSION,
@@ -7168,7 +7168,7 @@ public final class Xsd10Parse
                                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                                 null, attr, null,
                                 "(#all | List of (extension | restriction))",
-                                attrValue, null, null, null);
+                                attr_value, null, null, null);
                         }
                         else
                             final_ = 1;
@@ -7178,9 +7178,9 @@ public final class Xsd10Parse
                         /*
                         * Attribute "block".
                         */
-                        attrValue = getNodeContent(ctxt, attr);
+                        attr_value = getNodeContent(ctxt, attr);
                         int[] fl = { type.flags };
-                        int r = pValAttrBlockFinal(attrValue, fl,
+                        int r = pValAttrBlockFinal(attr_value, fl,
                             -1,
                             XML_XSD10_SCHEMAS_TYPE_BLOCK_EXTENSION,
                             XML_XSD10_SCHEMAS_TYPE_BLOCK_RESTRICTION,
@@ -7192,7 +7192,7 @@ public final class Xsd10Parse
                                 XML_XSD10_SCHEMAP_S4S_ATTR_INVALID_VALUE,
                                 null, attr, null,
                                 "(#all | List of (extension | restriction)) ",
-                                attrValue, null, null, null);
+                                attr_value, null, null, null);
                         }
                         else
                             block = 1;
@@ -7245,7 +7245,7 @@ public final class Xsd10Parse
             type.annot = parseAnnotation(ctxt, child, 1);
             child = parseNext(child);
         }
-        ctxt.ctxtType = type;
+        ctxt.ctxt_type = type;
         if (isSchema(child, "simpleContent") != 0)
         {
             /*
@@ -7257,7 +7257,7 @@ public final class Xsd10Parse
             if ((type.flags & XML_XSD10_SCHEMAS_TYPE_MIXED) != 0)
                 type.flags ^= XML_XSD10_SCHEMAS_TYPE_MIXED;
             parseSimpleContent(ctxt, schema, child,
-                hasRestrictionOrExtension);
+                has_restriction_or_extension);
             child = parseNext(child);
         }
         else if (isSchema(child, "complexContent") != 0)
@@ -7265,9 +7265,9 @@ public final class Xsd10Parse
             /*
             * <complexType><complexContent>...
             */
-            type.contentType = XML_XSD10_SCHEMA_CONTENT_EMPTY;
+            type.content_type = XML_XSD10_SCHEMA_CONTENT_EMPTY;
             parseComplexContent(ctxt, schema, child,
-                hasRestrictionOrExtension);
+                has_restriction_or_extension);
             child = parseNext(child);
         }
         else
@@ -7281,7 +7281,7 @@ public final class Xsd10Parse
             * for complex content restricting the `ur-type definition`, and the
             * details of the mappings should be modified as necessary.
             */
-            type.baseType = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
+            type.base_type = getBuiltInType(XML_XSD10_SCHEMAS_ANYTYPE);
             type.flags |= XML_XSD10_SCHEMAS_TYPE_DERIVATION_METHOD_RESTRICTION;
             /*
             * Parse model groups.
@@ -7327,7 +7327,7 @@ public final class Xsd10Parse
             */
             if (isSchema(child, "anyAttribute") != 0)
             {
-                type.attributeWildcard = parseAnyAttribute(ctxt, schema, child);
+                type.attribute_wildcard = parseAnyAttribute(ctxt, schema, child);
                 child = parseNext(child);
             }
         }
@@ -7343,14 +7343,14 @@ public final class Xsd10Parse
         /*
         * REDEFINE: SPEC src-redefine (5)
         */
-        if ((topLevel != 0) && (ctxt.isRedefine != 0) && (hasRestrictionOrExtension[0] == 0))
+        if ((top_level != 0) && (ctxt.is_redefine != 0) && (has_restriction_or_extension[0] == 0))
         {
             pCustomErr(ctxt, XML_XSD10_SCHEMAP_SRC_REDEFINE,
                 null, node, "This is a redefinition, thus the " +
                 "<complexType> must have a <restriction> or <extension> " +
                 "grand-child", null);
         }
-        ctxt.ctxtType = ctxtType;
+        ctxt.ctxt_type = ctxt_type;
         return type;
     }
 }

@@ -56,8 +56,8 @@ public final class Xsd10ModelGroupDef extends Xsd10TreeItem
 {
     /** C {@code const char * name}. */
     String name;
-    /** C {@code const char * targetNamespace}. */
-    String targetNamespace;
+    /** C {@code const char * target_namespace}. */
+    String target_namespace;
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** C {@code int flags}. */

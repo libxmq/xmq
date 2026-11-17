@@ -55,7 +55,7 @@ public final class Xsd10ItemList
     /** used for dynamic addition of schemata */
     Object[] items;
     /** used for dynamic addition of schemata */
-    int nbItems;
+    int nb_items;
     /** used for dynamic addition of schemata */
-    int sizeItems;
+    int size_items;
 }

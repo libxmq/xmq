@@ -66,8 +66,8 @@ import org.libxmq.imp.xml.XmlNs;
 final class AttrVT
 {
     AttrVT next;
-    int nbSeg;
+    int nb_seg;
     int strstart;           // Does it start with a string?
-    Map<String, String> nsList;
+    Map<String, String> ns_list;
     List<Object> segments = new ArrayList<>(); // String or XPath.
 }

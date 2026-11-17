@@ -68,7 +68,7 @@ final class KeyDef
     KeyDef next;
     XmlNode inst;
     String name;
-    String nameUri;
+    String name_uri;
     String match;
     String use;
     XPath comp;

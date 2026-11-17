@@ -38,13 +38,13 @@ public final class XMQCliParser
     private final int n;
     private int pos;
     private final XmlDocument doc = new XmlDocument();
-    private final StringBuilder text = new StringBuilder(); // Pending text, not yet added to textNode.
-    private XmlElement textNode;
-    private int failPos;
-    private String failRule, failExpected, failMessage;
+    private final StringBuilder text = new StringBuilder(); // Pending text, not yet added to text_node.
+    private XmlElement text_node;
+    private int fail_pos;
+    private String fail_rule, fail_expected, fail_message;
     // Handed from a left recursive rule to its loop rule: where its content starts.
-    private XmlElement lrElem;
-    private int lrChildren, lrTextLen, lrAttrs;
+    private XmlElement lr_elem;
+    private int lr_children, lr_text_len, lr_attrs;
 
     private XMQCliParser(int[] in)
     {
@@ -119,25 +119,25 @@ public final class XMQCliParser
     // A dynamic error in the serialization of the tree, eg a duplicate attribute.
     private boolean failDynamic(String message)
     {
-        failPos = pos;
-        failMessage = message;
+        fail_pos = pos;
+        fail_message = message;
         return false;
     }
 
     private boolean fail(String rule, String expected)
     {
-        failPos = pos;
-        failRule = rule;
-        failExpected = expected;
+        fail_pos = pos;
+        fail_rule = rule;
+        fail_expected = expected;
         return false;
     }
 
     // Add the pending text to its node.
     private void flush()
     {
-        if (text.length() > 0 && textNode != null) textNode.addChild(new XmlText(text.toString()));
+        if (text.length() > 0 && text_node != null) text_node.addChild(new XmlText(text.toString()));
         text.setLength(0);
-        textNode = null;
+        text_node = null;
     }
 
     // Text goes into the attribute value being collected, or to the element.
@@ -145,7 +145,7 @@ public final class XMQCliParser
     {
         if (attr != null) { attr.append(s); return; }
         if (elem == null) return;
-        if (elem != textNode) { flush(); textNode = elem; }
+        if (elem != text_node) { flush(); text_node = elem; }
         text.append(s);
     }
 
@@ -153,7 +153,7 @@ public final class XMQCliParser
     {
         if (attr != null) { attr.appendCodePoint(c); return; }
         if (elem == null) return;
-        if (elem != textNode) { flush(); textNode = elem; }
+        if (elem != text_node) { flush(); text_node = elem; }
         text.appendCodePoint(c);
     }
 
@@ -169,19 +169,19 @@ public final class XMQCliParser
 
     // Move the content added to the element since the mark into a new element,
     // added last. This builds the left nested tree of a left recursive rule.
-    private static void wrap(XmlElement target, int from, int textLen, int attrsFrom, String name)
+    private static void wrap(XmlElement target, int from, int text_len, int attrs_from, String name)
     {
         XmlElement w = new XmlElement(name);
         List<XmlNode> children = target.children();
-        if (textLen >= 0 && from > 0)
+        if (text_len >= 0 && from > 0)
         {
             // Text added after the mark may have been merged into the marked text node.
             XmlNode t = children.get(from - 1);
             String c = t.content();
-            if (c.length() > textLen)
+            if (c.length() > text_len)
             {
-                t.setContent(c.substring(0, textLen));
-                w.appendRaw(new XmlText(c.substring(textLen)));
+                t.setContent(c.substring(0, text_len));
+                w.appendRaw(new XmlText(c.substring(text_len)));
             }
         }
         for (int i = from; i < children.size(); i++)
@@ -191,7 +191,7 @@ public final class XMQCliParser
             w.appendRaw(c);
         }
         List<XmlAttr> attrs = new ArrayList<>(target.attributes());
-        for (int i = attrsFrom; i < attrs.size(); i++)
+        for (int i = attrs_from; i < attrs.size(); i++)
         {
             target.removeAttribute(attrs.get(i));
             w.addAttribute(attrs.get(i));
@@ -3531,19 +3531,19 @@ public final class XMQCliParser
             return p.doc;
         }
         int line = 1, col = 1;
-        for (int i = 0; i < p.failPos && i < p.n; i++)
+        for (int i = 0; i < p.fail_pos && i < p.n; i++)
         {
             if (p.in[i] == '\n') { line++; col = 1; } else col++;
         }
-        int c = p.peek(p.failPos);
+        int c = p.peek(p.fail_pos);
         String found = c == EOF ? "end of input"
             : (c > 0x20 && c < 0x7f && c != 0x27) ? "'" + (char)c + "'"
             : c == ' ' ? "space" : "#" + Integer.toHexString(c);
-        String rule = p.failRule != null ? p.failRule : "input";
-        String message = p.failMessage != null ? p.failMessage : p.failExpected != null
-            ? "expected " + p.failExpected + " in " + rule + ", found " + found
+        String rule = p.fail_rule != null ? p.fail_rule : "input";
+        String message = p.fail_message != null ? p.fail_message : p.fail_expected != null
+            ? "expected " + p.fail_expected + " in " + rule + ", found " + found
             : "no alternative of " + rule + " matches, found " + found;
-        throw new ParseError(message, line, col, p.failPos);
+        throw new ParseError(message, line, col, p.fail_pos);
     }
 
     /**

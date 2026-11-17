@@ -54,10 +54,10 @@ import org.libxmq.imp.xml.XmlNode;
 /** libxml2 xmlSchemaParticle. (C {@code XmlXsd10Particle}). */
 public final class Xsd10Particle extends Xsd10TreeItem
 {
-    /** C {@code int minOccurs}. */
-    int minOccurs;
-    /** C {@code int maxOccurs}. */
-    int maxOccurs;
+    /** C {@code int min_occurs}. */
+    int min_occurs;
+    /** C {@code int max_occurs}. */
+    int max_occurs;
     /** C {@code XMQNode * node}. */
     XmlNode node;
 }

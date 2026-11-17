@@ -68,10 +68,10 @@ public final class XPathEvalContext
         /**
          * Look up a variable.
          * @param name The local name.
-         * @param nsUri The namespace uri, null for an unprefixed name.
+         * @param ns_uri The namespace uri, null for an unprefixed name.
          * @return The value, or null if not defined. The caller does not change it.
          */
-        XPathResult lookup(String name, String nsUri);
+        XPathResult lookup(String name, String ns_uri);
     }
 
     /** An extension function. */
@@ -92,10 +92,10 @@ public final class XPathEvalContext
         /**
          * Find a function.
          * @param name The local name.
-         * @param nsUri The namespace uri, null for an unprefixed name.
+         * @param ns_uri The namespace uri, null for an unprefixed name.
          * @return The function or null.
          */
-        Function lookup(String name, String nsUri);
+        Function lookup(String name, String ns_uri);
     }
 
     private static final class Tree

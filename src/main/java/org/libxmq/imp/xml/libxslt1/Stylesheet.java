@@ -70,55 +70,55 @@ public final class Stylesheet
     Stylesheet parent;
     Stylesheet next;
     Stylesheet imports;
-    XsltDocument docList;
+    XsltDocument doc_list;
     XmlDocument doc;
-    HashMap<String, String> stripSpaces;      // "name\1uri" -> "strip" or "preserve".
-    int stripAll;
-    HashMap<String, String> cdataSection;     // "name\1uri" -> "cdata".
+    HashMap<String, String> strip_spaces;      // "name\1uri" -> "strip" or "preserve".
+    int strip_all;
+    HashMap<String, String> cdata_section;     // "name\1uri" -> "cdata".
     StackElem variables;    // Global variables and parameters.
     Template templates;
-    HashMap<String, Pattern> templatesHash;  // Template rules by the name of their last step, mode and mode uri.
-    Pattern rootMatch;
-    Pattern keyMatch;
-    Pattern elemMatch;
-    Pattern attrMatch;
-    Pattern parentMatch;
-    Pattern textMatch;
-    Pattern piMatch;
-    Pattern commentMatch;
-    HashMap<String, String> nsAliases;        // literal namespace -> target namespace (or UNDEFINED_DEFAULT_NS).
-    HashMap<String, AttrSet> attributeSets;   // "name\1uri" -> AttrSet.
-    AttrSet attributeSetList; // The same, in declaration order.
-    ExtDef nsDefs;
+    HashMap<String, Pattern> templates_hash;  // Template rules by the name of their last step, mode and mode uri.
+    Pattern root_match;
+    Pattern key_match;
+    Pattern elem_match;
+    Pattern attr_match;
+    Pattern parent_match;
+    Pattern text_match;
+    Pattern pi_match;
+    Pattern comment_match;
+    HashMap<String, String> ns_aliases;        // literal namespace -> target namespace (or UNDEFINED_DEFAULT_NS).
+    HashMap<String, AttrSet> attribute_sets;   // "name\1uri" -> AttrSet.
+    AttrSet attribute_set_list; // The same, in declaration order.
+    ExtDef ns_defs;
     KeyDef keys;
     // Output.
     String method;
-    String methodUri;
+    String method_uri;
     String version;
     String encoding;
-    int omitXmlDeclaration;
-    DecimalFormat decimalFormat;
+    int omit_xml_declaration;
+    DecimalFormat decimal_format;
     int standalone;
-    String doctypePublic;
-    String doctypeSystem;
+    String doctype_public;
+    String doctype_system;
     int indent;
-    String mediaType;
-    StylePreComp preComps;
+    String media_type;
+    StylePreComp pre_comps;
     int warnings;
     int errors;
-    String exclPrefix;
-    List<String> exclPrefixTab = new ArrayList<>();
-    int extrasNr;           // The number of runtime extras allocated by the patterns.
+    String excl_prefix;
+    List<String> excl_prefix_tab = new ArrayList<>();
+    int extras_nr;           // The number of runtime extras allocated by the patterns.
     XsltDocument includes;  // For keeping track of nested includes.
-    AttrVT attVts;
-    String defaultAlias;
+    AttrVT att_vts;
+    String default_alias;
     int nopreproc;
-    int literalResult;
+    int literal_result;
     Stylesheet principal;
-    int forwardsCompatible;
-    HashMap<String, Template> namedTemplates; // name and uri -> Template.
-    long opCount;
-    long opLimit;
+    int forwards_compatible;
+    HashMap<String, Template> named_templates; // name and uri -> Template.
+    long op_count;
+    long op_limit;
 
     Stylesheet()
     {

@@ -123,7 +123,7 @@ public final class XPath
         // libxml2 2.16 does not use the streaming pattern engine for xpath
         // (XPATH_STREAMING is disabled), neither do we.
         XPathSettings s = new XPathSettings(settings);
-        return new XPath(expr, new XPathParser(expr, s.maxDepth, s.noVariables).parse(), s);
+        return new XPath(expr, new XPathParser(expr, s.max_depth, s.no_variables).parse(), s);
     }
 
     /**

@@ -57,7 +57,7 @@ public final class Xsd10Schema
     /** schema name */
     String name;
     /** the target namespace */
-    String targetNamespace;
+    String target_namespace;
     /** C {@code const char * version}. */
     String version;
     /** Obsolete */
@@ -68,22 +68,22 @@ public final class Xsd10Schema
     Xsd10Annot annot;
     /** C {@code int flags}. */
     int flags;
-    /** C {@code XmlXsd10Hash * typeDecl}. */
-    Xsd10Hash typeDecl;
-    /** C {@code XmlXsd10Hash * attrDecl}. */
-    Xsd10Hash attrDecl;
-    /** C {@code XmlXsd10Hash * attrgrpDecl}. */
-    Xsd10Hash attrgrpDecl;
-    /** C {@code XmlXsd10Hash * elemDecl}. */
-    Xsd10Hash elemDecl;
-    /** C {@code XmlXsd10Hash * notaDecl}. */
-    Xsd10Hash notaDecl;
-    /** C {@code XmlXsd10Hash * schemasImports}. */
-    Xsd10Hash schemasImports;
+    /** C {@code XmlXsd10Hash * type_decl}. */
+    Xsd10Hash type_decl;
+    /** C {@code XmlXsd10Hash * attr_decl}. */
+    Xsd10Hash attr_decl;
+    /** C {@code XmlXsd10Hash * attrgrp_decl}. */
+    Xsd10Hash attrgrp_decl;
+    /** C {@code XmlXsd10Hash * elem_decl}. */
+    Xsd10Hash elem_decl;
+    /** C {@code XmlXsd10Hash * nota_decl}. */
+    Xsd10Hash nota_decl;
+    /** C {@code XmlXsd10Hash * schemas_imports}. */
+    Xsd10Hash schemas_imports;
     /** unused by the library for users or bindings */
     Object _private;
-    /** C {@code XmlXsd10Hash * groupDecl}. */
-    Xsd10Hash groupDecl;
+    /** C {@code XmlXsd10Hash * group_decl}. */
+    Xsd10Hash group_decl;
     /** C {@code XmlXsd10Dict * dict}. */
     Xsd10Dict dict;
     /** the includes, this is opaque for now */
@@ -93,7 +93,7 @@ public final class Xsd10Schema
     /** used to give anonymous components unique names */
     int counter;
     /** All identity-constraint defs. */
-    Xsd10Hash idcDef;
+    Xsd10Hash idc_def;
     /** Obsolete */
     Object volatiles;
 }
