@@ -479,6 +479,76 @@ void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p)
     }
 }
 
+// The symbols rhs[from_j] to rhs[to_j-1] of the rule as text, eg "S '+' M". Free it.
+static char *symbols_text(YaepRule *rule, int from_j, int to_j)
+{
+    MemBuffer *mb = new_membuffer();
+    for (int j = from_j; j < to_j; j++)
+    {
+        if (j > from_j) membuffer_append_char(mb, ' ');
+        print_symbol(mb, rule->rhs[j], false);
+    }
+    membuffer_append_null(mb);
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepRule *rule = dotted_rule->rule;
+    bool complete = rule->rhs_len == dotted_rule->dot_j;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_ITEM;
+    e.id = dotted_rule->id;
+    // The same input range as print_dotted_rule.
+    e.from = matched_length == 0 ? ps->tok_i : 1+ps->tok_i-matched_length;
+    e.to = matched_length == 0 ? ps->tok_i : 1+ps->tok_i;
+    e.state = blocked ? "blocked" : complete ? "complete" : matched_length == 0 ? "predicted" : "partial";
+    e.lhs = rule->lhs->repr;
+    char *matched = symbols_text(rule, 0, dotted_rule->dot_j);
+    char *expected = symbols_text(rule, dotted_rule->dot_j, rule->rhs_len);
+    e.matched = matched;
+    e.expected = expected;
+    ps->run.trace_event(&ps->run, &e);
+    free(matched);
+    free(expected);
+}
+
+void trace_rule(YaepParseState *ps, YaepRule *rule)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_RULE;
+    e.lhs = rule->lhs->repr;
+    char *rhs = symbols_text(rule, 0, rule->rhs_len);
+    e.matched = rhs;
+    ps->run.trace_event(&ps->run, &e);
+    free(rhs);
+}
+
+void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepRule *rule = dotted_rule->rule;
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_TREE;
+    e.id = dotted_rule->id;
+    e.from = from_i;
+    e.to = to_i;
+    e.lhs = rule->lhs->repr;
+    char *rhs = symbols_text(rule, 0, rule->rhs_len);
+    e.matched = rhs;
+    ps->run.trace_event(&ps->run, &e);
+    free(rhs);
+}
+
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
 {
     bool first = true;

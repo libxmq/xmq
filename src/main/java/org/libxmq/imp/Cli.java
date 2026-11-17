@@ -13,6 +13,8 @@ import org.libxmq.OutputSettings;
 import org.libxmq.ParseException;
 import org.libxmq.XMQ;
 import org.libxmq.imp.ixml.IXMLAnalyzer;
+import org.libxmq.imp.ixml.earley.Earley;
+import org.libxmq.imp.ixml.earley.EarleyTrace;
 import org.libxmq.imp.xml.HtmlSave;
 import org.libxmq.imp.xml.XPath;
 import org.libxmq.imp.xml.XPathException;
@@ -89,6 +91,8 @@ final class Cli
     boolean ixml_fail_silent;
     /** An ixml input was rejected, the failure document was output and xmq exits with 1. */
     boolean ixml_failed;
+    /** --traceixml=file: parse with the Earley parser and write a trace of the parse to the file. */
+    String ixml_trace_file;
     /** --we-should-stop-using-yaml: no reminder comment before the to-yaml output. */
     boolean we_should_stop_using_yaml;
     String in_format;        // null = detect, else xmq xml html text
@@ -212,6 +216,10 @@ final class Cli
         case "debug", "verbose", "trace", "log-xmq", "progress", "yes", "force-download",
              "ixml-all-parses", "ixml-try-to-recover" -> { }
         case "ixml-fail-silent" -> ixml_fail_silent = true;
+        case "traceixml" -> {
+            if (value == null) throw fail("xmq: --traceixml needs a file name, eg --traceixml=trace.xmq");
+            ixml_trace_file = value;
+        }
         case "version" -> { System.out.println("xmqj"); throw new Exit(0); }
         // Like the C version built without any XMQ_NO_... define.
         case "features" -> { System.out.println("xmq-printing json yaml xslt xsd ixml html"); throw new Exit(0); }
@@ -418,7 +426,8 @@ final class Cli
 
         String content = readInput();
         IXMLAnalyzer ixml = null;
-        if (ixml_source != null)
+        // With --traceixml the Earley parser is used instead (see load), it takes any grammar.
+        if (ixml_source != null && ixml_trace_file == null)
         {
             try
             {
@@ -514,9 +523,43 @@ final class Cli
         }
     }
 
+    /** Parse with the Earley parser and write the trace to the --traceixml file, as xml if
+     * the file ends with .xml, else as xmq. A rejected input gives the failure document. */
+    XmlDocument loadWithEarleyTrace(String content) throws Exit
+    {
+        Earley.Result[] result = new Earley.Result[1];
+        // Composing the tree recurses as deep as the tree, use a large stack.
+        Thread t = new Thread(null, () -> result[0] = Earley.parse(ixml_source, content), "earley", 1L << 30);
+        t.start();
+        try
+        {
+            t.join();
+        }
+        catch (InterruptedException e)
+        {
+            throw new Exit(1);
+        }
+        Earley.Result r = result[0];
+        XmlDocument trace = EarleyTrace.toXml(r.grammar(), r.chart(), r.tree());
+        String text = ixml_trace_file.endsWith(".xml") ? XmlSave.docDump(trace, "utf-8") : XMQPrinter.toXmq(trace) + "\n";
+        try
+        {
+            Files.writeString(Path.of(ixml_trace_file), text, StandardCharsets.UTF_8);
+        }
+        catch (IOException e)
+        {
+            throw fail("xmq: could not write the ixml trace to " + ixml_trace_file);
+        }
+        if (r.error() == null) return r.doc();
+        ixml_failed = true;
+        if (ixml_fail_silent) return new XmlDocument();
+        return IXMLAnalyzer.failureDocument(content, r.position(), r.error());
+    }
+
     XmlDocument load(String content, String source, IXMLAnalyzer ixml) throws Exit
     {
         if (content == null) return new XmlDocument();
+        if (ixml_source != null && ixml_trace_file != null) return loadWithEarleyTrace(content);
         if (ixml != null)
         {
             // A rejected input is output as a failure document, ixml(ixml:state=failed){info=...},

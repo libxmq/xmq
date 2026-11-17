@@ -106,6 +106,19 @@ public final class IXMLAnalyzer {
             return d;
         }
         if (silent) return d;
+        return failureDocument(input, failed_at, error);
+    }
+
+    /** The failure document of a rejected input, like in the C version:
+     * ixml(ixml:state=failed){info=... line=... column=... pos=...}
+     * A dynamic error, eg D02, has only the info.
+     * @param input the input
+     * @param failed_at the code point position of the failure
+     * @param error the error message
+     * @return the failure document
+     */
+    public static XmlDocument failureDocument(String input, int failed_at, String error) {
+        XmlDocument d = new XmlDocument();
         XmlElement root = new XmlElement("ixml");
         d.appendRaw(root);
         XmlNs ns = root.declareNs("ixml", IXML_NS);

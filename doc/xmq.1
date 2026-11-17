@@ -121,6 +121,21 @@ Try to recover a parse even if the first attempt fails.
 Do not warn if an ixml parse fails.
 
 .TP
+.BR \-\-traceixml=FILE
+Write a trace of the ixml parse to FILE: the grammar rules, the input tokens,
+every Earley item and the rules used in the tree. The trace is xmq, or xml if
+FILE ends with .xml. xmqj parses with its Earley parser when tracing.
+Render the trace as a web page or as LaTeX:
+.br
+.RS
+\fBxmq \-\-traceixml=trace.xmq formula.ixml \-i 1+2*3+4\fP
+.br
+\fBxmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html\fP
+.br
+\fBxmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex\fP
+.RE
+
+.TP
 .BR \-\-ixml-engine=NAME
 Use the named ixml engine implementation.
 Can also be set with the \fBXMQ_IXML_ENGINE\fP environment variable.

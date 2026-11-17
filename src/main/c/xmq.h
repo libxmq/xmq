@@ -210,6 +210,8 @@ typedef enum
     XMQ_FLAG_IXML_TRY_TO_RECOVER = 32,
     /** If the ixml parse fails generate an empty document and no errors. */
     XMQ_FLAG_IXML_FAIL_SILENT = 64,
+    /** Record a trace of the ixml parse (the grammar, the Earley items and the tree), see xmqTakeIXMLTrace. */
+    XMQ_FLAG_IXML_TRACE = 128,
 } XMQFlagBits;
 
 /**
@@ -1520,6 +1522,21 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
                             const char *stop,
                             XMQDoc *ixml_grammar,
                             int flags);
+
+/**
+    xmqTakeIXMLTrace:
+
+    Returns the trace of the last parse of doc with xmqParseBufferWithIXML and the flag
+    XMQ_FLAG_IXML_TRACE, or NULL. The caller owns the returned document and frees it with
+    xmqFreeDoc. The trace is:
+    trace(engine=yaep) {
+        grammar { rule(name rhs) ... }
+        input { token(pos) = 1 ... token(pos) = ω }
+        steps { read(pos) item(id from to state rule matched expected) ... }
+        tree { node(id from to rule rhs) ... } }
+    where state is predicted, partial, complete or blocked.
+*/
+XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc);
 
 /**
     xmqParseFileWithIXML:

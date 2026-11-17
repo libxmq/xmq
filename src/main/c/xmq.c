@@ -2337,6 +2337,11 @@ void xmqClearDoc(XMQDoc *doq)
         doq->xmq_parse_state_ = NULL;
     }
 #endif
+    if (doq->ixml_trace_)
+    {
+        xmqFreeDoc(doq->ixml_trace_);
+        doq->ixml_trace_ = NULL;
+    }
     debug("xmq=", "clearing xmq doc");
 }
 
@@ -2372,6 +2377,11 @@ void xmqFreeDoc(XMQDoc *doq)
         doq->xmq_parse_state_ = NULL;
     }
 #endif
+    if (doq->ixml_trace_)
+    {
+        xmqFreeDoc(doq->ixml_trace_);
+        doq->ixml_trace_ = NULL;
+    }
 
     debug("xmq=", "freeing xmq doc");
     free(doq);
@@ -3752,7 +3762,8 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         output_settings->output_buffer = NULL; // Handed over to the caller.
         *output_settings->output_buffer_start = buffer;
-        *output_settings->output_buffer_stop = buffer+size;
+        // The output is NUL terminated, stop points to the NUL (not after it).
+        *output_settings->output_buffer_stop = buffer+size-1;
         if (output_settings->output_skip)
         {
             *output_settings->output_skip = 0;
@@ -5944,6 +5955,115 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
     }
 }
 
+/** Records the trace events of a yaep parse into a trace document, see xmqTakeIXMLTrace. */
+typedef struct
+{
+    XMQDoc *trace;
+    XmlDom *dom;
+    XMQNode *grammar, *input, *steps, *tree;
+} IXMLTraceRecorder;
+
+static XMQNode *trace_add(IXMLTraceRecorder *r, XMQNode *parent, const char *name)
+{
+    XMQNode *e = xml_node_new_element(r->dom, name, NULL);
+    xml_node_append_child(parent, e);
+    return e;
+}
+
+static void trace_set_int(XMQNode *e, const char *name, int value)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%d", value);
+    xml_node_set_attr(e, name, NULL, buf);
+}
+
+/** A token is written like '1' by yaep, store it without the quotes: 1. Others, eg #a and ω, as they are. */
+static void trace_add_token_text(IXMLTraceRecorder *r, XMQNode *e, const char *token)
+{
+    size_t len = strlen(token);
+    if (len >= 3 && token[0] == '\'' && token[len-1] == '\'')
+    {
+        xml_node_append_child(e, xml_node_new_text_len(r->dom, token+1, len-2));
+    }
+    else
+    {
+        xml_node_append_child(e, xml_node_new_text(r->dom, token));
+    }
+}
+
+static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
+{
+    IXMLTraceRecorder *r = (IXMLTraceRecorder*)pr->trace_data;
+    XMQNode *e = NULL;
+    switch (ev->kind)
+    {
+    case YAEP_TRACE_RULE:
+        e = trace_add(r, r->grammar, "rule");
+        xml_node_set_attr(e, "name", NULL, ev->lhs);
+        xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        break;
+    case YAEP_TRACE_TOKEN:
+        e = trace_add(r, r->input, "token");
+        trace_set_int(e, "pos", ev->pos);
+        trace_add_token_text(r, e, ev->token);
+        e = trace_add(r, r->steps, "read");
+        trace_set_int(e, "pos", ev->pos);
+        break;
+    case YAEP_TRACE_ITEM:
+        e = trace_add(r, r->steps, "item");
+        trace_set_int(e, "id", ev->id);
+        trace_set_int(e, "from", ev->from);
+        trace_set_int(e, "to", ev->to);
+        xml_node_set_attr(e, "state", NULL, ev->state);
+        xml_node_set_attr(e, "rule", NULL, ev->lhs);
+        xml_node_set_attr(e, "matched", NULL, ev->matched);
+        xml_node_set_attr(e, "expected", NULL, ev->expected);
+        break;
+    case YAEP_TRACE_TREE:
+        e = trace_add(r, r->tree, "node");
+        trace_set_int(e, "id", ev->id);
+        trace_set_int(e, "from", ev->from);
+        trace_set_int(e, "to", ev->to);
+        xml_node_set_attr(e, "rule", NULL, ev->lhs);
+        xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        break;
+    }
+}
+
+static void trace_recorder_start(IXMLTraceRecorder *r, YaepParseRun *run)
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    r->trace = rd.doc;
+    r->dom = r->trace->dom_;
+    XMQNode *root = xml_node_new_element(r->dom, "trace", NULL);
+    xml_dom_set_root_element(r->dom, root);
+    xml_node_set_attr(root, "engine", NULL, "yaep");
+    r->grammar = trace_add(r, root, "grammar");
+    r->input = trace_add(r, root, "input");
+    r->steps = trace_add(r, root, "steps");
+    r->tree = trace_add(r, root, "tree");
+    run->trace_event = trace_event;
+    run->trace_data = r;
+}
+
+/** Stop recording and hand the trace over to doc. */
+static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc *doc)
+{
+    run->trace_event = NULL;
+    run->trace_data = NULL;
+    if (doc->ixml_trace_) xmqFreeDoc(doc->ixml_trace_);
+    r->trace->root_ = xml_dom_root_element(r->dom);
+    doc->ixml_trace_ = r->trace;
+}
+
+XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
+{
+    if (!doc) return NULL;
+    XMQDoc *trace = doc->ixml_trace_;
+    doc->ixml_trace_ = NULL;
+    return trace;
+}
+
 bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
     bool ok = false;
@@ -5956,6 +6076,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     // Now add all character terminals in the content (not yet added) to the grammar.
     // And rewrite charsets into rules with multiple choice shrunk to the actual usage of characters in the input.
     scan_content_fixup_charsets(state, start, stop);
+
+    // Record the parse into a trace document (xmq --traceixml=file).
+    IXMLTraceRecorder recorder;
+    bool tracing = (flags & XMQ_FLAG_IXML_TRACE) != 0;
+    if (tracing) trace_recorder_start(&recorder, xmq_get_yaep_parse_run(ixml_grammar));
 
     ixml_print_grammar(state);
 
@@ -6087,6 +6212,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         run->root = NULL;
     }
 
+    if (tracing) trace_recorder_stop(&recorder, xmq_get_yaep_parse_run(ixml_grammar), doc);
+
     return ok;
 }
 
@@ -6117,6 +6244,12 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 {
     (void)start; (void)stop; (void)ixml_grammar; (void)flags;
     return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
+{
+    (void)doc;
+    return NULL;
 }
 
 bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)

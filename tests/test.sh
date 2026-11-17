@@ -281,6 +281,13 @@ else
     echo "SKIP: tests/test_ixml_engine.sh (needs ixml)"
 fi
 
+if has_feature ixml && has_feature xslt
+then
+    tests/test_traceixml.sh "$PROG" "$OUTPUT"
+else
+    echo "SKIP: tests/test_traceixml.sh (needs ixml and xslt)"
+fi
+
 for i in tests/test_special_???_*.sh
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

@@ -165,6 +165,7 @@ struct XMQCliCommand
     const char *ixml_filename; // Where the ixml grammar was read from.
     XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
     bool ixml_fail_silent; // Generate empty document ixml parse fails. Use with --lines
+    const char *ixml_trace_file; // --traceixml=file writes a trace of the ixml parse to this file.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -328,6 +329,7 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_help(XMQCliCommand *c);
 void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from);
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from);
+void save_ixml_trace(XMQCliCommand *command);
 bool cmd_load(XMQCliCommand *command, bool *no_more_data);
 const char *cmd_name(XMQCliCmd cmd);
 bool cmd_output(XMQCliCommand *command);
@@ -1902,6 +1904,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->ixml_fail_silent = true;
         return true;
     }
+    if (!strncmp(arg, "--traceixml=", 12))
+    {
+        command->ixml_trace_file = arg+12;
+        return true;
+    }
     if (!strcmp(arg, "--log-xmq") || !strcmp(arg, "-lx"))
     {
         log_xmq__ = true;
@@ -2057,6 +2064,8 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
+           "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,\n"
+           "             render it with OpenMike/render-trace-to-html.xslq or render-trace-to-tex.xslq.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"
@@ -2230,12 +2239,15 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
     if (command->ixml_all_parses) flags |= XMQ_FLAG_IXML_ALL_PARSES;
     if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
     if (command->ixml_fail_silent) flags |= XMQ_FLAG_IXML_FAIL_SILENT;
+    if (command->ixml_trace_file) flags |= XMQ_FLAG_IXML_TRACE;
 
     bool ok = xmqParseBufferWithIXML(command->env->doc,
                                      command->input_current_line_start,
                                      command->input_current_line_stop,
                                      command->ixml_grammar,
                                      flags);
+
+    if (command->ixml_trace_file) save_ixml_trace(command);
 
     if (!ok)
     {
@@ -2245,6 +2257,34 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
     {
         verbose_("xmq=", "cmd-load-ixml %zu bytes from %s", xmqGetOriginalSize(command->env->doc), from);
     }
+}
+
+/** Write the trace of the ixml parse to the --traceixml file, as xml if the file ends
+    with .xml, else as xmq. */
+void save_ixml_trace(XMQCliCommand *command)
+{
+    XMQDoc *trace = xmqTakeIXMLTrace(command->env->doc);
+    if (!trace) return;
+    const char *file = command->ixml_trace_file;
+    size_t len = strlen(file);
+    XMQOutputSettings *os = xmqNewOutputSettings();
+    xmqSetOutputFormat(os, len > 4 && !strcmp(file+len-4, ".xml") ? XMQ_CONTENT_XML : XMQ_CONTENT_XMQ);
+    char *start = NULL, *stop = NULL;
+    xmqSetupPrintMemory(os, &start, &stop);
+    xmqPrint(trace, os);
+    xmqFreeOutputSettings(os);
+    xmqFreeDoc(trace);
+    FILE *f = fopen(file, "wb");
+    if (!f || fwrite(start, 1, stop-start, f) != (size_t)(stop-start))
+    {
+        fprintf(stderr, "xmq: could not write the ixml trace to %s\n", file);
+        if (f) fclose(f);
+        free(start);
+        exit(1);
+    }
+    fclose(f);
+    free(start);
+    verbose_("xmq=", "wrote the ixml trace to %s", file);
 }
 
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from)
@@ -4039,7 +4079,7 @@ void browse(XMQCliCommand *c)
     int fd = open(tmpfile, O_CREAT | O_TRUNC | O_NOFOLLOW | O_RDWR, 0666);
 #endif
     size_t len = c->env->out_stop - c->env->out_start - c->env->out_skip;
-    size_t wrote = write(fd, c->env->out_start, len);
+    size_t wrote = write(fd, c->env->out_start + c->env->out_skip, len);
     close(fd);
 
     if (wrote == len)

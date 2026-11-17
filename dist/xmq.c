@@ -6178,6 +6178,28 @@ typedef struct YaepTreeNode YaepTreeNode;
 #define YAEP_LOOP_NONTERM                  16
 #define YAEP_INVALID_TOKEN_CODE            17
 
+/* What the parser did, reported to YaepParseRun.trace_event when it is set. */
+typedef enum
+{
+    YAEP_TRACE_RULE,  // A rule of the grammar: lhs → rhs.
+    YAEP_TRACE_TOKEN, // The parser reads the token at pos.
+    YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
+    YAEP_TRACE_TREE,  // A rule used in the parse tree: the dotted rule id over from-to, lhs → rhs.
+} YaepTraceKind;
+
+typedef struct
+{
+    YaepTraceKind kind;
+    int pos;              // TOKEN: the token position.
+    int id;               // ITEM, TREE: the dotted rule id.
+    int from, to;         // ITEM, TREE: the matched input range.
+    const char *state;    // ITEM: predicted, partial, complete or blocked (by a not).
+    const char *lhs;      // RULE, ITEM, TREE: the rule name.
+    const char *matched;  // RULE, TREE: the rhs. ITEM: the symbols before the dot.
+    const char *expected; // ITEM: the symbols after the dot.
+    const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
+} YaepTraceEvent;
+
 struct YaepParseRun
 {
     void *user_data; // Points to user supplied data, useful inside the callbacked read_token and syntax_error.
@@ -6213,6 +6235,11 @@ struct YaepParseRun
     bool verbose;
     bool debug;
     bool trace;
+
+    // If trace_event is not NULL, it is called with every rule, token, Earley item
+    // and tree step of the parse, eg to record the parse (xmq --traceixml=file).
+    void (*trace_event)(YaepParseRun *pr, YaepTraceEvent *e);
+    void *trace_data;
 
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.
@@ -7519,6 +7546,10 @@ void print_state_set(MemBuffer *mb, YaepParseState *ps, YaepStateSet *set, int f
 void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p);
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set);
 void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
+// Report an Earley item, a rule of the grammar or a tree step to ps->run.trace_event (if set).
+void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked);
+void trace_rule(YaepParseState *ps, YaepRule *rule);
+void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #ifndef XMQ_NO_IXML
@@ -7644,6 +7675,7 @@ struct XMQDoc
     YaepParseRun *yaep_parse_run_; // The currently executing parse variables.
     YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
     XMQParseState *xmq_parse_state_; // The parse state used to parse the ixml grammar.
+    XMQDoc *ixml_trace_; // The trace of the last ixml parse (XMQ_FLAG_IXML_TRACE), see xmqTakeIXMLTrace.
 };
 
 #ifdef __cplusplus
@@ -10443,6 +10475,11 @@ void xmqClearDoc(XMQDoc *doq)
         doq->xmq_parse_state_ = NULL;
     }
 #endif
+    if (doq->ixml_trace_)
+    {
+        xmqFreeDoc(doq->ixml_trace_);
+        doq->ixml_trace_ = NULL;
+    }
     debug("xmq=", "clearing xmq doc");
 }
 
@@ -10478,6 +10515,11 @@ void xmqFreeDoc(XMQDoc *doq)
         doq->xmq_parse_state_ = NULL;
     }
 #endif
+    if (doq->ixml_trace_)
+    {
+        xmqFreeDoc(doq->ixml_trace_);
+        doq->ixml_trace_ = NULL;
+    }
 
     debug("xmq=", "freeing xmq doc");
     free(doq);
@@ -11858,7 +11900,8 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         output_settings->output_buffer = NULL; // Handed over to the caller.
         *output_settings->output_buffer_start = buffer;
-        *output_settings->output_buffer_stop = buffer+size;
+        // The output is NUL terminated, stop points to the NUL (not after it).
+        *output_settings->output_buffer_stop = buffer+size-1;
         if (output_settings->output_skip)
         {
             *output_settings->output_skip = 0;
@@ -14050,6 +14093,115 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
     }
 }
 
+/** Records the trace events of a yaep parse into a trace document, see xmqTakeIXMLTrace. */
+typedef struct
+{
+    XMQDoc *trace;
+    XmlDom *dom;
+    XMQNode *grammar, *input, *steps, *tree;
+} IXMLTraceRecorder;
+
+static XMQNode *trace_add(IXMLTraceRecorder *r, XMQNode *parent, const char *name)
+{
+    XMQNode *e = xml_node_new_element(r->dom, name, NULL);
+    xml_node_append_child(parent, e);
+    return e;
+}
+
+static void trace_set_int(XMQNode *e, const char *name, int value)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%d", value);
+    xml_node_set_attr(e, name, NULL, buf);
+}
+
+/** A token is written like '1' by yaep, store it without the quotes: 1. Others, eg #a and ω, as they are. */
+static void trace_add_token_text(IXMLTraceRecorder *r, XMQNode *e, const char *token)
+{
+    size_t len = strlen(token);
+    if (len >= 3 && token[0] == '\'' && token[len-1] == '\'')
+    {
+        xml_node_append_child(e, xml_node_new_text_len(r->dom, token+1, len-2));
+    }
+    else
+    {
+        xml_node_append_child(e, xml_node_new_text(r->dom, token));
+    }
+}
+
+static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
+{
+    IXMLTraceRecorder *r = (IXMLTraceRecorder*)pr->trace_data;
+    XMQNode *e = NULL;
+    switch (ev->kind)
+    {
+    case YAEP_TRACE_RULE:
+        e = trace_add(r, r->grammar, "rule");
+        xml_node_set_attr(e, "name", NULL, ev->lhs);
+        xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        break;
+    case YAEP_TRACE_TOKEN:
+        e = trace_add(r, r->input, "token");
+        trace_set_int(e, "pos", ev->pos);
+        trace_add_token_text(r, e, ev->token);
+        e = trace_add(r, r->steps, "read");
+        trace_set_int(e, "pos", ev->pos);
+        break;
+    case YAEP_TRACE_ITEM:
+        e = trace_add(r, r->steps, "item");
+        trace_set_int(e, "id", ev->id);
+        trace_set_int(e, "from", ev->from);
+        trace_set_int(e, "to", ev->to);
+        xml_node_set_attr(e, "state", NULL, ev->state);
+        xml_node_set_attr(e, "rule", NULL, ev->lhs);
+        xml_node_set_attr(e, "matched", NULL, ev->matched);
+        xml_node_set_attr(e, "expected", NULL, ev->expected);
+        break;
+    case YAEP_TRACE_TREE:
+        e = trace_add(r, r->tree, "node");
+        trace_set_int(e, "id", ev->id);
+        trace_set_int(e, "from", ev->from);
+        trace_set_int(e, "to", ev->to);
+        xml_node_set_attr(e, "rule", NULL, ev->lhs);
+        xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        break;
+    }
+}
+
+static void trace_recorder_start(IXMLTraceRecorder *r, YaepParseRun *run)
+{
+    XMQReturnDoc rd = xmqNewDoc();
+    r->trace = rd.doc;
+    r->dom = r->trace->dom_;
+    XMQNode *root = xml_node_new_element(r->dom, "trace", NULL);
+    xml_dom_set_root_element(r->dom, root);
+    xml_node_set_attr(root, "engine", NULL, "yaep");
+    r->grammar = trace_add(r, root, "grammar");
+    r->input = trace_add(r, root, "input");
+    r->steps = trace_add(r, root, "steps");
+    r->tree = trace_add(r, root, "tree");
+    run->trace_event = trace_event;
+    run->trace_data = r;
+}
+
+/** Stop recording and hand the trace over to doc. */
+static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc *doc)
+{
+    run->trace_event = NULL;
+    run->trace_data = NULL;
+    if (doc->ixml_trace_) xmqFreeDoc(doc->ixml_trace_);
+    r->trace->root_ = xml_dom_root_element(r->dom);
+    doc->ixml_trace_ = r->trace;
+}
+
+XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
+{
+    if (!doc) return NULL;
+    XMQDoc *trace = doc->ixml_trace_;
+    doc->ixml_trace_ = NULL;
+    return trace;
+}
+
 bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
     bool ok = false;
@@ -14062,6 +14214,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     // Now add all character terminals in the content (not yet added) to the grammar.
     // And rewrite charsets into rules with multiple choice shrunk to the actual usage of characters in the input.
     scan_content_fixup_charsets(state, start, stop);
+
+    // Record the parse into a trace document (xmq --traceixml=file).
+    IXMLTraceRecorder recorder;
+    bool tracing = (flags & XMQ_FLAG_IXML_TRACE) != 0;
+    if (tracing) trace_recorder_start(&recorder, xmq_get_yaep_parse_run(ixml_grammar));
 
     ixml_print_grammar(state);
 
@@ -14193,6 +14350,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         run->root = NULL;
     }
 
+    if (tracing) trace_recorder_stop(&recorder, xmq_get_yaep_parse_run(ixml_grammar), doc);
+
     return ok;
 }
 
@@ -14223,6 +14382,12 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 {
     (void)start; (void)stop; (void)ixml_grammar; (void)flags;
     return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
+{
+    (void)doc;
+    return NULL;
 }
 
 bool xmqParseFileWithIXML(XMQDoc *doc, const char *file_name, XMQDoc *ixml_grammar, int flags)
@@ -103121,6 +103286,7 @@ static void loop_stack(YaepTreeNode **result,
     state->parent_rhs_offset = 0;
     state->anode = NULL;
 
+    trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
     if (ps->run.debug)
     {
         // Log the starting node.
@@ -103486,6 +103652,7 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_anode_state = curr_state;
                             state->parent_rhs_offset = rhs_offset;
                         }
+                        trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
                         if (ps->run.debug)
                         {
                             MemBuffer *mb = new_membuffer();
@@ -104374,6 +104541,76 @@ void print_symbol(MemBuffer *mb, YaepSymbol *symb, bool code_p)
     }
 }
 
+// The symbols rhs[from_j] to rhs[to_j-1] of the rule as text, eg "S '+' M". Free it.
+static char *symbols_text(YaepRule *rule, int from_j, int to_j)
+{
+    MemBuffer *mb = new_membuffer();
+    for (int j = from_j; j < to_j; j++)
+    {
+        if (j > from_j) membuffer_append_char(mb, ' ');
+        print_symbol(mb, rule->rhs[j], false);
+    }
+    membuffer_append_null(mb);
+    return free_membuffer_but_return_trimmed_content(mb);
+}
+
+void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepRule *rule = dotted_rule->rule;
+    bool complete = rule->rhs_len == dotted_rule->dot_j;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_ITEM;
+    e.id = dotted_rule->id;
+    // The same input range as print_dotted_rule.
+    e.from = matched_length == 0 ? ps->tok_i : 1+ps->tok_i-matched_length;
+    e.to = matched_length == 0 ? ps->tok_i : 1+ps->tok_i;
+    e.state = blocked ? "blocked" : complete ? "complete" : matched_length == 0 ? "predicted" : "partial";
+    e.lhs = rule->lhs->repr;
+    char *matched = symbols_text(rule, 0, dotted_rule->dot_j);
+    char *expected = symbols_text(rule, dotted_rule->dot_j, rule->rhs_len);
+    e.matched = matched;
+    e.expected = expected;
+    ps->run.trace_event(&ps->run, &e);
+    free(matched);
+    free(expected);
+}
+
+void trace_rule(YaepParseState *ps, YaepRule *rule)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_RULE;
+    e.lhs = rule->lhs->repr;
+    char *rhs = symbols_text(rule, 0, rule->rhs_len);
+    e.matched = rhs;
+    ps->run.trace_event(&ps->run, &e);
+    free(rhs);
+}
+
+void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i)
+{
+    if (!ps->run.trace_event) return;
+
+    YaepRule *rule = dotted_rule->rule;
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_TREE;
+    e.id = dotted_rule->id;
+    e.from = from_i;
+    e.to = to_i;
+    e.lhs = rule->lhs->repr;
+    char *rhs = symbols_text(rule, 0, rule->rhs_len);
+    e.matched = rhs;
+    ps->run.trace_event(&ps->run, &e);
+    free(rhs);
+}
+
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
 {
     bool first = true;
@@ -104963,6 +105200,7 @@ static void set_init(YaepParseState *ps, int n_input)
 
 static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
+    trace_item(ps, dotted_rule, matched_length, false);
     if (!ps->run.debug) return;
 
     MemBuffer *mb = new_membuffer();
@@ -104977,6 +105215,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
 
 static void debug_step_blocked(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
+    trace_item(ps, dotted_rule, matched_length, true);
     if (!ps->run.debug) return;
 
     MemBuffer *mb = new_membuffer();
@@ -106018,6 +106257,12 @@ int yaep_read_grammar(YaepParseRun *pr,
     check_grammar(ps, strict_p);
 
     symb_finish_adding_terms(ps);
+
+    // Report the rules to the trace (xmq --traceixml=file).
+    for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
+    {
+        if (rule->lhs->repr[0] != '$') trace_rule(ps, rule);
+    }
 
     if (ps->run.verbose)
     {
@@ -107220,6 +107465,15 @@ static void perform_parse(YaepParseState *ps)
             print_progress(ps, false);
         }
         debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
+        if (ps->run.trace_event)
+        {
+            YaepTraceEvent e;
+            memset(&e, 0, sizeof(e));
+            e.kind = YAEP_TRACE_TOKEN;
+            e.pos = ps->tok_i;
+            e.token = THE_TERMINAL->hr;
+            ps->run.trace_event(&ps->run, &e);
+        }
         if (NEXT_TERMINAL && xmq_trace_enabled_)
         {
             yaep_view(ps, "READ %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL->hr);

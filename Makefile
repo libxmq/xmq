@@ -464,6 +464,8 @@ testj: build/xmqj release
 	@echo "OK: TestInternals"
 # Run jar test and compiled Java programs using libxmq
 	@./tests/testj.sh "" build build/test_output $(FILTER)
+# The ixml trace of the Java Earley parser (xmqj --traceixml=file) and its rendering.
+	@./tests/test_traceixml.sh build/xmqj build/test_output
 # Run xmqj cli binary comparing to xmq cli binary results.
 #	@./tests/testj.sh build/xmqj build build/test_output $(FILTER)
 

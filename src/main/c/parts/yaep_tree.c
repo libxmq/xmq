@@ -263,6 +263,7 @@ static void loop_stack(YaepTreeNode **result,
     state->parent_rhs_offset = 0;
     state->anode = NULL;
 
+    trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
     if (ps->run.debug)
     {
         // Log the starting node.
@@ -628,6 +629,7 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_anode_state = curr_state;
                             state->parent_rhs_offset = rhs_offset;
                         }
+                        trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
                         if (ps->run.debug)
                         {
                             MemBuffer *mb = new_membuffer();

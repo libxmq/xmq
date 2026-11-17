@@ -659,6 +659,7 @@ static void set_init(YaepParseState *ps, int n_input)
 
 static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
+    trace_item(ps, dotted_rule, matched_length, false);
     if (!ps->run.debug) return;
 
     MemBuffer *mb = new_membuffer();
@@ -673,6 +674,7 @@ static void debug_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int matc
 
 static void debug_step_blocked(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, int parent_id)
 {
+    trace_item(ps, dotted_rule, matched_length, true);
     if (!ps->run.debug) return;
 
     MemBuffer *mb = new_membuffer();
@@ -1714,6 +1716,12 @@ int yaep_read_grammar(YaepParseRun *pr,
     check_grammar(ps, strict_p);
 
     symb_finish_adding_terms(ps);
+
+    // Report the rules to the trace (xmq --traceixml=file).
+    for(rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
+    {
+        if (rule->lhs->repr[0] != '$') trace_rule(ps, rule);
+    }
 
     if (ps->run.verbose)
     {
@@ -2916,6 +2924,15 @@ static void perform_parse(YaepParseState *ps)
             print_progress(ps, false);
         }
         debug("ixml.pa.token=", "@%d %s", ps->tok_i, THE_TERMINAL->hr);
+        if (ps->run.trace_event)
+        {
+            YaepTraceEvent e;
+            memset(&e, 0, sizeof(e));
+            e.kind = YAEP_TRACE_TOKEN;
+            e.pos = ps->tok_i;
+            e.token = THE_TERMINAL->hr;
+            ps->run.trace_event(&ps->run, &e);
+        }
         if (NEXT_TERMINAL && xmq_trace_enabled_)
         {
             yaep_view(ps, "READ %s next %s", THE_TERMINAL->hr, NEXT_TERMINAL->hr);

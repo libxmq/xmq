@@ -476,6 +476,8 @@ Usage: xmqj [options] <file> ( <command> [options] )*
   analyze grammar.ixml [test.input] [--tree]  Analyze LL(*) suitability and emit a parser DOM,
              or with --tree parse the input with the LL(*) parser and print the parse tree.
   --ixml=grammar.ixml Parse the content using the supplied grammar file.
+  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,
+             render it with OpenMike/render-trace-to-html.xslq or render-trace-to-tex.xslq.
   -z         Do not read from stdin nor from a file. Start with an empty dom.
   -i "a=2" Do not read from a file, use the next argument as the content to parse.
 

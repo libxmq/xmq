@@ -90,6 +90,28 @@ typedef struct YaepTreeNode YaepTreeNode;
 #define YAEP_LOOP_NONTERM                  16
 #define YAEP_INVALID_TOKEN_CODE            17
 
+/* What the parser did, reported to YaepParseRun.trace_event when it is set. */
+typedef enum
+{
+    YAEP_TRACE_RULE,  // A rule of the grammar: lhs → rhs.
+    YAEP_TRACE_TOKEN, // The parser reads the token at pos.
+    YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
+    YAEP_TRACE_TREE,  // A rule used in the parse tree: the dotted rule id over from-to, lhs → rhs.
+} YaepTraceKind;
+
+typedef struct
+{
+    YaepTraceKind kind;
+    int pos;              // TOKEN: the token position.
+    int id;               // ITEM, TREE: the dotted rule id.
+    int from, to;         // ITEM, TREE: the matched input range.
+    const char *state;    // ITEM: predicted, partial, complete or blocked (by a not).
+    const char *lhs;      // RULE, ITEM, TREE: the rule name.
+    const char *matched;  // RULE, TREE: the rhs. ITEM: the symbols before the dot.
+    const char *expected; // ITEM: the symbols after the dot.
+    const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
+} YaepTraceEvent;
+
 struct YaepParseRun
 {
     void *user_data; // Points to user supplied data, useful inside the callbacked read_token and syntax_error.
@@ -125,6 +147,11 @@ struct YaepParseRun
     bool verbose;
     bool debug;
     bool trace;
+
+    // If trace_event is not NULL, it is called with every rule, token, Earley item
+    // and tree step of the parse, eg to record the parse (xmq --traceixml=file).
+    void (*trace_event)(YaepParseRun *pr, YaepTraceEvent *e);
+    void *trace_data;
 
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.

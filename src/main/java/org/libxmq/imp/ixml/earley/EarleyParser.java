@@ -1,8 +1,6 @@
 /* libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT) */
 package org.libxmq.imp.ixml.earley;
 
-import java.io.PrintStream;
-
 import org.libxmq.imp.ixml.earley.Grammar.Call;
 import org.libxmq.imp.ixml.earley.Grammar.Chars;
 import org.libxmq.imp.ixml.earley.Grammar.Production;
@@ -38,20 +36,12 @@ import org.libxmq.imp.ixml.earley.Grammar.Symbol;
 public final class EarleyParser
 {
     private final Grammar grammar;
-    private PrintStream trace;
 
     /** Create a parser for the grammar.
      * @param grammar the grammar */
     public EarleyParser(Grammar grammar)
     {
         this.grammar = grammar;
-    }
-
-    /** Print every set to this stream when parsing, or null for no trace.
-     * @param trace the stream or null */
-    public void setTrace(PrintStream trace)
-    {
-        this.trace = trace;
     }
 
     /** Run the recognizer over the input.
@@ -80,7 +70,6 @@ public final class EarleyParser
                 else if (next instanceof Chars chars) scan(chart, item, chars, k);
                 else set.add(item.advance()); // An insertion or a not, matches nothing.
             }
-            if (trace != null) print(trace, chart, k);
         }
         return chart;
     }
@@ -165,17 +154,5 @@ public final class EarleyParser
                 chart.set(k).add(waiting.advance());
             }
         }
-    }
-
-    /** Print the set, like the summary of a state set in the C trace.
-     * @param out the stream
-     * @param chart the chart
-     * @param k the set position */
-    public static void print(PrintStream out, Chart chart, int k)
-    {
-        EarleySet set = chart.set(k);
-        String at = k < chart.length() ? " " + Grammar.quote(chart.input[k]) : " end of input";
-        out.println("(earley) @" + k + " set with " + set.size() + " items, next" + at);
-        for (Item item : set.items()) out.println("(earley)     " + item);
     }
 }
