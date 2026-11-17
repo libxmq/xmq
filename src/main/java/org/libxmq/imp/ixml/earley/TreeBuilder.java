@@ -70,8 +70,10 @@ public final class TreeBuilder
      * @param production the production
      * @param from the input position where the node starts
      * @param to the input position after the node
+     * @param cost the cost of the node with its children
+     * @param chosen true if the node is in the final tree
      */
-    public record Step(int step, int parent, Production production, int from, int to) { }
+    public record Step(int step, int parent, Production production, int from, int to, int cost, boolean chosen) { }
 
     /** The productions that composed a tree, numbered when they were started. */
     private final List<Step> composed = new ArrayList<>();
@@ -80,6 +82,8 @@ public final class TreeBuilder
     /** The productions being composed right now, the innermost first. */
     private final Deque<Integer> composing = new ArrayDeque<>();
     private int num_started;
+    /** The tree from build(). */
+    private Tree result;
 
     /** The children found for a prefix of a production: the trees, their total cost,
      * and whether a tie was found. */
@@ -108,7 +112,8 @@ public final class TreeBuilder
      * @return the tree of the start rule, or null if there is none */
     public Tree build()
     {
-        return best(grammar.start, 0, chart.length());
+        result = best(grammar.start, 0, chart.length());
+        return result;
     }
 
     /**
@@ -124,17 +129,29 @@ public final class TreeBuilder
         // Number them 1, 2, ... without the productions that composed nothing.
         List<Step> sorted = new ArrayList<>(composed);
         sorted.sort(Comparator.comparingInt(Step::step));
+        // The nodes of the final tree, a production over a span is composed once.
+        Set<Step> in_tree = new HashSet<>();
+        if (result != null) addChosen(result, in_tree);
         Map<Integer, Integer> renumbered = new HashMap<>();
         renumbered.put(0, 0);
         for (Step s : sorted) renumbered.put(s.step(), renumbered.size());
-        List<Step> result = new ArrayList<>();
+        List<Step> steps = new ArrayList<>();
         for (Step s : sorted)
         {
             int parent = s.parent();
             while (!renumbered.containsKey(parent)) parent = parent_of.get(parent);
-            result.add(new Step(renumbered.get(s.step()), renumbered.get(parent), s.production(), s.from(), s.to()));
+            boolean chosen = in_tree.contains(new Step(0, 0, s.production(), s.from(), s.to(), 0, false));
+            steps.add(new Step(renumbered.get(s.step()), renumbered.get(parent), s.production(), s.from(), s.to(), s.cost(), chosen));
         }
-        return result;
+        return steps;
+    }
+
+    /** Add the rule nodes of the tree, as steps with only production, from and to. */
+    private static void addChosen(Tree node, Set<Step> in_tree)
+    {
+        if (!node.isRule()) return;
+        in_tree.add(new Step(0, 0, node.production(), node.from(), node.to(), 0, false));
+        for (Tree child : node.children()) addChosen(child, in_tree);
     }
 
     /** The best tree for the rule matching from..to, or null. */
@@ -157,8 +174,8 @@ public final class TreeBuilder
             Children c = prefix(p, n, from, to);
             composing.pop();
             if (c == null) continue;
-            composed.add(new Step(step, parent, p, from, to));
             Tree candidate = Tree.rule(p, c.trees(), from, to, rule.cost + c.cost(), c.ambiguous());
+            composed.add(new Step(step, parent, p, from, to, candidate.cost(), false));
             if (best == null || candidate.cost() < best.cost())
             {
                 best = candidate;

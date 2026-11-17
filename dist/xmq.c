@@ -6186,6 +6186,8 @@ typedef enum
     YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
     YAEP_TRACE_TREE,  // A node added to the parse tree: the dotted rule id over from-to, lhs → rhs,
                       // the build step that added it and the step that added its parent.
+    YAEP_TRACE_COST,  // The cost of the node added at step, with its children, when choosing by cost.
+    YAEP_TRACE_CHOSEN,// The node added at step is in the final tree.
 } YaepTraceKind;
 
 typedef struct
@@ -6201,6 +6203,7 @@ typedef struct
     const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
     int step;             // TREE: the nodes are numbered 1, 2, ... in the order they are added.
     int parent;           // TREE: the step of the parent node, 0 for the root.
+    int cost;             // COST: the cost of the node and its children.
 } YaepTraceEvent;
 
 struct YaepParseRun
@@ -6305,6 +6308,8 @@ struct YaepAbstractNode
     /* References for nodes for which the abstract node refers.  The end
        marker of the array is value NULL. */
     YaepTreeNode **children;
+    /* The build step that added the node (YAEP_TRACE_TREE). */
+    int trace_step;
 };
 
 /* The following structure is not part of the interface and for internal use only */
@@ -7559,6 +7564,8 @@ void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked);
 void trace_rule(YaepParseState *ps, YaepRule *rule);
 void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state);
+void trace_tree_cost(YaepParseState *ps, int step, int cost);
+void trace_tree_chosen(YaepParseState *ps, int step);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #ifndef XMQ_NO_IXML
@@ -14108,7 +14115,17 @@ typedef struct
     XMQDoc *trace;
     XmlDom *dom;
     XMQNode *grammar, *input, *steps, *tree;
+    // The tree nodes by build step, nodes[step-1], to add the cost and chosen.
+    XMQNode **nodes;
+    int num_nodes, nodes_size;
 } IXMLTraceRecorder;
+
+/** The tree node added at step, or NULL. */
+static XMQNode *trace_node(IXMLTraceRecorder *r, int step)
+{
+    if (step < 1 || step > r->num_nodes) return NULL;
+    return r->nodes[step-1];
+}
 
 static XMQNode *trace_add(IXMLTraceRecorder *r, XMQNode *parent, const char *name)
 {
@@ -14175,6 +14192,20 @@ static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
         trace_set_int(e, "to", ev->to);
         xml_node_set_attr(e, "rule", NULL, ev->lhs);
         xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        xml_node_set_attr(e, "chosen", NULL, "no");
+        if (ev->step > r->nodes_size)
+        {
+            r->nodes_size = ev->step * 2;
+            r->nodes = (XMQNode**)realloc(r->nodes, r->nodes_size * sizeof(XMQNode*));
+        }
+        for (; r->num_nodes < ev->step; r->num_nodes++) r->nodes[r->num_nodes] = NULL;
+        r->nodes[ev->step-1] = e;
+        break;
+    case YAEP_TRACE_COST:
+        if ((e = trace_node(r, ev->step))) trace_set_int(e, "cost", ev->cost);
+        break;
+    case YAEP_TRACE_CHOSEN:
+        if ((e = trace_node(r, ev->step))) xml_node_set_attr(e, "chosen", NULL, "yes");
         break;
     }
 }
@@ -14191,6 +14222,8 @@ static void trace_recorder_start(IXMLTraceRecorder *r, YaepParseRun *run)
     r->input = trace_add(r, root, "input");
     r->steps = trace_add(r, root, "steps");
     r->tree = trace_add(r, root, "tree");
+    r->nodes = NULL;
+    r->num_nodes = r->nodes_size = 0;
     run->trace_event = trace_event;
     run->trace_data = r;
 }
@@ -14200,6 +14233,8 @@ static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc 
 {
     run->trace_event = NULL;
     run->trace_data = NULL;
+    free(r->nodes);
+    r->nodes = NULL;
     if (doc->ixml_trace_) xmqFreeDoc(doc->ixml_trace_);
     r->trace->root_ = xml_dom_root_element(r->dom);
     doc->ixml_trace_ = r->trace;
@@ -103666,6 +103701,7 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_rhs_offset = rhs_offset;
                         }
                         trace_tree_step(ps, state);
+                        node->val.anode.trace_step = state->trace_step;
                         if (table_state != NULL)
                         {
                             table_state->trace_step = state->trace_step;
@@ -103815,6 +103851,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
                 node->val.anode.cost += *cost;
             }
            *cost = node->val.anode.cost;
+            trace_tree_cost(ps, node->val.anode.trace_step, *cost);
             node->val.anode.cost = -node->val.anode.cost - 1;        /* flag of visit*/
         }
         else
@@ -103965,6 +104002,26 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
     return root;
 }
 
+/* Report the nodes of the final tree (YAEP_TRACE_CHOSEN). The tree is a DAG,
+   visited remembers the nodes already reported. */
+static void trace_chosen_nodes(YaepParseState *ps, YaepTreeNode *node, hash_table_t visited)
+{
+    for (; node != NULL; node = node->type == YAEP_ALT ? node->val.alt.next : NULL)
+    {
+        YaepTreeNode *n = node->type == YAEP_ALT ? node->val.alt.node : node;
+        if (n->type != YAEP_ANODE) continue;
+        hash_table_entry_t *entry = find_hash_table_entry(visited, n, true);
+        if (*entry != NULL) continue;
+        *entry = (hash_table_entry_t)n;
+        trace_tree_chosen(ps, n->val.anode.trace_step);
+        YaepTreeNode *child;
+        for (int i = 0; (child = n->val.anode.children[i]) != NULL; i++)
+        {
+            trace_chosen_nodes(ps, child, visited);
+        }
+    }
+}
+
 YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     yaep_debug(ps, "build_parse_tree()");
@@ -104028,6 +104085,16 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
            their children. */
         // The parse is only ambiguous if several parses remain after selecting the minimal cost.
         result = find_minimal_translation(ps, result, ambiguous_p);
+    }
+    if (ps->run.trace_event && result != NULL)
+    {
+        // The start rule $ (step 1) has no abstract node, it is always used.
+        trace_tree_chosen(ps, 1);
+        hash_table_t visited = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4 + 16,
+                                                 (hash_table_hash_function)reserv_mem_hash,
+                                                 (hash_table_eq_function)reserv_mem_eq);
+        trace_chosen_nodes(ps, result, visited);
+        delete_hash_table(visited);
     }
     if (false)
     {
@@ -104630,6 +104697,31 @@ void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state)
     e.matched = rhs;
     ps->run.trace_event(&ps->run, &e);
     free(rhs);
+}
+
+/* The node added at step costs cost, with its children. */
+void trace_tree_cost(YaepParseState *ps, int step, int cost)
+{
+    if (!ps->run.trace_event || step == 0) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_COST;
+    e.step = step;
+    e.cost = cost;
+    ps->run.trace_event(&ps->run, &e);
+}
+
+/* The node added at step is in the final tree. */
+void trace_tree_chosen(YaepParseState *ps, int step)
+{
+    if (!ps->run.trace_event || step == 0) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_CHOSEN;
+    e.step = step;
+    ps->run.trace_event(&ps->run, &e);
 }
 
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)

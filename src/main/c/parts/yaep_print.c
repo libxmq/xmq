@@ -553,6 +553,31 @@ void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state)
     free(rhs);
 }
 
+/* The node added at step costs cost, with its children. */
+void trace_tree_cost(YaepParseState *ps, int step, int cost)
+{
+    if (!ps->run.trace_event || step == 0) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_COST;
+    e.step = step;
+    e.cost = cost;
+    ps->run.trace_event(&ps->run, &e);
+}
+
+/* The node added at step is in the final tree. */
+void trace_tree_chosen(YaepParseState *ps, int step)
+{
+    if (!ps->run.trace_event || step == 0) return;
+
+    YaepTraceEvent e;
+    memset(&e, 0, sizeof(e));
+    e.kind = YAEP_TRACE_CHOSEN;
+    e.step = step;
+    ps->run.trace_event(&ps->run, &e);
+}
+
 void print_terminal_bitset(MemBuffer *mb, YaepParseState *ps, terminal_bitset_t *set)
 {
     bool first = true;

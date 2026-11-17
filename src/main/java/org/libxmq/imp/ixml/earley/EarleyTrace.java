@@ -88,11 +88,12 @@ public final class EarleyTrace
      *     grammar { rule(name=S rhs="S '+' M") ... }
      *     input { token(pos=0) = 1 ... token(pos=7) = ω }
      *     steps { item(id from to state rule matched expected) ... read(pos=0) ... }
-     *     tree { node(step parent id from to rule rhs) ... } }
+     *     tree { node(step parent id from to rule rhs chosen cost) ... } }
      * </pre>
      * where state is predicted, partial or complete. The items of set k+1 follow read(pos=k).
      * The tree nodes are in the order they were added, step 1, 2, ..., and parent is
-     * the step of the parent node, 0 for the root.
+     * the step of the parent node, 0 for the root. chosen is yes for the nodes of the
+     * final tree, the others lost on cost. cost is the cost of the node with its children.
      * @param grammar the grammar
      * @param chart the chart from EarleyParser.recognize
      * @param tree_steps the nodes in the order they were added to the tree, empty if the input was rejected
@@ -163,6 +164,8 @@ public final class EarleyTrace
         e.setAttribute("to", Integer.toString(s.to()));
         e.setAttribute("rule", traceName(p.rule.name));
         e.setAttribute("rhs", symbolsText(p, 0, p.symbols.size()));
+        e.setAttribute("chosen", s.chosen() ? "yes" : "no");
+        e.setAttribute("cost", Integer.toString(s.cost()));
     }
 
     private static XmlElement child(XmlElement parent, String name)

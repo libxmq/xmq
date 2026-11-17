@@ -6,15 +6,16 @@
 // matched below the tokens, and the rule with the dot is in the last column. The items
 // used in the tree are dark green. Then the tree building: every row adds a node, top-down,
 // and a column shows the latest node added over it. The new node is dark green and its
-// parent orange.
+// parent orange. When a choice is made by cost the alternatives are all built, the ones
+// not chosen are grey, and the last row shows the chosen tree.
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
     xsl:output(method = text)
 
-    // The tree nodes, to find the items used in the tree.
+    // The nodes of the chosen tree, to find the items used in the tree.
     xsl:key(name  = used
-            match = /trace/tree/node
+            match = "/trace/tree/node[not(@chosen = 'no')]"
             use   = "concat(@id, ',', @from, ',', @to)")
 
     // The number of tokens, the input and the end of input ω.
@@ -38,6 +39,9 @@ xsl:stylesheet(version   = 1.0
 \definecolor{treenode}{RGB}{200,230,200}
 \definecolor{treenew}{RGB}{46,158,46}
 \definecolor{treeparent}{RGB}{255,165,0}
+\definecolor{treerejected}{RGB}{238,238,238}
+\definecolor{treenewrejected}{RGB}{136,136,136}
+\definecolor{treeparentrejected}{RGB}{245,214,160}
 \begin{document}
 \ttfamily\small
 \section*{ixml trace, '
@@ -115,6 +119,22 @@ xsl:for-each(select = /trace/input/token)
 \endhead'
         xsl:text { &#10; }
 xsl:apply-templates(select = /trace/tree/node)
+        xsl:if(test = /trace/tree/node)
+        {
+            '\hline'
+            xsl:text { &#10; }
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = 'count(/trace/tree/node)')
+                xsl:with-param(name   = c
+                               select = 0)
+                xsl:with-param(name   = chosen
+                               select = 'true()')
+            }
+            'the chosen tree \\ \hline'
+            xsl:text { &#10; }
+        }
         '\end{longtable}
 \end{document}'
     xsl:text { &#10; }
@@ -270,20 +290,30 @@ xsl:apply-templates(select = /trace/tree/node)
         xsl:value-of(select = @to)
         ') in '
         xsl:value-of(select = @parent)
-        '} \\ \hline'
+        xsl:if(test = @cost)
+        {
+            ' cost '
+            xsl:value-of(select = @cost)
+        }
+        '}'
+        xsl:if(test = "@chosen = 'no'") = ' \textcolor{red}{not chosen}'
+        ' \\ \hline'
     xsl:text { &#10; }
 }
 
     // The cells from column c after the first k nodes were added, each followed by &:
     // a column shows the latest node over it, the columns with the same node are one cell.
+    // With chosen, only the nodes of the final tree.
     xsl:template(name = frontier)
     {
         xsl:param(name = k)
         xsl:param(name = c)
+        xsl:param(name   = chosen
+                  select = 'false()')
         xsl:if(test = '$c < $n')
         {
             xsl:variable(name   = x
-                         select = '/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]')
+                         select = "/trace/tree/node[position() <= $k][@from <= $c and @to > $c][not($chosen) or @chosen = 'yes'][last()]")
             xsl:variable(name = end)
             {
                 xsl:call-template(name = run-end)
@@ -294,6 +324,8 @@ xsl:apply-templates(select = /trace/tree/node)
                                    select = '$c + 1')
                     xsl:with-param(name   = id
                                    select = 'generate-id($x)')
+                    xsl:with-param(name   = chosen
+                                   select = $chosen)
                 }
             }
             '\multicolumn{'
@@ -308,9 +340,15 @@ xsl:apply-templates(select = /trace/tree/node)
                 xsl:choose {
                     xsl:when(test = 'generate-id($x) = generate-id(current())') = treenew
                     xsl:when(test = '$x/@step = current()/@parent') = treeparent
+                    xsl:when(test = "$x/@chosen = 'no'") = treerejected
                     xsl:otherwise = treenode
                 }
+                xsl:if(test = "$x/@chosen = 'no' and (generate-id($x) = generate-id(current()) or $x/@step = current()/@parent)") = rejected
                 '}'
+                xsl:choose {
+                    xsl:when(test = "$x/@chosen = 'no' and generate-id($x) = generate-id(current())") = '\color{white}'
+                    xsl:when(test = "$x/@chosen = 'no'") = '\color{gray}'
+                }
                 xsl:call-template(name = tex)
                 {
                     xsl:with-param(name   = text
@@ -324,6 +362,8 @@ xsl:apply-templates(select = /trace/tree/node)
                                select = $k)
                 xsl:with-param(name   = c
                                select = $end)
+                xsl:with-param(name   = chosen
+                               select = $chosen)
             }
         }
     }
@@ -334,8 +374,9 @@ xsl:apply-templates(select = /trace/tree/node)
         xsl:param(name = k)
         xsl:param(name = c)
         xsl:param(name = id)
+        xsl:param(name = chosen)
         xsl:choose {
-            xsl:when(test = '$c < $n and generate-id(/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]) = $id')
+            xsl:when(test = "$c < $n and generate-id(/trace/tree/node[position() <= $k][@from <= $c and @to > $c][not($chosen) or @chosen = 'yes'][last()]) = $id")
             {
                 xsl:call-template(name = run-end)
                 {
@@ -345,6 +386,8 @@ xsl:apply-templates(select = /trace/tree/node)
                                    select = '$c + 1')
                     xsl:with-param(name   = id
                                    select = $id)
+                    xsl:with-param(name   = chosen
+                                   select = $chosen)
                 }
             }
             xsl:otherwise {
