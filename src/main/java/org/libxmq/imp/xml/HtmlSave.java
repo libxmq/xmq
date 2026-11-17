@@ -21,7 +21,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-/* Portions of this file are ported from libxml2 (HTMLtree.c, entities.c, uri.c and buf.c).
+/* Portions of this file are ported from libxml2 (HTMLtree.c, HTMLparser.c, xmlsave.c and buf.c,
+   version 2.16.0 as found in the libxmq fork in 3rdparty/libxml2), like src/main/c/parts/xml_html_save.c.
    libxml2 is covered by the following notice (from libxml2/Copyright):
 
  Copyright (C) 1998-2012 Daniel Veillard.  All Rights Reserved.
@@ -47,7 +48,7 @@ THE SOFTWARE.
 */
 
 
-// Ported from libxml2 2.9.14 HTMLtree.c, entities.c, uri.c and buf.c,
+// Ported from libxml2 2.16.0 HTMLtree.c, HTMLparser.c, xmlsave.c and buf.c,
 // Copyright (C) 1998-2012 Daniel Veillard, MIT license.
 
 package org.libxmq.imp.xml;
@@ -55,11 +56,13 @@ package org.libxmq.imp.xml;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Serialize an html document or node exactly like the libxml2 (2.9.14)
- * html serializer htmlNodeDumpFormatOutput does.
+ * Serialize an html document or node exactly like the libxml2 (2.16)
+ * html serializer htmlNodeDumpInternal does, the same as the C version
+ * (src/main/c/parts/xml_html_save.c): text is escaped with &amp;amp; &amp;lt; &amp;gt;
+ * only (non ascii is written as it is), attributes are always quoted with ".
  *
- * The code is ported from libxml2 HTMLtree.c, entities.c (xmlEncodeEntitiesInternal),
- * uri.c (xmlURIEscapeStr) and buf.c (xmlBufWriteQuotedString)
+ * The code is ported from libxml2 HTMLtree.c, HTMLparser.c (the element table),
+ * xmlsave.c (xmlSerializeText) and buf.c (xmlBufWriteQuotedString)
  * (Copyright (C) 1998-2012 Daniel Veillard, MIT license).
  */
 public final class HtmlSave
@@ -99,9 +102,10 @@ public final class HtmlSave
     }
 
     /**
-     * Dump a node and its children into a string builder, like libxml2 htmlNodeDumpFormatOutput.
+     * Dump a node and its children into a string builder, port of htmlNodeDumpInternal
+     * (libxml2 2.16, encoding NULL so no meta charset handling), like xml_html_node in C.
      * @param out The output.
-     * @param doc The document, used to decide if the escaping should be html or xml style.
+     * @param doc The document (not used, kept for the callers).
      * @param cur The node to dump.
      * @param format If true, then add newlines around block elements.
      */
@@ -109,134 +113,111 @@ public final class HtmlSave
     {
         if (cur == null) return;
         XmlNode root = cur;
-        XmlNode parent = cur.parent_;
-        HtmlElementTable.Desc info;
-        for (;;)
+        boolean is_raw = false;
+
+        while (true)
         {
             switch (cur.type())
             {
             case HTML_DOCUMENT, DOCUMENT ->
             {
                 XmlDocument d = (XmlDocument)cur;
-                if (d.intSubset() != null)
+                // The dtd (like xml_dom_dtd in C): the internal subset, or a dtd child, eg from xsl:output doctype-system.
+                XmlDtd dtd = d.intSubset();
+                for (XmlNode c = cur.children_; dtd == null && c != null; c = c.next_)
                 {
-                    dtdDumpOutput(out, d.intSubset());
+                    if (c.type() == XmlNodeType.DTD) dtd = (XmlDtd)c;
                 }
+                if (dtd != null) dtdDumpOutput(out, dtd);
                 if (cur.children_ != null)
                 {
-                    if (cur.parent_ == parent)
-                    {
-                        parent = cur;
-                        cur = cur.children_;
-                        continue;
-                    }
+                    cur = cur.children_;
+                    continue;
                 }
-                else
-                {
-                    out.append('\n');
-                }
+                out.append('\n');
             }
             case ELEMENT ->
             {
                 XmlElement e = (XmlElement)cur;
-                if (cur.parent_ != parent && cur.children_ != null)
-                {
-                    nodeDumpFormatOutput(out, doc, cur, format);
-                    break;
-                }
-                if (e.ns() == null) info = HtmlElementTable.lookup(cur.name());
-                else info = null;
+                Element info = info(cur);
                 out.append('<');
                 appendQName(out, e.ns(), cur.name());
                 for (XmlNs ns : e.nsDefs()) nsDumpOutput(out, ns);
-                for (XmlAttr a : e.attributes()) attrDumpOutput(out, doc, a);
-                if (info != null && info.empty != 0)
+                for (XmlAttr a : e.attributes()) attrDumpOutput(out, a);
+
+                XmlNode first = cur.children_;
+                if (info != null && info.empty)
                 {
                     out.append('>');
                 }
-                else if (cur.children_ == null)
+                else if (first == null)
                 {
-                    if (info != null && info.save_end_tag != 0 && !info.name.equals("html") && !info.name.equals("body"))
-                    {
-                        out.append('>');
-                    }
-                    else
-                    {
-                        out.append("></");
-                        appendQName(out, e.ns(), cur.name());
-                        out.append('>');
-                    }
+                    out.append("></");
+                    appendQName(out, e.ns(), cur.name());
+                    out.append('>');
                 }
                 else
                 {
                     out.append('>');
-                    if (format && info != null && info.isinline == 0 &&
-                        cur.children_.type() != XmlNodeType.TEXT &&
-                        cur.children_.type() != XmlNodeType.ENTITY_REF &&
-                        cur.children_ != cur.last_ &&
-                        cur.name() != null && !cur.name().startsWith("p"))
+                    if (format && info != null && !info.isinline &&
+                        !isTextOrRef(first) &&
+                        first != cur.last_ &&
+                        !nameStartsWithP(cur)) // p, pre, param
                     {
                         out.append('\n');
                     }
-                    parent = cur;
-                    cur = cur.children_;
+                    if (info != null && info.data_mode >= DATA_RAWTEXT) is_raw = true;
+                    cur = first;
                     continue;
                 }
-                if (format && cur.next_ != null && info != null && info.isinline == 0)
+
+                XmlNode next = cur.next_;
+                XmlNode parent = cur.parent_;
+                if (format && next != null && info != null && !info.isinline)
                 {
-                    if (cur.next_.type() != XmlNodeType.TEXT &&
-                        cur.next_.type() != XmlNodeType.ENTITY_REF &&
-                        parent != null && parent.name() != null && !parent.name().startsWith("p"))
+                    if (!isTextOrRef(next) && parent != null && parent.type() == XmlNodeType.ELEMENT &&
+                        !nameStartsWithP(parent))
                     {
                         out.append('\n');
                     }
                 }
             }
-            case ATTRIBUTE -> attrDumpOutput(out, doc, (XmlAttr)cur);
+            case ATTRIBUTE -> attrDumpOutput(out, (XmlAttr)cur);
             case TEXT ->
             {
-                if (cur.content() == null) break;
-                // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
-                if (!"textnoenc".equals(cur.name()) && (parent == null ||
-                    (!"script".equalsIgnoreCase(parent.name()) && !"style".equalsIgnoreCase(parent.name()))))
+                if (cur.content() != null)
                 {
-                    out.append(encodeEntities(doc, cur.content(), false));
-                }
-                else
-                {
-                    out.append(cur.content());
+                    // Text marked "textnoenc" (xslt disable-output-escaping) is written as it is.
+                    if (is_raw || "textnoenc".equals(cur.name())) out.append(cur.content());
+                    else escape(out, cur.content(), false);
                 }
             }
             case COMMENT ->
             {
-                if (cur.content() != null)
-                {
-                    out.append("<!--").append(cur.content()).append("-->");
-                }
+                if (cur.content() != null) out.append("<!--").append(cur.content()).append("-->");
             }
             case PI ->
             {
                 if (cur.name() != null)
                 {
                     out.append("<?").append(cur.name());
-                    if (cur.content() != null)
-                    {
-                        out.append(' ').append(cur.content());
-                    }
+                    if (cur.content() != null) out.append(' ').append(cur.content());
                     out.append('>');
                 }
             }
             case ENTITY_REF -> out.append('&').append(cur.name()).append(';');
             case CDATA ->
             {
+                // HTML_PRESERVE_NODE: raw text such as script content.
                 if (cur.content() != null) out.append(cur.content());
             }
             default ->
             {
+                // The dtd is written first by the document, declarations are not html.
             }
             }
 
-            for (;;)
+            while (true)
             {
                 if (cur == root) return;
                 if (cur.next_ != null)
@@ -244,33 +225,33 @@ public final class HtmlSave
                     cur = cur.next_;
                     break;
                 }
-                cur = parent;
-                parent = cur.parent_;
+                is_raw = false;
+                cur = cur.parent_;
                 if (cur.type() == XmlNodeType.HTML_DOCUMENT || cur.type() == XmlNodeType.DOCUMENT)
                 {
                     out.append('\n');
                 }
                 else
                 {
-                    XmlNs ns = (cur instanceof XmlElement ce) ? ce.ns() : null;
-                    if (format && ns == null) info = HtmlElementTable.lookup(cur.name());
-                    else info = null;
-                    if (format && info != null && info.isinline == 0 &&
-                        cur.last_.type() != XmlNodeType.TEXT &&
-                        cur.last_.type() != XmlNodeType.ENTITY_REF &&
-                        cur.children_ != cur.last_ &&
-                        cur.name() != null && !cur.name().startsWith("p"))
+                    Element info = format ? info(cur) : null;
+                    XmlNode last = cur.last_;
+                    if (format && info != null && !info.isinline &&
+                        !isTextOrRef(last) &&
+                        cur.children_ != last &&
+                        !nameStartsWithP(cur))
                     {
                         out.append('\n');
                     }
                     out.append("</");
-                    appendQName(out, ns, cur.name());
+                    appendQName(out, ((XmlElement)cur).ns(), cur.name());
                     out.append('>');
-                    if (format && info != null && info.isinline == 0 && cur.next_ != null)
+
+                    XmlNode cn = cur.next_;
+                    XmlNode parent = cur.parent_;
+                    if (format && info != null && !info.isinline && cn != null)
                     {
-                        if (cur.next_.type() != XmlNodeType.TEXT &&
-                            cur.next_.type() != XmlNodeType.ENTITY_REF &&
-                            parent != null && parent.name() != null && !parent.name().startsWith("p"))
+                        if (!isTextOrRef(cn) && parent != null && parent.type() == XmlNodeType.ELEMENT &&
+                            !nameStartsWithP(parent))
                         {
                             out.append('\n');
                         }
@@ -278,6 +259,16 @@ public final class HtmlSave
                 }
             }
         }
+    }
+
+    private static boolean isTextOrRef(XmlNode n)
+    {
+        return n.type() == XmlNodeType.TEXT || n.type() == XmlNodeType.ENTITY_REF;
+    }
+
+    private static boolean nameStartsWithP(XmlNode n)
+    {
+        return n != null && n.name() != null && n.name().startsWith("p");
     }
 
     // Meta tags with the encoding, port of htmlSetMetaEncoding (HTMLtree.c).
@@ -450,81 +441,118 @@ public final class HtmlSave
         out.append(">\n");
     }
 
-    /** xmlNsDumpOutput */
+    /** xmlNsDumpOutput without a save context: attribute escaping plus non ascii as char refs. */
     private static void nsDumpOutput(StringBuilder out, XmlNs ns)
     {
         if (ns.href() == null) return;
         if ("xml".equals(ns.prefix())) return;
-        out.append(' ');
-        if (ns.prefix() != null)
-        {
-            out.append("xmlns:").append(ns.prefix());
-        }
-        else
-        {
-            out.append("xmlns");
-        }
-        out.append('=');
-        writeQuotedString(out, ns.href());
+        out.append(ns.prefix() != null ? " xmlns:" : " xmlns");
+        if (ns.prefix() != null) out.append(ns.prefix());
+        out.append("=\"");
+        // Like xmlSerializeText(XML_ESCAPE_ATTR | XML_ESCAPE_NON_ASCII), there is no save context.
+        escapeAttrNonAscii(out, ns.href());
+        out.append('"');
     }
 
-    /** htmlAttrDumpOutput */
-    private static void attrDumpOutput(StringBuilder out, XmlDocument doc, XmlAttr a)
+    /** Port of htmlAttrDumpOutput. */
+    private static void attrDumpOutput(StringBuilder out, XmlAttr a)
     {
         out.append(' ');
         appendQName(out, a.ns(), a.name());
-        if (a.children_ != null && !HtmlParser.isBooleanAttr(a.name()))
+        XmlNode first = a.children_;
+        if (first == null || HtmlParser.isBooleanAttr(a.name())) return;
+
+        out.append("=\"");
+        XmlNode owner = a.parent_;
+        String name = a.name();
+        boolean is_uri = a.ns() == null && owner instanceof XmlElement oe && oe.ns() == null &&
+            (name.equalsIgnoreCase("href") || name.equalsIgnoreCase("action") ||
+             name.equalsIgnoreCase("src") ||
+             (name.equalsIgnoreCase("name") && "a".equalsIgnoreCase(oe.name())));
+        for (XmlNode c = first; c != null; c = c.next_)
         {
-            String value = nodeListGetString(doc, a);
-            if (value != null)
+            if (c.type() == XmlNodeType.TEXT)
             {
-                out.append('=');
-                XmlNode p = a.parent_;
-                if (a.ns() == null && p instanceof XmlElement pe && pe.ns() == null &&
-                    (a.name().equalsIgnoreCase("href") ||
-                     a.name().equalsIgnoreCase("action") ||
-                     a.name().equalsIgnoreCase("src") ||
-                     (a.name().equalsIgnoreCase("name") && "a".equalsIgnoreCase(pe.name()))))
-                {
-                    int i = 0;
-                    while (i < value.length() && isBlank(value.charAt(i))) i++;
-                    writeQuotedString(out, uriEscapeStr(value.substring(i), "@/:=?;#%&,+<>"));
-                }
+                if (c.content() == null) continue;
+                if (is_uri) serializeUri(out, c.content());
+                else escape(out, c.content(), true);
+            }
+            else if (c.type() == XmlNodeType.ENTITY_REF)
+            {
+                out.append('&').append(c.name()).append(';');
+            }
+        }
+        out.append('"');
+    }
+
+    /** xmlSerializeText with the htmlEscapeTab / htmlEscapeTabAttr tables: &amp; &lt; &gt; (and " in attributes). */
+    private static void escape(StringBuilder out, String s, boolean attr)
+    {
+        for (int i = 0; i < s.length(); i++)
+        {
+            char c = s.charAt(i);
+            switch (c)
+            {
+            case '&' -> out.append("&amp;");
+            case '<' -> out.append("&lt;");
+            case '>' -> out.append("&gt;");
+            case '"' -> out.append(attr ? "&quot;" : "\"");
+            default -> out.append(c);
+            }
+        }
+    }
+
+    /** Port of htmlSerializeUri: %-escape spaces, controls and non ascii (each utf-8 byte), escape " and &amp;. */
+    private static void serializeUri(StringBuilder out, String content)
+    {
+        byte[] b = content.getBytes(StandardCharsets.UTF_8);
+        int i = 0;
+        // Initial whitespace is kept as it is.
+        while (i < b.length && (b[i] == 0x09 || b[i] == 0x0A || b[i] == 0x0C || b[i] == 0x0D || b[i] == 0x20))
+        {
+            out.append((char)b[i]);
+            i++;
+        }
+        for (; i < b.length; i++)
+        {
+            int c = b[i] & 0xff;
+            if (c > 0x20 && c < 0x7F && c != '"' && c != '&') out.append((char)c);
+            else if (c == '"') out.append("&quot;");
+            else if (c == '&') out.append("&amp;");
+            else out.append('%').append(HEX.charAt(c >> 4)).append(HEX.charAt(c & 0xF));
+        }
+    }
+
+    private static final String HEX = "0123456789ABCDEF";
+
+    /** xml_save_escape_attr(.., true) in C: attribute escaping, non ascii as &amp;#xHEX; char refs. */
+    private static void escapeAttrNonAscii(StringBuilder out, String s)
+    {
+        for (int i = 0; i < s.length(); )
+        {
+            int c = s.codePointAt(i);
+            i += Character.charCount(c);
+            switch (c)
+            {
+            case '&' -> out.append("&amp;");
+            case '<' -> out.append("&lt;");
+            case '>' -> out.append("&gt;");
+            case '\r' -> out.append("&#13;");
+            case '\t' -> out.append("&#9;");
+            case '\n' -> out.append("&#10;");
+            case '"' -> out.append("&quot;");
+            default ->
+            {
+                if (c < 0x20) out.append("&#xFFFD;");
+                else if (c < 0x80) out.append((char)c);
                 else
                 {
-                    writeQuotedString(out, value);
+                    if (c == 0xFFFE || c == 0xFFFF || (c >= 0xD800 && c <= 0xDFFF)) c = 0xFFFD;
+                    out.append("&#x").append(Integer.toHexString(c).toUpperCase()).append(';');
                 }
             }
-            else
-            {
-                out.append("=\"\"");
             }
         }
-    }
-
-    private static boolean isBlank(int c)
-    {
-        return c == 0x20 || c == 0x9 || c == 0xa || c == 0xd;
-    }
-
-    /** xmlNodeListGetString(doc, attr->children, 0) */
-    private static String nodeListGetString(XmlDocument doc, XmlAttr a)
-    {
-        StringBuilder sb = null;
-        for (XmlNode n = a.children_; n != null; n = n.next_)
-        {
-            if (n.type() == XmlNodeType.TEXT || n.type() == XmlNodeType.CDATA)
-            {
-                if (sb == null) sb = new StringBuilder();
-                if (n.content() != null) sb.append(encodeEntities(doc, n.content(), true));
-            }
-            else if (n.type() == XmlNodeType.ENTITY_REF)
-            {
-                if (sb == null) sb = new StringBuilder();
-                sb.append('&').append(n.name()).append(';');
-            }
-        }
-        return sb == null ? null : sb.toString();
     }
 
     /** xmlBufWriteQuotedString */
@@ -549,133 +577,128 @@ public final class HtmlSave
         }
     }
 
-    /** xmlURIEscapeStr, escapes each UTF-8 byte that is not allowed. */
-    private static String uriEscapeStr(String s, String list)
+    // The html elements of libxml2 2.16 HTMLparser.c (html40ElementTable), the same as
+    // xml_html_elements in src/main/c/parts/xml_html.c: name, end tag, empty, inline, data mode.
+
+    private static final int DATA_RAWTEXT = 2;
+
+    private record Element(String name, int end_tag, boolean empty, boolean isinline, int data_mode) { }
+
+    private static final java.util.Map<String, Element> ELEMENTS = new java.util.HashMap<>();
+
+    private static void element(String name, int end_tag, int empty, int isinline, int data_mode)
     {
-        if (s.isEmpty()) return s;
-        byte[] b = s.getBytes(StandardCharsets.UTF_8);
-        ByteArrayOut bo = new ByteArrayOut();
-        for (byte x : b)
-        {
-            int ch = x & 0xff;
-            if (ch != '@' && !isUnreserved(ch) && (ch >= 0x80 || list.indexOf(ch) < 0))
-            {
-                bo.add('%');
-                bo.add(hex(ch >> 4));
-                bo.add(hex(ch & 0xf));
-            }
-            else
-            {
-                bo.add(ch);
-            }
-        }
-        return bo.str();
+        ELEMENTS.put(name, new Element(name, end_tag, empty != 0, isinline != 0, data_mode));
     }
 
-    private static final class ByteArrayOut
+    static
     {
-        byte[] b = new byte[64];
-        int n;
-
-        void add(int c)
-        {
-            if (n == b.length) b = java.util.Arrays.copyOf(b, n * 2);
-            b[n++] = (byte)c;
-        }
-
-        String str()
-        {
-            return new String(b, 0, n, StandardCharsets.UTF_8);
-        }
+        element("a", 0, 0, 1, 0);
+        element("abbr", 0, 0, 1, 0);
+        element("acronym", 0, 0, 1, 0);
+        element("address", 0, 0, 0, 0);
+        element("applet", 0, 0, 2, 0);
+        element("area", 2, 1, 0, 0);
+        element("b", 3, 0, 1, 0);
+        element("base", 2, 1, 0, 0);
+        element("basefont", 2, 1, 1, 0);
+        element("bdo", 0, 0, 1, 0);
+        element("bgsound", 0, 1, 0, 0);
+        element("big", 3, 0, 1, 0);
+        element("blockquote", 0, 0, 0, 0);
+        element("body", 1, 0, 0, 0);
+        element("br", 2, 1, 1, 0);
+        element("button", 0, 0, 2, 0);
+        element("caption", 0, 0, 0, 0);
+        element("center", 3, 0, 0, 0);
+        element("cite", 0, 0, 1, 0);
+        element("code", 0, 0, 1, 0);
+        element("col", 2, 1, 0, 0);
+        element("colgroup", 1, 0, 0, 0);
+        element("dd", 1, 0, 0, 0);
+        element("del", 0, 0, 2, 0);
+        element("dfn", 0, 0, 1, 0);
+        element("dir", 0, 0, 0, 0);
+        element("div", 0, 0, 0, 0);
+        element("dl", 0, 0, 0, 0);
+        element("dt", 1, 0, 0, 0);
+        element("em", 3, 0, 1, 0);
+        element("embed", 1, 1, 1, 0);
+        element("fieldset", 0, 0, 0, 0);
+        element("font", 3, 0, 1, 0);
+        element("form", 0, 0, 0, 0);
+        element("frame", 2, 1, 0, 0);
+        element("frameset", 0, 0, 0, 0);
+        element("h1", 0, 0, 0, 0);
+        element("h2", 0, 0, 0, 0);
+        element("h3", 0, 0, 0, 0);
+        element("h4", 0, 0, 0, 0);
+        element("h5", 0, 0, 0, 0);
+        element("h6", 0, 0, 0, 0);
+        element("head", 1, 0, 0, 0);
+        element("hr", 2, 1, 0, 0);
+        element("html", 1, 0, 0, 0);
+        element("i", 3, 0, 1, 0);
+        element("iframe", 0, 0, 2, 2);
+        element("img", 2, 1, 1, 0);
+        element("input", 2, 1, 1, 0);
+        element("ins", 0, 0, 2, 0);
+        element("isindex", 2, 1, 0, 0);
+        element("kbd", 0, 0, 1, 0);
+        element("keygen", 0, 1, 0, 0);
+        element("label", 0, 0, 1, 0);
+        element("legend", 0, 0, 0, 0);
+        element("li", 1, 0, 0, 0);
+        element("link", 2, 1, 0, 0);
+        element("map", 0, 0, 2, 0);
+        element("menu", 0, 0, 0, 0);
+        element("meta", 2, 1, 0, 0);
+        element("noembed", 0, 0, 0, 2);
+        element("noframes", 0, 0, 0, 2);
+        element("noscript", 0, 0, 0, 0);
+        element("object", 0, 0, 2, 0);
+        element("ol", 0, 0, 0, 0);
+        element("optgroup", 0, 0, 0, 0);
+        element("option", 1, 0, 0, 0);
+        element("p", 1, 0, 0, 0);
+        element("param", 2, 1, 0, 0);
+        element("plaintext", 0, 0, 0, 3);
+        element("pre", 0, 0, 0, 0);
+        element("q", 0, 0, 1, 0);
+        element("s", 3, 0, 1, 0);
+        element("samp", 0, 0, 1, 0);
+        element("script", 0, 0, 2, 4);
+        element("select", 0, 0, 1, 0);
+        element("small", 3, 0, 1, 0);
+        element("source", 0, 1, 0, 0);
+        element("span", 0, 0, 1, 0);
+        element("strike", 3, 0, 1, 0);
+        element("strong", 3, 0, 1, 0);
+        element("style", 0, 0, 0, 2);
+        element("sub", 3, 0, 1, 0);
+        element("sup", 3, 0, 1, 0);
+        element("table", 0, 0, 0, 0);
+        element("tbody", 0, 0, 0, 0);
+        element("td", 0, 0, 0, 0);
+        element("textarea", 0, 0, 1, 1);
+        element("tfoot", 1, 0, 0, 0);
+        element("th", 1, 0, 0, 0);
+        element("thead", 1, 0, 0, 0);
+        element("title", 0, 0, 0, 1);
+        element("tr", 0, 0, 0, 0);
+        element("track", 0, 1, 0, 0);
+        element("tt", 3, 0, 1, 0);
+        element("u", 3, 0, 1, 0);
+        element("ul", 0, 0, 0, 0);
+        element("var", 0, 0, 1, 0);
+        element("wbr", 0, 1, 0, 0);
+        element("xmp", 0, 0, 1, 2);
     }
 
-    private static int hex(int v)
+    /** The element description of an html element without a namespace, else null (xml_html_info). */
+    private static Element info(XmlNode n)
     {
-        return v <= 9 ? '0' + v : 'A' + v - 0xA;
-    }
-
-    private static boolean isUnreserved(int x)
-    {
-        return (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || (x >= '0' && x <= '9') ||
-            x == '-' || x == '_' || x == '.' || x == '!' || x == '~' || x == '*' || x == '\'' ||
-            x == '(' || x == ')';
-    }
-
-    /**
-     * xmlEncodeEntitiesInternal, escape text for html or xml output.
-     * @param doc The document, if it is an html document then html rules are used.
-     * @param input The text.
-     * @param attr True if escaping an attribute value.
-     * @return The escaped text.
-     */
-    static String encodeEntities(XmlDocument doc, String input, boolean attr)
-    {
-        boolean html = doc != null && doc.isHtml();
-        boolean has_encoding = doc != null && doc.encoding() != null;
-        StringBuilder out = new StringBuilder(input.length() + 16);
-        int len = input.length();
-        int i = 0;
-        while (i < len)
-        {
-            char c = input.charAt(i);
-            if (c == '<')
-            {
-                int end;
-                if (html && attr && input.startsWith("<!--", i) && (end = input.indexOf("-->", i)) >= 0)
-                {
-                    out.append(input, i, end + 3);
-                    i = end + 3;
-                    continue;
-                }
-                out.append("&lt;");
-            }
-            else if (c == '>')
-            {
-                out.append("&gt;");
-            }
-            else if (c == '&')
-            {
-                int end;
-                if (html && attr && i + 1 < len && input.charAt(i + 1) == '{' && (end = input.indexOf('}', i)) >= 0)
-                {
-                    out.append(input, i, end + 1);
-                    i = end + 1;
-                    continue;
-                }
-                out.append("&amp;");
-            }
-            else if ((c >= 0x20 && c < 0x80) || c == '\n' || c == '\t' || (html && c == '\r'))
-            {
-                out.append(c);
-            }
-            else if (c >= 0x80)
-            {
-                int cp = input.codePointAt(i);
-                int n = Character.charCount(cp);
-                if (has_encoding || html)
-                {
-                    out.append(input, i, i + n);
-                }
-                else if (!HtmlCharClasses.isChar(cp))
-                {
-                    // Invalid char, libxml2 outputs the first byte as a char ref.
-                    byte[] bs = new String(Character.toChars(cp)).getBytes(StandardCharsets.UTF_8);
-                    out.append("&#").append(bs[0] & 0xff).append(';');
-                }
-                else
-                {
-                    out.append("&#x").append(Integer.toHexString(cp).toUpperCase()).append(';');
-                }
-                i += n;
-                continue;
-            }
-            else if (c == '\r')
-            {
-                out.append("&#13;");
-            }
-            // Other control characters are dropped.
-            i++;
-        }
-        return out.toString();
+        if (n.type() != XmlNodeType.ELEMENT || ((XmlElement)n).ns() != null || n.name() == null) return null;
+        return ELEMENTS.get(n.name().toLowerCase(java.util.Locale.ROOT));
     }
 }

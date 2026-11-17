@@ -3,9 +3,10 @@
 #
 # Compare the C command line (xmq) with the Java command line (xmqj) byte for byte,
 # output, errors and exit code of "to-xml", on every xml file in the repository and in
-# the libxml2 test suite (tests/libxml2), plain and after expand-entities, and of
-# "transform" on the libxslt test suite (tests/libxslt) and of "validate" on the libxml2
-# schema test suite (tests/libxml2/test/schemas) and the tests/xsd_*.test cases.
+# the libxml2 test suite (tests/libxml2), plain and after expand-entities, of "to-html"
+# on every html file, of "transform" (to-xml and to-html) on the libxslt test suite
+# (tests/libxslt) and of "validate" on the libxml2 schema test suite
+# (tests/libxml2/test/schemas) and the tests/xsd_*.test cases.
 #
 # Usage: tests/test_cj.sh XMQ_BINARY XMQJ_BINARY OUTPUT_DIR
 # JOBS=n sets the number of parallel jobs (default 8).
@@ -32,6 +33,23 @@ EXCLUDE=""
 FILES="$OUT/files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/fuzz_testcases" -o -path "$ROOT/fuzz_findings_clang" \) -prune -o -name "*.xml" -print > "$FILES"
 # The libxml2 test suite is in tests/libxml2, found by the find above.
+HTML_FILES="$OUT/html_files.txt"
+find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/fuzz_testcases" -o -path "$ROOT/fuzz_findings_clang" \) -prune -o \( -name "*.html" -o -name "*.htm" \) -print > "$HTML_FILES"
+# Html files that the parsers read differently: the C html parser is a port of libxml2 2.16
+# (html5 tokenizer: raw text in iframe/noembed/noframes/xmp, entities without ;, comments,
+# names with colons, processing instructions), the Java HtmlParser of libxml2 2.9.14.
+HTML_PARSER_DIFFERS="ixml/gg.html ixml/gs.html
+tests/libxml2/result/HTML/758518-tag.html tests/libxml2/result/HTML/758606_2.html tests/libxml2/result/HTML/758606.html
+tests/libxml2/result/HTML/chardata.html tests/libxml2/result/HTML/doc2.htm tests/libxml2/result/HTML/doc3.htm
+tests/libxml2/result/HTML/names.html tests/libxml2/test/HTML/attr-ents.html tests/libxml2/test/HTML/chardata.html
+tests/libxml2/test/HTML/comments3.html tests/libxml2/test/HTML/doc2.htm tests/libxml2/test/HTML/doc3.htm
+tests/libxml2/test/HTML/html5-entities.html tests/libxml2/test/HTML/issue380.html tests/libxml2/test/HTML/names.html
+tests/libxml2/test/HTML/python.html"
+for e in $HTML_PARSER_DIFFERS
+do
+    grep -v "^$ROOT/$e\$" "$HTML_FILES" > "$HTML_FILES.tmp"
+    mv "$HTML_FILES.tmp" "$HTML_FILES"
+done
 for e in $EXCLUDE
 do
     grep -v "/$e\$" "$FILES" > "$FILES.tmp"
@@ -50,30 +68,35 @@ with_timeout()
 }
 export -f with_timeout
 export X J OUT
+# one to-xml|to-html file [commands...]
 one()
 {
-    f=$1
-    shift
-    k=$(echo "$f $*" | md5sum | cut -c1-12)
-    (cd "$OUT"; with_timeout 60 "$X" "$f" "$@" to-xml > "$OUT/$k.c" 2>&1; echo "rc=$?" >> "$OUT/$k.c")
-    (cd "$OUT"; with_timeout 120 "$J" "$f" "$@" to-xml > "$OUT/$k.j" 2>&1; echo "rc=$?" >> "$OUT/$k.j")
+    to=$1
+    f=$2
+    shift 2
+    k=$(echo "$to $f $*" | md5sum | cut -c1-12)
+    (cd "$OUT"; with_timeout 60 "$X" "$f" "$@" $to > "$OUT/$k.c" 2>&1; echo "rc=$?" >> "$OUT/$k.c")
+    (cd "$OUT"; with_timeout 120 "$J" "$f" "$@" $to > "$OUT/$k.j" 2>&1; echo "rc=$?" >> "$OUT/$k.j")
     if cmp -s "$OUT/$k.c" "$OUT/$k.j"
     then
         rm "$OUT/$k.c" "$OUT/$k.j"
     else
-        echo "DIFF: $f $* (diff $OUT/$k.c $OUT/$k.j)" >> "$OUT/differ.txt"
+        echo "DIFF: $f $* $to (diff $OUT/$k.c $OUT/$k.j)" >> "$OUT/differ.txt"
     fi
 }
 export -f one
 
 touch "$OUT/differ.txt"
-# Every file plain, and the files declaring entities also after expand-entities.
+# Every xml file plain, the files declaring entities also after expand-entities,
+# and every html file to-html.
 {
-    cat "$FILES"
-    grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | sed 's/$/ expand-entities/'
+    sed 's/^/to-xml /' "$FILES"
+    grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | sed 's/^/to-xml /;s/$/ expand-entities/'
+    sed 's/^/to-html /' "$HTML_FILES"
 } | xargs -P "${JOBS:-8}" -L 1 bash -c 'one "$@"' _
 
-N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) ))
+NH=$(wc -l < "$HTML_FILES")
+N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) + NH ))
 
 # transform: every stylesheet name.xsl with an input name.xml of the libxslt test suite
 # and of tests/xml_diff/xslt, run from inside (a copy of) its directory like libxslt's
@@ -96,7 +119,7 @@ do
     for x in "$d"/*.xsl
     do
         b=$(basename "$x" .xsl)
-        [ -f "$d/$b.xml" ] && echo "$k $b $d" >> "$XSLT_CASES"
+        [ -f "$d/$b.xml" ] && echo "$k $b $d to-xml" >> "$XSLT_CASES" && echo "$k $b $d to-html" >> "$XSLT_CASES"
     done
 done
 onex()
@@ -104,13 +127,15 @@ onex()
     k=$1
     b=$2
     d=$3
-    (cd "$OUT/xslt/c/$k"; with_timeout 60 "$X" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.c" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.c")
-    (cd "$OUT/xslt/j/$k"; with_timeout 120 "$J" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" to-xml > "$OUT/x_${k}_${b}.j" 2>&1; echo "rc=$?" >> "$OUT/x_${k}_${b}.j")
-    if cmp -s "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
+    to=$4
+    r="$OUT/x_${k}_${b}_${to}"
+    (cd "$OUT/xslt/c/$k"; with_timeout 60 "$X" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" $to > "$r.c" 2>&1; echo "rc=$?" >> "$r.c")
+    (cd "$OUT/xslt/j/$k"; with_timeout 120 "$J" "$b.xml" transform --stringparam=test=passed_value --stringparam=test2=passed_value2 "$b.xsl" $to > "$r.j" 2>&1; echo "rc=$?" >> "$r.j")
+    if cmp -s "$r.c" "$r.j"
     then
-        rm "$OUT/x_${k}_${b}.c" "$OUT/x_${k}_${b}.j"
+        rm "$r.c" "$r.j"
     else
-        echo "DIFF: $d/$b.xsl transform (diff $OUT/x_${k}_${b}.c $OUT/x_${k}_${b}.j)" >> "$OUT/differ.txt"
+        echo "DIFF: $d/$b.xsl transform $to (diff $r.c $r.j)" >> "$OUT/differ.txt"
     fi
 }
 export -f onex
@@ -180,8 +205,8 @@ D=$(wc -l < "$OUT/differ.txt")
 sort "$OUT/differ.txt" | sed "s#$ROOT/##"
 if [ "$D" = "0" ]
 then
-    echo "OK: C and Java command lines give the same to-xml for $N cases ($NX transforms, $NV validates)"
+    echo "OK: C and Java command lines give the same to-xml/to-html for $N cases ($NH html files, $NX transforms, $NV validates)"
 else
-    echo "ERR: C and Java command lines differ in $D of $N cases ($NX transforms, $NV validates)"
+    echo "ERR: C and Java command lines differ in $D of $N cases ($NH html files, $NX transforms, $NV validates)"
     exit 1
 fi
