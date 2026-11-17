@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** Annotation (libxml2 xmlSchemaAnnot). (C {@code XmlXsd10Annot}). */
 public final class Xsd10Annot
 {
+    /** Construct with default field values. */
+    public Xsd10Annot()
+    {
+    }
+
     /** C {@code struct XmlXsd10Annot * next}. */
     Xsd10Annot next;
     /** the annotation */

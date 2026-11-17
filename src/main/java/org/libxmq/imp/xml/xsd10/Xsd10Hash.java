@@ -60,6 +60,11 @@ import java.util.Objects;
     are in Xsd10Schemas and call these. */
 public final class Xsd10Hash
 {
+    /** Construct with default field values. */
+    public Xsd10Hash()
+    {
+    }
+
     /** C Xsd10SchemasHashEntry. */
     static final class Entry
     {

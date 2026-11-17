@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The identity-constraint binding item of the [identity-constraint table] (libxml2 xmlSchemaPSVIIDCBinding). (C {@code XmlXsd10PSVIIDCBinding}). */
 public final class Xsd10PSVIIDCBinding
 {
+    /** Construct with default field values. */
+    public Xsd10PSVIIDCBinding()
+    {
+    }
+
     /** next binding of a specific node */
     Xsd10PSVIIDCBinding next;
     /** the IDC definition */

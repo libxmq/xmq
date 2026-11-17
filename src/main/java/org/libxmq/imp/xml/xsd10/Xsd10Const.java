@@ -115,49 +115,91 @@ public interface Xsd10Const
     @FunctionalInterface
     interface ValidityErrorFunc
     {
-        /** @param ctx user context @param msg printf format @param args the arguments */
+        /**
+         * Report a validity error.
+         *
+         * @param ctx user context
+         * @param msg printf format
+         * @param args the arguments
+         */
         void error(Object ctx, String msg, Object... args);
     }
     /** C XmlXsd10ValidityWarningFunc. */
     @FunctionalInterface
     interface ValidityWarningFunc
     {
-        /** @param ctx user context @param msg printf format @param args the arguments */
+        /**
+         * Report a validity warning.
+         *
+         * @param ctx user context
+         * @param msg printf format
+         * @param args the arguments
+         */
         void warning(Object ctx, String msg, Object... args);
     }
     /** C XmlXsd10StructuredErrorFunc (libxml2 xmlStructuredErrorFunc). */
     @FunctionalInterface
     interface StructuredErrorFunc
     {
-        /** @param user_data user data @param error the error, only valid during the call */
+        /**
+         * Report a structured error.
+         *
+         * @param user_data user data
+         * @param error the error, only valid during the call
+         */
         void error(Object user_data, Xsd10Error error);
     }
     /** C XmlXsd10Loader: load the schema document at uri, null if it cannot be loaded. */
     @FunctionalInterface
     interface Loader
     {
-        /** @param user_data user data @param uri the uri @return the document or null */
+        /**
+         * Load a schema document.
+         *
+         * @param user_data user data
+         * @param uri the uri
+         * @return the document or null
+         */
         XmlDocument load(Object user_data, String uri);
     }
     /** C XmlXsd10HashDeallocator. */
     @FunctionalInterface
     interface HashDeallocator
     {
-        /** @param payload the payload @param name the first key */
+        /**
+         * Free a hash table entry.
+         *
+         * @param payload the payload
+         * @param name the first key
+         */
         void dealloc(Object payload, String name);
     }
     /** C XmlXsd10HashScanner. */
     @FunctionalInterface
     interface HashScanner
     {
-        /** @param payload the payload @param data user data @param name the first key */
+        /**
+         * Visit a hash table entry.
+         *
+         * @param payload the payload
+         * @param data user data
+         * @param name the first key
+         */
         void scan(Object payload, Object data, String name);
     }
     /** C XmlXsd10HashScannerFull. */
     @FunctionalInterface
     interface HashScannerFull
     {
-        /** @param payload the payload @param data user data @param name key @param name2 key2 @param name3 key3 */
+        /**
+         * Visit a hash table entry with all three keys.
+         *
+         * @param payload the payload
+         * @param data user data
+         * @param name key
+         * @param name2 key2
+         * @param name3 key3
+         */
         void scan(Object payload, Object data, String name, String name2, String name3);
     }
 

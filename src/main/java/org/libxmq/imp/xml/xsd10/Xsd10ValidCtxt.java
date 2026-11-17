@@ -58,6 +58,11 @@ import static org.libxmq.imp.xml.xsd10.Xsd10Const.*;
 /** A Schemas validation context (libxml2 xmlSchemaValidCtxt). The streaming fields (input, enc, sax, parserCtxt, reader, locFunc, locCtxt) are not ported, ids is new. (C {@code XmlXsd10ValidCtxt}). */
 public final class Xsd10ValidCtxt extends Xsd10AbstractCtxt
 {
+    /** Construct with default field values. */
+    public Xsd10ValidCtxt()
+    {
+    }
+
     /** user specific data block */
     Object err_ctxt;
     /** the callback in case of errors */

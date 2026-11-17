@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The abstract base type for schema components (libxml2 xmlSchemaBasicItem). (C {@code XmlXsd10BasicItem}). */
 public class Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10BasicItem()
+    {
+    }
+
     /** C {@code XmlXsd10TypeType type}. */
     int type;
 }

@@ -53,12 +53,44 @@ package org.libxmq.imp.xml.xsd10;
     xmlRegexpExec, xmlRegFreeRegexp). */
 public final class Xsd10RegexpHooks
 {
+    /** Construct with default field values. */
+    public Xsd10RegexpHooks()
+    {
+    }
+
     /** C {@code void *(*compile)(const char *regexp)}. */
-    public interface Compile { /** @param regexp the expression @return the compiled regexp or null */ Object compile(String regexp); }
+    public interface Compile
+    {
+        /**
+         * Compile a regular expression.
+         *
+         * @param regexp the expression
+         * @return the compiled regexp or null
+         */
+        Object compile(String regexp);
+    }
     /** C {@code int (*exec)(void *regexp, const char *value)}. */
-    public interface Exec { /** @param regexp compiled @param value value @return 1 match, 0 no, negative error */ int exec(Object regexp, String value); }
+    public interface Exec
+    {
+        /**
+         * Match a value against a compiled regular expression.
+         *
+         * @param regexp compiled
+         * @param value value
+         * @return 1 match, 0 no, negative error
+         */
+        int exec(Object regexp, String value);
+    }
     /** C {@code void (*free)(void *regexp)}. */
-    public interface Free { /** @param regexp compiled */ void free(Object regexp); }
+    public interface Free
+    {
+        /**
+         * Free a compiled regular expression.
+         *
+         * @param regexp compiled
+         */
+        void free(Object regexp);
+    }
 
     /** Compile an XML Schema regular expression, null if invalid. */
     public Compile compile;

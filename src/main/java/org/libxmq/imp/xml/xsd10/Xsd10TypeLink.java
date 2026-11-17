@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to build a list of types, e.g. member types of simpleType with variety "union" (libxml2 xmlSchemaTypeLink). (C {@code XmlXsd10TypeLink}). */
 public final class Xsd10TypeLink
 {
+    /** Construct with default field values. */
+    public Xsd10TypeLink()
+    {
+    }
+
     /** the next type link ... */
     Xsd10TypeLink next;
     /** the linked type */

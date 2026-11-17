@@ -44,6 +44,8 @@ public final class IXMLGrammar {
     }
     /** A term: a call of a rule (ref), a character set (chars), an insertion or a not. */
     public static final class Term {
+        /** Construct with default field values. */
+        public Term() {}
         /** The called rule, the inserted text, the mark (^ @ - or empty) and the alias. */
         public String ref, insertion, mark = "", alias = "";
         /** The code points this term matches. */

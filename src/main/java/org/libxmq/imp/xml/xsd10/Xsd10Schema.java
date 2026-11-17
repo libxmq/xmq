@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlDocument;
 /** A schema (libxml2 struct _xmlSchema of schemasInternals.h). (C {@code XmlXsd10Schema}). */
 public final class Xsd10Schema
 {
+    /** Construct with default field values. */
+    public Xsd10Schema()
+    {
+    }
+
     /** schema name */
     String name;
     /** the target namespace */

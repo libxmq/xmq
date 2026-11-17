@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaConstructionCtxt. (C {@code XmlXsd10ConstructionCtxt}). */
 public final class Xsd10ConstructionCtxt
 {
+    /** Construct with default field values. */
+    public Xsd10ConstructionCtxt()
+    {
+    }
+
     /** The main schema. */
     Xsd10Schema main_schema;
     /** The main schema bucket */

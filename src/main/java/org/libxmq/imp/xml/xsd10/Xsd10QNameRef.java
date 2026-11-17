@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** A component reference item (not a schema component) (libxml2 xmlSchemaQNameRef). (Extends XmlXsd10BasicItem) (C {@code XmlXsd10QNameRef}). */
 public final class Xsd10QNameRef extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10QNameRef()
+    {
+    }
+
     /** The resolved referenced item. */
     Xsd10BasicItem item;
     /** C {@code XmlXsd10TypeType item_type}. */

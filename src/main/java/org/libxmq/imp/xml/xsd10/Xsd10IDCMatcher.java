@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to evaluate IDC selectors (and fields) (libxml2 xmlSchemaIDCMatcher). (C {@code XmlXsd10IDCMatcher}). */
 public final class Xsd10IDCMatcher
 {
+    /** Construct with default field values. */
+    public Xsd10IDCMatcher()
+    {
+    }
+
     /** C {@code int type}. */
     int type;
     /** the tree depth at creation time */

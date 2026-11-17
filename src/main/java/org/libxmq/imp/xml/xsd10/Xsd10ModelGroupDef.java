@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** A model group definition component (libxml2 xmlSchemaModelGroupDef). (Extends XmlXsd10TreeItem) (C {@code XmlXsd10ModelGroupDef}). */
 public final class Xsd10ModelGroupDef extends Xsd10TreeItem
 {
+    /** Construct with default field values. */
+    public Xsd10ModelGroupDef()
+    {
+    }
+
     /** C {@code const char * name}. */
     String name;
     /** C {@code const char * target_namespace}. */

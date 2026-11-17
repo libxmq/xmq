@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The key sequence of a node table item (libxml2 xmlSchemaPSVIIDCKey). (C {@code XmlXsd10PSVIIDCKey}). */
 public final class Xsd10PSVIIDCKey
 {
+    /** Construct with default field values. */
+    public Xsd10PSVIIDCKey()
+    {
+    }
+
     /** C {@code XmlXsd10Type * type}. */
     Xsd10Type type;
     /** C {@code XmlXsd10Val * val}. */

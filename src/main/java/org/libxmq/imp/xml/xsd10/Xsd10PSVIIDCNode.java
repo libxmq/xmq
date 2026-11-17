@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** The node table item of a node table (libxml2 xmlSchemaPSVIIDCNode). (C {@code XmlXsd10PSVIIDCNode}). */
 public final class Xsd10PSVIIDCNode
 {
+    /** Construct with default field values. */
+    public Xsd10PSVIIDCNode()
+    {
+    }
+
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** C {@code XmlXsd10PSVIIDCKey ** keys}. */

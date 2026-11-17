@@ -1595,13 +1595,6 @@ public class XMQPrinter
     }
 
     /**
-     * Recursively prints a node, like C print_node. A document prints all its
-     * top level nodes.
-     * @param ps The print state.
-     * @param node The node to print.
-     * @param align The alignment used for the equal signs.
-     */
-    /**
      * Print a node as xmq like the xmq command line does by default (indentation
      * 4, no colors), without a final newline. Used by generated parsers.
      * @param node The document or node.
@@ -1616,6 +1609,13 @@ public class XMQPrinter
         return ps.buffer.toString();
     }
 
+    /**
+     * Recursively prints a node, like C print_node. A document prints all its
+     * top level nodes.
+     * @param ps The print state.
+     * @param node The node to print.
+     * @param align The alignment used for the equal signs.
+     */
     public void print_node(XMQPrintState ps, Object node, int align)
     {
         if (node instanceof XmlDocument d)

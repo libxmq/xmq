@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to build a list of namespaces on wildcards (libxml2 xmlSchemaWildcardNs). (C {@code XmlXsd10WildcardNs}). */
 public final class Xsd10WildcardNs
 {
+    /** Construct with default field values. */
+    public Xsd10WildcardNs()
+    {
+    }
+
     /** the next constraint link ... */
     Xsd10WildcardNs next;
     /** the value */

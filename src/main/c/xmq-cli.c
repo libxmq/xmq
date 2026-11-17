@@ -2065,7 +2065,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
            "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,\n"
-           "             render it with OpenMike/render-trace-to-html.xslq or render-trace-to-tex.xslq.\n"
+           "             render it with library/xmq-utils/render-trace-to-html.xslq or render-trace-to-tex.xslq.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"

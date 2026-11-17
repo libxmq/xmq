@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** A wildcard (libxml2 xmlSchemaWildcard). (C {@code XmlXsd10Wildcard}). */
 public final class Xsd10Wildcard extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Wildcard()
+    {
+    }
+
     /** Deprecated; not used */
     String id;
     /** C {@code XmlXsd10Annot * annot}. */

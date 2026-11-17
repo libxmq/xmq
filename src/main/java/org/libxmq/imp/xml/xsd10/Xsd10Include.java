@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** (extends XmlXsd10Bucket) libxml2 xmlSchemaInclude. (C {@code XmlXsd10Include}). */
 public final class Xsd10Include extends Xsd10Bucket
 {
+    /** Construct with default field values. */
+    public Xsd10Include()
+    {
+    }
+
     /** C {@code XmlXsd10Import * owner_import}. */
     Xsd10Import owner_import;
 }

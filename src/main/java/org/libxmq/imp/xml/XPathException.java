@@ -92,6 +92,7 @@ public class XPathException extends Exception
     public static final int MEMORY_ERROR = 15;
     /** Undefined namespace prefix. */
     public static final int UNDEF_PREFIX_ERROR = 19;
+    /** A variable reference where variables are not allowed. */
     public static final int FORBID_VARIABLE_ERROR = 24;
     /** Recursion limit exceeded. */
     public static final int RECURSION_LIMIT_EXCEEDED = 26;
@@ -147,8 +148,11 @@ public class XPathException extends Exception
         offset_ = offset;
     }
 
+    /** The detailed message, empty if none. */
     private String detail_ = "";
+    /** True if the error was raised while evaluating, not while compiling. */
     private boolean evaluating_;
+    /** True if an extension function failed without a message, nothing is reported. */
     private boolean quiet_;
 
     /**

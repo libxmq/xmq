@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** Schemas type definition (libxml2 xmlSchemaType). (C {@code XmlXsd10Type}). */
 public final class Xsd10Type extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Type()
+    {
+    }
+
     /** the next type if in a sequence ... */
     Xsd10Type next;
     /** C {@code const char * name}. */

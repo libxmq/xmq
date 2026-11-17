@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** The identity-constraint definition component (libxml2 xmlSchemaIDC). (Extends XmlXsd10AnnotItem) (C {@code XmlXsd10IDC}). */
 public final class Xsd10IDC extends Xsd10AnnotItem
 {
+    /** Construct with default field values. */
+    public Xsd10IDC()
+    {
+    }
+
     /** C {@code XmlXsd10IDC * next}. */
     Xsd10IDC next;
     /** C {@code XMQNode * node}. */

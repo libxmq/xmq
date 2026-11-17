@@ -611,8 +611,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_attr_type
-    /** Port of xml_xsd10_ids_attr_type.
-        @param ids the table @param attr the attribute @return the attribute type, 0 if none */
+    /**
+     * Port of xml_xsd10_ids_attr_type.
+     *
+     * @param ids the table
+     * @param attr the attribute
+     * @return the attribute type, 0 if none
+     */
     public static int idsAttrType(Xsd10Ids ids, XmlNode attr)
     {
         if ((ids == null) || (attr == null))
@@ -622,8 +627,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_set_attr_type
-    /** Port of xml_xsd10_ids_set_attr_type.
-        @param ids the table @param attr the attribute @param atype the type, 0 removes it */
+    /**
+     * Port of xml_xsd10_ids_set_attr_type.
+     *
+     * @param ids the table
+     * @param attr the attribute
+     * @param atype the type, 0 removes it
+     */
     public static void idsSetAttrType(Xsd10Ids ids, XmlNode attr, int atype)
     {
         if ((ids == null) || (attr == null))
@@ -635,9 +645,14 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_add_id
-    /** Port of xmlAddIDSafe (xmlAddIDInternal).
-        @param ids the table @param attr the attribute @param value the id
-        @return 1 if added, 0 if a duplicate or no value */
+    /**
+     * Port of xmlAddIDSafe (xmlAddIDInternal).
+     *
+     * @param ids the table
+     * @param attr the attribute
+     * @param value the id
+     * @return 1 if added, 0 if a duplicate or no value
+     */
     public static int idsAddId(Xsd10Ids ids, XmlNode attr, String value)
     {
         if ((value == null) || (value.isEmpty()))
@@ -665,8 +680,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_lookup
-    /** Port of xml_xsd10_ids_lookup.
-        @param ids the table @param value the id @return the attribute or null */
+    /**
+     * Port of xml_xsd10_ids_lookup.
+     *
+     * @param ids the table
+     * @param value the id
+     * @return the attribute or null
+     */
     public static XmlNode idsLookup(Xsd10Ids ids, String value)
     {
         if ((ids == null) || (value == null))
@@ -675,8 +695,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_add_ref
-    /** Port of xmlAddRef (the list of references of the document).
-        @param ids the table @param attr the attribute @param value the referenced id */
+    /**
+     * Port of xmlAddRef (the list of references of the document).
+     *
+     * @param ids the table
+     * @param attr the attribute
+     * @param value the referenced id
+     */
     public static void idsAddRef(Xsd10Ids ids, XmlNode attr, String value)
     {
         if ((ids == null) || (value == null) || (attr == null))
@@ -688,16 +713,25 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_num_refs
-    /** Port of xml_xsd10_ids_num_refs.
-        @param ids the table @return the number of references */
+    /**
+     * Port of xml_xsd10_ids_num_refs.
+     *
+     * @param ids the table
+     * @return the number of references
+     */
     public static long idsNumRefs(Xsd10Ids ids)
     {
         return (ids != null ? ids.refs.size() : 0);
     }
 
     // xml_xsd10_ids_ref_value
-    /** Port of xml_xsd10_ids_ref_value.
-        @param ids the table @param i the index @return the value or null */
+    /**
+     * Port of xml_xsd10_ids_ref_value.
+     *
+     * @param ids the table
+     * @param i the index
+     * @return the value or null
+     */
     public static String idsRefValue(Xsd10Ids ids, long i)
     {
         if ((ids == null) || (Long.compareUnsigned(i, ids.refs.size()) >= 0))
@@ -706,8 +740,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_ids_ref_attr
-    /** Port of xml_xsd10_ids_ref_attr.
-        @param ids the table @param i the index @return the attribute or null */
+    /**
+     * Port of xml_xsd10_ids_ref_attr.
+     *
+     * @param ids the table
+     * @param i the index
+     * @return the attribute or null
+     */
     public static XmlNode idsRefAttr(Xsd10Ids ids, long i)
     {
         if ((ids == null) || (Long.compareUnsigned(i, ids.refs.size()) >= 0))
@@ -879,9 +918,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_is_built_in_type_facet
-    /** Port of xmlSchemaIsBuiltInTypeFacet.
-        @param type the built in type @param facet_type the facet type
-        @return 1 if allowed, 0 if not, -1 on error */
+    /**
+     * Port of xmlSchemaIsBuiltInTypeFacet.
+     *
+     * @param type the built in type
+     * @param facet_type the facet type
+     * @return 1 if allowed, 0 if not, -1 on error
+     */
     public static int isBuiltInTypeFacet(Xsd10Type type, int facet_type)
     {
         if (type == null)
@@ -952,8 +995,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_built_in_type
-    /** Port of xmlSchemaGetBuiltInType: the type struct for a built-in type by its type id.
-        @param type the XML_XSD10_SCHEMAS_ type id @return the type or null */
+    /**
+     * Port of xmlSchemaGetBuiltInType: the type struct for a built-in type by its type id.
+     *
+     * @param type the XML_XSD10_SCHEMAS_ type id
+     * @return the type or null
+     */
     public static Xsd10Type getBuiltInType(int type)
     {
         if ((type >= XML_XSD10_SCHEMAS_STRING) && (type <= XML_XSD10_SCHEMAS_ANYSIMPLETYPE))
@@ -962,8 +1009,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_predefined_type
-    /** Port of xmlSchemaGetPredefinedType: lookup a type in the default XML Schemas type library.
-        @param name the type name @param ns the namespace @return the type or null */
+    /**
+     * Port of xmlSchemaGetPredefinedType: lookup a type in the default XML Schemas type library.
+     *
+     * @param name the type name
+     * @param ns the namespace
+     * @return the type or null
+     */
     public static Xsd10Type getPredefinedType(String name, String ns)
     {
         if (name == null)
@@ -980,8 +1032,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_built_in_list_simple_type_item_type
-    /** Port of xmlSchemaGetBuiltInListSimpleTypeItemType.
-        @param type the list type @return the item type or null */
+    /**
+     * Port of xmlSchemaGetBuiltInListSimpleTypeItemType.
+     *
+     * @param type the list type
+     * @return the item type or null
+     */
     public static Xsd10Type getBuiltInListSimpleTypeItemType(Xsd10Type type)
     {
         if ((type == null) || (type.type != XML_XSD10_SCHEMA_TYPE_BASIC))
@@ -1110,8 +1166,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_value_append
-    /** Port of xmlSchemaValueAppend: appends a next sibling to a list of computed values.
-        @param prev the previous value @param cur the appended value @return 0 or -1 */
+    /**
+     * Port of xmlSchemaValueAppend: appends a next sibling to a list of computed values.
+     *
+     * @param prev the previous value
+     * @param cur the appended value
+     * @return 0 or -1
+     */
     public static int valueAppend(Xsd10Val prev, Xsd10Val cur)
     {
         if ((prev == null) || (cur == null))
@@ -1121,8 +1182,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_value_get_next
-    /** Port of xmlSchemaValueGetNext.
-        @param cur the value @return the next value or null */
+    /**
+     * Port of xmlSchemaValueGetNext.
+     *
+     * @param cur the value
+     * @return the next value or null
+     */
     public static Xsd10Val valueGetNext(Xsd10Val cur)
     {
         if (cur == null)
@@ -1131,8 +1196,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_value_get_as_string
-    /** Port of xmlSchemaValueGetAsString: accessor for the string value of a computed value.
-        @param val the value @return the string or null */
+    /**
+     * Port of xmlSchemaValueGetAsString: accessor for the string value of a computed value.
+     *
+     * @param val the value
+     * @return the string or null
+     */
     public static String valueGetAsString(Xsd10Val val)
     {
         if (val == null)
@@ -1159,8 +1228,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_value_get_as_boolean
-    /** Port of xmlSchemaValueGetAsBoolean: 1 if true and 0 if false, or in case of an error.
-        @param val the value @return the boolean */
+    /**
+     * Port of xmlSchemaValueGetAsBoolean: 1 if true and 0 if false, or in case of an error.
+     *
+     * @param val the value
+     * @return the boolean
+     */
     public static int valueGetAsBoolean(Xsd10Val val)
     {
         if ((val == null) || (val.type != XML_XSD10_SCHEMAS_BOOLEAN))
@@ -1169,8 +1242,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_new_string_value
-    /** Port of xmlSchemaNewStringValue: only XML_XSD10_SCHEMAS_STRING is supported.
-        @param type the type @param value the string @return the value or null */
+    /**
+     * Port of xmlSchemaNewStringValue: only XML_XSD10_SCHEMAS_STRING is supported.
+     *
+     * @param type the type
+     * @param value the string
+     * @return the value or null
+     */
     public static Xsd10Val newStringValue(int type, String value)
     {
         Xsd10Val val;
@@ -1184,8 +1262,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_new_notation_value
-    /** Port of xmlSchemaNewNOTATIONValue.
-        @param name the local name @param ns the namespace @return the value */
+    /**
+     * Port of xmlSchemaNewNOTATIONValue.
+     *
+     * @param name the local name
+     * @param ns the namespace
+     * @return the value
+     */
     public static Xsd10Val newNotationValue(String name, String ns)
     {
         Xsd10Val val;
@@ -1198,8 +1281,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_new_qname_value
-    /** Port of xmlSchemaNewQNameValue.
-        @param namespace_name the namespace @param localName the local name @return the value */
+    /**
+     * Port of xmlSchemaNewQNameValue.
+     *
+     * @param namespace_name the namespace
+     * @param local_name the local name
+     * @return the value
+     */
     public static Xsd10Val newQnameValue(String namespace_name, String local_name)
     {
         Xsd10Val val;
@@ -1966,8 +2054,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_white_space_replace
-    /** Port of xmlSchemaWhiteSpaceReplace.
-        @param value the string @return the replaced string or null if no change was required */
+    /**
+     * Port of xmlSchemaWhiteSpaceReplace.
+     *
+     * @param value the string
+     * @return the replaced string or null if no change was required
+     */
     public static String whiteSpaceReplace(String value)
     {
         return str(typesWhiteSpaceReplace(b(value)), 0);
@@ -2028,8 +2120,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_collapse_string
-    /** Port of xmlSchemaCollapseString.
-        @param value the string @return the collapsed string or null if no change was required */
+    /**
+     * Port of xmlSchemaCollapseString.
+     *
+     * @param value the string
+     * @return the collapsed string or null if no change was required
+     */
     public static String collapseString(String value)
     {
         return str(typesCollapseString(b(value)), 0);
@@ -3322,9 +3418,15 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_val_predef_type_node
-    /** Port of xmlSchemaValPredefTypeNode.
-        @param type the built in type @param value the value @param val the computed value or null
-        @param node the node (may be null) @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xmlSchemaValPredefTypeNode.
+     *
+     * @param type the built in type
+     * @param value the value
+     * @param val the computed value or null
+     * @param node the node (may be null)
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int valPredefTypeNode(Xsd10Type type, String value, Xsd10Val[] val, XmlNode node)
     {
         return typesValAtomicType(type, b(value), val, node, 0,
@@ -3332,10 +3434,16 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_val_predef_type_node_ids
-    /** Port of xml_xsd10_val_predef_type_node_ids (xmlSchemaValPredefTypeNode with an ID table).
-        @param type the built in type @param value the value @param val the computed value or null
-        @param node the node (may be null) @param ids the ID table (may be null)
-        @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xml_xsd10_val_predef_type_node_ids (xmlSchemaValPredefTypeNode with an ID table).
+     *
+     * @param type the built in type
+     * @param value the value
+     * @param val the computed value or null
+     * @param node the node (may be null)
+     * @param ids the ID table (may be null)
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int valPredefTypeNodeIds(Xsd10Type type, String value, Xsd10Val[] val, XmlNode node, Xsd10Ids ids)
     {
         return typesValAtomicType(type, b(value), val, node, 0,
@@ -3343,9 +3451,15 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_val_predef_type_node_no_norm
-    /** Port of xmlSchemaValPredefTypeNodeNoNorm: this one does not apply any normalization to the value.
-        @param type the built in type @param value the value @param val the computed value or null
-        @param node the node (may be null) @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xmlSchemaValPredefTypeNodeNoNorm: this one does not apply any normalization to the value.
+     *
+     * @param type the built in type
+     * @param value the value
+     * @param val the computed value or null
+     * @param node the node (may be null)
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int valPredefTypeNodeNoNorm(Xsd10Type type, String value, Xsd10Val[] val, XmlNode node)
     {
         return typesValAtomicType(type, b(value), val, node, 1,
@@ -3353,10 +3467,16 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_val_predef_type_node_no_norm_ids
-    /** Port of xml_xsd10_val_predef_type_node_no_norm_ids.
-        @param type the built in type @param value the value @param val the computed value or null
-        @param node the node (may be null) @param ids the ID table (may be null)
-        @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xml_xsd10_val_predef_type_node_no_norm_ids.
+     *
+     * @param type the built in type
+     * @param value the value
+     * @param val the computed value or null
+     * @param node the node (may be null)
+     * @param ids the ID table (may be null)
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int valPredefTypeNodeNoNormIds(Xsd10Type type, String value, Xsd10Val[] val, XmlNode node, Xsd10Ids ids)
     {
         return typesValAtomicType(type, b(value), val, node, 1,
@@ -3364,9 +3484,14 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_predefined_type
-    /** Port of xmlSchemaValidatePredefinedType.
-        @param type the built in type @param value the value @param val the computed value or null
-        @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xmlSchemaValidatePredefinedType.
+     *
+     * @param type the built in type
+     * @param value the value
+     * @param val the computed value or null
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int validatePredefinedType(Xsd10Type type, String value, Xsd10Val[] val)
     {
         return valPredefTypeNode(type, value, val, null);
@@ -3526,8 +3651,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_copy_value
-    /** Port of xmlSchemaCopyValue: copies the precomputed value.
-        @param val the value @return the copy or null if a copy for a data-type is not implemented */
+    /**
+     * Port of xmlSchemaCopyValue: copies the precomputed value.
+     *
+     * @param val the value
+     * @return the copy or null if a copy for a data-type is not implemented
+     */
     public static Xsd10Val copyValue(Xsd10Val val)
     {
         Xsd10Val ret = null, prev = null, cur;
@@ -4623,9 +4752,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_compare_values
-    /** Port of xmlSchemaCompareValues.
-        @param x first value @param y second value
-        @return -1 if x &lt; y, 0 if x == y, 1 if x &gt; y, 2 if x &lt;&gt; y, and -2 in case of error */
+    /**
+     * Port of xmlSchemaCompareValues.
+     *
+     * @param x first value
+     * @param y second value
+     * @return -1 if x &lt; y, 0 if x == y, 1 if x &gt; y, 2 if x &lt;&gt; y, and -2 in case of error
+     */
     public static int compareValues(Xsd10Val x, Xsd10Val y)
     {
         int xws, yws;
@@ -4650,9 +4783,15 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_compare_values_whtsp
-    /** Port of xmlSchemaCompareValuesWhtsp.
-        @param x first value @param xws its whitespace @param y second value @param yws its whitespace
-        @return the comparison result as for compareValues */
+    /**
+     * Port of xmlSchemaCompareValuesWhtsp.
+     *
+     * @param x first value
+     * @param xws its whitespace
+     * @param y second value
+     * @param yws its whitespace
+     * @return the comparison result as for compareValues
+     */
     public static int compareValuesWhtsp(Xsd10Val x, int xws, Xsd10Val y, int yws)
     {
         if ((x == null) || (y == null))
@@ -4722,9 +4861,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_facet_value_as_ulong
-    /** Port of xmlSchemaGetFacetValueAsULong: extract the value of a facet (strtoul of the
-        decimal string after its sign; the result is an unsigned long).
-        @param facet the facet @return the value */
+    /**
+     * Port of xmlSchemaGetFacetValueAsULong: extract the value of a facet (strtoul of the decimal string after its sign; the result is an unsigned long).
+     *
+     * @param facet the facet
+     * @return the value
+     */
     public static long getFacetValueAsUlong(Xsd10Facet facet)
     {
         /*
@@ -4771,11 +4913,15 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_list_simple_type_facet
-    /** Port of xmlSchemaValidateListSimpleTypeFacet: checks the value of a list simple type against
-        a facet.
-        @param facet the facet @param value the lexical value @param actual_len the number of items
-        @param expected_len out: the expected length (may be null)
-        @return 0 if valid, a positive error code otherwise and -1 in case of an internal error */
+    /**
+     * Port of xmlSchemaValidateListSimpleTypeFacet: checks the value of a list simple type against a facet.
+     *
+     * @param facet the facet
+     * @param value the lexical value
+     * @param actual_len the number of items
+     * @param expected_len out: the expected length (may be null)
+     * @return 0 if valid, a positive error code otherwise and -1 in case of an internal error
+     */
     public static int validateListSimpleTypeFacet(Xsd10Facet facet, String value, long actual_len, long[] expected_len)
     {
         if (facet == null)
@@ -4946,10 +5092,16 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_length_facet
-    /** Port of xmlSchemaValidateLengthFacet.
-        @param type the built in type @param facet the facet @param value the value
-        @param val the computed value @param length out: the computed length
-        @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xmlSchemaValidateLengthFacet.
+     *
+     * @param type the built in type
+     * @param facet the facet
+     * @param value the value
+     * @param val the computed value
+     * @param length out: the computed length
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int validateLengthFacet(Xsd10Type type, Xsd10Facet facet, String value, Xsd10Val val, long[] length)
     {
         if (type == null)
@@ -4959,10 +5111,17 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_length_facet_whtsp
-    /** Port of xmlSchemaValidateLengthFacetWhtsp.
-        @param facet the facet @param val_type the value type @param value the value
-        @param val the computed value @param length out: the computed length @param ws the whitespace
-        @return 0 if valid, a positive error code otherwise, -1 on error */
+    /**
+     * Port of xmlSchemaValidateLengthFacetWhtsp.
+     *
+     * @param facet the facet
+     * @param val_type the value type
+     * @param value the value
+     * @param val the computed value
+     * @param length out: the computed length
+     * @param ws the whitespace
+     * @return 0 if valid, a positive error code otherwise, -1 on error
+     */
     public static int validateLengthFacetWhtsp(Xsd10Facet facet, int val_type, String value, Xsd10Val val, long[] length, int ws)
     {
         return typesValidateLengthFacetInternal(facet, val_type, b(value), val, length, ws);
@@ -5161,10 +5320,15 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_facet
-    /** Port of xmlSchemaValidateFacet: check a value against a facet condition.
-        @param base the base type @param facet the facet @param value the lexical value
-        @param val the computed value
-        @return 0 if valid, a positive error code otherwise and -1 in case of internal or API error */
+    /**
+     * Port of xmlSchemaValidateFacet: check a value against a facet condition.
+     *
+     * @param base the base type
+     * @param facet the facet
+     * @param value the lexical value
+     * @param val the computed value
+     * @return 0 if valid, a positive error code otherwise and -1 in case of internal or API error
+     */
     public static int validateFacet(Xsd10Type base, Xsd10Facet facet, String value, Xsd10Val val)
     {
         /*
@@ -5184,11 +5348,17 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_validate_facet_whtsp
-    /** Port of xmlSchemaValidateFacetWhtsp: check a value against a facet condition, taking the
-        whitespace types into account. value needs to be the normalized value for patterns.
-        @param facet the facet @param fws the facet whitespace @param val_type the value type
-        @param value the lexical value @param val the computed value @param ws the value whitespace
-        @return 0 if valid, a positive error code otherwise and -1 in case of internal or API error */
+    /**
+     * Port of xmlSchemaValidateFacetWhtsp: check a value against a facet condition, taking the whitespace types into account. value needs to be the normalized value for patterns.
+     *
+     * @param facet the facet
+     * @param fws the facet whitespace
+     * @param val_type the value type
+     * @param value the lexical value
+     * @param val the computed value
+     * @param ws the value whitespace
+     * @return 0 if valid, a positive error code otherwise and -1 in case of internal or API error
+     */
     public static int validateFacetWhtsp(Xsd10Facet facet, int fws, int val_type, String value, Xsd10Val val, int ws)
     {
         return typesValidateFacetInternal(facet, fws, val_type, value, val, ws);
@@ -5612,9 +5782,13 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_canon_value
-    /** Port of xmlSchemaGetCanonValue.
-        @param val the value @param ret_value out: the canonical value
-        @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors */
+    /**
+     * Port of xmlSchemaGetCanonValue.
+     *
+     * @param val the value
+     * @param ret_value out: the canonical value
+     * @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors
+     */
     public static int getCanonValue(Xsd10Val val, String[] ret_value)
     {
         String[] r = { null };
@@ -5629,9 +5803,14 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_canon_value_whtsp
-    /** Port of xmlSchemaGetCanonValueWhtsp: get the canonical representation of the value.
-        @param val the value @param ret_value out: the canonical value @param ws the whitespace
-        @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors */
+    /**
+     * Port of xmlSchemaGetCanonValueWhtsp: get the canonical representation of the value.
+     *
+     * @param val the value
+     * @param ret_value out: the canonical value
+     * @param ws the whitespace
+     * @return 0 if built, 1 if the type is not supported yet and -1 in case of API errors
+     */
     public static int getCanonValueWhtsp(Xsd10Val val, String[] ret_value, int ws)
     {
         String r = null;
@@ -5676,8 +5855,12 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_get_val_type
-    /** Port of xmlSchemaGetValType: accessor for the type of a value.
-        @param val the value @return the type, XML_XSD10_SCHEMAS_UNKNOWN for null */
+    /**
+     * Port of xmlSchemaGetValType: accessor for the type of a value.
+     *
+     * @param val the value
+     * @return the type, XML_XSD10_SCHEMAS_UNKNOWN for null
+     */
     public static int getValType(Xsd10Val val)
     {
         if (val == null)
@@ -5908,10 +6091,14 @@ public final class Xsd10Types
     }
 
     // xml_xsd10_check_facet
-    /** Port of xmlSchemaCheckFacet (without a parser context, as used by RelaxNG): checks and
-        computes the values of facets.
-        @param facet the facet @param type_decl the type holding the facet @param name unused
-        @return 0 if valid, a positive error code if not valid and -1 in case of an internal or API error */
+    /**
+     * Port of xmlSchemaCheckFacet (without a parser context, as used by RelaxNG): checks and computes the values of facets.
+     *
+     * @param facet the facet
+     * @param type_decl the type holding the facet
+     * @param name unused
+     * @return 0 if valid, a positive error code if not valid and -1 in case of an internal or API error
+     */
     public static int checkFacet(Xsd10Facet facet, Xsd10Type type_decl, String name)
     {
         int ret = 0;

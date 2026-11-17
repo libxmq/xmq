@@ -55,6 +55,11 @@ import org.libxmq.imp.xml.XmlRegExecCtxt;
 /** Holds information of an element node (libxml2 xmlSchemaNodeInfo). (C {@code XmlXsd10NodeInfo}). */
 public class Xsd10NodeInfo
 {
+    /** Construct with default field values. */
+    public Xsd10NodeInfo()
+    {
+    }
+
     /** C {@code int node_type}. */
     int node_type;
     /** C {@code XMQNode * node}. */

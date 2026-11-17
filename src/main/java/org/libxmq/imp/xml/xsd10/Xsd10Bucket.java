@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlDocument;
 /** libxml2 xmlSchemaBucket. XmlXsd10Bucket, XmlXsd10Import and XmlXsd10Include start of structures must be kept similar. ids is new (replaces libxml2 doc->ids). (C {@code XmlXsd10Bucket}). */
 public class Xsd10Bucket
 {
+    /** Construct with default field values. */
+    public Xsd10Bucket()
+    {
+    }
+
     /** C {@code int type}. */
     int type;
     /** C {@code int flags}. */

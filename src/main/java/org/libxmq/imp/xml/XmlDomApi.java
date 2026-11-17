@@ -41,20 +41,35 @@ public final class XmlDomApi
     }
 
     // The node kinds, the values of XmlNodeKind in the C version (libxml2 xmlElementType).
+    /** An element. */
     public static final int ELEMENT = 1;
+    /** An attribute. */
     public static final int ATTRIBUTE = 2;
+    /** A text node. */
     public static final int TEXT = 3;
+    /** A CDATA section. */
     public static final int CDATA = 4;
+    /** An entity reference. */
     public static final int ENTITY_REF = 5;
+    /** A processing instruction. */
     public static final int PI = 7;
+    /** A comment. */
     public static final int COMMENT = 8;
+    /** The document. */
     public static final int DOCUMENT = 9;
+    /** A document type declaration. */
     public static final int DTD = 14;
+    /** An element declaration in a DTD. */
     public static final int ELEMENT_DECL = 15;
+    /** An attribute declaration in a DTD. */
     public static final int ATTRIBUTE_DECL = 16;
+    /** An entity declaration in a DTD. */
     public static final int ENTITY_DECL = 17;
+    /** A namespace declaration. */
     public static final int NAMESPACE = 18;
+    /** A notation declaration in a DTD. */
     public static final int NOTATION_DECL = 20;
+    /** A parameter entity reference in a DTD. */
     public static final int PE_REF = 21;
 
     /** The xml namespace uri. */
@@ -211,7 +226,7 @@ public final class XmlDomApi
      * @param dom The dom.
      * @param name The name.
      * @param public_id The public id or null.
-     * @param systemId The system id or null.
+     * @param system_id The system id or null.
      * @return The dtd.
      */
     public static XmlNode domSetDtd(XmlDocument dom, String name, String public_id, String system_id)

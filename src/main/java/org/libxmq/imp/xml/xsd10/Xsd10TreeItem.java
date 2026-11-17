@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaTreeItem. (C {@code XmlXsd10TreeItem}). */
 public class Xsd10TreeItem extends Xsd10AnnotItem
 {
+    /** Construct with default field values. */
+    public Xsd10TreeItem()
+    {
+    }
+
     /** C {@code XmlXsd10TreeItem * next}. */
     Xsd10TreeItem next;
     /** C {@code XmlXsd10TreeItem * children}. */

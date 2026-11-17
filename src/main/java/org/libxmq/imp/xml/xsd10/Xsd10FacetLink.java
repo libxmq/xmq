@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to build a list of facets (libxml2 xmlSchemaFacetLink). (C {@code XmlXsd10FacetLink}). */
 public final class Xsd10FacetLink
 {
+    /** Construct with default field values. */
+    public Xsd10FacetLink()
+    {
+    }
+
     /** the next facet link ... */
     Xsd10FacetLink next;
     /** the linked facet */

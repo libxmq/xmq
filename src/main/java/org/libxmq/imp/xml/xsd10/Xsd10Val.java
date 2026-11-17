@@ -56,6 +56,11 @@ package org.libxmq.imp.xml.xsd10;
     union (memcpy, {@code *dst = *src}) must copy the members (see the copy helpers of the members). */
 public final class Xsd10Val
 {
+    /** Construct with default field values. */
+    public Xsd10Val()
+    {
+    }
+
     /** C XmlXsd10ValDecimal. */
     static final class Decimal
     {

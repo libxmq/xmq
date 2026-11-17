@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaAbstractCtxt. (C {@code XmlXsd10AbstractCtxt}). */
 public class Xsd10AbstractCtxt
 {
+    /** Construct with default field values. */
+    public Xsd10AbstractCtxt()
+    {
+    }
+
     /** E.g. XML_XSD10_SCHEMA_CTXT_VALIDATOR */
     int type;
 }

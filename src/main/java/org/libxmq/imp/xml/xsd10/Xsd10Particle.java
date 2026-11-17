@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** libxml2 xmlSchemaParticle. (C {@code XmlXsd10Particle}). */
 public final class Xsd10Particle extends Xsd10TreeItem
 {
+    /** Construct with default field values. */
+    public Xsd10Particle()
+    {
+    }
+
     /** C {@code int min_occurs}. */
     int min_occurs;
     /** C {@code int max_occurs}. */

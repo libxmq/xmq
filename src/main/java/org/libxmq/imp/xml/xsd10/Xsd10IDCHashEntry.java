@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** An entry in hash tables to quickly look up keys/uniques (libxml2 xmlIDCHashEntry). (C {@code XmlXsd10IDCHashEntry}). */
 public final class Xsd10IDCHashEntry
 {
+    /** Construct with default field values. */
+    public Xsd10IDCHashEntry()
+    {
+    }
+
     /** next item with same hash */
     Xsd10IDCHashEntry next;
     /** index into associated item list */

@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** An attribute group definition (libxml2 xmlSchemaAttributeGroup). XmlXsd10Attribute and XmlXsd10AttributeGroup start of structures must be kept similar (C {@code XmlXsd10AttributeGroup}). */
 public final class Xsd10AttributeGroup extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10AttributeGroup()
+    {
+    }
+
     /** the next attribute if in a group ... */
     Xsd10Attribute next;
     /** C {@code const char * name}. */

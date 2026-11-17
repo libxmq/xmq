@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The augmented IDC information used for validation (libxml2 xmlSchemaIDCAug). (C {@code XmlXsd10IDCAug}). */
 public final class Xsd10IDCAug
 {
+    /** Construct with default field values. */
+    public Xsd10IDCAug()
+    {
+    }
+
     /** next in a list */
     Xsd10IDCAug next;
     /** the IDC definition */

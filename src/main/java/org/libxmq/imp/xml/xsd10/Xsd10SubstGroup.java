@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaSubstGroup. (C {@code XmlXsd10SubstGroup}). */
 public final class Xsd10SubstGroup
 {
+    /** Construct with default field values. */
+    public Xsd10SubstGroup()
+    {
+    }
+
     /** C {@code XmlXsd10Element * head}. */
     Xsd10Element head;
     /** C {@code XmlXsd10ItemList * members}. */

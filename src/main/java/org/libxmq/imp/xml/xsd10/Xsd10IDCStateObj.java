@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The state object used to evaluate XPath expressions (libxml2 xmlSchemaIDCStateObj). (C {@code XmlXsd10IDCStateObj}). */
 public final class Xsd10IDCStateObj
 {
+    /** Construct with default field values. */
+    public Xsd10IDCStateObj()
+    {
+    }
+
     /** C {@code int type}. */
     int type;
     /** next if in a list */

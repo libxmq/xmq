@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** A helper component to reflect attribute prohibitions (libxml2 xmlSchemaAttributeUseProhib). (Extends XmlXsd10BasicItem) (C {@code XmlXsd10AttributeUseProhib}). */
 public final class Xsd10AttributeUseProhib extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10AttributeUseProhib()
+    {
+    }
+
     /** C {@code XMQNode * node}. */
     XmlNode node;
     /** C {@code const char * name}. */

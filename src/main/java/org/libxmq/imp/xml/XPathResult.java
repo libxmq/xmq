@@ -59,9 +59,13 @@ import java.util.List;
  */
 public final class XPathResult
 {
+    /** A node set. */
     public static final int NODESET = 1;
+    /** A boolean. */
     public static final int BOOLEAN = 2;
+    /** A number. */
     public static final int NUMBER = 3;
+    /** A string. */
     public static final int STRING = 4;
 
     int type_;

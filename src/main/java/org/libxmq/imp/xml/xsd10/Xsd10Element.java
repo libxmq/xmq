@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** An element definition (libxml2 xmlSchemaElement). XmlXsd10Type, XmlXsd10Facet and XmlXsd10Element start of structures must be kept similar (C {@code XmlXsd10Element}). */
 public final class Xsd10Element extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Element()
+    {
+    }
+
     /** Not used? */
     Xsd10Type next;
     /** C {@code const char * name}. */

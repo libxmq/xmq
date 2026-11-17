@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to build a list of attribute uses on complexType definitions (libxml2 xmlSchemaAttributeLink). WARNING: Deprecated; not used. (C {@code XmlXsd10AttributeLink}). */
 public final class Xsd10AttributeLink
 {
+    /** Construct with default field values. */
+    public Xsd10AttributeLink()
+    {
+    }
+
     /** the next attribute link ... */
     Xsd10AttributeLink next;
     /** the linked attribute */

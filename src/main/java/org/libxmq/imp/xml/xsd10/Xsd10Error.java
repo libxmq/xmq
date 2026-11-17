@@ -55,6 +55,11 @@ import org.libxmq.imp.xml.XmlNode;
     only valid during the call. */
 public final class Xsd10Error
 {
+    /** Construct with default field values. */
+    public Xsd10Error()
+    {
+    }
+
     /** What part of the library raised this error */
     int domain;
     /** The error code, e.g. an xmlParserErrors */
@@ -83,18 +88,46 @@ public final class Xsd10Error
     /** the node in the tree */
     XmlNode node;
 
-    /** The domain. @return the domain */
+    /**
+     * The domain.
+     *
+     * @return the domain
+     */
     public int domain() { return domain; }
-    /** The code. @return the code */
+    /**
+     * The code.
+     *
+     * @return the code
+     */
     public int code() { return code; }
-    /** The message. @return the message */
+    /**
+     * The message.
+     *
+     * @return the message
+     */
     public String message() { return message; }
-    /** The level. @return the level */
+    /**
+     * The level.
+     *
+     * @return the level
+     */
     public int level() { return level; }
-    /** The file. @return the file */
+    /**
+     * The file.
+     *
+     * @return the file
+     */
     public String file() { return file; }
-    /** The line. @return the line */
+    /**
+     * The line.
+     *
+     * @return the line
+     */
     public int line() { return line; }
-    /** The node. @return the node */
+    /**
+     * The node.
+     *
+     * @return the node
+     */
     public XmlNode node() { return node; }
 }

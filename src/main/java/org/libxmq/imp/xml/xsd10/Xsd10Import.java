@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** * (extends XmlXsd10Bucket) libxml2 xmlSchemaImport. * * Reflects a schema. Holds some information * about the schema and its toplevel components. Duplicate * toplevel components are not checked at this level. (C {@code XmlXsd10Import}). */
 public final class Xsd10Import extends Xsd10Bucket
 {
+    /** Construct with default field values. */
+    public Xsd10Import()
+    {
+    }
+
     /** C {@code XmlXsd10Schema * schema}. */
     Xsd10Schema schema;
 }

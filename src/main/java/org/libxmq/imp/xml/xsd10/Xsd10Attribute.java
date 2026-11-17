@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** An attribute definition (libxml2 xmlSchemaAttribute). (C {@code XmlXsd10Attribute}). */
 public final class Xsd10Attribute extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Attribute()
+    {
+    }
+
     /** the next attribute (not used?) */
     Xsd10Attribute next;
     /** the name of the declaration */

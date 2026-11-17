@@ -1648,8 +1648,13 @@ public final class Xsd10Schemas
     public static final ValidityErrorFunc GENERIC_ERROR = Xsd10Schemas::genericError;
 
     // xml_xsd10_generic_error
-    /** Port of xml_xsd10_generic_error: printf to stderr. @param ctx unused @param msg format
-        @param args arguments */
+    /**
+     * Port of xml_xsd10_generic_error: printf to stderr.
+     *
+     * @param ctx unused
+     * @param msg format
+     * @param args arguments
+     */
     public static void genericError(Object ctx, String msg, Object... args)
     {
         String s = format(msg, args);
@@ -1659,8 +1664,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_format_error
-    /** Port of xml_xsd10_format_error (libxml2 xmlFormatError). @param err the error
-        @param channel where to print @param data the channel data */
+    /**
+     * Port of xml_xsd10_format_error (libxml2 xmlFormatError).
+     *
+     * @param err the error
+     * @param channel where to print
+     * @param data the channel data
+     */
     public static void formatError(Xsd10Error err, ValidityErrorFunc channel, Object data)
     {
         String message;
@@ -1757,8 +1767,12 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_format_error_string
-    /** Port of xml_xsd10_format_error_string: formatError into a string. @param err the error
-        @return the text ("" if nothing) */
+    /**
+     * Port of xml_xsd10_format_error_string: formatError into a string.
+     *
+     * @param err the error
+     * @return the text ("" if nothing)
+     */
     public static String formatErrorString(Xsd10Error err)
     {
         StringBuilder sc = new StringBuilder();
@@ -2201,8 +2215,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_default_loader
-    /** Port of xml_xsd10_default_loader: read and parse the file uri, problems go to stderr.
-        @param user_data unused @param uri the uri or path @return the document or null */
+    /**
+     * Port of xml_xsd10_default_loader: read and parse the file uri, problems go to stderr.
+     *
+     * @param user_data unused
+     * @param uri the uri or path
+     * @return the document or null
+     */
     public static XmlDocument defaultLoader(Object user_data, String uri)
     {
         return loadFile(uri, null, null);
@@ -2383,7 +2402,7 @@ public final class Xsd10Schemas
     // xml_xsd10_format_q_name
     /** Port of xmlSchemaFormatQName: "{namespace_name}localName" or just "localName" if namespace_name
         is null. @param buf the string buffer @param namespace_name the namespace name
-        @param localName the local name @return the localName if namespace_name is null, a formatted
+        @param local_name the local name @return the local_name if namespace_name is null, a formatted
         string otherwise */
     static String formatQName(String[] buf, String namespace_name, String local_name)
     {
@@ -2408,7 +2427,7 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_format_q_name_ns
-    /** Port of xmlSchemaFormatQNameNs. @param buf buffer @param ns ns @param localName local name
+    /** Port of xmlSchemaFormatQNameNs. @param buf buffer @param ns ns @param local_name local name
         @return the formatted name */
     static String formatQNameNs(String[] buf, XmlNs ns, String local_name)
     {
@@ -4727,7 +4746,11 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_free
-    /** Port of xmlSchemaFree: deallocate a Schema structure. @param schema a schema structure */
+    /**
+     * Port of xmlSchemaFree: deallocate a Schema structure.
+     *
+     * @param schema a schema structure
+     */
     public static void free(Xsd10Schema schema)
     {
         if (schema == null)
@@ -4983,9 +5006,12 @@ public final class Xsd10Schemas
      ************************************************************************/
 
     // xml_xsd10_new_parser_ctxt
-    /** Port of xmlSchemaNewParserCtxt: create an XML Schemas parse context for that file/resource
-        expected to contain an XML Schemas file. @param URL the location of the schema
-        @return the parser context or null in case of error */
+    /**
+     * Port of xmlSchemaNewParserCtxt: create an XML Schemas parse context for that file/resource expected to contain an XML Schemas file.
+     *
+     * @param URL the location of the schema
+     * @return the parser context or null in case of error
+     */
     public static Xsd10ParserCtxt newParserCtxt(String URL)
     {
         Xsd10ParserCtxt ret;
@@ -5002,9 +5028,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_new_mem_parser_ctxt
-    /** Port of xmlSchemaNewMemParserCtxt: create an XML Schemas parse context for that memory buffer
-        expected to contain an XML Schemas file. @param buffer the schema text @param size its size
-        (in UTF-8 bytes) @return the parser context or null in case of error */
+    /**
+     * Port of xmlSchemaNewMemParserCtxt: create an XML Schemas parse context for that memory buffer expected to contain an XML Schemas file.
+     *
+     * @param buffer the schema text
+     * @param size its size (in UTF-8 bytes)
+     * @return the parser context or null in case of error
+     */
     public static Xsd10ParserCtxt newMemParserCtxt(String buffer, int size)
     {
         Xsd10ParserCtxt ret;
@@ -5021,9 +5051,12 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_new_doc_parser_ctxt
-    /** Port of xmlSchemaNewDocParserCtxt: create an XML Schemas parse context for that document.
-        NB. The document may be modified during the parsing process. @param doc a preparsed document
-        tree @return the parser context or null in case of error */
+    /**
+     * Port of xmlSchemaNewDocParserCtxt: create an XML Schemas parse context for that document. NB. The document may be modified during the parsing process.
+     *
+     * @param doc a preparsed document tree
+     * @return the parser context or null in case of error
+     */
     public static Xsd10ParserCtxt newDocParserCtxt(XmlDocument doc)
     {
         Xsd10ParserCtxt ret;
@@ -5065,9 +5098,14 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_parser_errors
-    /** Port of xmlSchemaSetParserErrors: set the callback functions used to handle errors for a
-        validation context. @param ctxt a schema validation context @param err the error callback
-        @param warn the warning callback @param ctx contextual data for the callbacks */
+    /**
+     * Port of xmlSchemaSetParserErrors: set the callback functions used to handle errors for a validation context.
+     *
+     * @param ctxt a schema validation context
+     * @param err the error callback
+     * @param warn the warning callback
+     * @param ctx contextual data for the callbacks
+     */
     public static void setParserErrors(Xsd10ParserCtxt ctxt, ValidityErrorFunc err, ValidityWarningFunc warn, Object ctx)
     {
         if (ctxt == null)
@@ -5080,9 +5118,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_parser_structured_errors
-    /** Port of xmlSchemaSetParserStructuredErrors: set the structured error callback.
-        @param ctxt a schema parser context @param serror the structured error function
-        @param ctx the functions context */
+    /**
+     * Port of xmlSchemaSetParserStructuredErrors: set the structured error callback.
+     *
+     * @param ctxt a schema parser context
+     * @param serror the structured error function
+     * @param ctx the functions context
+     */
     public static void setParserStructuredErrors(Xsd10ParserCtxt ctxt, StructuredErrorFunc serror, Object ctx)
     {
         if (ctxt == null)
@@ -5094,10 +5136,15 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_get_parser_errors
-    /** Port of xmlSchemaGetParserErrors: get the callback information used to handle errors for a
-        parser context. @param ctxt a XMl-Schema parser context @param err the error callback result
-        @param warn the warning callback result @param ctx contextual data for the callbacks result
-        @return -1 in case of failure, 0 otherwise */
+    /**
+     * Port of xmlSchemaGetParserErrors: get the callback information used to handle errors for a parser context.
+     *
+     * @param ctxt a XMl-Schema parser context
+     * @param err the error callback result
+     * @param warn the warning callback result
+     * @param ctx contextual data for the callbacks result
+     * @return -1 in case of failure, 0 otherwise
+     */
     public static int getParserErrors(Xsd10ParserCtxt ctxt, ValidityErrorFunc[] err, ValidityWarningFunc[] warn, Object[] ctx)
     {
         if (ctxt == null)
@@ -5112,9 +5159,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_resource_loader
-    /** Port of xmlSchemaSetResourceLoader: register a callback function that will be called to load
-        documents or external entities. @param ctxt schema parser @param loader resource loader
-        @param data user data which will be passed to the loader */
+    /**
+     * Port of xmlSchemaSetResourceLoader: register a callback function that will be called to load documents or external entities.
+     *
+     * @param ctxt schema parser
+     * @param loader resource loader
+     * @param data user data which will be passed to the loader
+     */
     public static void setResourceLoader(Xsd10ParserCtxt ctxt, Loader loader, Object data)
     {
         if (ctxt == null)
@@ -5220,9 +5271,12 @@ public final class Xsd10Schemas
      ************************************************************************/
 
     // xml_xsd10_is_valid
-    /** Port of xmlSchemaIsValid: check if any error was detected during validation.
-        @param ctxt the schema validation context @return 1 if valid so far, 0 if errors were
-        detected, and -1 in case of internal error */
+    /**
+     * Port of xmlSchemaIsValid: check if any error was detected during validation.
+     *
+     * @param ctxt the schema validation context
+     * @return 1 if valid so far, 0 if errors were detected, and -1 in case of internal error
+     */
     public static int isValid(Xsd10ValidCtxt ctxt)
     {
         if (ctxt == null)
@@ -5231,9 +5285,14 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_valid_errors
-    /** Port of xmlSchemaSetValidErrors: set the error and warning callback information.
-        @param ctxt a schema validation context @param err the error function @param warn the warning
-        function @param ctx the functions context */
+    /**
+     * Port of xmlSchemaSetValidErrors: set the error and warning callback information.
+     *
+     * @param ctxt a schema validation context
+     * @param err the error function
+     * @param warn the warning function
+     * @param ctx the functions context
+     */
     public static void setValidErrors(Xsd10ValidCtxt ctxt, ValidityErrorFunc err, ValidityWarningFunc warn, Object ctx)
     {
         if (ctxt == null)
@@ -5246,9 +5305,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_valid_structured_errors
-    /** Port of xmlSchemaSetValidStructuredErrors: set the structured error callback.
-        @param ctxt a schema validation context @param serror the structured error function
-        @param ctx the functions context */
+    /**
+     * Port of xmlSchemaSetValidStructuredErrors: set the structured error callback.
+     *
+     * @param ctxt a schema validation context
+     * @param serror the structured error function
+     * @param ctx the functions context
+     */
     public static void setValidStructuredErrors(Xsd10ValidCtxt ctxt, StructuredErrorFunc serror, Object ctx)
     {
         if (ctxt == null)
@@ -5262,10 +5325,15 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_get_valid_errors
-    /** Port of xmlSchemaGetValidErrors: get the error and warning callback information.
-        @param ctxt a XML-Schema validation context @param err the error function result
-        @param warn the warning function result @param ctx the functions context result
-        @return -1 in case of error and 0 otherwise */
+    /**
+     * Port of xmlSchemaGetValidErrors: get the error and warning callback information.
+     *
+     * @param ctxt a XML-Schema validation context
+     * @param err the error function result
+     * @param warn the warning function result
+     * @param ctx the functions context result
+     * @return -1 in case of error and 0 otherwise
+     */
     public static int getValidErrors(Xsd10ValidCtxt ctxt, ValidityErrorFunc[] err, ValidityWarningFunc[] warn, Object[] ctx)
     {
         if (ctxt == null)
@@ -5280,9 +5348,13 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_set_valid_options
-    /** Port of xmlSchemaSetValidOptions: sets the options to be used during the validation.
-        @param ctxt a schema validation context @param options a combination of xmlSchemaValidOption
-        @return 0 in case of success, -1 in case of an API error */
+    /**
+     * Port of xmlSchemaSetValidOptions: sets the options to be used during the validation.
+     *
+     * @param ctxt a schema validation context
+     * @param options a combination of xmlSchemaValidOption
+     * @return 0 in case of success, -1 in case of an API error
+     */
     public static int setValidOptions(Xsd10ValidCtxt ctxt, int options)
     {
         int i;
@@ -5305,8 +5377,12 @@ public final class Xsd10Schemas
     }
 
     // xml_xsd10_valid_ctxt_get_options
-    /** Port of xmlSchemaValidCtxtGetOptions: get the validation context options.
-        @param ctxt a schema validation context @return the option combination or -1 on error */
+    /**
+     * Port of xmlSchemaValidCtxtGetOptions: get the validation context options.
+     *
+     * @param ctxt a schema validation context
+     * @return the option combination or -1 on error
+     */
     public static int validCtxtGetOptions(Xsd10ValidCtxt ctxt)
     {
         if (ctxt == null)

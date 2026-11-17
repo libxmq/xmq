@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The identity-constraint "field" and "selector" item, holding the XPath expression (libxml2 xmlSchemaIDCSelect). (C {@code XmlXsd10IDCSelect}). */
 public final class Xsd10IDCSelect
 {
+    /** Construct with default field values. */
+    public Xsd10IDCSelect()
+    {
+    }
+
     /** C {@code XmlXsd10IDCSelect * next}. */
     Xsd10IDCSelect next;
     /** C {@code XmlXsd10IDC * idc}. */

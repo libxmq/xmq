@@ -58,6 +58,11 @@ import static org.libxmq.imp.xml.xsd10.Xsd10Const.*;
 /** libxml2 xmlSchemaParserCtxt. (C {@code XmlXsd10ParserCtxt}). */
 public final class Xsd10ParserCtxt extends Xsd10AbstractCtxt
 {
+    /** Construct with default field values. */
+    public Xsd10ParserCtxt()
+    {
+    }
+
     /** user specific error context */
     Object err_ctxt;
     /** the callback in case of errors */

@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaItemList. (C {@code XmlXsd10ItemList}). */
 public final class Xsd10ItemList
 {
+    /** Construct with default field values. */
+    public Xsd10ItemList()
+    {
+    }
+
     /** used for dynamic addition of schemata */
     Object[] items;
     /** used for dynamic addition of schemata */

@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaAttrInfo (starts like XmlXsd10NodeInfo). (C {@code XmlXsd10AttrInfo}). */
 public final class Xsd10AttrInfo extends Xsd10NodeInfo
 {
+    /** Construct with default field values. */
+    public Xsd10AttrInfo()
+    {
+    }
+
     /** the attribute declaration */
     Xsd10Attribute decl;
     /** the attribute use */

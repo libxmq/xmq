@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** A notation definition (libxml2 xmlSchemaNotation). (C {@code XmlXsd10Notation}). */
 public final class Xsd10Notation extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Notation()
+    {
+    }
+
     /** C {@code const char * name}. */
     String name;
     /** C {@code XmlXsd10Annot * annot}. */

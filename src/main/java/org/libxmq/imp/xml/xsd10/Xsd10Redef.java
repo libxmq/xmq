@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** libxml2 xmlSchemaRedef. (C {@code XmlXsd10Redef}). */
 public final class Xsd10Redef
 {
+    /** Construct with default field values. */
+    public Xsd10Redef()
+    {
+    }
+
     /** C {@code XmlXsd10Redef * next}. */
     Xsd10Redef next;
     /** The redefining component. */

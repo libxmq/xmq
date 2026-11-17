@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** libxml2 xmlSchemaModelGroup. (C {@code XmlXsd10ModelGroup}). */
 public final class Xsd10ModelGroup extends Xsd10TreeItem
 {
+    /** Construct with default field values. */
+    public Xsd10ModelGroup()
+    {
+    }
+
     /** C {@code XMQNode * node}. */
     XmlNode node;
 }

@@ -57,6 +57,11 @@ import java.util.HashMap;
     are in Xsd10Schemas. */
 public final class Xsd10Dict
 {
+    /** Construct with default field values. */
+    public Xsd10Dict()
+    {
+    }
+
     /** int ref_counter */
     int ref_counter;
     /** The interned strings (C table/hashes/size/nb_elems; nb_elems is strings.size()). */

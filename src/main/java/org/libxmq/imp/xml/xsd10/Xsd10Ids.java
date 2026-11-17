@@ -59,6 +59,11 @@ import org.libxmq.imp.xml.XmlNode;
     doc->ids, doc->refs and attr->atype. The functions are idsNew, idsAddId ... in Xsd10Types. */
 public final class Xsd10Ids
 {
+    /** Construct with default field values. */
+    public Xsd10Ids()
+    {
+    }
+
     /** C XmlXsd10IdRef. */
     static final class IdRef
     {

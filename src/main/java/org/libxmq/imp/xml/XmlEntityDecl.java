@@ -51,8 +51,8 @@ public class XmlEntityDecl extends XmlNode
      * Create an entity declaration.
      * @param name The entity name.
      * @param etype The entity type, eg INTERNAL_GENERAL.
-     * @param externalId The public id or null.
-     * @param systemId The system id or null.
+     * @param external_id The public id or null.
+     * @param system_id The system id or null.
      * @param content The (expanded) content, or the notation name for unparsed entities.
      * @param orig The literal value as written, or null.
      */

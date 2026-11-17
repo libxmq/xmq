@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** The abstract base type for tree-like structured schema components (libxml2 xmlSchemaAttributeUse). (Extends XmlXsd10TreeItem) (C {@code XmlXsd10AttributeUse}). */
 public final class Xsd10AttributeUse extends Xsd10AnnotItem
 {
+    /** Construct with default field values. */
+    public Xsd10AttributeUse()
+    {
+    }
+
     /** The next attr. use. */
     Xsd10AttributeUse next;
     /** C {@code XmlXsd10Attribute * attr_decl}. */

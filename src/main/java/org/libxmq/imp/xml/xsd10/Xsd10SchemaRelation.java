@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** Used to create a graph of schema relationships (libxml2 xmlSchemaSchemaRelation). (C {@code XmlXsd10SchemaRelation}). */
 public final class Xsd10SchemaRelation
 {
+    /** Construct with default field values. */
+    public Xsd10SchemaRelation()
+    {
+    }
+
     /** C {@code XmlXsd10SchemaRelation * next}. */
     Xsd10SchemaRelation next;
     /** E.g. XML_XSD10_SCHEMA_SCHEMA_IMPORT */

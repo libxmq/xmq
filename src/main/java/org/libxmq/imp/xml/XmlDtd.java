@@ -46,8 +46,8 @@ public class XmlDtd extends XmlNode
     /**
      * Create a dtd.
      * @param name The doctype name, eg html.
-     * @param externalId The public id or null.
-     * @param systemId The system id or null.
+     * @param external_id The public id or null.
+     * @param system_id The system id or null.
      */
     public XmlDtd(String name, String external_id, String system_id)
     {

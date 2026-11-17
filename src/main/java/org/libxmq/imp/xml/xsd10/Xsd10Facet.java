@@ -54,6 +54,11 @@ import org.libxmq.imp.xml.XmlNode;
 /** A facet definition (libxml2 xmlSchemaFacet). (C {@code XmlXsd10Facet}). */
 public final class Xsd10Facet extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10Facet()
+    {
+    }
+
     /** the next type if in a sequence ... */
     Xsd10Facet next;
     /** The original value (owned by the creator of the facet) */

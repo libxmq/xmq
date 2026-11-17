@@ -52,6 +52,11 @@ package org.libxmq.imp.xml.xsd10;
 /** The abstract base type for annotated schema components (libxml2 xmlSchemaAnnotItem). (Extends XmlXsd10BasicItem) (C {@code XmlXsd10AnnotItem}). */
 public class Xsd10AnnotItem extends Xsd10BasicItem
 {
+    /** Construct with default field values. */
+    public Xsd10AnnotItem()
+    {
+    }
+
     /** C {@code XmlXsd10Annot * annot}. */
     Xsd10Annot annot;
 }

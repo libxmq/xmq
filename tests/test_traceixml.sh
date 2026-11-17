@@ -2,7 +2,7 @@
 # libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
 #
 # Test xmq --traceixml=file: the trace of an ixml parse, and the stylesheets
-# OpenMike/render-trace-to-html.xslq and OpenMike/render-trace-to-tex.xslq that render it.
+# library/xmq-utils/render-trace-to-html.xslq and library/xmq-utils/render-trace-to-tex.xslq that render it.
 # Usage: tests/test_traceixml.sh <xmq or xmqj binary> <output dir>
 
 PROG=$1
@@ -33,10 +33,10 @@ $PROG --traceixml="$OUTPUT/trace.xml" "$OUTPUT/formula.ixml" -i '1+2*3+4' > /dev
 head -c 5 "$OUTPUT/trace.xml" | grep -q '<?xml' || fail "trace.xml is not xml"
 
 # Every tree node marks an item as used in the web page.
-$PROG "$OUTPUT/trace.xmq" transform OpenMike/render-trace-to-html.xslq to-html > "$OUTPUT/trace.html" || fail "html render failed"
+$PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-html.xslq to-html > "$OUTPUT/trace.html" || fail "html render failed"
 [ "$(grep -o 'complete used' "$OUTPUT/trace.html" | wc -l)" = "$NODES" ] || fail "html does not mark the $NODES used items"
 
-$PROG "$OUTPUT/trace.xmq" transform OpenMike/render-trace-to-tex.xslq to-text > "$OUTPUT/trace.tex" || fail "tex render failed"
+$PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-tex.xslq to-text > "$OUTPUT/trace.tex" || fail "tex render failed"
 grep -q 'begin{longtable}' "$OUTPUT/trace.tex" || fail "tex has no table"
 [ "$(grep -o 'cellcolor{used}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not mark the $NODES used items"
 
