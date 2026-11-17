@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.libxmq.imp.XMQPrinter;
 import org.libxmq.imp.ixml.IXMLGrammar;
@@ -34,8 +35,10 @@ public final class Earley
      * @param position the input position (in code points) of a syntax error
      * @param grammar the grammar
      * @param chart the Earley sets
-     * @param tree the chosen tree, null if the input was rejected */
-    public record Result(XmlDocument doc, String error, int position, Grammar grammar, Chart chart, Tree tree) { }
+     * @param tree the chosen tree, null if the input was rejected
+     * @param steps the nodes in the order they were added to the tree, see TreeBuilder.steps */
+    public record Result(XmlDocument doc, String error, int position, Grammar grammar, Chart chart, Tree tree,
+                         List<TreeBuilder.Step> steps) { }
 
     private Earley() { }
 
@@ -53,19 +56,21 @@ public final class Earley
         Chart chart = parser.recognize(codepoints);
         if (!parser.accepted(chart))
         {
-            return new Result(null, "syntax error", parser.failurePosition(chart), grammar, chart, null);
+            return new Result(null, "syntax error", parser.failurePosition(chart), grammar, chart, null, List.of());
         }
         parser.removeForbiddenByNots(chart);
 
-        Tree tree = new TreeBuilder(chart, grammar).build();
-        if (tree == null) return new Result(null, "no tree could be built", codepoints.length, grammar, chart, null);
+        TreeBuilder builder = new TreeBuilder(chart, grammar);
+        Tree tree = builder.build();
+        List<TreeBuilder.Step> steps = builder.steps();
+        if (tree == null) return new Result(null, "no tree could be built", codepoints.length, grammar, chart, null, steps);
         try
         {
-            return new Result(XmlWriter.toXml(tree, grammar), null, codepoints.length, grammar, chart, tree);
+            return new Result(XmlWriter.toXml(tree, grammar), null, codepoints.length, grammar, chart, tree, steps);
         }
         catch (XmlWriter.DynamicError e)
         {
-            return new Result(null, e.getMessage(), codepoints.length, grammar, chart, tree);
+            return new Result(null, e.getMessage(), codepoints.length, grammar, chart, tree, steps);
         }
     }
 
@@ -97,7 +102,7 @@ public final class Earley
         if (trace)
         {
             PrintStream err = new PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.err), true, StandardCharsets.UTF_8);
-            EarleyTrace.write(err, r.grammar(), r.chart(), r.tree());
+            EarleyTrace.write(err, r.grammar(), r.chart(), r.tree(), r.steps());
         }
         if (r.error() != null)
         {

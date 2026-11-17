@@ -540,7 +540,7 @@ final class Cli
             throw new Exit(1);
         }
         Earley.Result r = result[0];
-        XmlDocument trace = EarleyTrace.toXml(r.grammar(), r.chart(), r.tree());
+        XmlDocument trace = EarleyTrace.toXml(r.grammar(), r.chart(), r.steps());
         String text = ixml_trace_file.endsWith(".xml") ? XmlSave.docDump(trace, "utf-8") : XMQPrinter.toXmq(trace) + "\n";
         try
         {

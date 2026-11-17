@@ -2,6 +2,9 @@
 //   xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
 // Every Earley item is a row: a cell spans the input it matched, below the tokens,
 // and the rule with the dot is to the right. The items used in the tree are marked.
+// Then the tree building: the tree is built top-down from the start rule, and every
+// row adds a node. A column shows the latest node added over it, so a new node
+// replaces its parent over the input it matched, and the last row is the whole tree.
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
@@ -45,6 +48,9 @@ span.matched { color: #2e7d32; }
 span.expected { color: #c66900; }
 span.id { font-size: 0.7em; color: #555; }
 pre.grammar { border: 1px solid #888; padding: 1em; display: inline-block; }
+td.node { background: #c8e6c8; }
+td.node.parent { background: orange; }
+td.node.new { background: #2e9e2e; color: white; font-weight: bold; }
 '
             }
             body {
@@ -82,6 +88,27 @@ pre.grammar { border: 1px solid #888; padding: 1em; display: inline-block; }
                         th = rule
                     }
                     xsl:apply-templates(select = /trace/steps/*)
+                }
+                h3 {
+                    'Tree building, '
+                    xsl:value-of(select = 'count(/trace/tree/node)')
+                    ' nodes added top-down, the new node is dark green and its parent orange'
+                }
+                table {
+                    tr {
+                        xsl:for-each(select = /trace/input/token)
+                        {
+                            th {
+                                xsl:if(test = 'position() = last()')
+                                {
+                                    xsl:attribute(name = class) = eof
+                                }
+                                xsl:value-of(select = .)
+                            }
+                        }
+                        th = node
+                    }
+                    xsl:apply-templates(select = /trace/tree/node)
                 }
             }
         }
@@ -181,6 +208,112 @@ pre.grammar { border: 1px solid #888; padding: 1em; display: inline-block; }
                     xsl:value-of(select = @to)
                     ')'
                 }
+            }
+        }
+    }
+
+    // A node added to the tree: the frontier after adding it, and the node.
+    xsl:template(match = node)
+    {
+        tr {
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = 'count(preceding-sibling::node) + 1')
+                xsl:with-param(name   = c
+                               select = 0)
+            }
+            td(class = rule)
+            {
+                xsl:value-of(select = @step)
+                '. '
+                xsl:value-of(select = @rule)
+                ' → '
+                span(class = matched)
+                {
+                    xsl:value-of(select = @rhs)
+                }
+                span(class = id)
+                {
+                    ' (d'
+                    xsl:value-of(select = @id)
+                    ','
+                    xsl:value-of(select = @from)
+                    '-'
+                    xsl:value-of(select = @to)
+                    ') in '
+                    xsl:value-of(select = @parent)
+                }
+            }
+        }
+    }
+
+    // The cells from column c after the first k nodes were added: a column shows the
+    // latest node over it, the columns with the same node are one cell.
+    xsl:template(name = frontier)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:if(test = '$c < $n')
+        {
+            xsl:variable(name   = x
+                         select = '/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]')
+            xsl:variable(name = end)
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = 'generate-id($x)')
+                }
+            }
+            td(colspan = '{$end - $c}')
+            {
+                xsl:if(test = $x)
+                {
+                    xsl:attribute(name = class)
+                    {
+                        'node'
+                        xsl:if(test = 'generate-id($x) = generate-id(current())') = ' new'
+                        xsl:if(test = '$x/@step = current()/@parent') = ' parent'
+                    }
+                    xsl:value-of(select = $x/@rule)
+                }
+            }
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = $k)
+                xsl:with-param(name   = c
+                               select = $end)
+            }
+        }
+    }
+
+    // The first column from c that does not show the node with the id.
+    xsl:template(name = run-end)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:param(name = id)
+        xsl:choose {
+            xsl:when(test = '$c < $n and generate-id(/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]) = $id')
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = $id)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $c)
             }
         }
     }

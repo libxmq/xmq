@@ -244,6 +244,8 @@ static void loop_stack(YaepTreeNode **result,
     root_anode.val.anode.children = result;
     // The root state pointsto the root abstract node.
     root_state.anode = &root_anode;
+    root_state.trace_step = 0;
+    ps->trace_tree_steps = 0;
 
     // Push a new state on the stack
     YaepParseTreeBuildState *state = parse_state_alloc(ps);
@@ -263,7 +265,7 @@ static void loop_stack(YaepTreeNode **result,
     state->parent_rhs_offset = 0;
     state->anode = NULL;
 
-    trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
+    trace_tree_step(ps, state);
     if (ps->run.debug)
     {
         // Log the starting node.
@@ -629,7 +631,11 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_anode_state = curr_state;
                             state->parent_rhs_offset = rhs_offset;
                         }
-                        trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
+                        trace_tree_step(ps, state);
+                        if (table_state != NULL)
+                        {
+                            table_state->trace_step = state->trace_step;
+                        }
                         if (ps->run.debug)
                         {
                             MemBuffer *mb = new_membuffer();

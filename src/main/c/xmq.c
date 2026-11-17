@@ -6021,6 +6021,8 @@ static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
         break;
     case YAEP_TRACE_TREE:
         e = trace_add(r, r->tree, "node");
+        trace_set_int(e, "step", ev->step);
+        trace_set_int(e, "parent", ev->parent);
         trace_set_int(e, "id", ev->id);
         trace_set_int(e, "from", ev->from);
         trace_set_int(e, "to", ev->to);

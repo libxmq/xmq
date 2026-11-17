@@ -123,7 +123,7 @@ Do not warn if an ixml parse fails.
 .TP
 .BR \-\-traceixml=FILE
 Write a trace of the ixml parse to FILE: the grammar rules, the input tokens,
-every Earley item and the rules used in the tree. The trace is xmq, or xml if
+every Earley item and the nodes added to the tree, in the order the tree is built. The trace is xmq, or xml if
 FILE ends with .xml. xmqj parses with its Earley parser when tracing.
 Render the trace as a web page or as LaTeX:
 .br

@@ -4,7 +4,9 @@
 // (longtable needs two runs to line up the columns)
 // Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
 // matched below the tokens, and the rule with the dot is in the last column. The items
-// used in the tree are dark green.
+// used in the tree are dark green. Then the tree building: every row adds a node, top-down,
+// and a column shows the latest node added over it. The new node is dark green and its
+// parent orange.
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {
@@ -33,6 +35,9 @@ xsl:stylesheet(version   = 1.0
 \definecolor{used}{RGB}{46,158,46}
 \definecolor{blocked}{RGB}{255,0,0}
 \definecolor{token}{RGB}{0,255,255}
+\definecolor{treenode}{RGB}{200,230,200}
+\definecolor{treenew}{RGB}{46,158,46}
+\definecolor{treeparent}{RGB}{255,165,0}
 \begin{document}
 \ttfamily\small
 \section*{ixml trace, '
@@ -83,6 +88,33 @@ xsl:for-each(select = /trace/input/token)
 \endhead'
         xsl:text { &#10; }
 xsl:apply-templates(select = /trace/steps/*)
+        '\end{longtable}
+\subsection*{Tree building}
+\begin{longtable}{|'
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "'c|'")
+            xsl:with-param(name   = count
+                           select = $n)
+        }
+        'l|}
+\hline'
+        xsl:text { &#10; }
+xsl:for-each(select = /trace/input/token)
+        {
+            '\cellcolor{token}'
+            xsl:call-template(name = tex)
+            {
+                xsl:with-param(name   = text
+                               select = .)
+            }
+            ' & '
+        }
+        'node \\ \hline
+\endhead'
+        xsl:text { &#10; }
+xsl:apply-templates(select = /trace/tree/node)
         '\end{longtable}
 \end{document}'
     xsl:text { &#10; }
@@ -206,6 +238,120 @@ xsl:apply-templates(select = /trace/steps/*)
         ')} \\ \hline'
     xsl:text { &#10; }
 }
+
+    // A node added to the tree: the frontier after adding it, and the node.
+    xsl:template(match = node)
+    {
+        xsl:call-template(name = frontier)
+        {
+            xsl:with-param(name   = k
+                           select = 'count(preceding-sibling::node) + 1')
+            xsl:with-param(name   = c
+                           select = 0)
+        }
+        xsl:value-of(select = @step)
+        '. '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rule)
+        }
+        ' $\rightarrow$ '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rhs)
+        }
+        ' {\tiny (d'
+        xsl:value-of(select = @id)
+        ','
+        xsl:value-of(select = @from)
+        '-'
+        xsl:value-of(select = @to)
+        ') in '
+        xsl:value-of(select = @parent)
+        '} \\ \hline'
+    xsl:text { &#10; }
+}
+
+    // The cells from column c after the first k nodes were added, each followed by &:
+    // a column shows the latest node over it, the columns with the same node are one cell.
+    xsl:template(name = frontier)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:if(test = '$c < $n')
+        {
+            xsl:variable(name   = x
+                         select = '/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]')
+            xsl:variable(name = end)
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = 'generate-id($x)')
+                }
+            }
+            '\multicolumn{'
+            xsl:value-of(select = '$end - $c')
+            xsl:choose {
+                xsl:when(test = '$c = 0') = '}{|c|}{'
+                xsl:otherwise = '}{c|}{'
+            }
+            xsl:if(test = $x)
+            {
+                '\cellcolor{'
+                xsl:choose {
+                    xsl:when(test = 'generate-id($x) = generate-id(current())') = treenew
+                    xsl:when(test = '$x/@step = current()/@parent') = treeparent
+                    xsl:otherwise = treenode
+                }
+                '}'
+                xsl:call-template(name = tex)
+                {
+                    xsl:with-param(name   = text
+                                   select = $x/@rule)
+                }
+            }
+            '} & '
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = $k)
+                xsl:with-param(name   = c
+                               select = $end)
+            }
+        }
+    }
+
+    // The first column from c that does not show the node with the id.
+    xsl:template(name = run-end)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:param(name = id)
+        xsl:choose {
+            xsl:when(test = '$c < $n and generate-id(/trace/tree/node[position() <= $k][@from <= $c and @to > $c][last()]) = $id')
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = $id)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $c)
+            }
+        }
+    }
 
     // A grammar rule: name → rhs.
     xsl:template(name = rule-text)

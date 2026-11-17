@@ -1,7 +1,10 @@
 /* libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT) */
 package org.libxmq.imp.ixml.earley;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +41,9 @@ import org.libxmq.imp.ixml.earley.Grammar.Symbol;
  * without the cycle remain.
  *
  * The results are remembered, each rule over each span is composed once.
+ *
+ * The steps record the order in which the nodes are added: top-down, from the
+ * start rule, and the last symbol of a production first. See steps().
  */
 public final class TreeBuilder
 {
@@ -55,6 +61,25 @@ public final class TreeBuilder
     private final Map<PrefixSpan, Children> best_prefix = new HashMap<>();
     /** The rules being composed right now, to break cycles. */
     private final Set<RuleSpan> in_progress = new HashSet<>();
+
+    /**
+     * A node added to the tree: a production over a span of the input.
+     *
+     * @param step the nodes are numbered 1, 2, ... in the order they are added
+     * @param parent the step of the parent node, 0 for the root
+     * @param production the production
+     * @param from the input position where the node starts
+     * @param to the input position after the node
+     */
+    public record Step(int step, int parent, Production production, int from, int to) { }
+
+    /** The productions that composed a tree, numbered when they were started. */
+    private final List<Step> composed = new ArrayList<>();
+    /** The parent of every started production, also of those that composed nothing. */
+    private final Map<Integer, Integer> parent_of = new HashMap<>();
+    /** The productions being composed right now, the innermost first. */
+    private final Deque<Integer> composing = new ArrayDeque<>();
+    private int num_started;
 
     /** The children found for a prefix of a production: the trees, their total cost,
      * and whether a tie was found. */
@@ -86,6 +111,32 @@ public final class TreeBuilder
         return best(grammar.start, 0, chart.length());
     }
 
+    /**
+     * The nodes in the order they were added, numbered 1, 2, ... Every production
+     * that was tried and composed a tree is a node, also one that lost on cost,
+     * like the alternatives that yaep composes. A rule over a span is only composed
+     * once, so a node that is used again is not added again.
+     *
+     * @return the steps, call build() first
+     */
+    public List<Step> steps()
+    {
+        // Number them 1, 2, ... without the productions that composed nothing.
+        List<Step> sorted = new ArrayList<>(composed);
+        sorted.sort(Comparator.comparingInt(Step::step));
+        Map<Integer, Integer> renumbered = new HashMap<>();
+        renumbered.put(0, 0);
+        for (Step s : sorted) renumbered.put(s.step(), renumbered.size());
+        List<Step> result = new ArrayList<>();
+        for (Step s : sorted)
+        {
+            int parent = s.parent();
+            while (!renumbered.containsKey(parent)) parent = parent_of.get(parent);
+            result.add(new Step(renumbered.get(s.step()), renumbered.get(parent), s.production(), s.from(), s.to()));
+        }
+        return result;
+    }
+
     /** The best tree for the rule matching from..to, or null. */
     private Tree best(Rule rule, int from, int to)
     {
@@ -99,8 +150,14 @@ public final class TreeBuilder
         {
             int n = p.symbols.size();
             if (!chart.set(to).contains(new Item(p, n, from))) continue;
+            int step = ++num_started;
+            int parent = composing.isEmpty() ? 0 : composing.peek();
+            parent_of.put(step, parent);
+            composing.push(step);
             Children c = prefix(p, n, from, to);
+            composing.pop();
             if (c == null) continue;
+            composed.add(new Step(step, parent, p, from, to));
             Tree candidate = Tree.rule(p, c.trees(), from, to, rule.cost + c.cost(), c.ambiguous());
             if (best == null || candidate.cost() < best.cost())
             {

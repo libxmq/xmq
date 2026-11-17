@@ -6184,7 +6184,8 @@ typedef enum
     YAEP_TRACE_RULE,  // A rule of the grammar: lhs → rhs.
     YAEP_TRACE_TOKEN, // The parser reads the token at pos.
     YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
-    YAEP_TRACE_TREE,  // A rule used in the parse tree: the dotted rule id over from-to, lhs → rhs.
+    YAEP_TRACE_TREE,  // A node added to the parse tree: the dotted rule id over from-to, lhs → rhs,
+                      // the build step that added it and the step that added its parent.
 } YaepTraceKind;
 
 typedef struct
@@ -6198,6 +6199,8 @@ typedef struct
     const char *matched;  // RULE, TREE: the rhs. ITEM: the symbols before the dot.
     const char *expected; // ITEM: the symbols after the dot.
     const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
+    int step;             // TREE: the nodes are numbered 1, 2, ... in the order they are added.
+    int parent;           // TREE: the step of the parent node, 0 for the root.
 } YaepTraceEvent;
 
 struct YaepParseRun
@@ -7064,6 +7067,9 @@ struct YaepParseTreeBuildState
 
     /* The following is used only for states in the table. */
     YaepTreeNode *anode;
+
+    /* The build step that added the abstract node of this state, 0 for the root (YAEP_TRACE_TREE). */
+    int trace_step;
 };
 
 /* To make better traversing and don't waist tree parse memory,
@@ -7255,6 +7261,9 @@ struct YaepParseState
     /* The following is number of created terminal, abstract, and
        alternative nodes. */
     int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
+
+    /* The number of abstract nodes added to the parse tree so far (YAEP_TRACE_TREE). */
+    int trace_tree_steps;
 
     /* All tail sets of error recovery are saved in the following os. */
     os_t recovery_state_tail_sets;
@@ -7549,7 +7558,7 @@ void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 // Report an Earley item, a rule of the grammar or a tree step to ps->run.trace_event (if set).
 void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked);
 void trace_rule(YaepParseState *ps, YaepRule *rule);
-void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i);
+void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #ifndef XMQ_NO_IXML
@@ -14159,6 +14168,8 @@ static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
         break;
     case YAEP_TRACE_TREE:
         e = trace_add(r, r->tree, "node");
+        trace_set_int(e, "step", ev->step);
+        trace_set_int(e, "parent", ev->parent);
         trace_set_int(e, "id", ev->id);
         trace_set_int(e, "from", ev->from);
         trace_set_int(e, "to", ev->to);
@@ -103267,6 +103278,8 @@ static void loop_stack(YaepTreeNode **result,
     root_anode.val.anode.children = result;
     // The root state pointsto the root abstract node.
     root_state.anode = &root_anode;
+    root_state.trace_step = 0;
+    ps->trace_tree_steps = 0;
 
     // Push a new state on the stack
     YaepParseTreeBuildState *state = parse_state_alloc(ps);
@@ -103286,7 +103299,7 @@ static void loop_stack(YaepTreeNode **result,
     state->parent_rhs_offset = 0;
     state->anode = NULL;
 
-    trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
+    trace_tree_step(ps, state);
     if (ps->run.debug)
     {
         // Log the starting node.
@@ -103652,7 +103665,11 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_anode_state = curr_state;
                             state->parent_rhs_offset = rhs_offset;
                         }
-                        trace_tree_step(ps, state->dotted_rule, state->from_i, state->state_set_k);
+                        trace_tree_step(ps, state);
+                        if (table_state != NULL)
+                        {
+                            table_state->trace_step = state->trace_step;
+                        }
                         if (ps->run.debug)
                         {
                             MemBuffer *mb = new_membuffer();
@@ -104593,17 +104610,21 @@ void trace_rule(YaepParseState *ps, YaepRule *rule)
     free(rhs);
 }
 
-void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i)
+/* The abstract node of state is added to the tree, number it with the next build step. */
+void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state)
 {
+    state->trace_step = ++ps->trace_tree_steps;
     if (!ps->run.trace_event) return;
 
-    YaepRule *rule = dotted_rule->rule;
+    YaepRule *rule = state->dotted_rule->rule;
     YaepTraceEvent e;
     memset(&e, 0, sizeof(e));
     e.kind = YAEP_TRACE_TREE;
-    e.id = dotted_rule->id;
-    e.from = from_i;
-    e.to = to_i;
+    e.id = state->dotted_rule->id;
+    e.from = state->from_i;
+    e.to = state->state_set_k;
+    e.step = state->trace_step;
+    e.parent = state->parent_anode_state ? state->parent_anode_state->trace_step : 0;
     e.lhs = rule->lhs->repr;
     char *rhs = symbols_text(rule, 0, rule->rhs_len);
     e.matched = rhs;

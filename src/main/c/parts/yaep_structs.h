@@ -585,6 +585,9 @@ struct YaepParseTreeBuildState
 
     /* The following is used only for states in the table. */
     YaepTreeNode *anode;
+
+    /* The build step that added the abstract node of this state, 0 for the root (YAEP_TRACE_TREE). */
+    int trace_step;
 };
 
 /* To make better traversing and don't waist tree parse memory,
@@ -776,6 +779,9 @@ struct YaepParseState
     /* The following is number of created terminal, abstract, and
        alternative nodes. */
     int n_parse_term_nodes, n_parse_abstract_nodes, n_parse_alt_nodes;
+
+    /* The number of abstract nodes added to the parse tree so far (YAEP_TRACE_TREE). */
+    int trace_tree_steps;
 
     /* All tail sets of error recovery are saved in the following os. */
     os_t recovery_state_tail_sets;

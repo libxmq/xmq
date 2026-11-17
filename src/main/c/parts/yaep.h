@@ -96,7 +96,8 @@ typedef enum
     YAEP_TRACE_RULE,  // A rule of the grammar: lhs → rhs.
     YAEP_TRACE_TOKEN, // The parser reads the token at pos.
     YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
-    YAEP_TRACE_TREE,  // A rule used in the parse tree: the dotted rule id over from-to, lhs → rhs.
+    YAEP_TRACE_TREE,  // A node added to the parse tree: the dotted rule id over from-to, lhs → rhs,
+                      // the build step that added it and the step that added its parent.
 } YaepTraceKind;
 
 typedef struct
@@ -110,6 +111,8 @@ typedef struct
     const char *matched;  // RULE, TREE: the rhs. ITEM: the symbols before the dot.
     const char *expected; // ITEM: the symbols after the dot.
     const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
+    int step;             // TREE: the nodes are numbered 1, 2, ... in the order they are added.
+    int parent;           // TREE: the step of the parent node, 0 for the root.
 } YaepTraceEvent;
 
 struct YaepParseRun

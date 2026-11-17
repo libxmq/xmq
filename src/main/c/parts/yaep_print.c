@@ -531,17 +531,21 @@ void trace_rule(YaepParseState *ps, YaepRule *rule)
     free(rhs);
 }
 
-void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i)
+/* The abstract node of state is added to the tree, number it with the next build step. */
+void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state)
 {
+    state->trace_step = ++ps->trace_tree_steps;
     if (!ps->run.trace_event) return;
 
-    YaepRule *rule = dotted_rule->rule;
+    YaepRule *rule = state->dotted_rule->rule;
     YaepTraceEvent e;
     memset(&e, 0, sizeof(e));
     e.kind = YAEP_TRACE_TREE;
-    e.id = dotted_rule->id;
-    e.from = from_i;
-    e.to = to_i;
+    e.id = state->dotted_rule->id;
+    e.from = state->from_i;
+    e.to = state->state_set_k;
+    e.step = state->trace_step;
+    e.parent = state->parent_anode_state ? state->parent_anode_state->trace_step : 0;
     e.lhs = rule->lhs->repr;
     char *rhs = symbols_text(rule, 0, rule->rhs_len);
     e.matched = rhs;

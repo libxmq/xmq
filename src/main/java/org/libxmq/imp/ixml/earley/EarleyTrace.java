@@ -26,7 +26,7 @@ import org.libxmq.imp.xml.XmlText;
  *   (ixml.pa.step) @2 (d5,2-2) none/8 M →  · T   an item in set 2
  *   (ixml.pa.token) @2 '2'                 the code point at position 2
  *   (ixml.pa.view) @2 READ '2'             the parser reads it
- *   (ixml.bt.step) adding (d12,2-3) M →  T  a rule used in the tree
+ *   (ixml.bt.step) adding (d12,2-3) M →  T  a node added to the tree
  *
  * An item is written as (dN,from-to) where dN numbers the dotted rule, the
  * production with the dot, in the order they first appear. Then the kind:
@@ -52,8 +52,9 @@ public final class EarleyTrace
      * @param grammar the grammar
      * @param chart the chart from EarleyParser.recognize
      * @param tree the chosen tree, or null if the input was rejected
+     * @param steps the nodes in the order they were added to the tree
      */
-    public static void write(PrintStream out, Grammar grammar, Chart chart, Tree tree)
+    public static void write(PrintStream out, Grammar grammar, Chart chart, Tree tree, List<TreeBuilder.Step> steps)
     {
         EarleyTrace t = new EarleyTrace(out);
         t.num_tokens = chart.length() + 1;
@@ -73,7 +74,12 @@ public final class EarleyTrace
 
         if (tree == null) return;
         out.println("(ixml.pa.debug) @" + chart.length() + " build_tree()");
-        t.writeTree(tree);
+        for (TreeBuilder.Step s : steps)
+        {
+            Production p = s.production();
+            Item complete = new Item(p, p.symbols.size(), s.from());
+            out.println("(ixml.bt.step) adding " + t.itemId(complete, s.from(), s.to()) + " " + t.ruleText(p, -1));
+        }
     }
 
     /** The trace as a document, the same as the C version records (xmq --traceixml=file):
@@ -82,15 +88,17 @@ public final class EarleyTrace
      *     grammar { rule(name=S rhs="S '+' M") ... }
      *     input { token(pos=0) = 1 ... token(pos=7) = ω }
      *     steps { item(id from to state rule matched expected) ... read(pos=0) ... }
-     *     tree { node(id from to rule rhs) ... } }
+     *     tree { node(step parent id from to rule rhs) ... } }
      * </pre>
      * where state is predicted, partial or complete. The items of set k+1 follow read(pos=k).
+     * The tree nodes are in the order they were added, step 1, 2, ..., and parent is
+     * the step of the parent node, 0 for the root.
      * @param grammar the grammar
      * @param chart the chart from EarleyParser.recognize
-     * @param tree the chosen tree, or null if the input was rejected
+     * @param tree_steps the nodes in the order they were added to the tree, empty if the input was rejected
      * @return the trace document
      */
-    public static XmlDocument toXml(Grammar grammar, Chart chart, Tree tree)
+    public static XmlDocument toXml(Grammar grammar, Chart chart, List<TreeBuilder.Step> tree_steps)
     {
         EarleyTrace t = new EarleyTrace(null);
         XmlElement root = new XmlElement("trace");
@@ -119,7 +127,7 @@ public final class EarleyTrace
             child(steps, "read").setAttribute("pos", Integer.toString(k));
             if (k < chart.length()) t.addItems(steps, chart, k + 1);
         }
-        if (tree != null) t.addTree(nodes, tree);
+        for (TreeBuilder.Step s : tree_steps) t.addNode(nodes, s);
 
         XmlDocument d = new XmlDocument();
         d.appendRaw(root);
@@ -142,19 +150,19 @@ public final class EarleyTrace
         }
     }
 
-    /** The rules of the tree, parent before children. */
-    private void addTree(XmlElement nodes, Tree node)
+    /** A node added to the tree. */
+    private void addNode(XmlElement nodes, TreeBuilder.Step s)
     {
-        if (!node.isRule()) return;
-        Production p = node.production();
-        String id = itemId(new Item(p, p.symbols.size(), node.from()), node.from(), node.to());
+        Production p = s.production();
+        String id = itemId(new Item(p, p.symbols.size(), s.from()), s.from(), s.to());
         XmlElement e = child(nodes, "node");
+        e.setAttribute("step", Integer.toString(s.step()));
+        e.setAttribute("parent", Integer.toString(s.parent()));
         e.setAttribute("id", id.substring(2, id.indexOf(',')));
-        e.setAttribute("from", Integer.toString(node.from()));
-        e.setAttribute("to", Integer.toString(node.to()));
+        e.setAttribute("from", Integer.toString(s.from()));
+        e.setAttribute("to", Integer.toString(s.to()));
         e.setAttribute("rule", traceName(p.rule.name));
         e.setAttribute("rhs", symbolsText(p, 0, p.symbols.size()));
-        for (Tree child : node.children()) addTree(nodes, child);
     }
 
     private static XmlElement child(XmlElement parent, String name)
@@ -192,16 +200,6 @@ public final class EarleyTrace
             out.println("(ixml.pa.step) @" + k + " " + itemId(item, item.origin(), k) + " " + kind + "/" + num_tokens + " "
                         + ruleText(item.production(), item.isComplete() ? -1 : item.dot()));
         }
-    }
-
-    /** Write the rules of the tree, parent before children. */
-    private void writeTree(Tree node)
-    {
-        if (!node.isRule()) return;
-        Production p = node.production();
-        Item complete = new Item(p, p.symbols.size(), node.from());
-        out.println("(ixml.bt.step) adding " + itemId(complete, node.from(), node.to()) + " " + ruleText(p, -1));
-        for (Tree child : node.children()) writeTree(child);
     }
 
     /** (dN,from-to) where N numbers the dotted rule (production and dot). */

@@ -49,7 +49,7 @@ void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 // Report an Earley item, a rule of the grammar or a tree step to ps->run.trace_event (if set).
 void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked);
 void trace_rule(YaepParseState *ps, YaepRule *rule);
-void trace_tree_step(YaepParseState *ps, YaepDottedRule *dotted_rule, int from_i, int to_i);
+void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #ifndef XMQ_NO_IXML
