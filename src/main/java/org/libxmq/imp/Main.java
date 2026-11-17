@@ -305,7 +305,20 @@ public class Main
             if (is_html(content))
             {
                 // Like C, HTML_PARSE_NOBLANKS is only used with an explicit --trim=heuristic.
-                doc = HtmlParser.parse(content, false);
+                // The parser works on the bytes, like C, invalid UTF-8 becomes U+FFFD there.
+                byte[] bytes = raw;
+                // Like C skip_any_potential_bom: a UTF-8 bom is skipped if the input has at least four bytes.
+                if (bytes != null && bytes.length > 3 && (bytes[0] & 0xff) == 0xEF && (bytes[1] & 0xff) == 0xBB && (bytes[2] & 0xff) == 0xBF)
+                {
+                    bytes = java.util.Arrays.copyOfRange(bytes, 3, bytes.length);
+                }
+                doc = bytes != null ? HtmlParser.parse(bytes, false) : HtmlParser.parse(content, false);
+                if (doc.rootElement() == null)
+                {
+                    // Like C xmq_parse_buffer_html.
+                    System.err.print("empty document\n");
+                    return null;
+                }
             }
             else
             {

@@ -139,14 +139,14 @@ public final class HtmlSave
             case ELEMENT ->
             {
                 XmlElement e = (XmlElement)cur;
-                Element info = info(cur);
+                XmlHtml.Element info = info(cur);
                 out.append('<');
                 appendQName(out, e.ns(), cur.name());
                 for (XmlNs ns : e.nsDefs()) nsDumpOutput(out, ns);
                 for (XmlAttr a : e.attributes()) attrDumpOutput(out, a);
 
                 XmlNode first = cur.children_;
-                if (info != null && info.empty)
+                if (info != null && info.empty())
                 {
                     out.append('>');
                 }
@@ -159,21 +159,21 @@ public final class HtmlSave
                 else
                 {
                     out.append('>');
-                    if (format && info != null && !info.isinline &&
+                    if (format && info != null && !info.isinline() &&
                         !isTextOrRef(first) &&
                         first != cur.last_ &&
                         !nameStartsWithP(cur)) // p, pre, param
                     {
                         out.append('\n');
                     }
-                    if (info != null && info.data_mode >= DATA_RAWTEXT) is_raw = true;
+                    if (info != null && info.data_mode() >= XmlHtml.DATA_RAWTEXT) is_raw = true;
                     cur = first;
                     continue;
                 }
 
                 XmlNode next = cur.next_;
                 XmlNode parent = cur.parent_;
-                if (format && next != null && info != null && !info.isinline)
+                if (format && next != null && info != null && !info.isinline())
                 {
                     if (!isTextOrRef(next) && parent != null && parent.type() == XmlNodeType.ELEMENT &&
                         !nameStartsWithP(parent))
@@ -233,9 +233,9 @@ public final class HtmlSave
                 }
                 else
                 {
-                    Element info = format ? info(cur) : null;
+                    XmlHtml.Element info = format ? info(cur) : null;
                     XmlNode last = cur.last_;
-                    if (format && info != null && !info.isinline &&
+                    if (format && info != null && !info.isinline() &&
                         !isTextOrRef(last) &&
                         cur.children_ != last &&
                         !nameStartsWithP(cur))
@@ -248,7 +248,7 @@ public final class HtmlSave
 
                     XmlNode cn = cur.next_;
                     XmlNode parent = cur.parent_;
-                    if (format && info != null && !info.isinline && cn != null)
+                    if (format && info != null && !info.isinline() && cn != null)
                     {
                         if (!isTextOrRef(cn) && parent != null && parent.type() == XmlNodeType.ELEMENT &&
                             !nameStartsWithP(parent))
@@ -460,7 +460,7 @@ public final class HtmlSave
         out.append(' ');
         appendQName(out, a.ns(), a.name());
         XmlNode first = a.children_;
-        if (first == null || HtmlParser.isBooleanAttr(a.name())) return;
+        if (first == null || XmlHtml.isBooleanAttr(a.name())) return;
 
         out.append("=\"");
         XmlNode owner = a.parent_;
@@ -577,128 +577,10 @@ public final class HtmlSave
         }
     }
 
-    // The html elements of libxml2 2.16 HTMLparser.c (html40ElementTable), the same as
-    // xml_html_elements in src/main/c/parts/xml_html.c: name, end tag, empty, inline, data mode.
-
-    private static final int DATA_RAWTEXT = 2;
-
-    private record Element(String name, int end_tag, boolean empty, boolean isinline, int data_mode) { }
-
-    private static final java.util.Map<String, Element> ELEMENTS = new java.util.HashMap<>();
-
-    private static void element(String name, int end_tag, int empty, int isinline, int data_mode)
-    {
-        ELEMENTS.put(name, new Element(name, end_tag, empty != 0, isinline != 0, data_mode));
-    }
-
-    static
-    {
-        element("a", 0, 0, 1, 0);
-        element("abbr", 0, 0, 1, 0);
-        element("acronym", 0, 0, 1, 0);
-        element("address", 0, 0, 0, 0);
-        element("applet", 0, 0, 2, 0);
-        element("area", 2, 1, 0, 0);
-        element("b", 3, 0, 1, 0);
-        element("base", 2, 1, 0, 0);
-        element("basefont", 2, 1, 1, 0);
-        element("bdo", 0, 0, 1, 0);
-        element("bgsound", 0, 1, 0, 0);
-        element("big", 3, 0, 1, 0);
-        element("blockquote", 0, 0, 0, 0);
-        element("body", 1, 0, 0, 0);
-        element("br", 2, 1, 1, 0);
-        element("button", 0, 0, 2, 0);
-        element("caption", 0, 0, 0, 0);
-        element("center", 3, 0, 0, 0);
-        element("cite", 0, 0, 1, 0);
-        element("code", 0, 0, 1, 0);
-        element("col", 2, 1, 0, 0);
-        element("colgroup", 1, 0, 0, 0);
-        element("dd", 1, 0, 0, 0);
-        element("del", 0, 0, 2, 0);
-        element("dfn", 0, 0, 1, 0);
-        element("dir", 0, 0, 0, 0);
-        element("div", 0, 0, 0, 0);
-        element("dl", 0, 0, 0, 0);
-        element("dt", 1, 0, 0, 0);
-        element("em", 3, 0, 1, 0);
-        element("embed", 1, 1, 1, 0);
-        element("fieldset", 0, 0, 0, 0);
-        element("font", 3, 0, 1, 0);
-        element("form", 0, 0, 0, 0);
-        element("frame", 2, 1, 0, 0);
-        element("frameset", 0, 0, 0, 0);
-        element("h1", 0, 0, 0, 0);
-        element("h2", 0, 0, 0, 0);
-        element("h3", 0, 0, 0, 0);
-        element("h4", 0, 0, 0, 0);
-        element("h5", 0, 0, 0, 0);
-        element("h6", 0, 0, 0, 0);
-        element("head", 1, 0, 0, 0);
-        element("hr", 2, 1, 0, 0);
-        element("html", 1, 0, 0, 0);
-        element("i", 3, 0, 1, 0);
-        element("iframe", 0, 0, 2, 2);
-        element("img", 2, 1, 1, 0);
-        element("input", 2, 1, 1, 0);
-        element("ins", 0, 0, 2, 0);
-        element("isindex", 2, 1, 0, 0);
-        element("kbd", 0, 0, 1, 0);
-        element("keygen", 0, 1, 0, 0);
-        element("label", 0, 0, 1, 0);
-        element("legend", 0, 0, 0, 0);
-        element("li", 1, 0, 0, 0);
-        element("link", 2, 1, 0, 0);
-        element("map", 0, 0, 2, 0);
-        element("menu", 0, 0, 0, 0);
-        element("meta", 2, 1, 0, 0);
-        element("noembed", 0, 0, 0, 2);
-        element("noframes", 0, 0, 0, 2);
-        element("noscript", 0, 0, 0, 0);
-        element("object", 0, 0, 2, 0);
-        element("ol", 0, 0, 0, 0);
-        element("optgroup", 0, 0, 0, 0);
-        element("option", 1, 0, 0, 0);
-        element("p", 1, 0, 0, 0);
-        element("param", 2, 1, 0, 0);
-        element("plaintext", 0, 0, 0, 3);
-        element("pre", 0, 0, 0, 0);
-        element("q", 0, 0, 1, 0);
-        element("s", 3, 0, 1, 0);
-        element("samp", 0, 0, 1, 0);
-        element("script", 0, 0, 2, 4);
-        element("select", 0, 0, 1, 0);
-        element("small", 3, 0, 1, 0);
-        element("source", 0, 1, 0, 0);
-        element("span", 0, 0, 1, 0);
-        element("strike", 3, 0, 1, 0);
-        element("strong", 3, 0, 1, 0);
-        element("style", 0, 0, 0, 2);
-        element("sub", 3, 0, 1, 0);
-        element("sup", 3, 0, 1, 0);
-        element("table", 0, 0, 0, 0);
-        element("tbody", 0, 0, 0, 0);
-        element("td", 0, 0, 0, 0);
-        element("textarea", 0, 0, 1, 1);
-        element("tfoot", 1, 0, 0, 0);
-        element("th", 1, 0, 0, 0);
-        element("thead", 1, 0, 0, 0);
-        element("title", 0, 0, 0, 1);
-        element("tr", 0, 0, 0, 0);
-        element("track", 0, 1, 0, 0);
-        element("tt", 3, 0, 1, 0);
-        element("u", 3, 0, 1, 0);
-        element("ul", 0, 0, 0, 0);
-        element("var", 0, 0, 1, 0);
-        element("wbr", 0, 1, 0, 0);
-        element("xmp", 0, 0, 1, 2);
-    }
-
     /** The element description of an html element without a namespace, else null (xml_html_info). */
-    private static Element info(XmlNode n)
+    private static XmlHtml.Element info(XmlNode n)
     {
-        if (n.type() != XmlNodeType.ELEMENT || ((XmlElement)n).ns() != null || n.name() == null) return null;
-        return ELEMENTS.get(n.name().toLowerCase(java.util.Locale.ROOT));
+        if (n.type() != XmlNodeType.ELEMENT || ((XmlElement)n).ns() != null) return null;
+        return XmlHtml.element(n.name());
     }
 }

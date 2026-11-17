@@ -848,7 +848,8 @@ public final class XmlSave
     }
 
     /**
-     * Port of xmlEscapeContent, used for text when the output encoding is utf-8.
+     * Port of xmlEscapeContent, used for text when the output encoding is utf-8,
+     * with the control characters of libxml2 2.16 xmlSerializeText.
      * @param buf The output.
      * @param s The text to escape.
      */
@@ -863,7 +864,13 @@ public final class XmlSave
             case '>' -> buf.append("&gt;");
             case '&' -> buf.append("&amp;");
             case '\r' -> buf.append("&#13;");
-            default -> buf.append(c);
+            default ->
+            {
+                // Like the C version (libxml2 2.16 xmlSerializeText): other control characters
+                // are not allowed in xml and become U+FFFD.
+                if (c < 0x20 && c != '\t' && c != '\n') buf.append("&#xFFFD;");
+                else buf.append(c);
+            }
             }
         }
     }
@@ -888,7 +895,12 @@ public final class XmlSave
             case '<' -> buf.append("&lt;");
             case '>' -> buf.append("&gt;");
             case '&' -> buf.append("&amp;");
-            default -> buf.append(c);
+            default ->
+            {
+                // Like the C version: other control characters become U+FFFD.
+                if (c < 0x20) buf.append("&#xFFFD;");
+                else buf.append(c);
+            }
             }
         }
     }

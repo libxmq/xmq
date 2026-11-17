@@ -4,7 +4,7 @@
 # Compare the C command line (xmq) with the Java command line (xmqj) byte for byte,
 # output, errors and exit code of "to-xml", on every xml file in the repository and in
 # the libxml2 test suite (tests/libxml2), plain and after expand-entities, of "to-html"
-# on every html file, of "transform" (to-xml and to-html) on the libxslt test suite
+# and "to-xml" on every html file, of "transform" (to-xml and to-html) on the libxslt test suite
 # (tests/libxslt) and of "validate" on the libxml2 schema test suite
 # (tests/libxml2/test/schemas) and the tests/xsd_*.test cases.
 #
@@ -35,21 +35,6 @@ find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdpar
 # The libxml2 test suite is in tests/libxml2, found by the find above.
 HTML_FILES="$OUT/html_files.txt"
 find "$ROOT" \( -path "$ROOT/build" -o -path "$ROOT/.git" -o -path "$ROOT/3rdparty" -o -path "$ROOT/fuzz_testcases" -o -path "$ROOT/fuzz_findings_clang" \) -prune -o \( -name "*.html" -o -name "*.htm" \) -print > "$HTML_FILES"
-# Html files that the parsers read differently: the C html parser is a port of libxml2 2.16
-# (html5 tokenizer: raw text in iframe/noembed/noframes/xmp, entities without ;, comments,
-# names with colons, processing instructions), the Java HtmlParser of libxml2 2.9.14.
-HTML_PARSER_DIFFERS="ixml/gg.html ixml/gs.html
-tests/libxml2/result/HTML/758518-tag.html tests/libxml2/result/HTML/758606_2.html tests/libxml2/result/HTML/758606.html
-tests/libxml2/result/HTML/chardata.html tests/libxml2/result/HTML/doc2.htm tests/libxml2/result/HTML/doc3.htm
-tests/libxml2/result/HTML/names.html tests/libxml2/test/HTML/attr-ents.html tests/libxml2/test/HTML/chardata.html
-tests/libxml2/test/HTML/comments3.html tests/libxml2/test/HTML/doc2.htm tests/libxml2/test/HTML/doc3.htm
-tests/libxml2/test/HTML/html5-entities.html tests/libxml2/test/HTML/issue380.html tests/libxml2/test/HTML/names.html
-tests/libxml2/test/HTML/python.html"
-for e in $HTML_PARSER_DIFFERS
-do
-    grep -v "^$ROOT/$e\$" "$HTML_FILES" > "$HTML_FILES.tmp"
-    mv "$HTML_FILES.tmp" "$HTML_FILES"
-done
 for e in $EXCLUDE
 do
     grep -v "/$e\$" "$FILES" > "$FILES.tmp"
@@ -88,15 +73,16 @@ export -f one
 
 touch "$OUT/differ.txt"
 # Every xml file plain, the files declaring entities also after expand-entities,
-# and every html file to-html.
+# and every html file to-html and to-xml.
 {
     sed 's/^/to-xml /' "$FILES"
     grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | sed 's/^/to-xml /;s/$/ expand-entities/'
     sed 's/^/to-html /' "$HTML_FILES"
+    sed 's/^/to-xml /' "$HTML_FILES"
 } | xargs -P "${JOBS:-8}" -L 1 bash -c 'one "$@"' _
 
 NH=$(wc -l < "$HTML_FILES")
-N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) + NH ))
+N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) + 2 * NH ))
 
 # transform: every stylesheet name.xsl with an input name.xml of the libxslt test suite
 # and of tests/xml_diff/xslt, run from inside (a copy of) its directory like libxslt's
