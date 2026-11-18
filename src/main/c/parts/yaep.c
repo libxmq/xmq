@@ -1493,7 +1493,7 @@ static void check_grammar(YaepParseState *ps, int strict_p)
                    "nonterm `%s' does not derive any term string",
                    ps->run.grammar->axiom->repr);
     }
-    for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)
+    for(i = 0;(symb = nonterm_get(ps, i)) != NULL && !ps->run.grammar->loops_p; i++)
     {
         if (symb->u.nonterminal.loop_p)
         {
@@ -1787,6 +1787,14 @@ bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag)
     assert(grammar != NULL);
     bool old = grammar->cost_p;
     grammar->cost_p = flag;
+    return old;
+}
+
+bool yaep_set_loops_flag(YaepGrammar *grammar, bool flag)
+{
+    assert(grammar != NULL);
+    bool old = grammar->loops_p;
+    grammar->loops_p = flag;
     return old;
 }
 

@@ -368,6 +368,9 @@ extern int yaep_set_lookahead_level(YaepGrammar *grammar, int level);
 extern bool yaep_set_one_parse_flag(YaepGrammar *grammar, bool flag);
 extern bool yaep_set_cost_flag(YaepGrammar *grammar, bool flag);
 extern bool yaep_set_error_recovery_flag(YaepGrammar *grammar, bool flag);
+/* Allow a grammar with loops, a nonterminal that derives itself without consuming input.
+   Set it before yaep_read_grammar. */
+extern bool yaep_set_loops_flag(YaepGrammar *grammar, bool flag);
 extern int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
 
 /* The following function parses input according read grammar.  The

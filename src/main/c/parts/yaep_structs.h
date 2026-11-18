@@ -184,6 +184,11 @@ struct YaepGrammar
     /* If true them try to recover from errors. */
     bool error_recovery_p;
 
+    /* If true a nonterminal may derive itself without consuming input (a grammar with
+       loops, eg A: A; 'a'.). The input then has infinitely many parse trees: the tree
+       is built without repeating the loop and the parse is marked ambiguous. */
+    bool loops_p;
+
     /* These are all the symbols used in this grammar. */
     YaepSymbolStorage *symbs_ptr;
 
@@ -588,6 +593,9 @@ struct YaepParseTreeBuildState
 
     /* The build step that added the abstract node of this state, 0 for the root (YAEP_TRACE_TREE). */
     int trace_step;
+
+    /* The end of the input matched by the rule, state_set_k changes while the rhs is processed. */
+    int to_i;
 };
 
 /* To make better traversing and don't waist tree parse memory,
@@ -782,6 +790,10 @@ struct YaepParseState
 
     /* The number of abstract nodes added to the parse tree so far (YAEP_TRACE_TREE). */
     int trace_tree_steps;
+
+    /* Set when the tree uses a nonterminal that can derive itself (a grammar with loops),
+       there are then infinitely many trees. */
+    bool loop_ambiguous_p;
 
     /* All tail sets of error recovery are saved in the following os. */
     os_t recovery_state_tail_sets;

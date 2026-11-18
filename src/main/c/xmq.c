@@ -6478,6 +6478,9 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     state->yaep_i_ = hashmap_iterate(state->ixml_terminals_map);
     state->yaep_j_ = 0;
+    // ixml allows a grammar with loops (a rule that derives itself without consuming
+    // input), the parse is then ambiguous.
+    yaep_set_loops_flag(xmq_get_yaep_grammar(ixml_grammar), true);
     int rc = yaep_read_grammar(xmq_get_yaep_parse_run(ixml_grammar),
                                xmq_get_yaep_grammar(ixml_grammar),
                                0,

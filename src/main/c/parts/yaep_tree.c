@@ -211,6 +211,20 @@ static YaepTreeNode *copy_anode(YaepParseState *ps,
     return node;
 }
 
+
+/* Returns true if a state on the build stack processes the rule over from_i..to_i,
+   ie choosing the rule again would go round a loop of the grammar. */
+static bool rule_on_build_stack(vlo_t *stack, YaepRule *rule, int from_i, int to_i)
+{
+    YaepParseTreeBuildState **begin = (YaepParseTreeBuildState**)VLO_BEGIN(*stack);
+    YaepParseTreeBuildState **end = (YaepParseTreeBuildState**)VLO_BOUND(*stack);
+    for (YaepParseTreeBuildState **s = begin; s < end; s++)
+    {
+        if ((*s)->rule == rule && (*s)->from_i == from_i && (*s)->to_i == to_i) return true;
+    }
+    return false;
+}
+
 static void loop_stack(YaepTreeNode **result,
                        int n_candidates,
                        YaepParseState *ps,
@@ -257,6 +271,7 @@ static void loop_stack(YaepTreeNode **result,
     state->dot_j = dotted_rule->dot_j;
     state->from_i = 0;
     state->state_set_k = ps->state_set_k;
+    state->to_i = ps->state_set_k;
 
     // Again is state_set_k always == tok_i ????
     assert(ps->state_set_k == ps->tok_i);
@@ -484,6 +499,17 @@ static void loop_stack(YaepTreeNode **result,
             {
                 continue;
             }
+            if (dotted_rule->rule->lhs->u.nonterminal.loop_p)
+            {
+                // A nonterminal that can derive itself without consuming input: the
+                // input has infinitely many trees. Do not repeat a rule over the same
+                // input that is already being built, that is going round the loop.
+                if (rule_on_build_stack(&stack, dotted_rule->rule, dotted_rule_from_i, state_set_k))
+                {
+                    continue;
+                }
+                ps->loop_ambiguous_p = true;
+            }
             if (n_candidates != 0)
             {
                 // Oups, n_candidates is > 0 already, this means that a previous completion matched.
@@ -572,6 +598,7 @@ static void loop_stack(YaepTreeNode **result,
                     state->dot_j = dotted_rule->dot_j;
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
+                    state->to_i = state_set_k;
                     YaepParseTreeBuildState *table_state = NULL;
                     bool new_p;
                     if (!ps->run.grammar->one_parse_p)
@@ -692,6 +719,7 @@ static void loop_stack(YaepTreeNode **result,
                     state->dot_j = dotted_rule->dot_j;
                     state->from_i = dotted_rule_from_i;
                     state->state_set_k = state_set_k;
+                    state->to_i = state_set_k;
                     state->parent_anode_state = (anode == NULL ? curr_state->parent_anode_state : curr_state);
                     assert(state->parent_anode_state);
                     state->parent_rhs_offset = anode == NULL ? parent_rhs_offset : rhs_offset;
@@ -955,6 +983,7 @@ static void trace_chosen_nodes(YaepParseState *ps, YaepTreeNode *node, int paren
 
 YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
+    ps->loop_ambiguous_p = false;
     yaep_debug(ps, "build_parse_tree()");
 
     // Number of candiate trees found.
@@ -1017,6 +1046,8 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         // The parse is only ambiguous if several parses remain after selecting the minimal cost.
         result = find_minimal_translation(ps, result, ambiguous_p);
     }
+    // A tree using a nonterminal that can derive itself is one of infinitely many.
+    if (ps->loop_ambiguous_p) *ambiguous_p = true;
     if (ps->run.trace_event && result != NULL)
     {
         // The start rule $ (step 1) has no abstract node, it is always used, as the root.
