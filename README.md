@@ -177,6 +177,22 @@ or if you prefer XML: xmq dates.ixml -i '22 November 2024' to-xml` (manually pre
 
 Check out [https://invisiblexml.org/](https://invisiblexml.org/) for more information.
 
+The grammar can also be given in xml form, ie the grammar parsed with the ixml grammar.
+Use `--ixml=` with a grammar file ending in .xml, .xmq or .json:
+```
+xmq ixml:core/ixml dates.ixml to-xml > dates.xml
+xmq --ixml=dates.xml -i '22 November 2024'
+```
+gives the same date as above. The xml form looks like this:
+```
+<ixml>
+  <rule name="date">
+    <alt>
+      <nonterminal name="day"/>
+      <literal tmark="-" string=" "/>
+      ...
+```
+
 Here is an ixml grammar to convert a file with lines of tab separated values:
 
 ```

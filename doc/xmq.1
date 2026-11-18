@@ -98,14 +98,24 @@ Do not start the \fBto-yaml\fP output with the comment
 Always download library files, even if a cached copy exists.
 
 .TP
-.BR \-\-ixml=NAME
-Load an invisible xml grammar (named \fBN.ixml\fP, \fBN.xml\fP or
-\fBN.xmq\fP, possibly from the library).
+.BR \-\-ixml=FILE
+Load an invisible xml grammar from FILE.
 The grammar defines how the input text is parsed.
-Use with a .ixml/.xml/.xmq grammar file:
 .br
 .RS
 \fBxmq input.txt \-\-ixml=mygrammar.ixml to-json\fP
+.RE
+.IP
+The grammar can also be given in xml form, ie the grammar parsed with the
+ixml grammar, as ixml elements like rule, alt, nonterminal and literal.
+FILE then ends with \fB.xml\fP, \fB.xmq\fP or \fB.json\fP and is read
+like any other xml, xmq or json document. For example, make the xml form of a
+grammar and use it:
+.br
+.RS
+\fBxmq ixml:core/ixml mygrammar.ixml to-xml > mygrammar.xml\fP
+.br
+\fBxmq input.txt \-\-ixml=mygrammar.xml to-json\fP
 .RE
 
 .TP
@@ -735,7 +745,8 @@ Use an invisible xml grammar:
 .RS
 .nf
 $ xmq input.txt \-\-ixml=mygrammar.ixml to-json
-$ xmq input.csv \-\-ixml=csv xsl:data/table-to-web br
+$ xmq ixml:data/csv input.csv xsl:data/table-to-web br
+$ xmq input.txt \-\-ixml=mygrammar.xml to-json
 .fi
 .RE
 .TP

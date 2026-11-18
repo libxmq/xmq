@@ -2067,6 +2067,8 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
+           "             The grammar can also be in xml form, ie the grammar parsed with the ixml grammar:\n"
+           "             --ixml=grammar.xml or grammar.xmq or grammar.json\n"
            "  --complete Print what could follow the input parsed with the ixml grammar, one per line:\n"
            "             string|char|charset|end <tab> rule <tab> text, eg string verb gives\n"
            "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,\n"
