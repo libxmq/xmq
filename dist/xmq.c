@@ -17697,8 +17697,16 @@ bool is_ixml_nonterminal_start(XMQParseState *state)
 
 bool is_ixml_prolog_start(XMQParseState *state)
 {
-    // Detect "ixml ", "ixml\n", "ixml{}"
-    return !strncmp(state->i, "ixml", 4) && is_ixml_whitespace_char(*(state->i+4));
+    // prolog: "ixml", RS, "version", RS, ... where RS is whitespace or comments.
+    // A rule can also be named ixml, eg ixml: s, rule++s, s. so "version" must follow.
+    const char *j = state->i;
+    const char *stop = state->buffer_stop;
+    if (stop - j < 4 || strncmp(j, "ixml", 4)) return false;
+    j += 4;
+    if (j >= stop || !is_ixml_whitespace_char(*j)) return false;
+    skip_whitespace(&j);
+    if (stop - j < 8 || strncmp(j, "version", 7)) return false;
+    return is_ixml_whitespace_char(*(j+7));
 }
 
 bool is_ixml_range_start(XMQParseState *state)
