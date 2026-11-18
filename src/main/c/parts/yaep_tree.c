@@ -212,6 +212,87 @@ static YaepTreeNode *copy_anode(YaepParseState *ps,
 }
 
 
+/* The completed dotted rule at index i of the completions of symb in the set at
+   state_set_k, if it is a translation of symb at pos_j of the rule that started at
+   from_i: the set at its origin predicted it from the rule. Returns NULL if not.
+   *out_from_i is the origin of the completed dotted rule. */
+static YaepDottedRule *tree_candidate(YaepParseState *ps, YaepStateSet *set, int state_set_k,
+                                      YaepCoreSymbToPredComps *core_symb_to_predcomps, int i,
+                                      YaepSymbol *symb, YaepRule *rule, int pos_j, int from_i,
+                                      int *out_from_i, bool trace)
+{
+    YaepStateSetCore *set_core = set->core;
+    int rule_index_in_core = core_symb_to_predcomps->completions.ids[i];
+    YaepDottedRule *dotted_rule = set_core->dotted_rules[rule_index_in_core];
+    int dotted_rule_from_i;
+    if (rule_index_in_core < set_core->num_started_dotted_rules)
+    {
+        // The state_set_k is the tok_i for which the state set was created.
+        // Ie, it is the to_i inside the Earley item.
+        // Now subtract the matched length from this to_i to get the from_i
+        // which is the origin.
+        dotted_rule_from_i = state_set_k - set->matched_lengths[rule_index_in_core];
+    } else
+    if (rule_index_in_core < set_core->num_all_matched_lengths)
+    {
+        // A not-yet-started noninitial item: it was made in this set by moving the dot of
+        // a started item, its parent, over nonterminals that match the empty input. It
+        // starts where its parent starts, so it has the parent's matched length.
+        dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->to_parent_rule_index[rule_index_in_core]];
+    } else
+    {
+        dotted_rule_from_i = state_set_k;
+    }
+
+    YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
+    YaepStateSetCore *check_set_core = check_set->core;
+    YaepCoreSymbToPredComps *check_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, check_set_core, symb);
+    assert(check_core_symb_to_predcomps != NULL);
+    bool found = false;
+    if (trace && ps->run.debug)
+    {
+        MemBuffer *mb = new_membuffer();
+        membuffer_printf(mb, "trying (s%d,d%d) [%d-%d]  cspc%d check_cspc%d  ",
+                         state_set_k,
+                         dotted_rule->id,
+                         dotted_rule_from_i,
+                         state_set_k,
+                         core_symb_to_predcomps->id,
+                         check_core_symb_to_predcomps->id);
+        print_rule(mb, ps, dotted_rule->rule);
+        debug_mb("ixml.bt.info=", mb);
+        free_membuffer_and_free_content(mb);
+    }
+    for (int j = 0; j < check_core_symb_to_predcomps->predictions.len; j++)
+    {
+        int rule_index_in_check_core = check_core_symb_to_predcomps->predictions.ids[j];
+        YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
+        if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
+        {
+            continue;
+        }
+        int check_dotted_rule_from_i = dotted_rule_from_i;
+        if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
+        {
+            if (rule_index_in_check_core < check_set_core->num_started_dotted_rules)
+            {
+                check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[rule_index_in_check_core];
+            } else
+            {
+                check_dotted_rule_from_i = (dotted_rule_from_i
+                                - check_set->matched_lengths[check_set_core->to_parent_rule_index[rule_index_in_check_core]]);
+            }
+        }
+        if (check_dotted_rule_from_i == from_i)
+        {
+            found = true;
+            break;
+        }
+    }
+    *out_from_i = dotted_rule_from_i;
+    return found ? dotted_rule : NULL;
+}
+
 /* Returns true if a state on the build stack processes the rule over from_i..to_i,
    ie choosing the rule again would go round a loop of the grammar. */
 static bool rule_on_build_stack(vlo_t *stack, YaepRule *rule, int from_i, int to_i)
@@ -423,6 +504,28 @@ static void loop_stack(YaepTreeNode **result,
 
         assert(core_symb_to_predcomps->completions.len != 0);
         n_candidates = 0;
+        // A nonterminal on a loop, eg A: B. B: A; ., can go round the loop over the empty
+        // input. Then the rule that derives the empty input in the fewest steps is used,
+        // it can not lead back (a greedy choice could lead into a loop where every rule is
+        // already being built). The parse is ambiguous anyway (loop_ambiguous_p), other
+        // nonterminals keep the first candidate and the detection of ambiguity.
+        int best_empty = -1;
+        if (ps->run.grammar->loops_p && symb->u.nonterminal.loop_p)
+        {
+            int best_height = INT_MAX;
+            for (int i = 0; i < core_symb_to_predcomps->completions.len; i++)
+            {
+                int from = 0;
+                YaepDottedRule *d = tree_candidate(ps, set, state_set_k, core_symb_to_predcomps, i, symb, rule, pos_j, from_i,
+                                                   &from, false);
+                if (d == NULL || from != state_set_k) continue;
+                if (d->rule->empty_height < best_height)
+                {
+                    best_height = d->rule->empty_height;
+                    best_empty = i;
+                }
+            }
+        }
         YaepParseTreeBuildState *orig_state = state;
         if (!ps->run.grammar->one_parse_p)
         {
@@ -430,73 +533,16 @@ static void loop_stack(YaepTreeNode **result,
         }
         for (int i = 0; i < core_symb_to_predcomps->completions.len; i++)
         {
-            int rule_index_in_core = core_symb_to_predcomps->completions.ids[i];
-            dotted_rule = set_core->dotted_rules[rule_index_in_core];
             int dotted_rule_from_i;
-            if (rule_index_in_core < set_core->num_started_dotted_rules)
+            dotted_rule = tree_candidate(ps, set, state_set_k, core_symb_to_predcomps, i, symb, rule, pos_j, from_i,
+                                         &dotted_rule_from_i, true);
+            if (dotted_rule == NULL)
             {
-                // The state_set_k is the tok_i for which the state set was created.
-                // Ie, it is the to_i inside the Earley item.
-                // Now subtract the matched length from this to_i to get the from_i
-                // which is the origin.
-                dotted_rule_from_i = state_set_k - set->matched_lengths[rule_index_in_core];
-            } else
-            if (rule_index_in_core < set_core->num_all_matched_lengths)
-            {
-                // Parent??
-                dotted_rule_from_i = state_set_k - set->matched_lengths[set_core->to_parent_rule_index[rule_index_in_core]];
-            } else
-            {
-                dotted_rule_from_i = state_set_k;
+                continue;
             }
-
-            YaepStateSet *check_set = ps->state_sets[dotted_rule_from_i];
-            YaepStateSetCore *check_set_core = check_set->core;
-            YaepCoreSymbToPredComps *check_core_symb_to_predcomps = core_symb_to_predcomps_find(ps, check_set_core, symb);
-            assert(check_core_symb_to_predcomps != NULL);
-            bool found = false;
-            if (ps->run.debug)
+            if (best_empty >= 0 && dotted_rule_from_i == state_set_k && i != best_empty)
             {
-                MemBuffer *mb = new_membuffer();
-                membuffer_printf(mb, "trying (s%d,d%d) [%d-%d]  cspc%d check_cspc%d  ",
-                                 state_set_k,
-                                 dotted_rule->id,
-                                 dotted_rule_from_i,
-                                 state_set_k,
-                                 core_symb_to_predcomps->id,
-                                 check_core_symb_to_predcomps->id);
-                print_rule(mb, ps, dotted_rule->rule);
-                debug_mb("ixml.bt.info=", mb);
-                free_membuffer_and_free_content(mb);
-            }
-            for (int j = 0; j < check_core_symb_to_predcomps->predictions.len; j++)
-            {
-                int rule_index_in_check_core = check_core_symb_to_predcomps->predictions.ids[j];
-                YaepDottedRule *check_dotted_rule = check_set->core->dotted_rules[rule_index_in_check_core];
-                if (check_dotted_rule->rule != rule || check_dotted_rule->dot_j != pos_j)
-                {
-                    continue;
-                }
-                int check_dotted_rule_from_i = dotted_rule_from_i;
-                if (rule_index_in_check_core < check_set_core->num_all_matched_lengths)
-                {
-                    if (rule_index_in_check_core < check_set_core->num_started_dotted_rules)
-                    {
-                        check_dotted_rule_from_i = dotted_rule_from_i - check_set->matched_lengths[rule_index_in_check_core];
-                    } else
-                    {
-                        check_dotted_rule_from_i = (dotted_rule_from_i
-                                        - check_set->matched_lengths[check_set_core->to_parent_rule_index[rule_index_in_check_core]]);
-                    }
-                }
-                if (check_dotted_rule_from_i == from_i)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-            {
+                // Over the empty input use the rule that derives it in the fewest steps.
                 continue;
             }
             if (dotted_rule->rule->lhs->u.nonterminal.loop_p)

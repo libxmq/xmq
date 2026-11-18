@@ -783,11 +783,12 @@ static void set_add_dotted_rule_no_match_yet(YaepParseState *ps, YaepDottedRule 
     debug_step(ps, dotted_rule, 0, -1);
 }
 
-/* Add nonstart, noninitial SIT with distance DIST at the end of the
-   situation array of the set being formed.  If this is situation and
-   there is already the same pair (situation, the corresponding
-   distance), we do not add it.
-   set_add_new_nonstart_sit (struct sit *sit, int parent)
+/* Add a not-yet-started noninitial dotted rule to the end of the dotted rules of the set
+   being formed. It was made in this set by moving the dot of a started dotted rule, its
+   parent (parent_rule_index), over nonterminals that match the empty input. So it starts
+   where its parent starts: its matched length is not stored, it is the parent's matched
+   length (see to_parent_rule_index). If the pair (dotted rule, parent) is already in the
+   set it is not added again.
 */
 static void set_add_dotted_rule_with_parent(YaepParseState *ps,
                                             YaepDottedRule *dotted_rule,
@@ -818,14 +819,15 @@ static void set_add_dotted_rule_with_parent(YaepParseState *ps,
     OS_TOP_EXPAND(ps->set_dotted_rules_os, sizeof(YaepDottedRule*));
     ps->new_dotted_rules = ps->new_core->dotted_rules = (YaepDottedRule**)OS_TOP_BEGIN(ps->set_dotted_rules_os);
 
-    // Increase the parent index vector with another int.
-    // This integer points to ...?
+    // Increase the parent index vector with another int: the index of the parent, a
+    // started dotted rule, whose matched length this dotted rule has.
     OS_TOP_EXPAND(ps->set_parent_dotted_rule_ids_os, sizeof(int));
     ps->new_core->to_parent_rule_index = (int*)OS_TOP_BEGIN(ps->set_parent_dotted_rule_ids_os) - ps->new_num_leading_dotted_rules;
 
     // Store dotted_rule into new dotted_rules.
     ps->new_dotted_rules[ps->new_core->num_dotted_rules++] = dotted_rule;
-    // Store parent index. Meanst what...?
+    // Store the parent index, the matched length of the new dotted rule is
+    // matched_lengths[to_parent_rule_index[index]].
     ps->new_core->to_parent_rule_index[ps->new_core->num_all_matched_lengths++] = parent_rule_index;
     ps->num_parent_dotted_rule_ids++;
 
@@ -1460,6 +1462,44 @@ static void set_loop_p(YaepParseState *ps)
     while(changed_p);
 }
 
+/* For a grammar with loops: the fewest derivation steps for every rule and nonterminal
+   to derive the empty string. A rule with an empty rhs takes 1 step, a rule of nonterminals
+   that derive the empty string takes 1 more than its highest. The tree over the empty
+   input is built with the lowest rules, so it can not go round a loop. */
+static void set_empty_heights(YaepParseState *ps)
+{
+    YaepRule *rule;
+    YaepSymbol *symb;
+    for (rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
+    {
+        rule->empty_height = INT_MAX;
+    }
+    for (int i = 0; (symb = nonterm_get(ps, i)) != NULL; i++)
+    {
+        symb->u.nonterminal.empty_height = INT_MAX;
+    }
+    bool changed = true;
+    while (changed)
+    {
+        changed = false;
+        for (rule = ps->run.grammar->rulestorage_ptr->first_rule; rule != NULL; rule = rule->next)
+        {
+            int height = 1;
+            bool empty = true;
+            for (int j = 0; j < rule->rhs_len && empty; j++)
+            {
+                YaepSymbol *s = rule->rhs[j];
+                if (s->is_terminal || s->u.nonterminal.empty_height == INT_MAX) empty = false;
+                else if (s->u.nonterminal.empty_height + 1 > height) height = s->u.nonterminal.empty_height + 1;
+            }
+            if (!empty || height >= rule->empty_height) continue;
+            rule->empty_height = height;
+            if (height < rule->lhs->u.nonterminal.empty_height) rule->lhs->u.nonterminal.empty_height = height;
+            changed = true;
+        }
+    }
+}
+
 /* The following function evaluates different sets and flags for
    grammar and checks the grammar on correctness.*/
 static void check_grammar(YaepParseState *ps, int strict_p)
@@ -1469,6 +1509,7 @@ static void check_grammar(YaepParseState *ps, int strict_p)
 
     set_empty_access_derives(ps);
     set_loop_p(ps);
+    if (ps->run.grammar->loops_p) set_empty_heights(ps);
     if (strict_p)
     {
         for(i = 0;(symb = nonterm_get(ps, i)) != NULL; i++)

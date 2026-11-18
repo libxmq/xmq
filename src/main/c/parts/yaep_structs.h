@@ -243,6 +243,9 @@ struct YaepSymbol
                itself.  In other words there is a grammar loop for this
                nonterminal. */
             bool loop_p;
+            /* The fewest derivation steps to derive the empty string, INT_MAX if it
+               can not, set when loops are allowed (see set_empty_heights). */
+            int empty_height;
             /* The following members are FIRST and FOLLOW sets of the nonterminal. */
             terminal_bitset_t *first, *follow;
         } nonterminal;
@@ -506,6 +509,10 @@ struct YaepRule
 
     /* The ixml default mark of the rule. -@^ */
     char mark;
+
+    /* The fewest derivation steps for the rule to derive the empty string, INT_MAX if
+       it can not, set when loops are allowed (see set_empty_heights). */
+    int empty_height;
 
     /* The following is symbols in the right hand side of the rule. */
     YaepSymbol **rhs;
