@@ -2007,26 +2007,23 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
             exit(1);
         }
 
+        // g.ixml is an ixml grammar, the others are grammars in xml form, see load_using_internal_ixml_engine.
+        // (Not yaml, the yaml mapping of xmq does not keep the attributes.)
         size_t len = strlen(file);
-        if (len < 6 ||
-            (strcmp(file+len-5, ".ixml") &&
-             strcmp(file+len-4, ".xml") &&
-             strcmp(file+len-4, ".xmq")))
+        bool ok = (len > 5 && !strcmp(file+len-5, ".ixml")) ||
+            (len > 4 && (!strcmp(file+len-4, ".xml") || !strcmp(file+len-4, ".xmq"))) ||
+            (len > 5 && !strcmp(file+len-5, ".json"));
+        if (!ok)
         {
-            printf("For ixml you can specify: g.ixml g.xml g.xmq\n");
+            fprintf(stderr, "For ixml you can specify: g.ixml g.xml g.xmq g.json\n");
             exit(1);
         }
-        if (!strcmp(file+len-5, ".ixml"))
-        {
-            verbose_("xmq=", "reading ixml file %s", file);
-            command->ixml_filename = strdup(file);
-            command->ixml_source = load_file_into_buffer(file);
-            if (command->ixml_source == NULL) exit(1);
+        verbose_("xmq=", "reading ixml grammar %s", file);
+        command->ixml_filename = strdup(file);
+        command->ixml_source = load_file_into_buffer(file);
+        if (command->ixml_source == NULL) exit(1);
 
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     return false;
@@ -2232,6 +2229,33 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
         assert(rd.status == XMQ_OK);
         command->ixml_grammar = rd.doc;
         xmqSetDocSourceName(command->ixml_grammar, command->ixml_filename);
+
+        // --ixml=grammar.xml (or .xmq .json) is a grammar in xml form, read it with the
+        // normal readers and turn it into ixml text.
+        const char *fn = command->ixml_filename;
+        size_t fn_len = fn ? strlen(fn) : 0;
+        if (fn && !(fn_len >= 5 && !strcmp(fn + fn_len - 5, ".ixml")))
+        {
+            XMQReturnDoc gd = xmqNewDoc();
+            assert(gd.status == XMQ_OK);
+            xmqSetDocSourceName(gd.doc, fn);
+            if (!xmqParseBufferWithType(gd.doc, command->ixml_source, NULL, NULL, XMQ_CONTENT_DETECT, 0))
+            {
+                fprintf(stderr, "%s\n", xmqDocError(gd.doc));
+                exit(1);
+            }
+            char *error = NULL;
+            char *text = xmqIXMLFromDoc(gd.doc, &error);
+            xmqFreeDoc(gd.doc);
+            if (!text)
+            {
+                fprintf(stderr, "xmq: %s: %s\n", fn, error);
+                exit(1);
+            }
+            verbose_("xmq=", "ixml grammar from %s:\n%s", fn, text);
+            free((void*)command->ixml_source);
+            command->ixml_source = text;
+        }
 
         bool ok = xmqParseBufferWithType(command->ixml_grammar, command->ixml_source, NULL, NULL, XMQ_CONTENT_IXML, 0);
         verbose_("xmq=", "parse ixml grammar %zu bytes from %s", strlen(command->ixml_source), command->ixml_filename);

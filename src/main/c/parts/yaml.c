@@ -2173,6 +2173,12 @@ static void yaml_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, bool
     yw(ps, "\"");
 }
 
+/** Is the node text (or cdata), it has no name? */
+static bool yaml_is_text(XMQNode *node)
+{
+    return xml_node_kind(node) == XML_DOM_TEXT || xml_node_kind(node) == XML_DOM_CDATA;
+}
+
 /** Is i an element with the same name as the element node? Text and comments have no name. */
 static bool yaml_same_element_name(XMQNode *i, XMQNode *node)
 {
@@ -2312,6 +2318,21 @@ static void yaml_child(XMQPrintState *ps, size_t col, XMQNode *node)
     if (is_entity_node(node))
     {
         yw(ps, "\"&"); yw(ps, xml_node_name(node)); yw(ps, ";\"");
+        return;
+    }
+
+    if (yaml_is_text(node))
+    {
+        // Text in mixed content, eg <comment>a<comment>b</comment>c</comment>. Written like
+        // the json output does: the key "|", or "|[0]" "|[1]" ... when there are several.
+        size_t total = 1, used = 0;
+        for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i)) if (yaml_is_text(i)) { total++; used++; }
+        for (XMQNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i)) if (yaml_is_text(i)) total++;
+        char key[32];
+        if (total > 1) snprintf(key, sizeof(key), "\"|[%zu]\": ", used);
+        else snprintf(key, sizeof(key), "\"|\": ");
+        yw(ps, key);
+        yaml_print_value(ps, node, node, true);
         return;
     }
 

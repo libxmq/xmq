@@ -67,6 +67,8 @@ find_program()
 
 case "$PROCESSOR" in
     xmq)
+        # xmq reads a grammar in xml form with --ixml=grammar.xml as well.
+        XML_GRAMMARS=1
         run_processor() { timeout "$TIMEOUT" "$XMQ" --ixml="$1" "$2" to-xml > "$3" 2> "$4"; }
         # The xml form of a grammar: the grammar parsed with the ixml grammar.
         run_grammar_xml() { run_processor "$IXML_IXML" "$1" "$2" "$3"; }
@@ -279,7 +281,11 @@ test_end()
     if ! deps_ok "$TEST_DEPS"; then record N/A "needs ${TEST_DEPS#|}"; return; fi
 
     local grammar=${SET_GRAMMAR[$DEPTH]}
-    if [[ "$grammar" == vxml:* ]]; then record N/A "the grammar is in xml form"; return; fi
+    if [[ "$grammar" == vxml:* ]]
+    then
+        if [ -z "$XML_GRAMMARS" ]; then record N/A "the grammar is in xml form"; return; fi
+        grammar=${grammar#vxml:}
+    fi
     if [ -z "$grammar" ]; then record FAIL "no grammar in the catalog"; return; fi
 
     # The input is copied, so that its name does not decide how it is read.

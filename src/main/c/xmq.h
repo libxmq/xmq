@@ -1541,6 +1541,17 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
 XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc);
 
 /**
+    xmqIXMLFromDoc:
+
+    Returns the ixml text of a grammar in xml form, ie the parse tree of the grammar with
+    the ixml grammar, eg ixml{rule(name=S){alt{literal(string=a)}}}, read from xml, xmq
+    or json. Parse the text with xmqParseBufferWithType(..., XMQ_CONTENT_IXML, ...).
+    The caller frees the text. Returns NULL if the document is not such a grammar,
+    then *error is a message that the caller frees.
+*/
+char *xmqIXMLFromDoc(XMQDoc *grammar, char **error);
+
+/**
     xmqTakeIXMLCompletions:
 
     Returns what could follow the input of the last parse of doc with xmqParseBufferWithIXML

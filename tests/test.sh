@@ -295,6 +295,13 @@ else
     echo "SKIP: tests/test_complete.sh (needs ixml)"
 fi
 
+if has_feature ixml
+then
+    tests/test_ixml_grammar_forms.sh "$PROG" "$OUTPUT" || exit 1
+else
+    echo "SKIP: tests/test_ixml_grammar_forms.sh (needs ixml)"
+fi
+
 for i in tests/test_special_???_*.sh
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

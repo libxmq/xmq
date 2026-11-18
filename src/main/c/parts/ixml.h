@@ -51,6 +51,13 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              const char *content_start, // Needed to minimize charset rule sizes.
                              const char *content_stop);
 
+/** The ixml text of a grammar in xml form, the parse tree of the grammar with the ixml grammar,
+    eg <ixml><rule name="S"><alt><literal string="a"/></alt></rule></ixml>. The text is read with
+    the ixml grammar reader, so the yaep grammar is the same as for the original ixml text.
+    Returns the malloced text, or NULL and *error a malloced message. */
+struct XmlDom;
+char *ixml_text_from_xml_grammar(struct XmlDom *dom, char **error);
+
 IXMLTerminal *new_ixml_terminal();
 IXMLNonTerminal *new_ixml_nonterminal();
 void free_ixml_rule(IXMLRule *r);

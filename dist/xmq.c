@@ -501,6 +501,13 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              const char *content_start, // Needed to minimize charset rule sizes.
                              const char *content_stop);
 
+/** The ixml text of a grammar in xml form, the parse tree of the grammar with the ixml grammar,
+    eg <ixml><rule name="S"><alt><literal string="a"/></alt></rule></ixml>. The text is read with
+    the ixml grammar reader, so the yaep grammar is the same as for the original ixml text.
+    Returns the malloced text, or NULL and *error a malloced message. */
+struct XmlDom;
+char *ixml_text_from_xml_grammar(struct XmlDom *dom, char **error);
+
 IXMLTerminal *new_ixml_terminal();
 IXMLNonTerminal *new_ixml_nonterminal();
 void free_ixml_rule(IXMLRule *r);
@@ -8275,6 +8282,13 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
                              const char *content_start, // Needed to minimize charset rule sizes.
                              const char *content_stop);
 
+/** The ixml text of a grammar in xml form, the parse tree of the grammar with the ixml grammar,
+    eg <ixml><rule name="S"><alt><literal string="a"/></alt></rule></ixml>. The text is read with
+    the ixml grammar reader, so the yaep grammar is the same as for the original ixml text.
+    Returns the malloced text, or NULL and *error a malloced message. */
+struct XmlDom;
+char *ixml_text_from_xml_grammar(struct XmlDom *dom, char **error);
+
 IXMLTerminal *new_ixml_terminal();
 IXMLNonTerminal *new_ixml_nonterminal();
 void free_ixml_rule(IXMLRule *r);
@@ -14721,6 +14735,13 @@ static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc 
     doc->ixml_trace_ = r->trace;
 }
 
+char *xmqIXMLFromDoc(XMQDoc *grammar, char **error)
+{
+    *error = NULL;
+    if (!grammar) return NULL;
+    return ixml_text_from_xml_grammar(xmq_get_dom(grammar), error);
+}
+
 char *xmqTakeIXMLCompletions(XMQDoc *doc)
 {
     if (!doc) return NULL;
@@ -14940,6 +14961,13 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 {
     (void)start; (void)stop; (void)ixml_grammar; (void)flags;
     return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+char *xmqIXMLFromDoc(XMQDoc *grammar, char **error)
+{
+    (void)grammar;
+    *error = strdup("ixml is not compiled in (XMQ_NO_IXML)");
+    return NULL;
 }
 
 char *xmqTakeIXMLCompletions(XMQDoc *doc)
@@ -19548,6 +19576,275 @@ void check_undefined_nonterminals(XMQParseState *state)
     hashmap_free(defined);
 }
 
+// The ixml text of a grammar in xml form //////////////////////////////////////////////
+
+typedef struct
+{
+    MemBuffer *mb;
+    char *error; // The first error, malloced.
+} IXMLFromXml;
+
+static void fx_error(IXMLFromXml *x, const char *format, const char *arg)
+{
+    if (x->error) return;
+    char buf[1024];
+    snprintf(buf, sizeof(buf), format, arg ? arg : "");
+    x->error = strdup(buf);
+}
+
+/** The next element from node (node included), skipping text and comments. */
+static XMQNode *fx_element(XMQNode *node)
+{
+    while (node && xml_node_kind(node) != XML_DOM_ELEMENT) node = xml_node_next(node);
+    return node;
+}
+
+static XMQNode *fx_first(XMQNode *e) { return fx_element(xml_node_first_child(e)); }
+static XMQNode *fx_next(XMQNode *e) { return fx_element(xml_node_next(e)); }
+
+static bool fx_is(XMQNode *e, const char *name) { return !strcmp(xml_node_name(e), name); }
+
+/** The value of the attribute, malloced, or NULL. */
+static char *fx_attr(XMQNode *e, const char *name)
+{
+    XMQAttr *a = xml_node_get_attr(e, name, NULL);
+    if (!a) return NULL;
+    return xml_node_string_value(xml_attr_node(a));
+}
+
+static void fx_append_attr(IXMLFromXml *x, XMQNode *e, const char *name)
+{
+    char *v = fx_attr(e, name);
+    if (v) membuffer_append(x->mb, v);
+    free(v);
+}
+
+/** The text as ixml strings, eg "it's" or 'say "hi"'. A string can not span lines, so a
+    newline or carriage return is written as #a or #d. Every piece gets the prefix (a tmark
+    or +) and the pieces are separated by sep: ", " in an alt and "; " in a charset. */
+static void fx_strings(IXMLFromXml *x, const char *s, const char *prefix, const char *sep)
+{
+    bool first = true;
+    if (*s == 0)
+    {
+        // An empty string, the ixml grammar reader reports it.
+        membuffer_append(x->mb, prefix);
+        membuffer_append(x->mb, "\"\"");
+        return;
+    }
+    while (*s)
+    {
+        if (!first) membuffer_append(x->mb, sep);
+        first = false;
+        membuffer_append(x->mb, prefix);
+        if (*s == '\n' || *s == '\r')
+        {
+            membuffer_append(x->mb, *s == '\n' ? "#a" : "#d");
+            s++;
+            continue;
+        }
+        membuffer_append(x->mb, "\"");
+        while (*s && *s != '\n' && *s != '\r')
+        {
+            if (*s == '"') membuffer_append(x->mb, "\"\""); // A quote is doubled.
+            else
+            {
+                char c[2] = { *s, 0 };
+                membuffer_append(x->mb, c);
+            }
+            s++;
+        }
+        membuffer_append(x->mb, "\"");
+    }
+}
+
+/** A character of a range, from or to: #hex as it is, else the character as a string. */
+static void fx_range_char(IXMLFromXml *x, const char *v)
+{
+    if (v[0] == '#' && v[1] != 0) membuffer_append(x->mb, v);
+    else fx_strings(x, v, "", "; ");
+}
+
+/** A literal or an insertion: its string or hex. */
+static void fx_string_or_hex(IXMLFromXml *x, XMQNode *e, const char *prefix, const char *sep)
+{
+    char *string = fx_attr(e, "string");
+    char *hex = fx_attr(e, "hex");
+    if (string) fx_strings(x, string, prefix, sep);
+    else if (hex)
+    {
+        membuffer_append(x->mb, prefix);
+        membuffer_append(x->mb, "#");
+        membuffer_append(x->mb, hex);
+    }
+    else fx_error(x, "%s needs a string or a hex attribute", xml_node_name(e));
+    free(string);
+    free(hex);
+}
+
+static void fx_alts(IXMLFromXml *x, XMQNode *e);
+
+static void fx_member(IXMLFromXml *x, XMQNode *m)
+{
+    char *string = fx_attr(m, "string");
+    char *hex = fx_attr(m, "hex");
+    char *from = fx_attr(m, "from");
+    char *to = fx_attr(m, "to");
+    char *code = fx_attr(m, "code");
+    if (string) fx_strings(x, string, "", "; ");
+    else if (hex) { membuffer_append(x->mb, "#"); membuffer_append(x->mb, hex); }
+    else if (from && to) { fx_range_char(x, from); membuffer_append(x->mb, "-"); fx_range_char(x, to); }
+    else if (code) membuffer_append(x->mb, code);
+    else fx_error(x, "member needs a string, hex, from and to, or code attribute", NULL);
+    free(string); free(hex); free(from); free(to); free(code);
+}
+
+static void fx_factor(IXMLFromXml *x, XMQNode *e)
+{
+    if (fx_is(e, "nonterminal"))
+    {
+        fx_append_attr(x, e, "mark");
+        fx_append_attr(x, e, "name");
+        char *alias = fx_attr(e, "alias");
+        if (alias) { membuffer_append(x->mb, ">"); membuffer_append(x->mb, alias); }
+        free(alias);
+    }
+    else if (fx_is(e, "literal"))
+    {
+        char *tmark = fx_attr(e, "tmark");
+        fx_string_or_hex(x, e, tmark ? tmark : "", ", ");
+        free(tmark);
+    }
+    else if (fx_is(e, "insertion"))
+    {
+        fx_string_or_hex(x, e, "+", ", ");
+    }
+    else if (fx_is(e, "inclusion") || fx_is(e, "exclusion"))
+    {
+        fx_append_attr(x, e, "tmark");
+        if (fx_is(e, "exclusion")) membuffer_append(x->mb, "~");
+        membuffer_append(x->mb, "[");
+        bool first = true;
+        for (XMQNode *m = fx_first(e); m; m = fx_next(m))
+        {
+            if (fx_is(m, "comment")) continue;
+            if (!fx_is(m, "member")) { fx_error(x, "unexpected %s in a character set", xml_node_name(m)); continue; }
+            if (!first) membuffer_append(x->mb, "; ");
+            first = false;
+            fx_member(x, m);
+        }
+        membuffer_append(x->mb, "]");
+    }
+    else if (fx_is(e, "option") || fx_is(e, "repeat0") || fx_is(e, "repeat1"))
+    {
+        // option: factor. repeat0 and repeat1: factor and an optional sep with a factor.
+        XMQNode *factor = NULL, *sep = NULL;
+        for (XMQNode *c = fx_first(e); c; c = fx_next(c))
+        {
+            if (fx_is(c, "comment")) continue;
+            if (fx_is(c, "sep")) sep = c;
+            else if (!factor) factor = c;
+            else fx_error(x, "%s has more than one factor", xml_node_name(e));
+        }
+        if (!factor) { fx_error(x, "%s has no factor", xml_node_name(e)); return; }
+        fx_factor(x, factor);
+        const char *op = fx_is(e, "option") ? "?" : fx_is(e, "repeat0") ? "*" : "+";
+        membuffer_append(x->mb, op);
+        if (sep)
+        {
+            XMQNode *s = fx_first(sep);
+            while (s && fx_is(s, "comment")) s = fx_next(s);
+            if (!s || fx_is(e, "option")) { fx_error(x, "%s has a bad sep", xml_node_name(e)); return; }
+            membuffer_append(x->mb, op);
+            fx_factor(x, s);
+        }
+    }
+    else if (fx_is(e, "alts"))
+    {
+        membuffer_append(x->mb, "(");
+        fx_alts(x, e);
+        membuffer_append(x->mb, ")");
+    }
+    else
+    {
+        fx_error(x, "unexpected element %s in an ixml grammar", xml_node_name(e));
+    }
+}
+
+/** The alt children of a rule or alts: "a, b; c". */
+static void fx_alts(IXMLFromXml *x, XMQNode *e)
+{
+    bool first_alt = true;
+    for (XMQNode *alt = fx_first(e); alt; alt = fx_next(alt))
+    {
+        if (fx_is(alt, "comment")) continue;
+        if (!fx_is(alt, "alt")) { fx_error(x, "expected alt, not %s", xml_node_name(alt)); continue; }
+        if (!first_alt) membuffer_append(x->mb, "; ");
+        first_alt = false;
+        bool first = true;
+        for (XMQNode *f = fx_first(alt); f; f = fx_next(f))
+        {
+            if (fx_is(f, "comment")) continue;
+            if (!first) membuffer_append(x->mb, ", ");
+            first = false;
+            fx_factor(x, f);
+        }
+    }
+}
+
+char *ixml_text_from_xml_grammar(XmlDom *dom, char **error)
+{
+    IXMLFromXml x;
+    x.mb = new_membuffer();
+    x.error = NULL;
+
+    XMQNode *root = xml_dom_root_element(dom);
+    if (!root || !fx_is(root, "ixml"))
+    {
+        fx_error(&x, "the root element must be ixml, not %s", root ? xml_node_name(root) : "nothing");
+    }
+    for (XMQNode *e = root ? fx_first(root) : NULL; e && !x.error; e = fx_next(e))
+    {
+        if (fx_is(e, "comment")) continue;
+        if (fx_is(e, "prolog"))
+        {
+            // <prolog><version string="1.0"/></prolog>
+            XMQNode *v = fx_first(e);
+            char *version = v && fx_is(v, "version") ? fx_attr(v, "string") : NULL;
+            if (!version) { fx_error(&x, "prolog needs a version with a string", NULL); break; }
+            membuffer_append(x.mb, "ixml version ");
+            fx_strings(&x, version, "", ", ");
+            membuffer_append(x.mb, ".\n");
+            free(version);
+        }
+        else if (fx_is(e, "rule"))
+        {
+            fx_append_attr(&x, e, "mark");
+            fx_append_attr(&x, e, "name");
+            char *alias = fx_attr(e, "alias");
+            if (alias) { membuffer_append(x.mb, ">"); membuffer_append(x.mb, alias); }
+            free(alias);
+            membuffer_append(x.mb, ": ");
+            fx_alts(&x, e);
+            membuffer_append(x.mb, ".\n");
+        }
+        else
+        {
+            fx_error(&x, "unexpected element %s in an ixml grammar", xml_node_name(e));
+        }
+    }
+
+    if (x.error)
+    {
+        free_membuffer_and_free_content(x.mb);
+        *error = x.error;
+        return NULL;
+    }
+    membuffer_append_null(x.mb);
+    *error = NULL;
+    return free_membuffer_but_return_trimmed_content(x.mb);
+}
+
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
 {
     const char *i = start;
@@ -23959,6 +24256,12 @@ static void yaml_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, bool
     yw(ps, "\"");
 }
 
+/** Is the node text (or cdata), it has no name? */
+static bool yaml_is_text(XMQNode *node)
+{
+    return xml_node_kind(node) == XML_DOM_TEXT || xml_node_kind(node) == XML_DOM_CDATA;
+}
+
 /** Is i an element with the same name as the element node? Text and comments have no name. */
 static bool yaml_same_element_name(XMQNode *i, XMQNode *node)
 {
@@ -24098,6 +24401,21 @@ static void yaml_child(XMQPrintState *ps, size_t col, XMQNode *node)
     if (is_entity_node(node))
     {
         yw(ps, "\"&"); yw(ps, xml_node_name(node)); yw(ps, ";\"");
+        return;
+    }
+
+    if (yaml_is_text(node))
+    {
+        // Text in mixed content, eg <comment>a<comment>b</comment>c</comment>. Written like
+        // the json output does: the key "|", or "|[0]" "|[1]" ... when there are several.
+        size_t total = 1, used = 0;
+        for (XMQNode *i = xml_prev_sibling(node); i; i = xml_prev_sibling(i)) if (yaml_is_text(i)) { total++; used++; }
+        for (XMQNode *i = xml_next_sibling(node); i; i = xml_next_sibling(i)) if (yaml_is_text(i)) total++;
+        char key[32];
+        if (total > 1) snprintf(key, sizeof(key), "\"|[%zu]\": ", used);
+        else snprintf(key, sizeof(key), "\"|\": ");
+        yw(ps, key);
+        yaml_print_value(ps, node, node, true);
         return;
     }
 

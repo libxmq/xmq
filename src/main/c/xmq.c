@@ -6515,6 +6515,13 @@ static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc 
     doc->ixml_trace_ = r->trace;
 }
 
+char *xmqIXMLFromDoc(XMQDoc *grammar, char **error)
+{
+    *error = NULL;
+    if (!grammar) return NULL;
+    return ixml_text_from_xml_grammar(xmq_get_dom(grammar), error);
+}
+
 char *xmqTakeIXMLCompletions(XMQDoc *doc)
 {
     if (!doc) return NULL;
@@ -6734,6 +6741,13 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 {
     (void)start; (void)stop; (void)ixml_grammar; (void)flags;
     return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+char *xmqIXMLFromDoc(XMQDoc *grammar, char **error)
+{
+    (void)grammar;
+    *error = strdup("ixml is not compiled in (XMQ_NO_IXML)");
+    return NULL;
 }
 
 char *xmqTakeIXMLCompletions(XMQDoc *doc)
