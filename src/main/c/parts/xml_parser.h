@@ -125,6 +125,11 @@ char *xml_parser_format_message(const char *source, size_t line, const char *kin
 bool xml_expand_entities(XmlDom *dom, XMQNode *node, const char *only, size_t input_size,
                          const XmlParseSettings *settings, XmlParseError *error);
 
+/** True if the code point is allowed in an xml document (the production Char). */
+bool xml_is_valid_char(int c);
+/** True if the utf-8 name is an xml Name (with allow_colon) or an NCName. */
+bool xml_is_valid_name(const char *name, bool allow_colon);
+
 #define XML_PARSER_MODULE
 
 #endif // XML_PARSER_H

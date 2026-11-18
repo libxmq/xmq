@@ -492,6 +492,31 @@ static bool xml_is_xml_char(int c)
         || (c >= 0xE000 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0x10FFFF);
 }
 
+bool xml_is_valid_char(int c)
+{
+    return xml_is_xml_char(c);
+}
+
+bool xml_is_valid_name(const char *name, bool allow_colon)
+{
+    const unsigned char *s = (const unsigned char*)name;
+    size_t avail = strlen(name);
+    if (avail == 0) return false;
+    bool first = true;
+    while (avail > 0)
+    {
+        size_t len = 0;
+        int c = xml_utf8_decode(s, avail, &len);
+        if (c < 0) return false;
+        if (c == ':' && !allow_colon) return false;
+        if (first ? !xml_is_name_start_char(c) : !xml_is_name_char(c)) return false;
+        first = false;
+        s += len;
+        avail -= len;
+    }
+    return true;
+}
+
 /** Decode one utf8 code point. Returns -1 on invalid utf8. */
 static int xml_utf8_decode(const unsigned char *s, size_t avail, size_t *len)
 {

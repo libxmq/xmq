@@ -6084,6 +6084,50 @@ const char *node_yaep_type_to_string(YaepTreeNodeType t)
 
 void collect_text(YaepTreeNode *n, MemBuffer *mb);
 
+// The first dynamic error found while generating the dom from the yaep tree, eg
+// an attribute that occurs twice on an element (ixml error D02), or NULL.
+static char *ixml_dynamic_error_ = NULL;
+
+/** Remember the first dynamic error, eg ixml_dynamic_error("D02", "the attribute %s ...", name). */
+static void ixml_dynamic_error(const char *code, const char *format, ...)
+{
+    if (ixml_dynamic_error_) return;
+    char msg[1024];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(msg, sizeof(msg), format, args);
+    va_end(args);
+    char buf[1100];
+    snprintf(buf, sizeof(buf), "dynamic error %s: %s", code, msg);
+    ixml_dynamic_error_ = strdup(buf);
+}
+
+/** D04: a character that is not allowed in xml can not be serialized. */
+static void ixml_check_output_char(int c)
+{
+    if (!xml_is_valid_char(c)) ixml_dynamic_error("D04", "the character #%x can not be serialized as xml", c);
+}
+
+/** D04 for every character of an inserted utf-8 text. */
+static void ixml_check_output_text(const char *s)
+{
+    const char *stop = s + strlen(s);
+    while (s < stop)
+    {
+        int c = 0;
+        size_t len = 0;
+        if (!decode_utf8(s, stop, &c, &len) || len == 0) break;
+        ixml_check_output_char(c);
+        s += len;
+    }
+}
+
+/** D03: the name of an element or attribute must be an xml name. */
+static void ixml_check_name(const char *name)
+{
+    if (!xml_is_valid_name(name, false)) ixml_dynamic_error("D03", "the name %s is not a valid xml name", name);
+}
+
 void collect_text(YaepTreeNode *n, MemBuffer *mb)
 {
     if (n == NULL) return;
@@ -6097,6 +6141,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
             if(an->name[2] == '#')
             {
                 int value = (int)strtol(an->name+3, NULL, 16);
+                ixml_check_output_char(value);
                 UTF8Char utf8;
                 size_t len = encode_utf8(value, &utf8);
                 utf8.bytes[len] = 0;
@@ -6104,6 +6149,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
             }
             else
             {
+                ixml_check_output_text(an->name+2);
                 membuffer_append(mb, an->name+2);
             }
         }
@@ -6123,6 +6169,7 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
         YaepTerminalNode *at = &n->val.terminal;
         if (at->mark != '-')
         {
+            ixml_check_output_char(at->code);
             UTF8Char utf8;
             size_t len = encode_utf8(at->code, &utf8);
             utf8.bytes[len] = 0;
@@ -6135,9 +6182,28 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
     }
 }
 
-// The first dynamic error found while generating the dom from the yaep tree, eg
-// an attribute that occurs twice on an element (ixml error D02), or NULL.
-static char *ixml_dynamic_error_ = NULL;
+/** D06: the output must be well-formed xml, one root element and no text outside it,
+    whitespace is fine. */
+static void ixml_add_top(XmlDom *doc, XMQNode *n)
+{
+    if (xml_node_kind(n) == XML_DOM_ELEMENT && xml_dom_root_element(doc) != NULL)
+    {
+        ixml_dynamic_error("D06", "the output has more than one root element");
+    }
+    else if (xml_node_kind(n) != XML_DOM_ELEMENT)
+    {
+        const char *t = xml_node_content(n);
+        for (; t && *t; t++)
+        {
+            if (*t != ' ' && *t != '\t' && *t != '\n' && *t != '\r')
+            {
+                ixml_dynamic_error("D06", "the output has text outside the root element");
+                break;
+            }
+        }
+    }
+    xmq_dom_add_top(doc, n);
+}
 
 void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
@@ -6164,17 +6230,19 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                 if(an->name[2] == '#')
                 {
                     int value = (int)strtol(an->name+3, NULL, 16);
+                    ixml_check_output_char(value);
                     UTF8Char c;
                     size_t len = encode_utf8(value, &c);
                     new_node = xml_node_new_text_len(doc, c.bytes, len);
                 }
                 else
                 {
+                    ixml_check_output_text(an->name+2);
                     new_node = xml_node_new_text(doc, an->name+2);
                 }
                 if (node == NULL)
                 {
-                    xmq_dom_add_top(doc, new_node);
+                    ixml_add_top(doc, new_node);
                 }
                 else
                 {
@@ -6189,15 +6257,20 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                     MemBuffer *mb = new_membuffer();
                     collect_text(n, mb);
                     membuffer_append_null(mb);
-                    // It is a dynamic error (D02) if an element gets the same attribute twice.
-                    if (node && xml_node_kind(node) == XML_DOM_ELEMENT && xml_node_get_attr(node, an->name, NULL))
+                    ixml_check_name(an->name);
+                    if (!strcmp(an->name, "xmlns"))
                     {
-                        if (!ixml_dynamic_error_)
-                        {
-                            char buf[1024];
-                            snprintf(buf, sizeof(buf), "dynamic error D02: the attribute %s occurs more than once on an element", an->name);
-                            ixml_dynamic_error_ = strdup(buf);
-                        }
+                        ixml_dynamic_error("D07", "an attribute can not be named xmlns");
+                    }
+                    if (!node || xml_node_kind(node) != XML_DOM_ELEMENT)
+                    {
+                        // D05: there is no element for the attribute, eg the root is an attribute.
+                        ixml_dynamic_error("D05", "the attribute %s is not inside an element", an->name);
+                    }
+                    // It is a dynamic error (D02) if an element gets the same attribute twice.
+                    else if (xml_node_get_attr(node, an->name, NULL))
+                    {
+                        ixml_dynamic_error("D02", "the attribute %s occurs more than once on an element", an->name);
                     }
                     else if (node && xml_node_kind(node) == XML_DOM_ELEMENT)
                     {
@@ -6208,11 +6281,12 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                 else
                 {
                     // Normal node that should be generated.
+                    ixml_check_name(an->name);
                     XMQNode* new_node = xml_node_new_element(doc, an->name, NULL);
 
                     if (node == NULL)
                     {
-                        xmq_dom_add_top(doc, new_node);
+                        ixml_add_top(doc, new_node);
                     }
                     else
                     {
@@ -6281,6 +6355,7 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
         YaepTerminalNode *at = &n->val.terminal;
         if (at->mark != '-')
         {
+            ixml_check_output_char(at->code);
             UTF8Char utf8;
             size_t len = encode_utf8(at->code, &utf8);
             utf8.bytes[len] = 0;
@@ -6289,7 +6364,7 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
 
             if (node == NULL)
             {
-                xmq_dom_add_top(doc, new_node);
+                ixml_add_top(doc, new_node);
             }
             else
             {
@@ -6573,6 +6648,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         // IXML parse was fine, generate a DOM from the yaep tree.
         generate_dom_from_yaep_node(doc->dom_, NULL, run->root, NULL, 0, 0);
         doc->root_ = xml_dom_root_element(doc->dom_);
+        if (doc->root_ == NULL)
+        {
+            // D06: everything was hidden, there is no root element.
+            ixml_dynamic_error("D06", "the output has no root element");
+        }
         ok = true;
         if (ixml_dynamic_error_)
         {
