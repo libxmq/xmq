@@ -50,6 +50,8 @@ void print_yaep_node(YaepParseState *ps, FILE *f, YaepTreeNode *node);
 void trace_item(YaepParseState *ps, YaepDottedRule *dotted_rule, int matched_length, bool blocked);
 void trace_rule(YaepParseState *ps, YaepRule *rule);
 void trace_tree_step(YaepParseState *ps, YaepParseTreeBuildState *state);
+void trace_tree_cost(YaepParseState *ps, int step, int cost);
+void trace_tree_chosen(YaepParseState *ps, int step, int parent);
 void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p);
 
 #ifndef XMQ_NO_IXML

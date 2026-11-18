@@ -98,6 +98,8 @@ typedef enum
     YAEP_TRACE_ITEM,  // An Earley item: the dotted rule id over from-to, lhs → matched · expected.
     YAEP_TRACE_TREE,  // A node added to the parse tree: the dotted rule id over from-to, lhs → rhs,
                       // the build step that added it and the step that added its parent.
+    YAEP_TRACE_COST,  // The cost of the node added at step, with its children, when choosing by cost.
+    YAEP_TRACE_CHOSEN,// The node added at step is in the final tree, below the node added at parent.
 } YaepTraceKind;
 
 typedef struct
@@ -112,7 +114,9 @@ typedef struct
     const char *expected; // ITEM: the symbols after the dot.
     const char *token;    // TOKEN: the token, eg '1' or ω for the end of input.
     int step;             // TREE: the nodes are numbered 1, 2, ... in the order they are added.
-    int parent;           // TREE: the step of the parent node, 0 for the root.
+    int parent;           // TREE: the step of the parent node, 0 for the root. CHOSEN: the step of the
+                          // parent in the final tree, a node can be built for one parent and used by another.
+    int cost;             // COST: the cost of the node and its children.
 } YaepTraceEvent;
 
 struct YaepParseRun
@@ -217,6 +221,8 @@ struct YaepAbstractNode
     /* References for nodes for which the abstract node refers.  The end
        marker of the array is value NULL. */
     YaepTreeNode **children;
+    /* The build step that added the node (YAEP_TRACE_TREE). */
+    int trace_step;
 };
 
 /* The following structure is not part of the interface and for internal use only */

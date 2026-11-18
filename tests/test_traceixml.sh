@@ -50,4 +50,27 @@ grep -q 'begin{longtable}' "$OUTPUT/trace.tex" || fail "tex has no table"
 [ "$(grep -o 'cellcolor{used}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not mark the $NODES used items"
 [ "$(grep -o 'cellcolor{treenew}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not show the $NODES added nodes"
 
+# A choice by cost: A and B both match aaa, B costs 1. Both are built, S → B is not chosen.
+[ "$($PROG "$OUTPUT/trace.xmq" select "count(/trace/tree/node[@chosen = 'no'])" to-text)" = "0" ] || fail "an unambiguous tree has nodes not chosen"
+printf 'S = A | B.\nA = "a"+.\nB =< "a"+.\n' > "$OUTPUT/cost.ixml"
+$PROG --traceixml="$OUTPUT/cost.xmq" "$OUTPUT/cost.ixml" -i 'aaa' > "$OUTPUT/cost_tree.xmq" || fail "cost parse failed"
+grep -q 'A = aaa' "$OUTPUT/cost_tree.xmq" || fail "the cheapest tree was not chosen"
+[ "$($PROG "$OUTPUT/cost.xmq" select "count(/trace/tree/node[@rule = 'S' and @chosen = 'yes' and @cost = 0])" to-text)" = "1" ] || fail "S → A is not chosen with cost 0"
+[ "$($PROG "$OUTPUT/cost.xmq" select "count(/trace/tree/node[@rule = 'B' and @chosen = 'no' and @cost = 1])" to-text)" = "1" ] || fail "B is not rejected with cost 1"
+$PROG "$OUTPUT/cost.xmq" transform library/xmq-utils/render-trace-to-html.xslq to-html > "$OUTPUT/cost.html" || fail "cost html render failed"
+grep -q 'node new rejected' "$OUTPUT/cost.html" || fail "html does not show the rejected nodes"
+grep -q 'the chosen tree' "$OUTPUT/cost.html" || fail "html does not show the chosen tree"
+$PROG "$OUTPUT/cost.xmq" transform library/xmq-utils/render-trace-to-tex.xslq to-text > "$OUTPUT/cost.tex" || fail "cost tex render failed"
+grep -q 'not chosen' "$OUTPUT/cost.tex" || fail "tex does not show the rejected nodes"
+
+# a*b is a declaration (cost 1) or an expression: the letters a and b are built for the type
+# and name of the declaration, which is not chosen, and used by the factors of the expression.
+printf 'statement = declaration | expression.\ndeclaration =< type, "*", name.\nexpression = factor, "*", factor.\ntype = letter.\nname = letter.\nfactor = letter.\n-letter = ["a"-"z"].\n' > "$OUTPUT/shared.ixml"
+$PROG --traceixml="$OUTPUT/shared.xmq" "$OUTPUT/shared.ixml" -i 'a*b' > "$OUTPUT/shared_tree.xmq" || fail "shared parse failed"
+grep -q 'expression {' "$OUTPUT/shared_tree.xmq" || fail "the expression was not chosen"
+[ "$($PROG "$OUTPUT/shared.xmq" select "count(/trace/tree/node[@chosen = 'yes'][not(@tree-parent)])" to-text)" = "0" ] || fail "a chosen node has no tree-parent"
+[ "$($PROG "$OUTPUT/shared.xmq" select "count(/trace/tree/node[@rule = 'letter' and @chosen = 'yes' and @parent != @tree-parent])" to-text)" = "2" ] || fail "the shared letters are not used by another parent"
+$PROG "$OUTPUT/shared.xmq" transform library/xmq-utils/render-trace-to-html.xslq to-html > "$OUTPUT/shared.html" || fail "shared html render failed"
+$PROG "$OUTPUT/shared.html" select "//tr[@class = 'chosen']" to-xmq | grep -q factor && fail "the chosen tree row does not show the deepest nodes"
+
 echo "OK: traceixml ($ENGINE)"

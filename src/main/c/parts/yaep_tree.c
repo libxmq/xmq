@@ -632,6 +632,7 @@ static void loop_stack(YaepTreeNode **result,
                             state->parent_rhs_offset = rhs_offset;
                         }
                         trace_tree_step(ps, state);
+                        node->val.anode.trace_step = state->trace_step;
                         if (table_state != NULL)
                         {
                             table_state->trace_step = state->trace_step;
@@ -781,6 +782,7 @@ static YaepTreeNode *prune_to_minimal(YaepParseState *ps, YaepTreeNode *node, in
                 node->val.anode.cost += *cost;
             }
            *cost = node->val.anode.cost;
+            trace_tree_cost(ps, node->val.anode.trace_step, *cost);
             node->val.anode.cost = -node->val.anode.cost - 1;        /* flag of visit*/
         }
         else
@@ -931,6 +933,26 @@ static YaepTreeNode *find_minimal_translation(YaepParseState *ps, YaepTreeNode *
     return root;
 }
 
+/* Report the nodes of the final tree (YAEP_TRACE_CHOSEN), node is below the node
+   added at parent. The tree is a DAG, visited remembers the nodes already reported. */
+static void trace_chosen_nodes(YaepParseState *ps, YaepTreeNode *node, int parent, hash_table_t visited)
+{
+    for (; node != NULL; node = node->type == YAEP_ALT ? node->val.alt.next : NULL)
+    {
+        YaepTreeNode *n = node->type == YAEP_ALT ? node->val.alt.node : node;
+        if (n->type != YAEP_ANODE) continue;
+        hash_table_entry_t *entry = find_hash_table_entry(visited, n, true);
+        if (*entry != NULL) continue;
+        *entry = (hash_table_entry_t)n;
+        trace_tree_chosen(ps, n->val.anode.trace_step, parent);
+        YaepTreeNode *child;
+        for (int i = 0; (child = n->val.anode.children[i]) != NULL; i++)
+        {
+            trace_chosen_nodes(ps, child, n->val.anode.trace_step, visited);
+        }
+    }
+}
+
 YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
 {
     yaep_debug(ps, "build_parse_tree()");
@@ -994,6 +1016,16 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
            their children. */
         // The parse is only ambiguous if several parses remain after selecting the minimal cost.
         result = find_minimal_translation(ps, result, ambiguous_p);
+    }
+    if (ps->run.trace_event && result != NULL)
+    {
+        // The start rule $ (step 1) has no abstract node, it is always used, as the root.
+        trace_tree_chosen(ps, 1, 0);
+        hash_table_t visited = create_hash_table(ps->run.grammar->alloc, ps->input_len* 4 + 16,
+                                                 (hash_table_hash_function)reserv_mem_hash,
+                                                 (hash_table_eq_function)reserv_mem_eq);
+        trace_chosen_nodes(ps, result, 1, visited);
+        delete_hash_table(visited);
     }
     if (false)
     {

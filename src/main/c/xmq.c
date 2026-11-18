@@ -5961,7 +5961,17 @@ typedef struct
     XMQDoc *trace;
     XmlDom *dom;
     XMQNode *grammar, *input, *steps, *tree;
+    // The tree nodes by build step, nodes[step-1], to add the cost and chosen.
+    XMQNode **nodes;
+    int num_nodes, nodes_size;
 } IXMLTraceRecorder;
+
+/** The tree node added at step, or NULL. */
+static XMQNode *trace_node(IXMLTraceRecorder *r, int step)
+{
+    if (step < 1 || step > r->num_nodes) return NULL;
+    return r->nodes[step-1];
+}
 
 static XMQNode *trace_add(IXMLTraceRecorder *r, XMQNode *parent, const char *name)
 {
@@ -6028,6 +6038,24 @@ static void trace_event(YaepParseRun *pr, YaepTraceEvent *ev)
         trace_set_int(e, "to", ev->to);
         xml_node_set_attr(e, "rule", NULL, ev->lhs);
         xml_node_set_attr(e, "rhs", NULL, ev->matched);
+        xml_node_set_attr(e, "chosen", NULL, "no");
+        if (ev->step > r->nodes_size)
+        {
+            r->nodes_size = ev->step * 2;
+            r->nodes = (XMQNode**)realloc(r->nodes, r->nodes_size * sizeof(XMQNode*));
+        }
+        for (; r->num_nodes < ev->step; r->num_nodes++) r->nodes[r->num_nodes] = NULL;
+        r->nodes[ev->step-1] = e;
+        break;
+    case YAEP_TRACE_COST:
+        if ((e = trace_node(r, ev->step))) trace_set_int(e, "cost", ev->cost);
+        break;
+    case YAEP_TRACE_CHOSEN:
+        if ((e = trace_node(r, ev->step)))
+        {
+            xml_node_set_attr(e, "chosen", NULL, "yes");
+            trace_set_int(e, "tree-parent", ev->parent);
+        }
         break;
     }
 }
@@ -6044,6 +6072,8 @@ static void trace_recorder_start(IXMLTraceRecorder *r, YaepParseRun *run)
     r->input = trace_add(r, root, "input");
     r->steps = trace_add(r, root, "steps");
     r->tree = trace_add(r, root, "tree");
+    r->nodes = NULL;
+    r->num_nodes = r->nodes_size = 0;
     run->trace_event = trace_event;
     run->trace_data = r;
 }
@@ -6053,6 +6083,8 @@ static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc 
 {
     run->trace_event = NULL;
     run->trace_data = NULL;
+    free(r->nodes);
+    r->nodes = NULL;
     if (doc->ixml_trace_) xmqFreeDoc(doc->ixml_trace_);
     r->trace->root_ = xml_dom_root_element(r->dom);
     doc->ixml_trace_ = r->trace;

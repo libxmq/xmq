@@ -70,8 +70,16 @@ public final class TreeBuilder
      * @param production the production
      * @param from the input position where the node starts
      * @param to the input position after the node
+     * @param cost the cost of the node with its children
+     * @param chosen true if the node is in the final tree
+     * @param tree_parent the step of the parent in the final tree, 0 for the root or if not
+     *        chosen. A node is composed once, for its first parent, and can be used by another.
      */
-    public record Step(int step, int parent, Production production, int from, int to) { }
+    public record Step(int step, int parent, Production production, int from, int to, int cost, boolean chosen,
+                       int tree_parent) { }
+
+    /** A production over a span, a node is composed once for each. */
+    private record Node(Production production, int from, int to) { }
 
     /** The productions that composed a tree, numbered when they were started. */
     private final List<Step> composed = new ArrayList<>();
@@ -80,6 +88,8 @@ public final class TreeBuilder
     /** The productions being composed right now, the innermost first. */
     private final Deque<Integer> composing = new ArrayDeque<>();
     private int num_started;
+    /** The tree from build(). */
+    private Tree result;
 
     /** The children found for a prefix of a production: the trees, their total cost,
      * and whether a tie was found. */
@@ -108,7 +118,8 @@ public final class TreeBuilder
      * @return the tree of the start rule, or null if there is none */
     public Tree build()
     {
-        return best(grammar.start, 0, chart.length());
+        result = best(grammar.start, 0, chart.length());
+        return result;
     }
 
     /**
@@ -127,14 +138,33 @@ public final class TreeBuilder
         Map<Integer, Integer> renumbered = new HashMap<>();
         renumbered.put(0, 0);
         for (Step s : sorted) renumbered.put(s.step(), renumbered.size());
-        List<Step> result = new ArrayList<>();
+        List<Step> steps = new ArrayList<>();
         for (Step s : sorted)
         {
             int parent = s.parent();
             while (!renumbered.containsKey(parent)) parent = parent_of.get(parent);
-            result.add(new Step(renumbered.get(s.step()), renumbered.get(parent), s.production(), s.from(), s.to()));
+            steps.add(new Step(renumbered.get(s.step()), renumbered.get(parent), s.production(), s.from(), s.to(), s.cost(),
+                               false, 0));
         }
-        return result;
+        // Mark the nodes of the final tree, with their parent in it.
+        Map<Node, Integer> step_of = new HashMap<>();
+        for (Step s : steps) step_of.put(new Node(s.production(), s.from(), s.to()), s.step());
+        Map<Integer, Integer> tree_parent_of = new HashMap<>();
+        if (result != null) addChosen(result, 0, step_of, tree_parent_of);
+        steps.replaceAll(s -> tree_parent_of.containsKey(s.step())
+                         ? new Step(s.step(), s.parent(), s.production(), s.from(), s.to(), s.cost(), true,
+                                    tree_parent_of.get(s.step()))
+                         : s);
+        return steps;
+    }
+
+    /** Add the steps of the rule nodes of the tree to tree_parent_of, with the step of their parent. */
+    private static void addChosen(Tree node, int parent, Map<Node, Integer> step_of, Map<Integer, Integer> tree_parent_of)
+    {
+        if (!node.isRule()) return;
+        int step = step_of.get(new Node(node.production(), node.from(), node.to()));
+        tree_parent_of.putIfAbsent(step, parent);
+        for (Tree child : node.children()) addChosen(child, step, step_of, tree_parent_of);
     }
 
     /** The best tree for the rule matching from..to, or null. */
@@ -157,8 +187,8 @@ public final class TreeBuilder
             Children c = prefix(p, n, from, to);
             composing.pop();
             if (c == null) continue;
-            composed.add(new Step(step, parent, p, from, to));
             Tree candidate = Tree.rule(p, c.trees(), from, to, rule.cost + c.cost(), c.ambiguous());
+            composed.add(new Step(step, parent, p, from, to, candidate.cost(), false, 0));
             if (best == null || candidate.cost() < best.cost())
             {
                 best = candidate;
