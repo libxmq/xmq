@@ -250,6 +250,13 @@ java_install_sign:
 library_index:
 	@./scripts/build_library_index.sh
 
+# Run the ixml community group test suite (cloned into 3rdparty/ixml if it is missing),
+# the catalogs are followed and the results verified with xmq, see tests/test_ixml_standard.sh.
+# Run it with another ixml processor: make test_ixml_standard PROCESSOR=coffeepot (or markup-blitz)
+# Only some tests: make test_ixml_standard FILTER=ambiguous
+test_ixml_standard: release
+	@for x in $(BUILDDIRS); do XMQ=$${x}release/xmq FILTER="$(FILTER)" ./tests/test_ixml_standard.sh $(or $(PROCESSOR),xmq) $${x}release/test_output/ixml_standard/$(or $(PROCESSOR),xmq) || exit 1 ; done
+
 # Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
 # kaffepot is just a script around coffepot where -g: and -i are automatically added.
 # Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
@@ -425,7 +432,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_ixml_standard test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

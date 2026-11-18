@@ -14665,10 +14665,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     if (rc != 0)
     {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "internal error, yaep did not accept generated yaep grammar";
-        printf("xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
-        longjmp(state->error_handler, 1);
+        // The grammar was checked when it was read, so this should not happen. Do not
+        // longjmp to state->error_handler here, it belongs to the grammar reading that
+        // has returned.
+        fprintf(stderr, "xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        return false;
     }
 
     yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),
@@ -17314,6 +17315,7 @@ void add_not_rule_string(XMQParseState *state, const char *content);
 void add_not_rule_charset(XMQParseState *state, IXMLNonTerminal *nt);
 void add_not_rule_nonterminal(XMQParseState *state, const char *rule_name);
 void check_not_rule_nonterminals(XMQParseState *state);
+void check_undefined_nonterminals(XMQParseState *state);
 void add_single_char_rule(XMQParseState *state, IXMLNonTerminal *nt, int uc, char mark, char tmark);
 
 bool is_ixml_eob(XMQParseState *state);
@@ -17334,8 +17336,7 @@ bool is_ixml_not_start(XMQParseState *state);
 bool is_ixml_literal_start(XMQParseState *state);
 bool is_ixml_mark_char(char c);
 bool is_ixml_name_follower(XMQParseState *state);
-bool is_ixml_name_start(char c);
-bool is_ixml_naming_char(char c);
+bool is_ixml_name_start(XMQParseState *state);
 bool is_ixml_naming_start(XMQParseState *state);
 bool is_ixml_nonterminal_start(XMQParseState *state);
 bool is_ixml_prolog_start(XMQParseState *state);
@@ -17449,7 +17450,7 @@ bool is_ixml_alt_start(XMQParseState *state)
         c == '[' || // Charset
         c == '~' || // Negative charset
         is_ixml_mark_char(c) || // @^-
-        is_ixml_name_start(c);
+        is_ixml_name_start(state);
 }
 
 bool is_ixml_alt_end(char c)
@@ -17638,19 +17639,37 @@ bool is_ixml_name_follower(XMQParseState *state)
     return is_ixml_name_follower_codepoint(cp);
 }
 
-bool is_ixml_name_start(char c)
+// -namestart: ["_"; L]. Like the followers, a letter can be any Unicode letter.
+static bool is_ixml_name_start_codepoint(int cp)
 {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    if (cp == '_') return true;
+    const char *cats[] = {"L", "Lu", "Ll", "Lt", "Lm", "Lo"};
+    for (size_t n = 0; n < sizeof(cats)/sizeof(cats[0]); ++n)
+    {
+        int *cat = NULL;
+        size_t cat_len = 0;
+        if (unicode_get_category_part(cats[n], &cat, &cat_len) &&
+            category_has_code(cp, cat, cat_len))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
-bool is_ixml_naming_char(char c)
+/** True if a name starts at state->i, the whole (possibly multi-byte) UTF-8 character is checked. */
+bool is_ixml_name_start(XMQParseState *state)
 {
-    return is_ixml_name_start(c) || is_ixml_mark_char(c);
+    if (state->i < state->buffer_start || state->i >= state->buffer_stop) return false;
+    int cp = 0;
+    size_t len = 0;
+    if (!decode_utf8(state->i, state->buffer_stop, &cp, &len)) return false;
+    return is_ixml_name_start_codepoint(cp);
 }
 
 bool is_ixml_naming_start(XMQParseState *state)
 {
-    return is_ixml_naming_char(*(state->i));
+    return is_ixml_mark_char(*(state->i)) || is_ixml_name_start(state);
 }
 
 bool is_ixml_nonterminal_start(XMQParseState *state)
@@ -18344,7 +18363,7 @@ void parse_ixml_not(XMQParseState *state)
         IXMLNonTerminal *nt = parse_ixml_charset(state, &tmark);
         add_not_rule_charset(state, nt);
     }
-    else if (is_ixml_name_start(*(state->i)))
+    else if (is_ixml_name_start(state))
     {
         // !name where the rule name matches one character, eg
         // -namechar = ['a'-'z'; '0'-'9'], or alternatives of fixed sequences
@@ -18388,9 +18407,16 @@ void parse_ixml_name(XMQParseState *state, const char **name_start, const char *
 {
     IXML_STEP(name,state);
 
-    assert(is_ixml_name_start(*(state->i)));
+    assert(is_ixml_name_start(state));
     *name_start = state->i;
-    EAT(name_start, 1);
+    {
+        // The first character may be multi-byte, eg ª.
+        int cp = 0;
+        size_t len = 0;
+        decode_utf8(state->i, state->buffer_stop, &cp, &len);
+        if (len < 1 || len > 4) len = 1;
+        EAT(name_start, len);
+    }
 
     while (is_ixml_name_follower(state))
     {
@@ -18432,7 +18458,7 @@ void parse_ixml_naming(XMQParseState *state,
     }
     parse_ixml_whitespace(state);
 
-    if (!is_ixml_name_start(*(state->i)))
+    if (!is_ixml_name_start(state))
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
         state->error_info = "expected a name";
@@ -18957,6 +18983,7 @@ bool ixml_build_yaep_grammar(YaepParseRun *pr,
             longjmp(state->error_handler, 1);
         }
         check_not_rule_nonterminals(state);
+        check_undefined_nonterminals(state);
     }
     else
     {
@@ -19313,6 +19340,36 @@ void check_not_rule_nonterminals(XMQParseState *state)
             longjmp(state->error_handler, 1);
         }
     }
+}
+
+/** Every nonterminal used in a rule must be defined by a rule (ixml static error S02). */
+void check_undefined_nonterminals(XMQParseState *state)
+{
+    HashMap *defined = hashmap_create(state->ixml_rules->size * 2 + 16);
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        hashmap_put(defined, r->rule_name->name, r);
+    }
+    for (size_t i = 0; i < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        for (size_t j = 0; j < r->rhs_terms->size; ++j)
+        {
+            IXMLTerm *term = (IXMLTerm*)vector_element_at(r->rhs_terms, j);
+            if (term->type != IXML_NON_TERMINAL || !term->nt || !term->nt->name) continue;
+            // Charset rules are generated with the grammar.
+            if (term->nt->charset) continue;
+            if (hashmap_get(defined, term->nt->name)) continue;
+            static char buf[1024];
+            snprintf(buf, sizeof(buf), "S02 the rule %s is not defined", term->nt->name);
+            hashmap_free(defined);
+            state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+            state->error_info = buf;
+            longjmp(state->error_handler, 1);
+        }
+    }
+    hashmap_free(defined);
 }
 
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)

@@ -1,0 +1,378 @@
+// Turn the ixml test suite catalogs into a plan for tests/test_ixml_standard.sh:
+//   xmq --trim=none test-catalog.xml transform --stringparam=catalog=/abs/test-catalog.xml catalog-to-tests.xslq to-text
+// The catalogs that a catalog refers to (test-set-ref) are followed, in document order.
+// Every line of the plan is a call of a shell function, the arguments are shell quoted:
+//   catalog PATH                       a catalog starts
+//   set_begin NAME / set_end           a test set, nested sets inherit the grammar
+//   grammar_ref PATH                   the grammar of the set, in a file
+//   grammar_inline TEXT                the grammar of the set, in the catalog
+//   grammar_vxml PATH                  the grammar of the set in xml form
+//   depends 'Unicode-version=15.0'     a dependency of the set or test, several are alternatives
+//   grammar_test_begin                 a test of the grammar itself
+//   case_begin NAME                    a test case
+//   input_ref PATH / input_inline TEXT the input of the test case
+//   expect_xml_ref PATH                an expected result, several are alternatives
+//   expect_xml_inline CATALOG K        the K:th tc:assert-xml of the catalog is the expected result
+//   expect_not_a_sentence / expect_not_a_grammar / expect_dynamic_error CODES
+//   test_end                           run the test
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:tc  = http://invisiblexml.org/NS/test-catalog)
+{
+    xsl:output(method = text)
+
+    // The absolute path of the catalog being transformed.
+    xsl:param(name = catalog)
+
+    xsl:template(match = '/')
+    {
+        xsl:call-template(name = catalog)
+        {
+            xsl:with-param(name   = path
+                           select = $catalog)
+            xsl:with-param(name   = doc
+                           select = "'/'")
+        }
+    }
+
+    // A catalog: its test sets, and the catalogs it refers to.
+    xsl:template(name = catalog)
+    {
+        xsl:param(name = path)
+        xsl:param(name = doc)
+        xsl:variable(name = dir)
+        {
+            xsl:call-template(name = dirname)
+            {
+                xsl:with-param(name   = p
+                               select = $path)
+            }
+        }
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'catalog'")
+            xsl:with-param(name   = a
+                           select = $path)
+        }
+        xsl:variable(name   = nodes
+                     select = "document($path)/tc:test-catalog/*[self::tc:test-set or self::tc:test-set-ref]")
+        xsl:for-each(select = $nodes)
+        {
+            xsl:choose {
+                xsl:when(test = 'self::tc:test-set-ref')
+                {
+                    xsl:call-template(name = catalog)
+                    {
+                        xsl:with-param(name   = path
+                                       select = "concat($dir, '/', @href)")
+                        xsl:with-param(name   = doc
+                                       select = "''")
+                    }
+                }
+                xsl:otherwise {
+                    xsl:apply-templates(select = .)
+                    {
+                        xsl:with-param(name   = dir
+                                       select = $dir)
+                        xsl:with-param(name   = path
+                                       select = $path)
+                    }
+                }
+            }
+        }
+    }
+
+    xsl:template(match = tc:test-set)
+    {
+        xsl:param(name = dir)
+        xsl:param(name = path)
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'set_begin'")
+            xsl:with-param(name   = a
+                           select = @name)
+        }
+        xsl:apply-templates(select = tc:dependencies)
+        xsl:for-each(select = tc:ixml-grammar-ref)
+        {
+            xsl:call-template(name = line)
+            {
+                xsl:with-param(name   = f
+                               select = "'grammar_ref'")
+                xsl:with-param(name   = a
+                               select = "concat($dir, '/', @href)")
+            }
+        }
+        xsl:for-each(select = tc:ixml-grammar)
+        {
+            xsl:call-template(name = line)
+            {
+                xsl:with-param(name   = f
+                               select = "'grammar_inline'")
+                xsl:with-param(name   = a
+                               select = .)
+            }
+        }
+        xsl:for-each(select = 'tc:vxml-grammar-ref | tc:vxml-grammar')
+        {
+            xsl:call-template(name = line)
+            {
+                xsl:with-param(name   = f
+                               select = "'grammar_vxml'")
+                xsl:with-param(name   = a
+                               select = "concat($dir, '/', @href)")
+            }
+        }
+        xsl:apply-templates(select = 'tc:grammar-test | tc:test-case | tc:test-set')
+        {
+            xsl:with-param(name   = dir
+                           select = $dir)
+            xsl:with-param(name   = path
+                           select = $path)
+        }
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'set_end'")
+        }
+    }
+
+    xsl:template(match = tc:grammar-test)
+    {
+        xsl:param(name = dir)
+        xsl:param(name = path)
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'grammar_test_begin'")
+        }
+        xsl:apply-templates(select = tc:dependencies)
+        xsl:apply-templates(select = tc:result/*)
+        {
+            xsl:with-param(name   = dir
+                           select = $dir)
+            xsl:with-param(name   = path
+                           select = $path)
+        }
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'test_end'")
+        }
+    }
+
+    xsl:template(match = tc:test-case)
+    {
+        xsl:param(name = dir)
+        xsl:param(name = path)
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'case_begin'")
+            xsl:with-param(name   = a
+                           select = @name)
+        }
+        xsl:apply-templates(select = tc:dependencies)
+        xsl:for-each(select = tc:test-string-ref)
+        {
+            xsl:call-template(name = line)
+            {
+                xsl:with-param(name   = f
+                               select = "'input_ref'")
+                xsl:with-param(name   = a
+                               select = "concat($dir, '/', @href)")
+            }
+        }
+        xsl:for-each(select = tc:test-string)
+        {
+            xsl:call-template(name = line)
+            {
+                xsl:with-param(name   = f
+                               select = "'input_inline'")
+                xsl:with-param(name   = a
+                               select = .)
+            }
+        }
+        xsl:apply-templates(select = tc:result/*)
+        {
+            xsl:with-param(name   = dir
+                           select = $dir)
+            xsl:with-param(name   = path
+                           select = $path)
+        }
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'test_end'")
+        }
+    }
+
+    // A dependency: depends 'Unicode-version=15.0' (several attributes are joined with ;).
+    xsl:template(match = tc:dependencies)
+    {
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name = f
+                           select = "'depends'")
+            xsl:with-param(name = a)
+            {
+                xsl:for-each(select = @*)
+                {
+                    xsl:if(test = 'position() > 1') = ';'
+                    xsl:value-of(select = "concat(local-name(), '=', .)")
+                }
+            }
+        }
+    }
+
+    xsl:template(match = tc:assert-xml-ref)
+    {
+        xsl:param(name = dir)
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_xml_ref'")
+            xsl:with-param(name   = a
+                           select = "concat($dir, '/', @href)")
+        }
+    }
+
+    xsl:template(match = tc:assert-xml)
+    {
+        xsl:param(name = path)
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_xml_inline'")
+            xsl:with-param(name   = a
+                           select = $path)
+            xsl:with-param(name   = b
+                           select = 'count(preceding::tc:assert-xml) + 1')
+        }
+    }
+
+    xsl:template(match = tc:assert-not-a-sentence)
+    {
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_not_a_sentence'")
+        }
+    }
+
+    xsl:template(match = tc:assert-not-a-grammar)
+    {
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_not_a_grammar'")
+        }
+    }
+
+    xsl:template(match = tc:assert-dynamic-error)
+    {
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_dynamic_error'")
+            xsl:with-param(name   = a
+                           select = @error-code)
+        }
+    }
+
+    // Anything else in a result is reported, so that the plan is never silently incomplete.
+    xsl:template(match = *)
+    {
+        xsl:call-template(name = line)
+        {
+            xsl:with-param(name   = f
+                           select = "'expect_unknown'")
+            xsl:with-param(name   = a
+                           select = 'local-name()')
+        }
+    }
+
+    // A line of the plan: f 'a' 'b', an argument that is not given (-none-) is left out.
+    xsl:template(name = line)
+    {
+        xsl:param(name = f)
+        xsl:param(name   = a
+                  select = "'-none-'")
+        xsl:param(name   = b
+                  select = "'-none-'")
+        xsl:value-of(select = $f)
+        xsl:if(test = "string($a) != '-none-'")
+        {
+            xsl:text = ' '
+            xsl:call-template(name = quote)
+            {
+                xsl:with-param(name   = s
+                               select = 'string($a)')
+            }
+        }
+        xsl:if(test = "string($b) != '-none-'")
+        {
+            xsl:text = ' '
+            xsl:call-template(name = quote)
+            {
+                xsl:with-param(name   = s
+                               select = 'string($b)')
+            }
+        }
+        xsl:text { &#10; }
+    }
+
+    // The string quoted for the shell: 'it'\''s'
+    xsl:template(name = quote)
+    {
+        xsl:param(name = s)
+        xsl:text = "'"
+        xsl:call-template(name = quote-inner)
+        {
+            xsl:with-param(name   = s
+                           select = $s)
+        }
+        xsl:text = "'"
+    }
+
+    xsl:template(name = quote-inner)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = '''contains($s, "'")''')
+            {
+                xsl:value-of(select = '''substring-before($s, "'")''')
+                xsl:text = "'\''"
+                xsl:call-template(name = quote-inner)
+                {
+                    xsl:with-param(name   = s
+                                   select = '''substring-after($s, "'")''')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+
+    // The directory of a path: /a/b/c.xml gives /a/b
+    xsl:template(name = dirname)
+    {
+        xsl:param(name = p)
+        xsl:if(test = "contains($p, '/')")
+        {
+            xsl:value-of(select = "substring-before($p, '/')")
+            xsl:if(test = "contains(substring-after($p, '/'), '/')")
+            {
+                xsl:text = '/'
+                xsl:call-template(name = dirname)
+                {
+                    xsl:with-param(name   = p
+                                   select = "substring-after($p, '/')")
+                }
+            }
+        }
+    }
+}

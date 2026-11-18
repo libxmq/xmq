@@ -6487,10 +6487,11 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     if (rc != 0)
     {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "internal error, yaep did not accept generated yaep grammar";
-        printf("xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
-        longjmp(state->error_handler, 1);
+        // The grammar was checked when it was read, so this should not happen. Do not
+        // longjmp to state->error_handler here, it belongs to the grammar reading that
+        // has returned.
+        fprintf(stderr, "xmq: internal error generating yaep grammar from ixml grammar %s\n", yaep_error_message(xmq_get_yaep_grammar(ixml_grammar)));
+        return false;
     }
 
     yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar),

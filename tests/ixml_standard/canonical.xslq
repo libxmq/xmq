@@ -1,0 +1,103 @@
+// The canonical form of an xml document, to compare the result of an ixml parse with
+// the expected result like fn:deep-equal: elements and attributes by namespace and local
+// name, the attributes sorted, adjacent text nodes joined, comments, processing
+// instructions and namespace declarations left out. Every name and text is written with
+// its length first, so nothing needs escaping:
+//   element    <N:{uri}name @N:{uri}attr=N:value ... > children )
+//   text       TN:text
+// Read the document with xmq --trim=none, the whitespace is significant.
+// With which=K the K:th tc:assert-xml of a test catalog is used, for inline expected results.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform
+               xmlns:tc  = http://invisiblexml.org/NS/test-catalog)
+{
+    xsl:output(method = text)
+    xsl:param(name = which)
+
+    xsl:template(match = /)
+    {
+        xsl:choose {
+            xsl:when(test = "$which != ''")
+            {
+                xsl:apply-templates(select = '(//tc:assert-xml)[position() = number($which)]/*')
+            }
+            xsl:otherwise {
+                xsl:apply-templates(select = '/*')
+            }
+        }
+    }
+
+    xsl:template(match = *)
+    {
+        xsl:text = '<'
+        xsl:call-template(name = counted)
+        {
+            xsl:with-param(name   = s
+                           select = "concat('{', namespace-uri(), '}', local-name())")
+        }
+        xsl:for-each(select = @*)
+        {
+            xsl:sort(select = "concat('{', namespace-uri(), '}', local-name())")
+            xsl:text = ' @'
+            xsl:call-template(name = counted)
+            {
+                xsl:with-param(name   = s
+                               select = "concat('{', namespace-uri(), '}', local-name())")
+            }
+            xsl:text = '='
+            xsl:call-template(name = counted)
+            {
+                xsl:with-param(name   = s
+                               select = .)
+            }
+        }
+        xsl:text = '>'
+        xsl:apply-templates(select = '*|text()')
+        xsl:text = ')'
+    }
+
+    // A run of adjacent text nodes is written once, by its first node.
+    xsl:template(match = 'text()')
+    {
+        xsl:if(test = 'not(preceding-sibling::node()[1][self::text()])')
+        {
+            xsl:variable(name = run)
+            {
+                xsl:call-template(name = text-run)
+                {
+                    xsl:with-param(name   = node
+                                   select = .)
+                }
+            }
+            xsl:text = T
+            xsl:call-template(name = counted)
+            {
+                xsl:with-param(name   = s
+                               select = $run)
+            }
+        }
+    }
+
+    xsl:template(name = text-run)
+    {
+        xsl:param(name = node)
+        xsl:value-of(select = $node)
+        xsl:if(test = '$node/following-sibling::node()[1][self::text()]')
+        {
+            xsl:call-template(name = text-run)
+            {
+                xsl:with-param(name   = node
+                               select = '$node/following-sibling::node()[1]')
+            }
+        }
+    }
+
+    // N:s
+    xsl:template(name = counted)
+    {
+        xsl:param(name = s)
+        xsl:value-of(select = 'string-length($s)')
+        xsl:text = ':'
+        xsl:value-of(select = $s)
+    }
+}
