@@ -5,7 +5,7 @@ Y = 'b', 'c' | 'c'.
 INPUT
 abc
 OUTPUT
-AMBIGUOUS(state      = ambiguous
+AMBIGUOUS(ixml:state = ambiguous
           xmlns:ixml = http://invisiblexml.org/NS)
 {
     S {

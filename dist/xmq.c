@@ -14781,9 +14781,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             {
                 ns = xml_ns_declare(element, "ixml", "http://invisiblexml.org/NS");
             }
-            // This should be set with the namespace ixml, kept without namespace
-            // as before (the libxml2 version leaked with xmlSetNsProp).
-            xml_node_set_attr(element, "state", NULL, "ambiguous");
+            // ixml:state="ambiguous" as the ixml specification says.
+            xml_node_set_attr(element, "state", ns, "ambiguous");
         }
     }
 

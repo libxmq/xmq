@@ -6,7 +6,7 @@ ID = 'T'.
 INPUT
 T
 OUTPUT
-AMBIGUOUS(state      = ambiguous
+AMBIGUOUS(ixml:state = ambiguous
           xmlns:ixml = http://invisiblexml.org/NS)
 {
     p {
