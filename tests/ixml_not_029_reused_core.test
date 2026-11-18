@@ -9,9 +9,11 @@ ixml(ixml:state = failed
 {
     info   = 'ixml:1:3: syntax error
                 i
-                ^'
+                ^
+              expected p: #20'
     line   = 1
     column = 3
     pos    = 3
+    expected(rule = p) = #20
 }
 END

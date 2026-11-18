@@ -36,11 +36,28 @@ public final class Earley
      * @param grammar the grammar
      * @param chart the Earley sets
      * @param tree the chosen tree, null if the input was rejected
-     * @param steps the nodes in the order they were added to the tree, see TreeBuilder.steps */
+     * @param steps the nodes in the order they were added to the tree, see TreeBuilder.steps
+     * @param expected on a syntax error, what the parser could read at the position */
     public record Result(XmlDocument doc, String error, int position, Grammar grammar, Chart chart, Tree tree,
-                         List<TreeBuilder.Step> steps) { }
+                         List<TreeBuilder.Step> steps, List<EarleyParser.Expected> expected) { }
 
     private Earley() { }
+
+    /** What the Earley parser expected where it rejected the input, for the failure
+     * message of another parser (IXMLAnalyzer).
+     * @param grammar_source the ixml grammar
+     * @param input the rejected input
+     * @param position the code point position where the other parser failed
+     * @return what could come next, or an empty list if the Earley parser does not
+     *         reject the input at the same position (eg a not, which it does not check yet) */
+    public static List<EarleyParser.Expected> expectedAt(String grammar_source, String input, int position)
+    {
+        Grammar grammar = new Grammar(IXMLGrammar.parse(grammar_source));
+        EarleyParser parser = new EarleyParser(grammar);
+        Chart chart = parser.recognize(input.codePoints().toArray());
+        if (parser.accepted(chart) || parser.failurePosition(chart) != position) return List.of();
+        return parser.expected(chart, position);
+    }
 
     /** Parse the input with the grammar.
      * @param grammar_source the ixml grammar
@@ -56,21 +73,22 @@ public final class Earley
         Chart chart = parser.recognize(codepoints);
         if (!parser.accepted(chart))
         {
-            return new Result(null, "syntax error", parser.failurePosition(chart), grammar, chart, null, List.of());
+            int position = parser.failurePosition(chart);
+            return new Result(null, "syntax error", position, grammar, chart, null, List.of(), parser.expected(chart, position));
         }
         parser.removeForbiddenByNots(chart);
 
         TreeBuilder builder = new TreeBuilder(chart, grammar);
         Tree tree = builder.build();
         List<TreeBuilder.Step> steps = builder.steps();
-        if (tree == null) return new Result(null, "no tree could be built", codepoints.length, grammar, chart, null, steps);
+        if (tree == null) return new Result(null, "no tree could be built", codepoints.length, grammar, chart, null, steps, List.of());
         try
         {
-            return new Result(XmlWriter.toXml(tree, grammar), null, codepoints.length, grammar, chart, tree, steps);
+            return new Result(XmlWriter.toXml(tree, grammar), null, codepoints.length, grammar, chart, tree, steps, List.of());
         }
         catch (XmlWriter.DynamicError e)
         {
-            return new Result(null, e.getMessage(), codepoints.length, grammar, chart, tree, steps);
+            return new Result(null, e.getMessage(), codepoints.length, grammar, chart, tree, steps, List.of());
         }
     }
 

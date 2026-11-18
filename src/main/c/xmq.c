@@ -5667,6 +5667,276 @@ static void xmq_dom_add_top(XmlDom *doc, XMQNode *n)
     else xml_node_add_child(xml_dom_document(doc), n);
 }
 
+/** What the ixml parser expected where it stopped, for each grammar rule: the strings,
+    characters and character sets as written in an ixml grammar, eg 'gives', #20 or
+    ['a'-'z'; #a], and the end of the input. ixml has no tokens, so a string like 'gives'
+    is expected one character at a time: the characters from the dot of the item to the next
+    charset or rule are shown together. A generated rule (|1) is shown as the named rule
+    it was made for. The Java version (EarleyParser.expected) does the same. */
+typedef struct
+{
+    char *rule; // The named rule, NULL for the end of the input.
+    char *text;
+} IXMLExpectedItem;
+
+typedef struct
+{
+    IXMLExpectedItem *items;
+    int num, size;
+    // The owner of each generated rule: the rule whose rhs refers to it.
+    char **owner_from, **owner_to;
+    int num_owners;
+} IXMLExpected;
+
+static void expected_add(IXMLExpected *e, const char *rule, const char *text)
+{
+    for (int i = 0; i < e->num; i++)
+    {
+        bool same_rule = (rule == NULL && e->items[i].rule == NULL) ||
+                         (rule != NULL && e->items[i].rule != NULL && !strcmp(rule, e->items[i].rule));
+        if (same_rule && !strcmp(e->items[i].text, text)) return;
+    }
+    if (e->num == e->size)
+    {
+        e->size = e->size ? e->size*2 : 16;
+        e->items = (IXMLExpectedItem*)realloc(e->items, e->size * sizeof(IXMLExpectedItem));
+    }
+    e->items[e->num].rule = rule ? strdup(rule) : NULL;
+    e->items[e->num].text = strdup(text);
+    e->num++;
+}
+
+static void expected_free(IXMLExpected *e)
+{
+    for (int i = 0; i < e->num; i++)
+    {
+        free(e->items[i].rule);
+        free(e->items[i].text);
+    }
+    free(e->items);
+    free(e->owner_from);
+    free(e->owner_to);
+}
+
+/** Find the owner of every generated rule, |1 |2 ..., in the ixml rules. */
+static void expected_find_owners(IXMLExpected *e, XMQParseState *state)
+{
+    if (!state || !state->ixml_rules) return;
+    size_t n = 0;
+    for (size_t i = 0; i < state->ixml_rules->size; i++)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        n += r->rhs_terms->size;
+    }
+    e->owner_from = (char**)calloc(n + 1, sizeof(char*));
+    e->owner_to = (char**)calloc(n + 1, sizeof(char*));
+    for (size_t i = 0; i < state->ixml_rules->size; i++)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        for (size_t j = 0; j < r->rhs_terms->size; j++)
+        {
+            IXMLTerm *term = (IXMLTerm*)vector_element_at(r->rhs_terms, j);
+            if (term->type != IXML_NON_TERMINAL || !term->nt || !term->nt->name) continue;
+            if (term->nt->name[0] != '|' || !strcmp(term->nt->name, r->rule_name->name)) continue;
+            e->owner_from[e->num_owners] = term->nt->name;
+            e->owner_to[e->num_owners] = r->rule_name->name;
+            e->num_owners++;
+        }
+    }
+}
+
+/** The named rule that the rule belongs to: itself, or for a generated rule the named
+    rule it was made for. */
+static const char *expected_rule_name(IXMLExpected *e, const char *name)
+{
+    for (int depth = 0; depth < 1000 && name[0] == '|'; depth++)
+    {
+        const char *owner = NULL;
+        for (int i = 0; i < e->num_owners; i++)
+        {
+            if (!strcmp(e->owner_from[i], name)) { owner = e->owner_to[i]; break; }
+        }
+        if (!owner) break;
+        name = owner;
+    }
+    return name;
+}
+
+/** Append s to buf (of size), cut if it does not fit. */
+static void expected_cat(char *buf, size_t size, const char *s)
+{
+    size_t len = strlen(buf);
+    snprintf(buf+len, size-len, "%s", s);
+}
+
+/** Append a code point as written in an ixml grammar: 'a', "'" or #a for a control character or space. */
+static void expected_cat_codepoint(char *buf, size_t size, int cp)
+{
+    char s[16];
+    if (cp < 0x21 || cp == 0x7f) snprintf(s, sizeof(s), "#%x", cp);
+    else if (cp == '\'') snprintf(s, sizeof(s), "\"'\"");
+    else
+    {
+        UTF8Char u;
+        size_t n = encode_utf8(cp, &u);
+        snprintf(s, sizeof(s), "'%.*s'", (int)n, u.bytes);
+    }
+    expected_cat(buf, size, s);
+}
+
+/** The characters codes[0..n) as an ixml string: 'gives', "it's", or a single character
+    as expected_cat_codepoint writes it. The string ends before a control character. */
+static void expected_cat_string(char *buf, size_t size, const int *codes, int n)
+{
+    int len = 0;
+    while (len < n && codes[len] >= 0x20 && codes[len] != 0x7f) len++;
+    if (len < 2)
+    {
+        expected_cat_codepoint(buf, size, codes[0]);
+        return;
+    }
+    bool has_single = false, has_double = false;
+    for (int i = 0; i < len; i++)
+    {
+        if (codes[i] == '\'') has_single = true;
+        if (codes[i] == '"') has_double = true;
+    }
+    char q = (has_single && !has_double) ? '"' : '\'';
+    char qs[2] = { q, 0 };
+    expected_cat(buf, size, qs);
+    for (int i = 0; i < len; i++)
+    {
+        if (codes[i] == q) expected_cat(buf, size, qs); // A quote is doubled.
+        UTF8Char u;
+        size_t ulen = encode_utf8(codes[i], &u);
+        u.bytes[ulen] = 0;
+        expected_cat(buf, size, u.bytes);
+    }
+    expected_cat(buf, size, qs);
+}
+
+/** A charset rule is named after the charset, eg [#61-#7a] or ~[-#78;#a] (see generate_charset_rule_name). */
+static bool is_charset_rule_name(const char *name)
+{
+    return name[0] == '[' || (name[0] == '~' && name[1] == '[');
+}
+
+/** The charset as written in an ixml grammar, from the name of its rule:
+    ~[-#78;#a] gives ~['x'; #a], the mark (here -) is left out. */
+static void charset_rule_name_to_text(const char *name, char *buf, size_t size)
+{
+    const char *p = name;
+    buf[0] = 0;
+    if (*p == '~') { expected_cat(buf, size, "~"); p++; }
+    p++; // [
+    if (*p == '-' || *p == '^' || *p == '@') p++; // The mark.
+    expected_cat(buf, size, "[");
+    bool first = true;
+    while (*p && *p != ']')
+    {
+        if (!first) expected_cat(buf, size, "; ");
+        first = false;
+        if (*p == '#')
+        {
+            char *end;
+            int from = (int)strtol(p+1, &end, 16);
+            p = end;
+            expected_cat_codepoint(buf, size, from);
+            if (p[0] == '-' && p[1] == '#')
+            {
+                int to = (int)strtol(p+2, &end, 16);
+                p = end;
+                expected_cat(buf, size, "-");
+                expected_cat_codepoint(buf, size, to);
+            }
+        }
+        else
+        {
+            // A category, eg L or Nd.
+            char category[8];
+            int n = 0;
+            while (*p && *p != ';' && *p != ']' && n < 7) category[n++] = *p++;
+            category[n] = 0;
+            expected_cat(buf, size, category);
+        }
+        if (*p == ';') p++;
+    }
+    expected_cat(buf, size, "]");
+}
+
+static void collect_expected(void *data, YaepExpectedKind kind, const char *lhs, const char *symbol, int code,
+                             const int *rest, int rest_len)
+{
+    IXMLExpected *e = (IXMLExpected*)data;
+    // The characters inside a charset rule are only those that occur in the input,
+    // the charset itself is reported where its rule is expected.
+    if (is_charset_rule_name(lhs)) return;
+    const char *rule = expected_rule_name(e, lhs);
+    char buf[1024];
+    buf[0] = 0;
+    switch (kind)
+    {
+    case YAEP_EXPECTED_END:
+        expected_add(e, NULL, "end of input");
+        break;
+    case YAEP_EXPECTED_TERMINAL:
+    {
+        // The characters up to the next charset or rule.
+        int n = 0;
+        while (n < rest_len && rest[n] >= 0) n++;
+        expected_cat_string(buf, sizeof(buf), rest, n);
+        expected_add(e, rule, buf);
+        break;
+    }
+    case YAEP_EXPECTED_NONTERMINAL:
+        if (is_charset_rule_name(symbol))
+        {
+            charset_rule_name_to_text(symbol, buf, sizeof(buf));
+            expected_add(e, rule, buf);
+        }
+        break;
+    }
+}
+
+/** Sort by rule then text, the end of the input last. */
+static int compare_expected(const void *a, const void *b)
+{
+    const IXMLExpectedItem *x = (const IXMLExpectedItem*)a, *y = (const IXMLExpectedItem*)b;
+    if (x->rule == NULL || y->rule == NULL) return (x->rule == NULL) - (y->rule == NULL);
+    int c = strcmp(x->rule, y->rule);
+    if (c != 0) return c;
+    return strcmp(x->text, y->text);
+}
+
+/** The expected as lines, one per rule: "expected verb: 'gives', 'goes' or 'is'" and
+    "expected end of input". The caller frees it. */
+static char *expected_lines(IXMLExpected *e)
+{
+    size_t len = 32;
+    for (int i = 0; i < e->num; i++) len += strlen(e->items[i].text) + (e->items[i].rule ? strlen(e->items[i].rule) : 0) + 32;
+    char *s = (char*)malloc(len);
+    s[0] = 0;
+    for (int i = 0; i < e->num; )
+    {
+        int j = i;
+        while (j < e->num && e->items[j].rule && e->items[i].rule && !strcmp(e->items[i].rule, e->items[j].rule)) j++;
+        if (j == i) j = i+1; // The end of the input.
+        expected_cat(s, len, "\nexpected ");
+        if (e->items[i].rule)
+        {
+            expected_cat(s, len, e->items[i].rule);
+            expected_cat(s, len, ": ");
+        }
+        for (int k = i; k < j; k++)
+        {
+            if (k > i) expected_cat(s, len, k == j-1 ? " or " : ", ");
+            expected_cat(s, len, e->items[k].text);
+        }
+        i = j;
+    }
+    return s;
+}
+
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
                               void *err_tok_attr,
@@ -5678,8 +5948,17 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     int line = 0, col = 0;
     find_line_col(pr->buffer_start, pr->buffer_stop, err_tok_num, &line, &col);
 
-    char buf[1024];
-    snprintf(buf, 1024, "ixml:%d:%d: syntax error\n", line, col);
+    // What the parser could have read instead, for each rule, sorted.
+    IXMLExpected expected;
+    memset(&expected, 0, sizeof(expected));
+    expected_find_owners(&expected, (XMQParseState*)pr->user_data);
+    yaepExpectedSymbols(pr, collect_expected, &expected);
+    qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
+    char *more = expected_lines(&expected);
+
+    size_t buf_size = 1024 + strlen(more);
+    char *buf = (char*)malloc(buf_size);
+    snprintf(buf, buf_size, "ixml:%d:%d: syntax error\n", line, col);
     int start = err_tok_num - 20;
     if (start < 0) start = 0;
     int stop = err_tok_num + 20;
@@ -5697,6 +5976,9 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     }
     buf[j++] = '^';
     buf[j++] = 0;
+    // Then: expected verb: 'gives', 'goes' or 'is'
+    expected_cat(buf, buf_size, more);
+    free(more);
 
     XmlDom *new_doc = xml_dom_new();
     XMQNode *root = xml_node_new_element(new_doc, "ixml", NULL);
@@ -5708,6 +5990,16 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     add_key_number(new_doc, root, "line", line);
     add_key_number(new_doc, root, "column", col);
     add_key_number(new_doc, root, "pos", err_tok_num+1);
+    for (int i = 0; i < expected.num; i++)
+    {
+        // expected(rule=verb) = 'gives'
+        XMQNode *e = xml_node_new_element(new_doc, "expected", NULL);
+        xml_node_append_child(root, e);
+        if (expected.items[i].rule) xml_node_set_attr(e, "rule", NULL, expected.items[i].rule);
+        xml_node_append_child(e, xml_node_new_text(new_doc, expected.items[i].text));
+    }
+    expected_free(&expected);
+    free(buf);
 
     XMQReturnDoc rd = xmqNewDoc();
     assert(rd.status == XMQ_OK);
@@ -6170,6 +6462,8 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
     run->syntax_error = handle_yaep_syntax_error;
+    // The ixml rules, for the names of the generated rules in a syntax error.
+    run->user_data = state;
 
     // Parse source content using the yaep grammar, previously generated from the ixml source.
     rc = yaepParse(run, grammar);

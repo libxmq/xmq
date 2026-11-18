@@ -1,0 +1,24 @@
+START
+greeting: "hi", (" ", name)?.
+name: ~[" "; #a]+.
+INPUT
+hi!
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = 'ixml:1:3: syntax error
+              hi!
+                ^
+              expected greeting: #20
+              expected end of input'
+    line   = 1
+    column = 3
+    pos    = 3
+    expected(rule = greeting) = #20
+    expected = 'end of input'
+}
+END
+ARGS=
+CMDS=
+EXIT=1

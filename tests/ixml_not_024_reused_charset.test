@@ -8,11 +8,15 @@ OUTPUT
 ixml(ixml:state = failed
      xmlns:ixml = http://invisiblexml.org/NS)
 {
-    info   = 'ixml:1:4: syntax error
+    info   = "ixml:1:4: syntax error
               xdo
-                 ^'
+                 ^
+              expected ID: ['a'-'z']
+              expected KW: 'do'"
     line   = 1
     column = 4
     pos    = 4
+    expected(rule = ID) = "['a'-'z']"
+    expected(rule = KW) = "'do'"
 }
 END

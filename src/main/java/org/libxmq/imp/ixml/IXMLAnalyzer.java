@@ -10,6 +10,8 @@ import org.libxmq.imp.xml.XmlNs;
 import org.libxmq.imp.xml.XmlText;
 import org.libxmq.imp.ixml.IXMLGrammar.Rule;
 import org.libxmq.imp.ixml.IXMLGrammar.Term;
+import org.libxmq.imp.ixml.earley.Earley;
+import org.libxmq.imp.ixml.earley.EarleyParser;
 
 /** Character-level LL(*) analysis and parser-description DOM. Every decision gets a
  *  lookahead DFA, see IXMLLookahead. */
@@ -106,7 +108,12 @@ public final class IXMLAnalyzer {
             return d;
         }
         if (silent) return d;
-        return failureDocument(input, failed_at, error);
+        List<EarleyParser.Expected> expected = List.of();
+        if (!error.startsWith("dynamic error"))
+        {
+            expected = Earley.expectedAt(grammar.source(), input, Math.min(failed_at, input.codePointCount(0, input.length())));
+        }
+        return failureDocument(input, failed_at, error, expected);
     }
 
     /** The failure document of a rejected input, like in the C version:
@@ -115,9 +122,10 @@ public final class IXMLAnalyzer {
      * @param input the input
      * @param failed_at the code point position of the failure
      * @param error the error message
+     * @param expected what the parser could read at the position, see EarleyParser.expected
      * @return the failure document
      */
-    public static XmlDocument failureDocument(String input, int failed_at, String error) {
+    public static XmlDocument failureDocument(String input, int failed_at, String error, List<EarleyParser.Expected> expected) {
         XmlDocument d = new XmlDocument();
         XmlElement root = new XmlElement("ixml");
         d.appendRaw(root);
@@ -139,10 +147,20 @@ public final class IXMLAnalyzer {
         StringBuilder info = new StringBuilder("ixml:" + line + ":" + col + ": syntax error\n");
         info.append(new String(cps, start, Math.min(cps.length, at + 20) - start)).append('\n');
         info.append(" ".repeat(at - start)).append('^');
+        // Then: expected verb: 'gives', 'goes' or 'is'
+        info.append(EarleyParser.expectedLines(expected));
         addKey(root, "info", info.toString());
         addKey(root, "line", Integer.toString(line));
         addKey(root, "column", Integer.toString(col));
         addKey(root, "pos", Integer.toString(at + 1));
+        for (EarleyParser.Expected e : expected)
+        {
+            // expected(rule=verb) = 'gives'
+            XmlElement x = new XmlElement("expected");
+            root.appendRaw(x);
+            if (e.rule() != null) x.setAttribute("rule", e.rule());
+            x.appendRaw(new XmlText(e.text()));
+        }
         return d;
     }
 

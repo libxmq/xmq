@@ -1,0 +1,36 @@
+START
+S  = NP, VP.
+NP = det?, noun.
+VP = verb, NP?.
+det  = 'a',s | 'the',s.
+noun = 'man',s | 'woman',s | 'ball',s.
+verb = 'is',s | 'gives',s | 'takes',s.
+-s = -' '+.
+INPUT
+a man is x
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = "ixml:1:10: syntax error
+              a man is x
+                       ^
+              expected det: 'a' or 'the'
+              expected noun: 'ball', 'man' or 'woman'
+              expected s: #20
+              expected end of input"
+    line   = 1
+    column = 10
+    pos    = 10
+    expected(rule = det) = "'a'"
+    expected(rule = det) = "'the'"
+    expected(rule = noun) = "'ball'"
+    expected(rule = noun) = "'man'"
+    expected(rule = noun) = "'woman'"
+    expected(rule = s) = #20
+    expected = 'end of input'
+}
+END
+ARGS=
+CMDS=
+EXIT=1

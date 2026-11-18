@@ -1,0 +1,25 @@
+START
+expr: term, (["+-"], term)*.
+term: ["0"-"9"]+; "(", expr, ")".
+INPUT
+12+(3
+OUTPUT
+ixml(ixml:state = failed
+     xmlns:ixml = http://invisiblexml.org/NS)
+{
+    info   = "ixml:1:6: syntax error
+              12+(3
+                   ^
+              expected expr: ['+'; '-']
+              expected term: ')' or ['0'-'9']"
+    line   = 1
+    column = 6
+    pos    = 6
+    expected(rule = expr) = "['+'; '-']"
+    expected(rule = term) = "')'"
+    expected(rule = term) = "['0'-'9']"
+}
+END
+ARGS=
+CMDS=
+EXIT=1

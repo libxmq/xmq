@@ -3095,6 +3095,48 @@ static void print_statistics(YaepParseState *ps, bool *ambiguous_p, int table_se
    will be also in error_code).  The function sets up
    *AMBIGUOUS_P if we found that the grammer is ambigous.
    (It works even we asked only one parse tree without alternatives.) */
+void yaepExpectedSymbols(YaepParseRun *pr,
+                         void (*cb)(void *data, YaepExpectedKind kind, const char *lhs, const char *symbol, int code,
+                                    const int *rest, int rest_len),
+                         void *data)
+{
+    YaepParseState *ps = (YaepParseState*)pr;
+    if (ps->state_sets == NULL || ps->state_set_k < 0) return;
+    YaepStateSet *set = ps->state_sets[ps->state_set_k];
+    if (set == NULL) return;
+
+    YaepStateSetCore *core = set->core;
+    for (int i = 0; i < core->num_dotted_rules; i++)
+    {
+        YaepDottedRule *dotted_rule = core->dotted_rules[i];
+        YaepRule *rule = dotted_rule->rule;
+        if (dotted_rule->dot_j >= rule->rhs_len) continue;
+        YaepSymbol *symbol = rule->rhs[dotted_rule->dot_j];
+        // The error recovery rule $ : error ω is not part of the grammar.
+        if (symbol == ps->run.grammar->term_error) continue;
+        int rest_len = rule->rhs_len - dotted_rule->dot_j;
+        int *rest = (int*)malloc(rest_len * sizeof(int));
+        for (int j = 0; j < rest_len; j++)
+        {
+            YaepSymbol *s = rule->rhs[dotted_rule->dot_j + j];
+            rest[j] = (s->is_terminal && s != ps->run.grammar->end_marker) ? s->u.terminal.code : -1;
+        }
+        if (symbol == ps->run.grammar->end_marker)
+        {
+            cb(data, YAEP_EXPECTED_END, rule->lhs->repr, symbol->repr, 0, rest, rest_len);
+        }
+        else if (symbol->is_terminal)
+        {
+            cb(data, YAEP_EXPECTED_TERMINAL, rule->lhs->repr, symbol->repr, symbol->u.terminal.code, rest, rest_len);
+        }
+        else
+        {
+            cb(data, YAEP_EXPECTED_NONTERMINAL, rule->lhs->repr, symbol->repr, 0, rest, rest_len);
+        }
+        free(rest);
+    }
+}
+
 int yaepParse(YaepParseRun *pr, YaepGrammar *g)
 {
     YaepParseState *ps = (YaepParseState*)pr;

@@ -7,11 +7,13 @@ OUTPUT
 ixml(ixml:state = failed
      xmlns:ixml = http://invisiblexml.org/NS)
 {
-    info   = 'ixml:1:2: syntax error
+    info   = "ixml:1:2: syntax error
               xz
-               ^'
+               ^
+              expected ID: 'y'"
     line   = 1
     column = 2
     pos    = 2
+    expected(rule = ID) = "'y'"
 }
 END

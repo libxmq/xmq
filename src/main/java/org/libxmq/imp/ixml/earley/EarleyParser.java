@@ -1,6 +1,13 @@
 /* libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT) */
 package org.libxmq.imp.ixml.earley;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.libxmq.imp.ixml.IXMLGrammar;
 import org.libxmq.imp.ixml.earley.Grammar.Call;
 import org.libxmq.imp.ixml.earley.Grammar.Chars;
 import org.libxmq.imp.ixml.earley.Grammar.Production;
@@ -85,6 +92,131 @@ public final class EarleyParser
             if (item.isComplete() && item.origin() == 0 && item.production().rule == grammar.start) return true;
         }
         return false;
+    }
+
+    /**
+     * What may come next at a position, in a grammar rule.
+     *
+     * ixml has no tokens, a string like 'gives' is read one character at a time.
+     * So the characters from the dot of the item up to the next character set or
+     * rule are given together, eg 'gives', or 'ves' when 'gi' has been read.
+     *
+     * @param rule the named rule, for a generated rule the named rule it was made for,
+     *        null for the end of the input
+     * @param text the characters, or the character set, as written in the grammar,
+     *        eg 'gives', #20 or ['a'-'z'; #a], or "end of input"
+     * @param chars the terminal that comes first, null for the end of the input
+     */
+    public record Expected(String rule, String text, Chars chars) { }
+
+    /**
+     * What the parser could read at the position: the terminals right after the dot
+     * of the items in the set, with the characters that follow them in the item, and
+     * the end of the input if the start rule is complete there. Used for the failure
+     * message at failurePosition, and for completion. Sorted by rule and text, by
+     * their utf-8 bytes like the C version, the end of the input last.
+     *
+     * @param chart the chart from recognize
+     * @param position the input position
+     * @return what may come next, each rule and text once
+     */
+    public List<Expected> expected(Chart chart, int position)
+    {
+        Map<String, Expected> found = new LinkedHashMap<>();
+        boolean end = false;
+        for (Item item : chart.set(position).items())
+        {
+            if (item.next() instanceof Chars chars)
+            {
+                String rule = item.production().rule.named;
+                String text = chars.text();
+                if (isLiteral(chars))
+                {
+                    // The characters up to the next character set or rule.
+                    List<Integer> codes = new ArrayList<>();
+                    List<Symbol> symbols = item.production().symbols;
+                    for (int i = item.dot(); i < symbols.size() && symbols.get(i) instanceof Chars c && isLiteral(c); i++)
+                    {
+                        codes.add(c.set().nextSetBit(0));
+                    }
+                    text = stringText(codes);
+                }
+                found.putIfAbsent(rule + "\u0000" + text, new Expected(rule, text, chars));
+            }
+            if (item.isComplete() && item.origin() == 0 && item.production().rule == grammar.start) end = true;
+        }
+        List<Expected> result = new ArrayList<>(found.values());
+        result.sort((a, b) -> {
+            int c = compareUtf8(a.rule(), b.rule());
+            return c != 0 ? c : compareUtf8(a.text(), b.text());
+        });
+        if (end) result.add(new Expected(null, "end of input", null));
+        return result;
+    }
+
+    /** A character from a string in the grammar, eg 'a' or #a, not a character set. */
+    private static boolean isLiteral(Chars chars)
+    {
+        return !chars.text().startsWith("[") && !chars.text().startsWith("~[");
+    }
+
+    /** The characters as an ixml string: 'gives', "it's", or a single character as
+     * IXMLGrammar.quote writes it. The string ends before a control character, like C. */
+    private static String stringText(List<Integer> codes)
+    {
+        int len = 0;
+        while (len < codes.size() && codes.get(len) >= 0x20 && codes.get(len) != 0x7f) len++;
+        if (len < 2) return IXMLGrammar.quote(codes.get(0));
+        boolean has_single = false, has_double = false;
+        for (int i = 0; i < len; i++)
+        {
+            if (codes.get(i) == '\'') has_single = true;
+            if (codes.get(i) == '"') has_double = true;
+        }
+        int q = has_single && !has_double ? '"' : '\'';
+        StringBuilder b = new StringBuilder().appendCodePoint(q);
+        for (int i = 0; i < len; i++)
+        {
+            if (codes.get(i) == q) b.appendCodePoint(q); // A quote is doubled.
+            b.appendCodePoint(codes.get(i));
+        }
+        return b.appendCodePoint(q).toString();
+    }
+
+    /** The expected as lines, one per rule, like the C version:
+     * "expected verb: 'gives', 'goes' or 'is'" and "expected end of input".
+     * @param expected from expected()
+     * @return the lines, each starting with a newline */
+    public static String expectedLines(List<Expected> expected)
+    {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < expected.size(); )
+        {
+            String rule = expected.get(i).rule();
+            int j = i + 1;
+            while (rule != null && j < expected.size() && rule.equals(expected.get(j).rule())) j++;
+            b.append("\nexpected ");
+            if (rule != null) b.append(rule).append(": ");
+            for (int k = i; k < j; k++)
+            {
+                if (k > i) b.append(k == j - 1 ? " or " : ", ");
+                b.append(expected.get(k).text());
+            }
+            i = j;
+        }
+        return b.toString();
+    }
+
+    /** Compare the utf-8 bytes, like strcmp in C. */
+    private static int compareUtf8(String a, String b)
+    {
+        byte[] x = a.getBytes(StandardCharsets.UTF_8), y = b.getBytes(StandardCharsets.UTF_8);
+        for (int i = 0; i < Math.min(x.length, y.length); i++)
+        {
+            int c = Integer.compare(x[i] & 0xff, y[i] & 0xff);
+            if (c != 0) return c;
+        }
+        return Integer.compare(x.length, y.length);
     }
 
     /** The position of the first code point that could not be parsed: the last

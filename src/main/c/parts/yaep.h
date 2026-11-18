@@ -404,6 +404,23 @@ extern int yaep_set_recovery_match(YaepGrammar *grammar, int n_toks);
    returned parse tree should also not be freed with yaep_free_tree(). */
 extern int yaepParse(YaepParseRun *ps, YaepGrammar *g);
 
+/* What yaepExpectedSymbols reports. */
+typedef enum
+{
+    YAEP_EXPECTED_TERMINAL,    // A terminal, code is its code.
+    YAEP_EXPECTED_NONTERMINAL, // A nonterminal.
+    YAEP_EXPECTED_END          // The end of the input.
+} YaepExpectedKind;
+
+/* Call this from the syntax_error callback: cb is called for every symbol right after the
+   dot of an item in the last state set, ie what the parser could have read instead of the
+   failing token. lhs is the rule of the item. rest has the codes of the rhs symbols from the
+   dot to the end of the rule, -1 for a nonterminal, rest_len of them. */
+extern void yaepExpectedSymbols(YaepParseRun *pr,
+                                void (*cb)(void *data, YaepExpectedKind kind, const char *lhs, const char *symbol, int code,
+                                           const int *rest, int rest_len),
+                                void *data);
+
 /* The following function frees memory allocated for the parse state. */
 extern void yaepFreeParseRun(YaepParseRun *ps);
 

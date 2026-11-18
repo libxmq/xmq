@@ -41,15 +41,19 @@ public final class Grammar
         public final int cost;
         /** The productions of the rule, one for each alternative. */
         public final List<Production> productions = new ArrayList<>();
+        /** The named rule: the name, or for a generated rule the named rule it was made for,
+         *  used in error messages and completion. */
+        public final String named;
         /** True if the rule can match the empty input. */
         boolean nullable;
 
-        Rule(String name, char mark, String output_name, int cost)
+        Rule(String name, char mark, String output_name, int cost, String named)
         {
             this.name = name;
             this.mark = mark;
             this.output_name = output_name;
             this.cost = cost;
+            this.named = named;
         }
 
         @Override
@@ -120,7 +124,7 @@ public final class Grammar
     /** A terminal: one code point from a set. A hidden terminal, -'x', is not output.
      * @param set the code points matched
      * @param hidden true if the terminal is hidden
-     * @param text how the terminal is written, for tracing */
+     * @param text how the terminal is written in the grammar, eg 'a' or ['a'-'z'; #a] */
     public record Chars(BitSet set, boolean hidden, String text) implements Symbol
     {
         /** Returns true if the code point is in the set.
@@ -157,7 +161,8 @@ public final class Grammar
         for (IXMLGrammar.Rule r : ixml.rules.values())
         {
             String output_name = r.alias.isEmpty() ? r.name : r.alias;
-            rules.put(r.name, new Rule(r.name, markOf(r.mark), output_name, r.cost));
+            String named = r.origin != null ? r.origin : r.name;
+            rules.put(r.name, new Rule(r.name, markOf(r.mark), output_name, r.cost, named));
         }
         // Then the productions.
         for (IXMLGrammar.Rule r : ixml.rules.values())
@@ -187,7 +192,7 @@ public final class Grammar
     private Symbol symbolOf(IXMLGrammar.Term t)
     {
         if (t.ref != null) return new Call(rules.get(t.ref), markOf(t.mark), t.alias.isEmpty() ? null : t.alias);
-        if (t.chars != null) return new Chars(t.chars, t.mark.equals("-"), describe(t.chars));
+        if (t.chars != null) return new Chars(t.chars, t.mark.equals("-"), t.chars_text != null ? t.chars_text : describe(t.chars));
         if (t.insertion != null) return new Insertion(t.insertion);
         return new Not(t.not);
     }

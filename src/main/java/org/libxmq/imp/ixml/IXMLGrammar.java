@@ -37,8 +37,8 @@ public final class IXMLGrammar {
         // each alternative of the loop rule the element name that wraps the
         // content of A so far, or null for no wrapping.
         String lr_tail, lr_owner;
-        // For a generated rule (/1, /2, ...) the named rule it was made for, used in error messages.
-        String origin;
+        /** For a generated rule (/1, /2, ...) the named rule it was made for, used in error messages. */
+        public String origin;
         List<String> lr_wrap;
         Rule(String name) { this.name = name; }
     }
@@ -50,6 +50,9 @@ public final class IXMLGrammar {
         public String ref, insertion, mark = "", alias = "";
         /** The code points this term matches. */
         public BitSet chars;
+        /** How the chars are written in the grammar, eg 'a' for a character of a string or
+         *  ['a'-'z'; #a] for a character set, the same as the C version writes them. */
+        public String chars_text;
         /** A negative lookahead !'abc' or ![set]: the following input must not
          *  start with a code point sequence matching these sets in order. */
         public List<BitSet> not;
@@ -59,6 +62,22 @@ public final class IXMLGrammar {
         static Term match(BitSet chars) { Term t = new Term(); t.chars = chars; return t; }
     }
     private IXMLGrammar(String source) { this.source = source; }
+
+    /** The grammar source.
+     * @return the ixml source the grammar was read from */
+    public String source() { return source; }
+
+    /** A code point as written in an ixml grammar: 'a', "'" for the single quote, or
+     * #a for a control character or space, like the C version.
+     * @param cp the code point
+     * @return the text */
+    public static String quote(int cp) {
+        if (cp < 0x21 || cp == 0x7f) return "#" + Integer.toHexString(cp);
+        if (cp == '\'') return "\"'\"";
+        return "'" + new String(Character.toChars(cp)) + "'";
+    }
+    // The text of the last charset read, see Term.chars_text.
+    private String charset_text;
 
     /** Read a grammar using the parse_ixml_* productions from the C reader.
      * @param source iXML source
@@ -324,11 +343,11 @@ public final class IXMLGrammar {
             whitespace(); return t;
         }
         String m = mark(); Term t;
-        if (peek() == '[' || peek() == '~') t = Term.match(charset());
+        if (peek() == '[' || peek() == '~') { t = Term.match(charset()); t.chars_text = charset_text; }
         else if (peek() == '\'' || peek() == '"' || peek() == '#') {
             String value = literal();
             List<Term> chars = new ArrayList<>();
-            value.codePoints().forEach(cp -> { BitSet b = new BitSet(); b.set(cp); Term ch = Term.match(b); ch.mark = m; chars.add(ch); });
+            value.codePoints().forEach(cp -> { BitSet b = new BitSet(); b.set(cp); Term ch = Term.match(b); ch.mark = m; ch.chars_text = quote(cp); chars.add(ch); });
             if (chars.size() == 1) t = chars.get(0);
             else { Rule r = generated(); r.alternatives.add(chars); t = call(r); }
         } else {
@@ -366,12 +385,15 @@ public final class IXMLGrammar {
     }
     private BitSet charset() {
         boolean exclude = eat('~'); whitespace(); expect('['); BitSet bits = new BitSet();
+        // The text, like the C version names the charset rule: every range, character and category.
+        List<String> parts = new ArrayList<>();
         if (peek() != ']') do {
             whitespace();
             if (peek() >= 'A' && peek() <= 'Z') {
                 String category = Character.toString(take());
                 if ((peek() >= 'a' && peek() <= 'z') || peek() == 'C') category += Character.toString(take());
                 bits.or(category(category)); whitespace();
+                parts.add(category);
             } else {
                 String from = literal(); whitespace();
                 if (eat('-')) {
@@ -381,10 +403,12 @@ public final class IXMLGrammar {
                     int lo = from.codePointAt(0), hi = to.codePointAt(0);
                     if (lo > hi) throw error("reversed character range");
                     bits.set(lo, hi + 1);
-                } else from.codePoints().forEach(bits::set);
+                    parts.add(lo == hi ? quote(lo) : quote(lo) + "-" + quote(hi));
+                } else from.codePoints().forEach(cp -> { bits.set(cp); parts.add(quote(cp)); });
             }
         } while (eat(';') || eat('|'));
         expect(']');
+        charset_text = (exclude ? "~[" : "[") + String.join("; ", parts) + "]";
         if (exclude) bits.flip(0, EOF);
         bits.clear(0xd800, 0xe000); return bits;
     }

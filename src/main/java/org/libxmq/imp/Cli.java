@@ -553,7 +553,7 @@ final class Cli
         if (r.error() == null) return r.doc();
         ixml_failed = true;
         if (ixml_fail_silent) return new XmlDocument();
-        return IXMLAnalyzer.failureDocument(content, r.position(), r.error());
+        return IXMLAnalyzer.failureDocument(content, r.position(), r.error(), r.expected());
     }
 
     XmlDocument load(String content, String source, IXMLAnalyzer ixml) throws Exit
