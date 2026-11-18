@@ -126,7 +126,7 @@ Write a trace of the ixml parse to FILE: the grammar rules, the input tokens,
 every Earley item and the nodes added to the tree, in the order the tree is built,
 with their costs and whether they are in the chosen tree. The trace is xmq, or xml if
 FILE ends with .xml. xmqj parses with its Earley parser when tracing.
-Render the trace as a web page or as LaTeX:
+Render the trace as a web page, as LaTeX or in the terminal with colors:
 .br
 .RS
 \fBxmq \-\-traceixml=trace.xmq formula.ixml \-i 1+2*3+4\fP
@@ -134,6 +134,8 @@ Render the trace as a web page or as LaTeX:
 \fBxmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html\fP
 .br
 \fBxmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex\fP
+.br
+\fBxmq trace.xmq transform render-trace-to-terminal.xslq to-text | less -RS\fP
 .RE
 
 .TP

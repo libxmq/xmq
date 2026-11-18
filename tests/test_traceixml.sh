@@ -2,7 +2,8 @@
 # libxmq - Copyright 2026 Fredrik Öhrström (spdx: MIT)
 #
 # Test xmq --traceixml=file: the trace of an ixml parse, and the stylesheets
-# library/xmq-utils/render-trace-to-html.xslq and library/xmq-utils/render-trace-to-tex.xslq that render it.
+# library/xmq-utils/render-trace-to-html.xslq, render-trace-to-tex.xslq and
+# render-trace-to-terminal.xslq that render it.
 # Usage: tests/test_traceixml.sh <xmq or xmqj binary> <output dir>
 
 PROG=$1
@@ -49,6 +50,14 @@ $PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-tex.xslq t
 grep -q 'begin{longtable}' "$OUTPUT/trace.tex" || fail "tex has no table"
 [ "$(grep -o 'cellcolor{used}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not mark the $NODES used items"
 [ "$(grep -o 'cellcolor{treenew}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not show the $NODES added nodes"
+
+# In the terminal: ansi colors, and the tables line up, the │ before the rules is in the same
+# column on every row (ω and ↓ are one character, counted as one byte here).
+$PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-terminal.xslq to-text > "$OUTPUT/trace.txt" || fail "terminal render failed"
+grep -q $'\x1b\[30;48;5;151m' "$OUTPUT/trace.txt" || fail "terminal output has no ansi colors"
+grep -q 'the chosen tree' "$OUTPUT/trace.txt" || fail "terminal output has no chosen tree"
+COLUMNS_USED=$(sed 's/\x1b\[[0-9;]*m//g' "$OUTPUT/trace.txt" | grep '│' | sed 's/│.*//; s/ω/w/g; s/↓/v/g' | awk '{ print length($0) }' | sort -u | wc -l)
+[ "$COLUMNS_USED" = "1" ] || fail "terminal tables do not line up"
 
 # A choice by cost: A and B both match aaa, B costs 1. Both are built, S → B is not chosen.
 [ "$($PROG "$OUTPUT/trace.xmq" select "count(/trace/tree/node[@chosen = 'no'])" to-text)" = "0" ] || fail "an unambiguous tree has nodes not chosen"
