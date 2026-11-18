@@ -210,6 +210,30 @@ void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
+/** Stop reading the grammar with an ixml grammar error, eg "S03 the rule S is defined more than once". */
+static void ixml_grammar_error(XMQParseState *state, const char *format, ...)
+{
+    static char buf[1024];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, sizeof(buf), format, args);
+    va_end(args);
+    state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
+    state->error_info = buf;
+    longjmp(state->error_handler, 1);
+}
+
+/** S07 a code point above #10FFFF, S08 a surrogate or a noncharacter (#FDD0-#FDEF, #xFFFE, #xFFFF). */
+static void check_ixml_codepoint(XMQParseState *state, int64_t cp)
+{
+    if (cp > 0x10FFFF) ixml_grammar_error(state, "S07 the hex character is beyond #10ffff");
+    if (cp >= 0xD800 && cp <= 0xDFFF) ixml_grammar_error(state, "S08 the hex character #%llx is a surrogate", (long long)cp);
+    if ((cp >= 0xFDD0 && cp <= 0xFDEF) || (cp & 0xFFFE) == 0xFFFE)
+    {
+        ixml_grammar_error(state, "S08 the hex character #%llx is not a character", (long long)cp);
+    }
+}
+
 bool is_ixml_eob(XMQParseState *state)
 {
     return state->i >= state->buffer_stop || *(state->i) == 0;
@@ -1037,15 +1061,17 @@ void parse_ixml_hex(XMQParseState *state, int *value)
 {
     IXML_STEP(hex,state);
 
-    const char *start = state->i;
+    // Computed digit by digit, a long hex like #decafbadbadbadbad must not overflow.
+    int64_t v = 0;
     while (is_ixml_hex_start(state))
     {
+        char c = *(state->i);
+        int d = (c >= '0' && c <= '9') ? c-'0' : (c >= 'a' && c <= 'f') ? c-'a'+10 : c-'A'+10;
+        if (v <= 0x10FFFF) v = v*16 + d;
         EAT(hex_inside, 1);
     }
-    const char *stop = state->i;
-    char *hex = strndup(start, stop-start);
-    *value = (int)strtol(hex, NULL, 16);
-    free(hex);
+    check_ixml_codepoint(state, v);
+    *value = (int)v;
 
     IXML_DONE(hex, state);
 }
@@ -1343,8 +1369,10 @@ void parse_ixml_range(XMQParseState *state)
     {
         int *content;
         parse_ixml_string(state, &content);
+        bool single = content[0] != 0 && content[1] == 0;
         state->ixml_charset_from = content[0];
         free(content);
+        if (!single) ixml_grammar_error(state, "a range must start with a single character");
     }
     else
     {
@@ -1363,8 +1391,10 @@ void parse_ixml_range(XMQParseState *state)
     {
         int *content;
         parse_ixml_string(state, &content);
+        bool single = content[0] != 0 && content[1] == 0;
         state->ixml_charset_to = content[0];
         free(content);
+        if (!single) ixml_grammar_error(state, "a range must end with a single character");
     }
     else if (is_ixml_encoded_start(state))
     {
@@ -1376,6 +1406,11 @@ void parse_ixml_range(XMQParseState *state)
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
         state->error_info = "expected range ending with string or hex char";
         longjmp(state->error_handler, 1);
+    }
+    if (state->ixml_charset_from > state->ixml_charset_to)
+    {
+        ixml_grammar_error(state, "S09 the range #%x-#%x ends before it starts",
+                           state->ixml_charset_from, state->ixml_charset_to);
     }
     parse_ixml_whitespace(state);
 
@@ -1430,6 +1465,17 @@ void parse_ixml_rule(XMQParseState *state)
                       &state->ixml_rule->mark,
                       &state->ixml_rule->rule_name->name,
                       &state->ixml_rule->rule_name->alias);
+
+    // S03: a nonterminal is defined by one rule (with alternatives). The rules made so
+    // far are the earlier rules, their alternatives and generated rules (|1 or a charset).
+    for (size_t i = 0; i + 1 < state->ixml_rules->size; ++i)
+    {
+        IXMLRule *r = (IXMLRule*)vector_element_at(state->ixml_rules, i);
+        if (!strcmp(r->rule_name->name, state->ixml_rule->rule_name->name))
+        {
+            ixml_grammar_error(state, "S03 the rule %s is defined more than once", state->ixml_rule->rule_name->name);
+        }
+    }
 
     parse_ixml_whitespace(state);
 
@@ -1510,8 +1556,18 @@ void parse_ixml_string(XMQParseState *state, int **content)
             fprintf(stderr, "xmq: broken utf8\n");
             exit(1);
         }
+        if (uc == '\n' || uc == '\r')
+        {
+            free_membuffer_and_free_content(buf);
+            ixml_grammar_error(state, "S11 a string can not span lines, use #a for a newline");
+        }
         membuffer_append_int(buf, uc);
         EAT(string_inside, len);
+    }
+    if (membuffer_used(buf) == 0)
+    {
+        free_membuffer_and_free_content(buf);
+        ixml_grammar_error(state, "a string can not be empty");
     }
     // Add a zero termination to the integer array.
     membuffer_append_int(buf, 0);
