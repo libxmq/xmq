@@ -1344,6 +1344,10 @@ void parse_ixml_prolog(XMQParseState *state)
 
     int *content;
     parse_ixml_string(state, &content);
+    // The versions implemented, any other gives ixml:state="version-mismatch" on the result.
+    bool is_10 = content[0] == '1' && content[1] == '.' && content[2] == '0' && content[3] == 0;
+    bool is_11 = content[0] == '1' && content[1] == '.' && content[2] == '1' && content[3] == 0;
+    state->ixml_version_mismatch = !is_10 && !is_11;
     free(content);
 
     parse_ixml_whitespace(state);

@@ -7977,6 +7977,7 @@ struct XMQParseState
     Vector *ixml_rhs_tmp_marks;
     // Has the cost marker "=<" or ":<" or "=<<<" etc been used for a rule in this ixml grammar?
     bool ixml_costs_enabled;
+    bool ixml_version_mismatch; // The grammar declares a version other than 1.0 and 1.1 (ixml version "1.3").
     // Has a rule been marked with "*" which means we want all parses!
     bool ixml_controlled_ambiguity_enabled;
     // The most recently parsed mark.
@@ -14874,7 +14875,10 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         }
     }
 
-    if (run->ambiguous_p)
+    // A result gets ixml:state="ambiguous", "version-mismatch" or both separated by space,
+    // as the ixml specification says. A failure document has ixml:state="failed".
+    bool version_mismatch = ok && state->ixml_version_mismatch;
+    if (run->ambiguous_p || version_mismatch)
     {
         XMQNode *element = xml_dom_root_element(doc->dom_);
         if (element)
@@ -14884,8 +14888,9 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             {
                 ns = xml_ns_declare(element, "ixml", "http://invisiblexml.org/NS");
             }
-            // ixml:state="ambiguous" as the ixml specification says.
-            xml_node_set_attr(element, "state", ns, "ambiguous");
+            const char *value = run->ambiguous_p && version_mismatch ? "ambiguous version-mismatch" :
+                                run->ambiguous_p ? "ambiguous" : "version-mismatch";
+            xml_node_set_attr(element, "state", ns, value);
         }
     }
 
@@ -18663,6 +18668,10 @@ void parse_ixml_prolog(XMQParseState *state)
 
     int *content;
     parse_ixml_string(state, &content);
+    // The versions implemented, any other gives ixml:state="version-mismatch" on the result.
+    bool is_10 = content[0] == '1' && content[1] == '.' && content[2] == '0' && content[3] == 0;
+    bool is_11 = content[0] == '1' && content[1] == '.' && content[2] == '1' && content[3] == 0;
+    state->ixml_version_mismatch = !is_10 && !is_11;
     free(content);
 
     parse_ixml_whitespace(state);

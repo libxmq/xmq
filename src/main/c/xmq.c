@@ -6676,7 +6676,10 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         }
     }
 
-    if (run->ambiguous_p)
+    // A result gets ixml:state="ambiguous", "version-mismatch" or both separated by space,
+    // as the ixml specification says. A failure document has ixml:state="failed".
+    bool version_mismatch = ok && state->ixml_version_mismatch;
+    if (run->ambiguous_p || version_mismatch)
     {
         XMQNode *element = xml_dom_root_element(doc->dom_);
         if (element)
@@ -6686,8 +6689,9 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
             {
                 ns = xml_ns_declare(element, "ixml", "http://invisiblexml.org/NS");
             }
-            // ixml:state="ambiguous" as the ixml specification says.
-            xml_node_set_attr(element, "state", ns, "ambiguous");
+            const char *value = run->ambiguous_p && version_mismatch ? "ambiguous version-mismatch" :
+                                run->ambiguous_p ? "ambiguous" : "version-mismatch";
+            xml_node_set_attr(element, "state", ns, value);
         }
     }
 
