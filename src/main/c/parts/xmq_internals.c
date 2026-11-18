@@ -128,13 +128,16 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
     }
     char error_msg[2048];
     memset(error_msg, 0, sizeof(error_msg));
+    // The detail follows the error: "ixml syntax error: expected , or . here"
+    bool has_info = state->error_info && state->error_info[0];
     snprintf(error_msg, 2048,
-             "%s:%zu:%zu: %s: %s%s%s%s",
+             "%s:%zu:%zu: %s: %s%s%s%s%s",
              state->source_name,
              line, col,
              e_or_w,
              error,
-             state->error_info ? state->error_info : "",
+             has_info ? ": " : "",
+             has_info ? state->error_info : "",
              char_error,
              line_error
         );
@@ -167,7 +170,7 @@ bool xmq_reject_invalid_utf8(XMQParseState *state)
         b[0] = 0;
         for (size_t k = 0; k < bad_len; ++k)
         {
-            snprintf(b + strlen(b), sizeof(state->error_info_buf) - strlen(b), " 0x%02X", (unsigned char)bad[k]);
+            snprintf(b + strlen(b), sizeof(state->error_info_buf) - strlen(b), k ? " 0x%02X" : "0x%02X", (unsigned char)bad[k]);
         }
         state->error_info = b;
         state->error_nr = XMQ_ERROR_INVALID_UTF8;

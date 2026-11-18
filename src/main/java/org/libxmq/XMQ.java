@@ -225,7 +225,8 @@ public class XMQ
         out.append(": ");
         ResourceBundle bundle = ResourceBundle.getBundle("Messages", locale);
         out.append(bundle.getString(e.errorCode().toString()));
-        if (e.info() != null) out.append(e.info());
+        // The detail follows the error: "unexpected character: YAML: ..."
+        if (e.info() != null && !e.info().isEmpty()) out.append(": ").append(e.info());
         String text = e.text() == null ? "" : e.text();
         int at = e.charIndex();
         boolean at_end = at < 0 || at >= text.length();

@@ -399,7 +399,7 @@ public class Main
         int l = 1;
         while (l < 4 && k + l < raw.length && (raw[k + l] & 0xC0) == 0x80) l++;
         StringBuilder info = new StringBuilder();
-        for (int j = 0; j < l; j++) info.append(String.format(" 0x%02X", raw[k + j] & 0xFF));
+        for (int j = 0; j < l; j++) info.append(String.format(j > 0 ? " 0x%02X" : "0x%02X", raw[k + j] & 0xFF));
         int line = 1, col = 1, line_start = 0;
         for (int j = 0; j < k; j++)
         {

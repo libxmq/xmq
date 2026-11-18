@@ -37,29 +37,29 @@ check()
     fi
 }
 
-check stray 'a = 1\nbb = x\xa7\x94y\n' "stray.xmq:2:7: error: invalid UTF-8 0xA7 0x94
+check stray 'a = 1\nbb = x\xa7\x94y\n' "stray.xmq:2:7: error: invalid UTF-8: 0xA7 0x94
 bb = x
       ^"
-check overlong 'å = "x\xc0\xafy"\n' "overlong.xmq:1:7: error: invalid UTF-8 0xC0 0xAF
+check overlong 'å = "x\xc0\xafy"\n' "overlong.xmq:1:7: error: invalid UTF-8: 0xC0 0xAF
 å = \"x
        ^"
-check surrogate 'a = 1\n\xed\xa0\x80\n' "surrogate.xmq:2:1: error: invalid UTF-8 0xED 0xA0 0x80
+check surrogate 'a = 1\n\xed\xa0\x80\n' "surrogate.xmq:2:1: error: invalid UTF-8: 0xED 0xA0 0x80
 
  ^"
-check truncated 'a = \xe2\x82' "truncated.xmq:1:5: error: invalid UTF-8 0xE2 0x82
+check truncated 'a = \xe2\x82' "truncated.xmq:1:5: error: invalid UTF-8: 0xE2 0x82
 a = 
     ^"
-check tokenize 'a = \xff' "tokenize.xmq:1:5: error: invalid UTF-8 0xFF
+check tokenize 'a = \xff' "tokenize.xmq:1:5: error: invalid UTF-8: 0xFF
 a = 
     ^" tokenize
 
-check json.json '{"a":1,\n "b":"x\xa7y"}\n' "json.json:2:8: error: invalid UTF-8 0xA7
+check json.json '{"a":1,\n "b":"x\xa7y"}\n' "json.json:2:8: error: invalid UTF-8: 0xA7
  \"b\":\"x
        ^"
-check yaml.yaml 'a: 1\nb: x\xc0\xafy\n' "yaml.yaml:2:5: error: invalid UTF-8 0xC0 0xAF
+check yaml.yaml 'a: 1\nb: x\xc0\xafy\n' "yaml.yaml:2:5: error: invalid UTF-8: 0xC0 0xAF
 b: x
     ^"
-OPTS=--yaml check yaml_forced.txt 'a: \xf8\n' "yaml_forced.txt:1:4: error: invalid UTF-8 0xF8
+OPTS=--yaml check yaml_forced.txt 'a: \xf8\n' "yaml_forced.txt:1:4: error: invalid UTF-8: 0xF8
 a: 
    ^"
 

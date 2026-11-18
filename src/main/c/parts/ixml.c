@@ -1352,7 +1352,7 @@ void parse_ixml_prolog(XMQParseState *state)
     if (c != '.')
     {
         state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = ": ixml version must end with a dot";
+        state->error_info = "ixml version must end with a dot";
         longjmp(state->error_handler, 1);
     }
     EAT(prolog_stop, 1);

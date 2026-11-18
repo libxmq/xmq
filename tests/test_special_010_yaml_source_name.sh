@@ -22,7 +22,7 @@ $PROG $OUTPUT/badflow.yaml > $OUTPUT/file.out 2> $OUTPUT/file.err
 
 cat $OUTPUT/file.err | sed "s|$OUTPUT|...|" > $OUTPUT/file.err.norm
 cat << 'EOF' > $OUTPUT/file.expected
-.../badflow.yaml:3:0: error: unexpected characterYAML: a flow collection is not closed "" U+0
+.../badflow.yaml:3:0: error: unexpected character: YAML: a flow collection is not closed "" U+0
 
 EOF
 
