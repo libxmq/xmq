@@ -18208,32 +18208,25 @@ void parse_ixml_group(XMQParseState *state)
 
     parse_ixml_whitespace(state);
 
-    if (is_ixml_alt_start(state))
-    {
-        IXMLNonTerminal *nt = new_ixml_nonterminal();
-        nt->name = generate_rule_name(state);
+    // The group is a generated rule with the alternatives. They may be empty,
+    // eg () or (; 'a'), then the group matches the empty input.
+    IXMLNonTerminal *nt = new_ixml_nonterminal();
+    nt->name = generate_rule_name(state);
 
-        add_yaep_nonterminal(state, nt);
-        add_yaep_term_to_rule(state, '-', NULL, nt);
+    add_yaep_nonterminal(state, nt);
+    add_yaep_term_to_rule(state, '-', NULL, nt);
 
-        stack_push(state->ixml_rule_stack, state->ixml_rule);
-        state->ixml_rule = new_ixml_rule();
-        state->ixml_rule->mark = '-';
-        vector_push_back(state->ixml_rules, state->ixml_rule);
+    stack_push(state->ixml_rule_stack, state->ixml_rule);
+    state->ixml_rule = new_ixml_rule();
+    state->ixml_rule->mark = '-';
+    vector_push_back(state->ixml_rules, state->ixml_rule);
 
-        free_ixml_nonterminal(state->ixml_rule->rule_name);
-        state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
+    free_ixml_nonterminal(state->ixml_rule->rule_name);
+    state->ixml_rule->rule_name = copy_ixml_nonterminal(nt);
 
-        parse_ixml_alts(state);
+    parse_ixml_alts(state);
 
-        state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
-    }
-    else if (*(state->i) != ')')
-    {
-        state->error_nr = XMQ_ERROR_IXML_SYNTAX_ERROR;
-        state->error_info = "expected alts in group";
-        longjmp(state->error_handler, 1);
-    }
+    state->ixml_rule = (IXMLRule*)stack_pop(state->ixml_rule_stack);
 
     if (*(state->i) != ')')
     {
