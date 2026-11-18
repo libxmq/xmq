@@ -670,7 +670,8 @@ void parse_ixml_alts(XMQParseState *state)
             is_ixml_group_end(state)) break;
 
         char c = *(state->i);
-        if (c != '|')
+        // An alternative can be empty, eg A: ; B. or A: 'a'; .
+        if (c != '|' && c != ';')
         {
             if (!is_ixml_alt_start(state))
             {
