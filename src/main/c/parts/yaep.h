@@ -159,6 +159,11 @@ struct YaepParseRun
     // and tree step of the parse, eg to record the parse (xmq --traceixml=file).
     void (*trace_event)(YaepParseRun *pr, YaepTraceEvent *e);
     void *trace_data;
+    // If at_end is not NULL, it is called when the whole input has been read, before the
+    // end of the input is, eg to find with yaepExpectedSymbols what could follow the
+    // input (xmq --complete).
+    void (*at_end)(YaepParseRun *pr);
+    void *at_end_data;
 
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.

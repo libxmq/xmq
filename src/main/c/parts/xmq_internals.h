@@ -139,6 +139,7 @@ struct XMQDoc
     YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
     XMQParseState *xmq_parse_state_; // The parse state used to parse the ixml grammar.
     XMQDoc *ixml_trace_; // The trace of the last ixml parse (XMQ_FLAG_IXML_TRACE), see xmqTakeIXMLTrace.
+    char *ixml_completions_; // What could follow the input of the last ixml parse (XMQ_FLAG_IXML_COMPLETE).
 };
 
 #ifdef __cplusplus

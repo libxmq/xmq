@@ -6247,6 +6247,11 @@ struct YaepParseRun
     // and tree step of the parse, eg to record the parse (xmq --traceixml=file).
     void (*trace_event)(YaepParseRun *pr, YaepTraceEvent *e);
     void *trace_data;
+    // If at_end is not NULL, it is called when the whole input has been read, before the
+    // end of the input is, eg to find with yaepExpectedSymbols what could follow the
+    // input (xmq --complete).
+    void (*at_end)(YaepParseRun *pr);
+    void *at_end_data;
 
     // This object continues with more data inside the implementation....
     // Do not allocate this object yourself, use yaepNewParseRun and yaepFreeParseRun instead.
@@ -7710,6 +7715,7 @@ struct XMQDoc
     YaepGrammar *yaep_grammar_; // The yaep grammar to be used by the run.
     XMQParseState *xmq_parse_state_; // The parse state used to parse the ixml grammar.
     XMQDoc *ixml_trace_; // The trace of the last ixml parse (XMQ_FLAG_IXML_TRACE), see xmqTakeIXMLTrace.
+    char *ixml_completions_; // What could follow the input of the last ixml parse (XMQ_FLAG_IXML_COMPLETE).
 };
 
 #ifdef __cplusplus
@@ -10514,6 +10520,8 @@ void xmqClearDoc(XMQDoc *doq)
         xmqFreeDoc(doq->ixml_trace_);
         doq->ixml_trace_ = NULL;
     }
+    free(doq->ixml_completions_);
+    doq->ixml_completions_ = NULL;
     debug("xmq=", "clearing xmq doc");
 }
 
@@ -10554,6 +10562,8 @@ void xmqFreeDoc(XMQDoc *doq)
         xmqFreeDoc(doq->ixml_trace_);
         doq->ixml_trace_ = NULL;
     }
+    free(doq->ixml_completions_);
+    doq->ixml_completions_ = NULL;
 
     debug("xmq=", "freeing xmq doc");
     free(doq);
@@ -13845,10 +13855,20 @@ static void xmq_dom_add_top(XmlDom *doc, XMQNode *n)
     is expected one character at a time: the characters from the dot of the item to the next
     charset or rule are shown together. A generated rule (|1) is shown as the named rule
     it was made for. The Java version (EarleyParser.expected) does the same. */
+typedef enum
+{
+    IXML_EXPECTED_STRING,  // Characters, raw is them as utf-8.
+    IXML_EXPECTED_CHAR,    // A control character.
+    IXML_EXPECTED_CHARSET, // A character set.
+    IXML_EXPECTED_END      // The end of the input.
+} IXMLExpectedKind;
+
 typedef struct
 {
+    IXMLExpectedKind kind;
     char *rule; // The named rule, NULL for the end of the input.
-    char *text;
+    char *text; // As written in an ixml grammar, eg 'gives' #a ['a'-'z'] or end of input.
+    char *raw;  // For a string the characters themselves, eg gives, else as text.
 } IXMLExpectedItem;
 
 typedef struct
@@ -13860,7 +13880,7 @@ typedef struct
     int num_owners;
 } IXMLExpected;
 
-static void expected_add(IXMLExpected *e, const char *rule, const char *text)
+static void expected_add(IXMLExpected *e, IXMLExpectedKind kind, const char *rule, const char *text, const char *raw)
 {
     for (int i = 0; i < e->num; i++)
     {
@@ -13873,8 +13893,10 @@ static void expected_add(IXMLExpected *e, const char *rule, const char *text)
         e->size = e->size ? e->size*2 : 16;
         e->items = (IXMLExpectedItem*)realloc(e->items, e->size * sizeof(IXMLExpectedItem));
     }
+    e->items[e->num].kind = kind;
     e->items[e->num].rule = rule ? strdup(rule) : NULL;
     e->items[e->num].text = strdup(text);
+    e->items[e->num].raw = strdup(raw);
     e->num++;
 }
 
@@ -13884,6 +13906,7 @@ static void expected_free(IXMLExpected *e)
     {
         free(e->items[i].rule);
         free(e->items[i].text);
+        free(e->items[i].raw);
     }
     free(e->items);
     free(e->owner_from);
@@ -14049,7 +14072,7 @@ static void collect_expected(void *data, YaepExpectedKind kind, const char *lhs,
     switch (kind)
     {
     case YAEP_EXPECTED_END:
-        expected_add(e, NULL, "end of input");
+        expected_add(e, IXML_EXPECTED_END, NULL, "end of input", "");
         break;
     case YAEP_EXPECTED_TERMINAL:
     {
@@ -14057,14 +14080,27 @@ static void collect_expected(void *data, YaepExpectedKind kind, const char *lhs,
         int n = 0;
         while (n < rest_len && rest[n] >= 0) n++;
         expected_cat_string(buf, sizeof(buf), rest, n);
-        expected_add(e, rule, buf);
+        // The same characters as utf-8, up to a control character.
+        char raw[1024];
+        raw[0] = 0;
+        int len = 0;
+        while (len < n && rest[len] >= 0x20 && rest[len] != 0x7f)
+        {
+            UTF8Char u;
+            size_t ulen = encode_utf8(rest[len], &u);
+            u.bytes[ulen] = 0;
+            expected_cat(raw, sizeof(raw), u.bytes);
+            len++;
+        }
+        if (len > 0) expected_add(e, IXML_EXPECTED_STRING, rule, buf, raw);
+        else expected_add(e, IXML_EXPECTED_CHAR, rule, buf, buf);
         break;
     }
     case YAEP_EXPECTED_NONTERMINAL:
         if (is_charset_rule_name(symbol))
         {
             charset_rule_name_to_text(symbol, buf, sizeof(buf));
-            expected_add(e, rule, buf);
+            expected_add(e, IXML_EXPECTED_CHARSET, rule, buf, buf);
         }
         break;
     }
@@ -14109,6 +14145,33 @@ static char *expected_lines(IXMLExpected *e)
     return s;
 }
 
+/** Called when the whole input has been read (XMQ_FLAG_IXML_COMPLETE): store what could
+    follow the input in the document (at_end_data), see xmqTakeIXMLCompletions. The user
+    data of the run is the ixml grammar, for the names of the generated rules. */
+static void complete_at_end(YaepParseRun *pr)
+{
+    XMQDoc *doc = (XMQDoc*)pr->at_end_data;
+    IXMLExpected expected;
+    memset(&expected, 0, sizeof(expected));
+    expected_find_owners(&expected, (XMQParseState*)pr->user_data);
+    yaepExpectedSymbols(pr, collect_expected, &expected);
+    qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
+
+    MemBuffer *mb = new_membuffer();
+    for (int i = 0; i < expected.num; i++)
+    {
+        IXMLExpectedItem *it = &expected.items[i];
+        const char *kind = it->kind == IXML_EXPECTED_STRING ? "string" :
+                           it->kind == IXML_EXPECTED_CHAR ? "char" :
+                           it->kind == IXML_EXPECTED_CHARSET ? "charset" : "end";
+        membuffer_printf(mb, "%s\t%s\t%s\n", kind, it->rule ? it->rule : "", it->raw);
+    }
+    membuffer_append_null(mb);
+    expected_free(&expected);
+    free(doc->ixml_completions_);
+    doc->ixml_completions_ = free_membuffer_but_return_trimmed_content(mb);
+}
+
 void handle_yaep_syntax_error(YaepParseRun *pr,
                               int err_tok_num,
                               void *err_tok_attr,
@@ -14123,6 +14186,7 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     // What the parser could have read instead, for each rule, sorted.
     IXMLExpected expected;
     memset(&expected, 0, sizeof(expected));
+    // The user data of the run is the ixml grammar, for the names of the generated rules.
     expected_find_owners(&expected, (XMQParseState*)pr->user_data);
     yaepExpectedSymbols(pr, collect_expected, &expected);
     qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
@@ -14554,6 +14618,14 @@ static void trace_recorder_stop(IXMLTraceRecorder *r, YaepParseRun *run, XMQDoc 
     doc->ixml_trace_ = r->trace;
 }
 
+char *xmqTakeIXMLCompletions(XMQDoc *doc)
+{
+    if (!doc) return NULL;
+    char *c = doc->ixml_completions_;
+    doc->ixml_completions_ = NULL;
+    return c;
+}
+
 XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
 {
     if (!doc) return NULL;
@@ -14634,11 +14706,19 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 
     YaepGrammar *grammar = xmq_get_yaep_grammar(ixml_grammar);
     run->syntax_error = handle_yaep_syntax_error;
-    // The ixml rules, for the names of the generated rules in a syntax error.
-    run->user_data = state;
+    // The document gets the completions.
+    free(doc->ixml_completions_);
+    doc->ixml_completions_ = NULL;
+    run->at_end = (flags & XMQ_FLAG_IXML_COMPLETE) ? complete_at_end : NULL;
+    run->at_end_data = doc;
 
     // Parse source content using the yaep grammar, previously generated from the ixml source.
     rc = yaepParse(run, grammar);
+    run->at_end = NULL;
+    run->at_end_data = NULL;
+    // The completions are kept also when the document is cleared below.
+    char *completions = doc->ixml_completions_;
+    doc->ixml_completions_ = NULL;
 
     if (rc)
     {
@@ -14713,6 +14793,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     }
 
     if (tracing) trace_recorder_stop(&recorder, xmq_get_yaep_parse_run(ixml_grammar), doc);
+    doc->ixml_completions_ = completions;
 
     return ok;
 }
@@ -14744,6 +14825,12 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
 {
     (void)start; (void)stop; (void)ixml_grammar; (void)flags;
     return xmq_set_doc_error_excluded(doc, "ixml", "XMQ_NO_IXML");
+}
+
+char *xmqTakeIXMLCompletions(XMQDoc *doc)
+{
+    (void)doc;
+    return NULL;
 }
 
 XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
@@ -107911,6 +107998,12 @@ static void perform_parse(YaepParseState *ps)
         else
         {
             yaep_view(ps, "READ %s", THE_TERMINAL->hr);
+        }
+
+        if (THE_TERMINAL == ps->run.grammar->end_marker && ps->run.at_end)
+        {
+            // The whole input has been read, the last set has what could follow it.
+            ps->run.at_end((YaepParseRun*)ps);
         }
 
         YaepStateSet *set = ps->state_sets[ps->state_set_k];

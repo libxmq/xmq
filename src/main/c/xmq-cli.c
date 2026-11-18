@@ -165,6 +165,7 @@ struct XMQCliCommand
     const char *ixml_filename; // Where the ixml grammar was read from.
     XMQDoc *ixml_grammar; // The prepared ixml grammar to be reused.
     bool ixml_fail_silent; // Generate empty document ixml parse fails. Use with --lines
+    bool ixml_complete; // --complete print what could follow the input, for completion.
     const char *ixml_trace_file; // --traceixml=file writes a trace of the ixml parse to this file.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
@@ -1909,6 +1910,11 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->ixml_trace_file = arg+12;
         return true;
     }
+    if (!strcmp(arg, "--complete"))
+    {
+        command->ixml_complete = true;
+        return true;
+    }
     if (!strcmp(arg, "--log-xmq") || !strcmp(arg, "-lx"))
     {
         log_xmq__ = true;
@@ -2064,6 +2070,8 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --xmq|--htmq|--xml|--html|--ixml|--json|--yaml|--clines\n"
            "             The input format is auto detected for xmq/xml/json but you can force the input format here.\n"
            "  --ixml=grammar.ixml Parse the content using the supplied grammar file.\n"
+           "  --complete Print what could follow the input parsed with the ixml grammar, one per line:\n"
+           "             string|char|charset|end <tab> rule <tab> text, eg string verb gives\n"
            "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,\n"
            "             render it with library/xmq-utils/render-trace-to-html.xslq or render-trace-to-tex.xslq.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
@@ -2240,6 +2248,7 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
     if (command->ixml_try_to_recover) flags |= XMQ_FLAG_IXML_TRY_TO_RECOVER;
     if (command->ixml_fail_silent) flags |= XMQ_FLAG_IXML_FAIL_SILENT;
     if (command->ixml_trace_file) flags |= XMQ_FLAG_IXML_TRACE;
+    if (command->ixml_complete) flags |= XMQ_FLAG_IXML_COMPLETE | XMQ_FLAG_IXML_FAIL_SILENT;
 
     bool ok = xmqParseBufferWithIXML(command->env->doc,
                                      command->input_current_line_start,
@@ -2248,6 +2257,17 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
                                      flags);
 
     if (command->ixml_trace_file) save_ixml_trace(command);
+
+    if (command->ixml_complete)
+    {
+        // Print what could follow the input and stop, exit 1 if the input could
+        // not be parsed up to its end.
+        char *completions = xmqTakeIXMLCompletions(command->env->doc);
+        if (!completions) exit(1);
+        fputs(completions, stdout);
+        free(completions);
+        exit(0);
+    }
 
     if (!ok)
     {

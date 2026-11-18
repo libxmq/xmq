@@ -212,6 +212,8 @@ typedef enum
     XMQ_FLAG_IXML_FAIL_SILENT = 64,
     /** Record a trace of the ixml parse (the grammar, the Earley items and the tree), see xmqTakeIXMLTrace. */
     XMQ_FLAG_IXML_TRACE = 128,
+    /** Find what could follow the input, for completion, see xmqTakeIXMLCompletions. */
+    XMQ_FLAG_IXML_COMPLETE = 256,
 } XMQFlagBits;
 
 /**
@@ -1537,6 +1539,22 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
     where state is predicted, partial, complete or blocked.
 */
 XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc);
+
+/**
+    xmqTakeIXMLCompletions:
+
+    Returns what could follow the input of the last parse of doc with xmqParseBufferWithIXML
+    and the flag XMQ_FLAG_IXML_COMPLETE, or NULL if the input could not be parsed up to its end.
+    The caller owns the returned string and frees it. One line for each, sorted by rule:
+      string<TAB>rule<TAB>text     the characters text can follow, eg verb gives
+      char<TAB>rule<TAB>#a         a control character, written as in an ixml grammar
+      charset<TAB>rule<TAB>['a'-'z']  a character from the set can follow
+      end<TAB><TAB>                the input can end here
+    where rule is the named grammar rule (a generated rule gives the rule it was made for).
+    ixml has no tokens, so text is the characters up to the next character set or rule,
+    eg the rest of a word: with the input "a man gi" the line is: string verb ves
+*/
+char *xmqTakeIXMLCompletions(XMQDoc *doc);
 
 /**
     xmqParseFileWithIXML:

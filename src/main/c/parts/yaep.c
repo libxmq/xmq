@@ -2942,6 +2942,12 @@ static void perform_parse(YaepParseState *ps)
             yaep_view(ps, "READ %s", THE_TERMINAL->hr);
         }
 
+        if (THE_TERMINAL == ps->run.grammar->end_marker && ps->run.at_end)
+        {
+            // The whole input has been read, the last set has what could follow it.
+            ps->run.at_end((YaepParseRun*)ps);
+        }
+
         YaepStateSet *set = ps->state_sets[ps->state_set_k];
         ps->new_set = NULL;
 
