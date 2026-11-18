@@ -1159,6 +1159,7 @@ YaepGrammar *yaepNewGrammar()
     grammar->lookahead_level = 1;
     grammar->one_parse_p = true;
     grammar->cost_p = false;
+    grammar->loops_p = false;
     grammar->error_recovery_p = false;
     grammar->recovery_token_matches = DEFAULT_RECOVERY_TOKEN_MATCHES;
     grammar->symbs_ptr = symbolstorage_create(grammar);

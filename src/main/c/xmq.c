@@ -5977,7 +5977,8 @@ static void complete_at_end(YaepParseRun *pr)
     memset(&expected, 0, sizeof(expected));
     expected_find_owners(&expected, (XMQParseState*)pr->user_data);
     yaepExpectedSymbols(pr, collect_expected, &expected);
-    qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
+    // qsort must not be given NULL, there are no items when nothing could follow.
+    if (expected.num > 1) qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
 
     MemBuffer *mb = new_membuffer();
     for (int i = 0; i < expected.num; i++)
@@ -6011,7 +6012,8 @@ void handle_yaep_syntax_error(YaepParseRun *pr,
     // The user data of the run is the ixml grammar, for the names of the generated rules.
     expected_find_owners(&expected, (XMQParseState*)pr->user_data);
     yaepExpectedSymbols(pr, collect_expected, &expected);
-    qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
+    // qsort must not be given NULL, there are no items when nothing could follow.
+    if (expected.num > 1) qsort(expected.items, expected.num, sizeof(IXMLExpectedItem), compare_expected);
     char *more = expected_lines(&expected);
 
     size_t buf_size = 1024 + strlen(more);
