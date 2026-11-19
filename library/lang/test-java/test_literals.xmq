@@ -1,0 +1,45 @@
+compilation_unit {
+    INTEGER_LITERAL        = 0
+    INTEGER_LITERAL        = 7
+    INTEGER_LITERAL        = 0123
+    INTEGER_LITERAL        = 1_000_000
+    INTEGER_LITERAL        = 0x1F
+    INTEGER_LITERAL        = 0xCAFE_babeL
+    INTEGER_LITERAL        = 0b1010_1010
+    INTEGER_LITERAL        = 42L
+    INTEGER_LITERAL        = 9l
+    FLOATING_POINT_LITERAL = 1.0
+    FLOATING_POINT_LITERAL = 1.
+    FLOATING_POINT_LITERAL = .5
+    FLOATING_POINT_LITERAL = 1e10
+    FLOATING_POINT_LITERAL = 1E-5
+    FLOATING_POINT_LITERAL = 2.5e+3f
+    FLOATING_POINT_LITERAL = 3f
+    FLOATING_POINT_LITERAL = 4d
+    FLOATING_POINT_LITERAL = 6.02E23D
+    FLOATING_POINT_LITERAL = 0x1p3
+    FLOATING_POINT_LITERAL = 0x1.8p-2
+    FLOATING_POINT_LITERAL = 0x.8P1f
+    CHARACTER_LITERAL      = a
+    CHARACTER_LITERAL      = \n
+    CHARACTER_LITERAL      = "\'"
+    CHARACTER_LITERAL      = '"'
+    CHARACTER_LITERAL      = \\
+    CHARACTER_LITERAL      = \u0041
+    CHARACTER_LITERAL      = \uu00e5
+    CHARACTER_LITERAL      = \0
+    CHARACTER_LITERAL      = \377
+    CHARACTER_LITERAL      = å
+    STRING_LITERAL
+    STRING_LITERAL = a
+    STRING_LITERAL = tab\there
+    STRING_LITERAL = 'quote\"s'
+    STRING_LITERAL = \u00e5\101\7\s
+    STRING_LITERAL = 'å ä ö €'
+    STRING_LITERAL = \\
+    STRING_LITERAL = 'a\\\"b'
+    TEXT_BLOCK     = '    Hello "world" and ""two"" quotes,
+                          a line continuation \
+                          and an escape \t.'
+    TEXT_BLOCK     = '    '
+}

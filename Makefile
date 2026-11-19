@@ -270,15 +270,25 @@ test_ixml_standard_markup_blitz:
 # kaffepot is just a script around coffepot where -g: and -i are automatically added.
 # Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
 # using the C grammar library/lang/c.ixml. Takes a few minutes, therefore not part of make test.
-# Only test some files: make test_parse_myself FILTER=ixml.c or FILTER=ixml.c,xmq.c
-test_parse_myself: release
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself $${x}release || exit 1 ; done
+# Only test some files: make test_c_parse_myself FILTER=ixml.c or FILTER=ixml.c,xmq.c
+test_c_parse_myself: release
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_c_parse_myself.sh $${x}release/xmq $${x}release/test_output/c_parse_myself $${x}release || exit 1 ; done
 
-# The same as test_parse_myself, but with a C parser generated from c.ixml
+# The same as test_c_parse_myself, but with a C parser generated from c.ixml
 # (xmqj generate-parser --c) instead of the ixml engine. Takes seconds
 # instead of minutes, but cannot detect ambiguities. Needs make xmqj.
-test_parse_myself_fast: build/xmqj release
-	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_parse_myself.sh $${x}release/xmq $${x}release/test_output/parse_myself_fast $${x}release || exit 1 ; done
+test_c_parse_myself_fast: build/xmqj release
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_c_parse_myself.sh $${x}release/xmq $${x}release/test_output/c_parse_myself_fast $${x}release || exit 1 ; done
+
+# Parse all of xmq's own Java source (the .java files tracked by git) using the Java
+# grammar library/lang/java.ixml. Only test some files: make test_java_parse_myself FILTER=Main.java
+test_java_parse_myself: release
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_java_parse_myself.sh $${x}release/xmq $${x}release/test_output/java_parse_myself || exit 1 ; done
+
+# The same as test_java_parse_myself, but with a C parser generated from java.ixml
+# (xmqj generate-parser --c) instead of the ixml engine. Needs make xmqj.
+test_java_parse_myself_fast: build/xmqj release
+	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_java_parse_myself.sh $${x}release/xmq $${x}release/test_output/java_parse_myself_fast || exit 1 ; done
 
 # Generate C parsers (xmqj generate-parser --c) for all LL(*) grammars with
 # test inputs and compare their output with the ixml engine. Needs make xmqj.
@@ -441,7 +451,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_parse_myself test_parse_myself_fast test_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_generate_parser test_xmq_grammar generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

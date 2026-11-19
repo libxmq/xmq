@@ -1,0 +1,292 @@
+{ v0a A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The grammar parses Java 17 source files, which are UTF-8. The tree has the
+contents of the code: names, literals, operators and the structure. Whitespace,
+comments and punctuation are dropped. (Comments are for a separate grammar for
+syntax coloring and pretty printing.)
+
+The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+as well as the ixml engine, in the style of library/lang/c.ixml:
+
+  - Whitespace and comments (ws) are placed at the end of each token, except
+    in the first rule, which accepts leading white space. No rule may start
+    with ws, otherwise whitespace can be split ambiguously.
+  - Tokens use the not operator ! to implement maximal munch, e.g. an
+    IDENTIFIER cannot be followed by another identifier character (!idchar) and
+    the token + cannot be followed by + or =. Keywords cannot be identifiers
+    (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+    are identifiers, matched as keywords only where the syntax needs them.
+  - > is always a single token, so that List<List<String>> closes two type
+    argument lists. The shift operators >> and >>> are > tokens without
+    whitespace between them. The assignments >>= and >>>= are tokens.
+  - Unicode escapes (A) are only recognized inside char, string and
+    text block literals.
+  - Literals keep their source text without the quotes, escapes are not
+    translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+Not supported: annotation type declarations (@interface), module-info.java
+and the Java 21 features (record patterns, patterns in switch). }
+
+{ Step 1 of JAVA_PARSING.txt: a file is a sequence of tokens. This start rule
+  is replaced by the declarations in step 2. }
+compilation_unit = ws, token*.
+-token = keyword_token | IDENTIFIER | literal | operator | separator.
+-literal = INTEGER_LITERAL | FLOATING_POINT_LITERAL | CHARACTER_LITERAL
+         | STRING_LITERAL | TEXT_BLOCK.
+
+{ Whitespace and comments. The byte order mark is whitespace too. }
+
+-ws = (-[' '; #9; #a; #c; #d; #feff] | -comment)*, !wsstart.
+-wsstart = [' '; #9; #a; #c; #d; #feff] | '//' | '/*'.
+-comment = -'//', -~[#a; #d]*, !~[#a; #d]
+         | -'/*', comment_char*, -'*/'.
+-comment_char = -~['*'] | -'*', !'/'.
+
+{ Literals }
+
+INTEGER_LITERAL = (-hex_numeral | -binary_numeral | -digits), ['lL']?, !numchar, ws.
+-numchar = [L; Nd; '_'; '.'].
+-digits = ['0'-'9'], (['0'-'9'; '_']*, ['0'-'9'])?.
+-hex_digits = hex_digit, ([Nd; 'a'-'f'; 'A'-'F'; '_']*, hex_digit)?.
+-hex_digit = ['0'-'9'; 'a'-'f'; 'A'-'F'].
+-hex_numeral = '0', ['xX'], hex_digits.
+-binary_numeral = '0', ['bB'], ['01'], (['01_']*, ['01'])?.
+
+FLOATING_POINT_LITERAL = (-decimal_float | -hex_float), !numchar, ws.
+-decimal_float = digits, '.', digits?, exponent?, float_suffix?
+               | '.', digits, exponent?, float_suffix?
+               | digits, exponent, float_suffix?
+               | digits, float_suffix.
+-exponent = ['eE'], ['+-']?, digits.
+-float_suffix = ['fFdD'].
+-hex_float = '0', ['xX'], (hex_digits, '.'? | hex_digits?, '.', hex_digits),
+             ['pP'], ['+-']?, digits, float_suffix?.
+
+CHARACTER_LITERAL = -"'", (~["'\"; #a; #d] | -escape), -"'", ws.
+STRING_LITERAL = !'"""', -'"', (~['"\'; #a; #d] | -escape)*, -'"', ws.
+-escape = '\', ( ['btnfrs"\'; "'"]
+               | octal_escape
+               | 'u'+, hex_digit, hex_digit, hex_digit, hex_digit).
+-octal_escape = ['0'-'3'], ['0'-'7'], ['0'-'7']
+              | ['0'-'3'], ['0'-'7'], !['0'-'7']
+              | ['4'-'7'], ['0'-'7']
+              | ['0'-'7'], !['0'-'7'].
+
+{ A text block starts with """ and the rest of the line, the contents start on
+  the next line and end with """. A " or "" in the contents is not the end. }
+TEXT_BLOCK = -'"""', -[' '; #9; #c]*, -#d?, -#a, (-text_block_char)*, -'"""', ws.
+-text_block_char = ~['"\']
+                 | '"', !'""'
+                 | escape
+                 | '\', #d?, #a.
+
+{ Separators, they are not part of the tree. }
+
+-LPAREN = -'(', ws.
+-RPAREN = -')', ws.
+-LBRACE = -'{', ws.
+-RBRACE = -'}', ws.
+-LBRACKET = -'[', ws.
+-RBRACKET = -']', ws.
+-SEMI = -';', ws.
+-COMMA = -',', ws.
+-DOT = -'.', !['0'-'9'; '.'], ws.
+-ELLIPSIS = -'...', ws.
+-AT = -'@', ws.
+-COLONCOLON = -'::', ws.
+
+-separator = ^LPAREN | ^RPAREN | ^LBRACE | ^RBRACE | ^LBRACKET | ^RBRACKET | ^SEMI
+           | ^COMMA | ^DOT | ^ELLIPSIS | ^AT | ^COLONCOLON.
+
+{ Operators }
+
+ASSIGN = '=', !'=', ws.
+GT = '>', !gt_follow, ws.
+-gt_follow = '=' | '>=' | '>>='.
+LT = '<', !['<='], ws.
+NOT = '!', !'=', ws.
+TILDE = '~', ws.
+QUESTION = '?', ws.
+COLON = ':', !':', ws.
+ARROW = '->', ws.
+EQ = '==', ws.
+GE = '>=', ws.
+LE = '<=', ws.
+NE = '!=', ws.
+AND = '&&', ws.
+OR = '||', ws.
+INC = '++', ws.
+DEC = '--', ws.
+PLUS = '+', !['+='], ws.
+MINUS = '-', !['-=>'], ws.
+STAR = '*', !'=', ws.
+SLASH = '/', !['/*='], ws.
+BITAND = '&', !['&='], ws.
+BITOR = '|', !['|='], ws.
+CARET = '^', !'=', ws.
+PERCENT = '%', !'=', ws.
+SHL = '<<', !'=', ws.
+PLUS_ASSIGN = '+=', ws.
+MINUS_ASSIGN = '-=', ws.
+STAR_ASSIGN = '*=', ws.
+SLASH_ASSIGN = '/=', ws.
+AND_ASSIGN = '&=', ws.
+OR_ASSIGN = '|=', ws.
+XOR_ASSIGN = '^=', ws.
+MOD_ASSIGN = '%=', ws.
+SHL_ASSIGN = '<<=', ws.
+SHR_ASSIGN = '>>=', ws.
+USHR_ASSIGN = '>>>=', ws.
+
+-operator = ASSIGN | GT | LT | NOT | TILDE | QUESTION | COLON | ARROW | EQ | GE | LE
+          | NE | AND | OR | INC | DEC | PLUS | MINUS | STAR | SLASH | BITAND | BITOR
+          | CARET | PERCENT | SHL | PLUS_ASSIGN | MINUS_ASSIGN | STAR_ASSIGN
+          | SLASH_ASSIGN | AND_ASSIGN | OR_ASSIGN | XOR_ASSIGN | MOD_ASSIGN
+          | SHL_ASSIGN | SHR_ASSIGN | USHR_ASSIGN.
+
+{ Identifiers and keywords. An identifier is not a keyword, eg classes, done
+  and if_x are identifiers. true, false, null and _ are reserved as well. }
+
+IDENTIFIER = !keyword, idstart, idchar*, !idchar, ws.
+-idstart = [L; Nl; Sc; Pc].
+-idchar = [L; Nl; Sc; Pc; Nd; Mn; Mc].
+
+-keyword = 'abstract', notid
+         | 'assert', notid
+         | 'boolean', notid
+         | 'break', notid
+         | 'byte', notid
+         | 'case', notid
+         | 'catch', notid
+         | 'char', notid
+         | 'class', notid
+         | 'const', notid
+         | 'continue', notid
+         | 'default', notid
+         | 'do', notid
+         | 'double', notid
+         | 'else', notid
+         | 'enum', notid
+         | 'extends', notid
+         | 'final', notid
+         | 'finally', notid
+         | 'float', notid
+         | 'for', notid
+         | 'goto', notid
+         | 'if', notid
+         | 'implements', notid
+         | 'import', notid
+         | 'instanceof', notid
+         | 'int', notid
+         | 'interface', notid
+         | 'long', notid
+         | 'native', notid
+         | 'new', notid
+         | 'package', notid
+         | 'private', notid
+         | 'protected', notid
+         | 'public', notid
+         | 'return', notid
+         | 'short', notid
+         | 'static', notid
+         | 'strictfp', notid
+         | 'super', notid
+         | 'switch', notid
+         | 'synchronized', notid
+         | 'this', notid
+         | 'throw', notid
+         | 'throws', notid
+         | 'transient', notid
+         | 'try', notid
+         | 'void', notid
+         | 'volatile', notid
+         | 'while', notid
+         | 'true', notid
+         | 'false', notid
+         | 'null', notid
+         | '_', notid.
+-notid = ~[L; Nl; Sc; Pc; Nd; Mn; Mc].
+
+ABSTRACT = 'abstract', !idchar, ws.
+ASSERT = 'assert', !idchar, ws.
+BOOLEAN = 'boolean', !idchar, ws.
+BREAK = 'break', !idchar, ws.
+BYTE = 'byte', !idchar, ws.
+CASE = 'case', !idchar, ws.
+CATCH = 'catch', !idchar, ws.
+CHAR = 'char', !idchar, ws.
+CLASS = 'class', !idchar, ws.
+CONST = 'const', !idchar, ws.
+CONTINUE = 'continue', !idchar, ws.
+DEFAULT = 'default', !idchar, ws.
+DO = 'do', !idchar, ws.
+DOUBLE = 'double', !idchar, ws.
+ELSE = 'else', !idchar, ws.
+ENUM = 'enum', !idchar, ws.
+EXTENDS = 'extends', !idchar, ws.
+FINAL = 'final', !idchar, ws.
+FINALLY = 'finally', !idchar, ws.
+FLOAT = 'float', !idchar, ws.
+FOR = 'for', !idchar, ws.
+GOTO = 'goto', !idchar, ws.
+IF = 'if', !idchar, ws.
+IMPLEMENTS = 'implements', !idchar, ws.
+IMPORT = 'import', !idchar, ws.
+INSTANCEOF = 'instanceof', !idchar, ws.
+INT = 'int', !idchar, ws.
+INTERFACE = 'interface', !idchar, ws.
+LONG = 'long', !idchar, ws.
+NATIVE = 'native', !idchar, ws.
+NEW = 'new', !idchar, ws.
+PACKAGE = 'package', !idchar, ws.
+PRIVATE = 'private', !idchar, ws.
+PROTECTED = 'protected', !idchar, ws.
+PUBLIC = 'public', !idchar, ws.
+RETURN = 'return', !idchar, ws.
+SHORT = 'short', !idchar, ws.
+STATIC = 'static', !idchar, ws.
+STRICTFP = 'strictfp', !idchar, ws.
+SUPER = 'super', !idchar, ws.
+SWITCH = 'switch', !idchar, ws.
+SYNCHRONIZED = 'synchronized', !idchar, ws.
+THIS = 'this', !idchar, ws.
+THROW = 'throw', !idchar, ws.
+THROWS = 'throws', !idchar, ws.
+TRANSIENT = 'transient', !idchar, ws.
+TRY = 'try', !idchar, ws.
+VOID = 'void', !idchar, ws.
+VOLATILE = 'volatile', !idchar, ws.
+WHILE = 'while', !idchar, ws.
+TRUE = 'true', !idchar, ws.
+FALSE = 'false', !idchar, ws.
+NULL = 'null', !idchar, ws.
+UNDERSCORE = '_', !idchar, ws.
+
+-keyword_token = ABSTRACT | ASSERT | BOOLEAN | BREAK | BYTE | CASE | CATCH
+               | CHAR | CLASS | CONST | CONTINUE | DEFAULT | DO | DOUBLE
+               | ELSE | ENUM | EXTENDS | FINAL | FINALLY | FLOAT | FOR
+               | GOTO | IF | IMPLEMENTS | IMPORT | INSTANCEOF | INT | INTERFACE
+               | LONG | NATIVE | NEW | PACKAGE | PRIVATE | PROTECTED | PUBLIC
+               | RETURN | SHORT | STATIC | STRICTFP | SUPER | SWITCH | SYNCHRONIZED
+               | THIS | THROW | THROWS | TRANSIENT | TRY | VOID | VOLATILE
+               | WHILE | TRUE | FALSE | NULL | UNDERSCORE.

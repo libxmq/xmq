@@ -1,0 +1,172 @@
+compilation_unit {
+    IDENTIFIER = a
+    ASSIGN     = '='
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    EQ         = '=='
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    NE         = !=
+    IDENTIFIER = b
+    SEMI
+    NOT        = !
+    IDENTIFIER = a
+    SEMI
+    TILDE      = ~
+    IDENTIFIER = a
+    SEMI
+    IDENTIFIER = a
+    QUESTION   = ?
+    IDENTIFIER = b
+    COLON      = :
+    IDENTIFIER = c
+    SEMI
+    IDENTIFIER = a
+    ARROW      = ->
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = X
+    COLONCOLON
+    NEW = new
+    SEMI
+    IDENTIFIER = f
+    LPAREN
+    IDENTIFIER = a
+    COMMA
+    IDENTIFIER = b
+    ELLIPSIS
+    RPAREN
+    SEMI
+    AT
+    IDENTIFIER = A
+    IDENTIFIER = a
+    LT         = <
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    LE         = <=
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    SHL        = <<
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    SHL_ASSIGN = <<=
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    GT         = >
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    GE         = >=
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    GT         = >
+    GT         = >
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    GT         = >
+    GT         = >
+    GT         = >
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    SHR_ASSIGN = >>=
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER  = a
+    USHR_ASSIGN = >>>=
+    IDENTIFIER  = b
+    SEMI
+    IDENTIFIER = List
+    LT         = <
+    IDENTIFIER = List
+    LT         = <
+    IDENTIFIER = Map
+    LT         = <
+    IDENTIFIER = String
+    COMMA
+    IDENTIFIER = Integer
+    GT         = >
+    GT         = >
+    GT         = >
+    IDENTIFIER = x
+    SEMI
+    IDENTIFIER = a
+    INC        = ++
+    PLUS       = +
+    INC        = ++
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER = a
+    DEC        = --
+    MINUS      = -
+    DEC        = --
+    IDENTIFIER = b
+    SEMI
+    IDENTIFIER      = a
+    PLUS_ASSIGN     = +=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    MINUS_ASSIGN    = -=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    STAR_ASSIGN     = *=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    SLASH_ASSIGN    = /=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    MOD_ASSIGN      = %=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    AND_ASSIGN      = '&='
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    OR_ASSIGN       = |=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER      = a
+    XOR_ASSIGN      = ^=
+    INTEGER_LITERAL = 1
+    SEMI
+    IDENTIFIER = a
+    AND        = '&&'
+    IDENTIFIER = b
+    OR         = ||
+    IDENTIFIER = c
+    BITAND     = '&'
+    IDENTIFIER = d
+    BITOR      = |
+    IDENTIFIER = e
+    CARET      = ^
+    IDENTIFIER = f
+    SEMI
+    IDENTIFIER = a
+    STAR       = *
+    IDENTIFIER = b
+    SLASH      = /
+    IDENTIFIER = c
+    PERCENT    = %
+    IDENTIFIER = d
+    SEMI
+    IDENTIFIER = a
+    LBRACKET
+    INTEGER_LITERAL = 0
+    RBRACKET
+    DOT
+    IDENTIFIER = b
+    SEMI
+}

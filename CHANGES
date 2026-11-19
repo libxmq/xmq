@@ -17,9 +17,9 @@ and an ixml cost operator to avoid the generic case of multiple possible rules.
 With this, it is now possible to parse C-source code using library/lang/c.ixml
 (The not and cost operators are not (yet) part of the ixml standard.)
 
-Try "make test_parse_myself_fast" which will compile c.ixml to a C-program
+Try "make test_c_parse_myself_fast" which will compile c.ixml to a C-program
 which will parse almost all gcc -E processed xmq C-sources!
-If you have more time try "make test_parse_myself" which will use the normal
+If you have more time try "make test_c_parse_myself" which will use the normal
 yeap parser in xmq to parse xmq C-sources.
 
 The xmq sources now includes a c-fork and a java-fork of libxml2 and libxslt.

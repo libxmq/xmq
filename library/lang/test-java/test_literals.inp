@@ -1,0 +1,10 @@
+0 7 0123 1_000_000 0x1F 0xCAFE_babeL 0b1010_1010 42L 9l
+1.0 1. .5 1e10 1E-5 2.5e+3f 3f 4d 6.02E23D 0x1p3 0x1.8p-2 0x.8P1f
+'a' '\n' '\'' '"' '\\' '\u0041' '\uu00e5' '\0' '\377' 'å'
+"" "a" "tab\there" "quote\"s" "\u00e5\101\7\s" "å ä ö €" "\\" "a\\\"b"
+"""
+    Hello "world" and ""two"" quotes,
+    a line continuation \
+    and an escape \t."""
+"""
+    """
