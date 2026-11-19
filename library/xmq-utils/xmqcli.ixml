@@ -81,7 +81,8 @@ name0 = 'to-xmq' | 'to-xml' | 'to-htmq' | 'to-html' | 'to-json' | 'to-yaml'
       | 'render-html' | 'render-terminal' | 'render-tex'
       | 'tokenize' | 'no-output' | 'print' | 'page' | 'pa' | 'browse' | 'br'
       | 'statistics' | 'heu' | 'quote-c' | 'unquote-c'
-      | 'substitute-char-entities' | 'expand-entities'.
+      | 'substitute-char-entities' | 'expand-entities'
+      | 'check-library' | 'refresh-library'.
 name1 = 'add' | 'add-root' | 'delete' | 'delete-entity' | 'select'
       | 'for-each' | 'transform' | 'validate' | 'save-to' | 'replace'
       | 'substitute-entity'.

@@ -109,7 +109,9 @@ typedef enum
     XMQ_CLI_CMD_HEU,
     XMQ_CLI_CMD_STATISTICS,
     XMQ_CLI_CMD_QUOTE_C,
-    XMQ_CLI_CMD_UNQUOTE_C
+    XMQ_CLI_CMD_UNQUOTE_C,
+    XMQ_CLI_CMD_CHECK_LIBRARY,
+    XMQ_CLI_CMD_REFRESH_LIBRARY
 } XMQCliCmd;
 
 typedef enum {
@@ -167,6 +169,7 @@ struct XMQCliCommand
     bool ixml_fail_silent; // Generate empty document ixml parse fails. Use with --lines
     bool ixml_complete; // --complete print what could follow the input, for completion.
     const char *ixml_trace_file; // --traceixml=file writes a trace of the ixml parse to this file.
+    bool ixml_trace_terminal; // --traceixml=terminal shows the trace in the terminal, saved in trace_grammar.xmq.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -308,6 +311,12 @@ typedef enum {
     DOWNLOAD_ERROR
 } DownloadStatus;
 
+// How a library file is fetched from libxmq.org into the download dir.
+typedef enum {
+    LIBRARY_IF_MISSING, // Download only if it is not in the library (the default).
+    LIBRARY_FORCE       // --force-download: always download.
+} LibraryMode;
+
 // FUNCTION DECLARATIONS /////////////////////////////////////////////////////////////
 
 void accumulate_attribute(Stats *stats, XMQAttr *a);
@@ -328,6 +337,7 @@ bool cmd_for_each(XMQCliCommand *command);
 XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_help(XMQCliCommand *c);
+static bool cmd_library(bool refresh);
 void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from);
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from);
 void save_ixml_trace(XMQCliCommand *command);
@@ -356,7 +366,7 @@ bool delete_entity(XMQCliCommand *command);
 bool delete_xpath(XMQCliCommand *command);
 void disable_stdout_raw_input_mode();
 bool dot_found(const char *arg);
-DownloadStatus download(bool force_download, const char *suffix, const char *file, const char *local_file, bool accept_fail);
+DownloadStatus download(LibraryMode mode, const char *suffix, const char *file, const char *local_file, bool accept_fail);
 const char *download_dir();
 const char *share_dir();
 void enableAnsiColorsWindowsConsole();
@@ -391,6 +401,7 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data);
 void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command);
 void prepare_ixml_command(XMQCliCommand *c, const char *arg);
 void prepare_xsl_command(XMQCliCommand *c, const char *arg);
+static void xsl_library_file(XMQCliCommand *command, const char *file, char *local_file, size_t size);
 void add_xsl_command(XMQCliCommand *command, const char *local_file);
 void print_command_help(XMQCliCmd c);
 void print_license_and_exit();
@@ -504,6 +515,8 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "delete-entity")) return XMQ_CLI_CMD_DELETE_ENTITY;
     if (!strcmp(s, "for-each")) return XMQ_CLI_CMD_FOR_EACH;
     if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
+    if (!strcmp(s, "check-library")) return XMQ_CLI_CMD_CHECK_LIBRARY;
+    if (!strcmp(s, "refresh-library")) return XMQ_CLI_CMD_REFRESH_LIBRARY;
     if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
     if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
     if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
@@ -544,6 +557,8 @@ const char *cmd_name(XMQCliCmd cmd)
     {
     case XMQ_CLI_CMD_NONE: return "noop";
     case XMQ_CLI_CMD_HELP: return "help";
+    case XMQ_CLI_CMD_CHECK_LIBRARY: return "check-library";
+    case XMQ_CLI_CMD_REFRESH_LIBRARY: return "refresh-library";
     case XMQ_CLI_CMD_LOAD: return "load";
     case XMQ_CLI_CMD_TO_XMQ: return "to-xmq";
     case XMQ_CLI_CMD_TO_XML: return "to-xml";
@@ -653,6 +668,10 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_HELP:
         return XMQ_CLI_CMD_GROUP_HELP;
+
+    case XMQ_CLI_CMD_CHECK_LIBRARY:
+    case XMQ_CLI_CMD_REFRESH_LIBRARY:
+        return XMQ_CLI_CMD_GROUP_NONE;
     }
     return XMQ_CLI_CMD_GROUP_NONE;
 }
@@ -1238,6 +1257,13 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
         }
         if (!is_option && command->xslt == NULL)
         {
+            // transform xsl:data/table-to-html uses the stylesheet from the library.
+            char library_file[1024];
+            if (is_xsl_cmd(arg))
+            {
+                xsl_library_file(command, is_xsl_cmd(arg), library_file, sizeof(library_file));
+                arg = library_file;
+            }
             bool ok = load_xslt(command, arg);
             if (!ok) return false;
             if (!command->xslt) return false;
@@ -1346,20 +1372,65 @@ const char *download_dir()
     return download_dir_;
 }
 
-char share_dir_[256] = {0};
+char share_dir_[600] = {0};
 
+/** Where make install puts the library: share/xmq next to the bin directory of this xmq
+    binary, eg /usr/local/share/xmq for /usr/local/bin/xmq. */
 const char *share_dir()
 {
     if (share_dir_[0]) return share_dir_;
 
 #ifdef PLATFORM_WINAPI
     const char *programfiles = getenv("PROGRAMFILES");
-    snprintf(share_dir_, 256, "%s/xmq", programfiles);
+    snprintf(share_dir_, sizeof(share_dir_), "%s/xmq", programfiles);
 #else
-    snprintf(share_dir_, 256, "/usr/local/share/xmq");
+    snprintf(share_dir_, sizeof(share_dir_), "/usr/local/share/xmq");
+#ifdef __linux__
+    char exe[512];
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe)-1);
+    if (n > 0)
+    {
+        exe[n] = 0;
+        char *slash = strrchr(exe, '/');
+        if (slash)
+        {
+            *slash = 0; // The bin directory.
+            snprintf(share_dir_, sizeof(share_dir_), "%s/../share/xmq", exe);
+        }
+    }
+#endif
 #endif
 
     return share_dir_;
+}
+
+/** Find a library file, eg xmq-utils/render-trace-to-terminal with the suffix .xslq. In order:
+    $XMQ_LIBRARY (eg the library of the xmq source), the download dir ~/.local/share/xmq/library
+    (files downloaded on demand or with xmq refresh-library), and the library that make install
+    puts in share/xmq/library. Returns false if it is in none of them, then the file is downloaded. */
+static bool find_library_file(const char *file, const char *suffix, char *out, size_t size)
+{
+    const char *env = getenv("XMQ_LIBRARY");
+    const char *dirs[] = { env, download_dir(), share_dir(), "/usr/local/share/xmq", "/usr/share/xmq" };
+    for (int i = 0; i < 5; i++)
+    {
+        if (i == 0)
+        {
+            if (!env || !*env) continue;
+            snprintf(out, size, "%s/%s%s", env, file, suffix);
+        }
+        else
+        {
+            snprintf(out, size, "%s/library/%s%s", dirs[i], file, suffix);
+        }
+        FILE *f = fopen(out, "rb");
+        if (f)
+        {
+            fclose(f);
+            return true;
+        }
+    }
+    return false;
 }
 
 #ifndef PLATFORM_WINAPI
@@ -1760,7 +1831,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         const char *file = "index";
         char local_file[256];
         snprintf(local_file, 256, "%s/library/%s.xmq", download_dir(), file);
-        download(true, ".xmq", file, local_file, false);
+        download(LIBRARY_FORCE, ".xmq", file, local_file, false);
         XMQReturnDoc rd = xmqNewDoc();
         assert(rd.status == XMQ_OK);
         XMQDoc *doc = rd.doc;
@@ -1907,7 +1978,18 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     }
     if (!strncmp(arg, "--traceixml=", 12))
     {
-        command->ixml_trace_file = arg+12;
+        // A file ending in .xmq .xml or .json, or terminal to show the trace in the terminal.
+        const char *value = arg+12;
+        size_t len = strlen(value);
+        bool is_file = (len > 4 && (!strcmp(value+len-4, ".xmq") || !strcmp(value+len-4, ".xml"))) ||
+                       (len > 5 && !strcmp(value+len-5, ".json"));
+        if (!is_file && strcmp(value, "terminal"))
+        {
+            fprintf(stderr, "xmq: --traceixml= takes a file ending in .xmq .xml or .json, or terminal\n");
+            exit(1);
+        }
+        command->ixml_trace_file = value;
+        command->ixml_trace_terminal = !is_file;
         return true;
     }
     if (!strcmp(arg, "--complete"))
@@ -1960,6 +2042,7 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
         command->force_download = true;
         return true;
     }
+
     if (!strncmp(arg, "--trim=", 7))
     {
         if (!strcmp(arg+7, "none"))
@@ -2048,6 +2131,7 @@ bool cmd_help(XMQCliCommand *cmd)
     printf("Usage: xmq [options] <file> ( <command> [options] )*\n"
            "\n"
            "  --debug    Output debug information on stderr.\n"
+           "  --force-download Always download the library files used (ixml:name xsl:name) from libxmq.org.\n"
            "  --help     Display this help and exit.\n"
            "  --license  Print license.\n"
            "  --lines    Assume each input line is a separate document.\n"
@@ -2071,8 +2155,9 @@ bool cmd_help(XMQCliCommand *cmd)
            "             --ixml=grammar.xml or grammar.xmq or grammar.json\n"
            "  --complete Print what could follow the input parsed with the ixml grammar, one per line:\n"
            "             string|char|charset|end <tab> rule <tab> text, eg string verb gives\n"
-           "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file,\n"
-           "             render it with library/xmq-utils/render-trace-to-html.xslq or render-trace-to-tex.xslq.\n"
+           "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file (.xmq .xml or .json),\n"
+           "             render it with xsl:xmq-utils/render-trace-to-html, -to-tex or -to-terminal.\n"
+           "  --traceixml=terminal Show the trace in the terminal, it is saved in trace_grammar.xmq.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"
@@ -2081,6 +2166,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  add\n"
            "  add-root\n"
            "  browser pager\n"
+           "  check-library refresh-library\n"
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
@@ -2305,16 +2391,68 @@ void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from)
     }
 }
 
-/** Write the trace of the ixml parse to the --traceixml file, as xml if the file ends
-    with .xml, else as xmq. */
+/** The path of this xmq binary, to run it again, or "xmq" (from PATH) if it is not known. */
+static const char *self_exe()
+{
+    static char path[4096];
+#ifdef __linux__
+    ssize_t n = readlink("/proc/self/exe", path, sizeof(path)-1);
+    if (n > 0)
+    {
+        path[n] = 0;
+        return path;
+    }
+#endif
+    return "xmq";
+}
+
+/** Run xmq with the arguments, the output goes to the terminal. Returns true if it exited with 0. */
+static bool run_xmq(const char **args)
+{
+#ifndef PLATFORM_WINAPI
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp(args[0], (char**)args);
+        fprintf(stderr, "xmq: could not run %s\n", args[0]);
+        _exit(127);
+    }
+    if (pid < 0) return false;
+    int status = 0;
+    if (waitpid(pid, &status, 0) < 0) return false;
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+#else
+    (void)args;
+    fprintf(stderr, "xmq: running xmq again is not yet implemented on Windows.\n");
+    return false;
+#endif
+}
+
+/** Write the trace of the ixml parse to the --traceixml file, as xml or json if the file
+    ends with .xml or .json, else as xmq. With --traceixml=terminal the trace is saved in
+    trace_grammar.xmq (after the grammar file name) and shown with
+    xmq trace_grammar.xmq transform xsl:xmq-utils/render-trace-to-terminal to-text */
 void save_ixml_trace(XMQCliCommand *command)
 {
     XMQDoc *trace = xmqTakeIXMLTrace(command->env->doc);
     if (!trace) return;
     const char *file = command->ixml_trace_file;
+    char terminal_file[1024];
+    if (command->ixml_trace_terminal)
+    {
+        // trace_formula.xmq for the grammar dir/formula.ixml
+        const char *g = command->ixml_filename ? command->ixml_filename : "grammar";
+        const char *base = strrchr(g, '/');
+        base = base ? base+1 : g;
+        const char *dot = strrchr(base, '.');
+        int base_len = dot ? (int)(dot-base) : (int)strlen(base);
+        snprintf(terminal_file, sizeof(terminal_file), "trace_%.*s.xmq", base_len, base);
+        file = terminal_file;
+    }
     size_t len = strlen(file);
     XMQOutputSettings *os = xmqNewOutputSettings();
-    xmqSetOutputFormat(os, len > 4 && !strcmp(file+len-4, ".xml") ? XMQ_CONTENT_XML : XMQ_CONTENT_XMQ);
+    xmqSetOutputFormat(os, len > 4 && !strcmp(file+len-4, ".xml") ? XMQ_CONTENT_XML :
+                           len > 5 && !strcmp(file+len-5, ".json") ? XMQ_CONTENT_JSON : XMQ_CONTENT_XMQ);
     char *start = NULL, *stop = NULL;
     xmqSetupPrintMemory(os, &start, &stop);
     xmqPrint(trace, os);
@@ -2331,6 +2469,15 @@ void save_ixml_trace(XMQCliCommand *command)
     fclose(f);
     free(start);
     verbose_("xmq=", "wrote the ixml trace to %s", file);
+
+    if (command->ixml_trace_terminal)
+    {
+        const char *args[] = { self_exe(), file, "transform", "xsl:xmq-utils/render-trace-to-terminal", "to-text", NULL };
+        if (!run_xmq(args))
+        {
+            fprintf(stderr, "xmq: could not show the ixml trace %s in the terminal\n", file);
+        }
+    }
 }
 
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from)
@@ -3740,6 +3887,9 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
     case XMQ_CLI_CMD_HELP:
         c->print_help = true;
         return;
+    case XMQ_CLI_CMD_CHECK_LIBRARY:
+    case XMQ_CLI_CMD_REFRESH_LIBRARY:
+        return;
     }
 }
 
@@ -4018,6 +4168,22 @@ void print_command_help(XMQCliCmd c)
         printf(
             "Usage: xmq <input> add-root <root-element-name>\n"
             "Place a new root node below all existing nodes. Useful after a select.\n");
+        break;
+    case XMQ_CLI_CMD_CHECK_LIBRARY:
+        printf(
+            "Usage: xmq check-library\n"
+            "List the library files (ixml grammars and xsl transforms) that refresh-library would\n"
+            "download: new on https://libxmq.org/library or changed there more recently. The files\n"
+            "are compared with the library xmq uses (see refresh-library) using the sha256 and\n"
+            "modification time listed in https://libxmq.org/library/index.xmq\n");
+        break;
+    case XMQ_CLI_CMD_REFRESH_LIBRARY:
+        printf(
+            "Usage: xmq refresh-library\n"
+            "Download the library files (ixml grammars and xsl transforms) that are new on\n"
+            "https://libxmq.org/library or changed there more recently, into ~/.local/share/xmq/library.\n"
+            "Files there are used before the library installed with xmq (share/xmq/library), so\n"
+            "after make install the library can be refreshed without reinstalling.\n");
         break;
     case XMQ_CLI_CMD_HELP:
         printf(
@@ -4585,6 +4751,10 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
         return cmd_quote_unquote(c);
     case XMQ_CLI_CMD_HELP:
         return cmd_help(c);
+    case XMQ_CLI_CMD_CHECK_LIBRARY:
+    case XMQ_CLI_CMD_REFRESH_LIBRARY:
+        // Handled in main before any input is read.
+        return true;
     }
     assert(false);
     return false;
@@ -4619,31 +4789,43 @@ bool dot_found(const char *file)
     return false;
 }
 
-DownloadStatus download(bool force_download, const char *suffix, const char *file, const char *local_file, bool accept_fail)
+/** How library files are fetched for the command: --force-download (also given before the
+    first command), else only when they are not in the library. */
+static LibraryMode library_mode(XMQCliCommand *command)
 {
-    if (!force_download)
+    bool force = command->force_download ||
+        (command->env && command->env->load && command->env->load->force_download);
+    return force ? LIBRARY_FORCE : LIBRARY_IF_MISSING;
+}
+
+/** The url of the library, https://libxmq.org/library/ or $XMQ_LIBRARY_URL (eg for tests). */
+static const char *library_url()
+{
+    const char *env = getenv("XMQ_LIBRARY_URL");
+    return (env && *env) ? env : "https://libxmq.org/library/";
+}
+
+/** Fetch library_url()/file+suffix into local_file, unless it is cached and the mode is not
+    LIBRARY_FORCE. The file gets the modification time of the server (curl -R), which
+    check-library compares with the time in the index. */
+DownloadStatus download(LibraryMode mode, const char *suffix, const char *file, const char *local_file, bool accept_fail)
+{
+    FILE *f = fopen(local_file, "rb");
+    if (f)
     {
-        FILE *f = fopen(local_file, "rb");
-        if (f)
-        {
-            // Already downloaded
-            // The first forces an assumption that the seconds is not needed.
-            fclose(f);
-            return DOWNLOAD_EXISTS;
-        }
+        fclose(f);
+        if (mode == LIBRARY_IF_MISSING) return DOWNLOAD_EXISTS;
     }
 
-    // Not in download dir, download...
     // curl https://libxmq.org/library/data/tsv.ixml
-    char url[256];
-    snprintf(url, 256, "https://libxmq.org/library/%s%s", file, suffix);
-
-    char cmd[1024];
-    snprintf(cmd, 1024, "curl -s --fail %s --create-dirs -o %s", url, local_file);
+    char url[1024];
+    snprintf(url, sizeof(url), "%s%s%s", library_url(), file, suffix);
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd), "curl -s --fail -R --create-dirs -o '%s' '%s'", local_file, url);
 
     fprintf(stderr, "fetching %s\n", url);
 #ifndef PLATFORM_WINAPI
-    bool ok = invoke_shell(NULL, cmd);
+    bool ok = system(cmd) == 0;
     if (!ok)
     {
         if (accept_fail) return DOWNLOAD_ERROR;
@@ -4658,6 +4840,257 @@ DownloadStatus download(bool force_download, const char *suffix, const char *fil
 #endif
     fprintf(stderr, "downloaded and cached %s\n", local_file);
     return DOWNLOAD_OK;
+}
+
+// The library index and xmq check-library / refresh-library ///////////////////////////
+
+/* SHA-256 (FIPS 180-4), to compare library files with the sha256 in the library index. */
+typedef struct { uint32_t h[8]; uint64_t len; unsigned char buf[64]; size_t used; } Sha256;
+
+static const uint32_t sha256_k[64] = {
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2 };
+
+#define SHA256_ROR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
+
+static void sha256_block(Sha256 *s, const unsigned char *p)
+{
+    uint32_t w[64];
+    for (int i = 0; i < 16; i++) w[i] = (uint32_t)p[i*4] << 24 | (uint32_t)p[i*4+1] << 16 | (uint32_t)p[i*4+2] << 8 | p[i*4+3];
+    for (int i = 16; i < 64; i++)
+    {
+        uint32_t s0 = SHA256_ROR(w[i-15], 7) ^ SHA256_ROR(w[i-15], 18) ^ (w[i-15] >> 3);
+        uint32_t s1 = SHA256_ROR(w[i-2], 17) ^ SHA256_ROR(w[i-2], 19) ^ (w[i-2] >> 10);
+        w[i] = w[i-16] + s0 + w[i-7] + s1;
+    }
+    uint32_t a = s->h[0], b = s->h[1], c = s->h[2], d = s->h[3], e = s->h[4], f = s->h[5], g = s->h[6], h = s->h[7];
+    for (int i = 0; i < 64; i++)
+    {
+        uint32_t t1 = h + (SHA256_ROR(e, 6) ^ SHA256_ROR(e, 11) ^ SHA256_ROR(e, 25)) + ((e & f) ^ (~e & g)) + sha256_k[i] + w[i];
+        uint32_t t2 = (SHA256_ROR(a, 2) ^ SHA256_ROR(a, 13) ^ SHA256_ROR(a, 22)) + ((a & b) ^ (a & c) ^ (b & c));
+        h = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+    }
+    s->h[0] += a; s->h[1] += b; s->h[2] += c; s->h[3] += d; s->h[4] += e; s->h[5] += f; s->h[6] += g; s->h[7] += h;
+}
+
+static void sha256_init(Sha256 *s)
+{
+    static const uint32_t h0[8] = { 0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19 };
+    memcpy(s->h, h0, sizeof(h0));
+    s->len = 0;
+    s->used = 0;
+}
+
+static void sha256_update(Sha256 *s, const unsigned char *data, size_t n)
+{
+    s->len += n;
+    while (n > 0)
+    {
+        size_t take = 64 - s->used;
+        if (take > n) take = n;
+        memcpy(s->buf + s->used, data, take);
+        s->used += take;
+        data += take;
+        n -= take;
+        if (s->used == 64) { sha256_block(s, s->buf); s->used = 0; }
+    }
+}
+
+/** The sha256 as 64 lower case hex digits in out (65 bytes). */
+static void sha256_final(Sha256 *s, char *out)
+{
+    uint64_t bits = s->len * 8;
+    unsigned char pad = 0x80;
+    sha256_update(s, &pad, 1);
+    unsigned char zero = 0;
+    while (s->used != 56) sha256_update(s, &zero, 1);
+    unsigned char len[8];
+    for (int i = 0; i < 8; i++) len[i] = (unsigned char)(bits >> (56 - i*8));
+    sha256_update(s, len, 8);
+    for (int i = 0; i < 8; i++) snprintf(out + i*8, 9, "%08x", s->h[i]);
+}
+
+/** The sha256 of the file in out (65 bytes). */
+static bool sha256_file(const char *file, char *out)
+{
+    FILE *f = fopen(file, "rb");
+    if (!f) return false;
+    Sha256 s;
+    sha256_init(&s);
+    unsigned char buf[8192];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0) sha256_update(&s, buf, n);
+    fclose(f);
+    sha256_final(&s, out);
+    return true;
+}
+
+/** 2026-10-20T10:08:55Z as seconds since 1970, or 0. */
+static time_t parse_utc_time(const char *s)
+{
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    if (sscanf(s, "%d-%d-%dT%d:%d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) return 0;
+    tm.tm_year -= 1900;
+    tm.tm_mon -= 1;
+#ifdef PLATFORM_WINAPI
+    return _mkgmtime(&tm);
+#else
+    return timegm(&tm);
+#endif
+}
+
+static void format_utc_time(time_t t, char *out, size_t size)
+{
+    struct tm tm;
+#ifdef PLATFORM_WINAPI
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    strftime(out, size, "%Y-%m-%d %H:%M:%S", &tm);
+}
+
+static const char *index_attr(XMQNode *e, const char *name)
+{
+    XMQAttr *a = xml_node_get_attr(e, name, NULL);
+    return a ? xml_attr_simple_value(a) : NULL;
+}
+
+/** Download the library file path into the download dir, keep it only if its sha256 is sha. */
+static bool refresh_library_file(const char *path, const char *sha)
+{
+    char dest[1024], tmp[1100], url[1100];
+    snprintf(dest, sizeof(dest), "%s/library/%s", download_dir(), path);
+    snprintf(tmp, sizeof(tmp), "%s.download", dest);
+    snprintf(url, sizeof(url), "%s%s", library_url(), path);
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd), "curl -s --fail -R --create-dirs -o '%s' '%s'", tmp, url);
+    if (system(cmd) != 0)
+    {
+        fprintf(stderr, "xmq: could not fetch %s\n", url);
+        remove(tmp);
+        return false;
+    }
+    char got[65];
+    if (!sha256_file(tmp, got) || strcmp(got, sha))
+    {
+        fprintf(stderr, "xmq: the sha256 of %s is not the one in the library index, not used\n", url);
+        remove(tmp);
+        return false;
+    }
+    if (rename(tmp, dest) != 0)
+    {
+        fprintf(stderr, "xmq: could not write %s\n", dest);
+        remove(tmp);
+        return false;
+    }
+    return true;
+}
+
+/** xmq check-library and xmq refresh-library. The library index, library_url()/index.xmq, lists
+    every file of the library with its sha256 and modification time (made by
+    scripts/build_library_index.sh). Each is compared with the file xmq uses (find_library_file):
+    a file that is missing, or that differs and is older than the one on libxmq.org, is listed
+    and with refresh downloaded into the download dir, where it is used before the installed
+    library. A file that differs but is newer locally is listed and not touched. */
+static bool cmd_library(bool refresh)
+{
+    char index_file[1024], url[1024];
+    snprintf(index_file, sizeof(index_file), "%s/library/index.xmq", download_dir());
+    snprintf(url, sizeof(url), "%sindex.xmq", library_url());
+    char cmd[3000];
+    snprintf(cmd, sizeof(cmd), "curl -s --fail --create-dirs -o '%s' '%s'", index_file, url);
+    if (system(cmd) != 0)
+    {
+        fprintf(stderr, "xmq: could not fetch the library index %s\n", url);
+        return false;
+    }
+    XMQReturnDoc rd = xmqNewDoc();
+    XMQDoc *doc = rd.doc;
+    if (!xmqParseFile(doc, index_file, NULL, 0))
+    {
+        fprintf(stderr, "xmq: could not read the library index %s\n", url);
+        xmqFreeDoc(doc);
+        return false;
+    }
+
+    int num_refresh = 0, num_newer = 0, num_same = 0, num_failed = 0;
+    XMQNode *root = xml_dom_root_element(xmq_get_dom(doc));
+    for (XMQNode *e = root ? xml_node_first_child(root) : NULL; e; e = xml_node_next(e))
+    {
+        if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
+        const char *path = index_attr(e, "path");
+        const char *sha = index_attr(e, "sha256");
+        const char *mtime = index_attr(e, "mtime");
+        // The path is used in file names and a curl command line.
+        if (!path || !sha || !mtime || strlen(sha) != 64 || path[0] == '/' || strstr(path, "..") ||
+            strchr(path, '\'') || strchr(path, '\\'))
+        {
+            fprintf(stderr, "xmq: skipping a bad entry in the library index\n");
+            continue;
+        }
+        time_t server_time = parse_utc_time(mtime);
+        char server_str[32];
+        format_utc_time(server_time, server_str, sizeof(server_str));
+
+        char local[1024];
+        char local_sha[65];
+        if (find_library_file(path, "", local, sizeof(local)))
+        {
+            if (sha256_file(local, local_sha) && !strcmp(local_sha, sha))
+            {
+                num_same++;
+                continue;
+            }
+            struct stat st;
+            time_t local_time = stat(local, &st) == 0 ? st.st_mtime : 0;
+            char local_str[32];
+            format_utc_time(local_time, local_str, sizeof(local_str));
+            if (local_time >= server_time)
+            {
+                // Changed locally, eg by hand, not replaced with the older one.
+                printf("newer   %s  (%s %s is newer than libxmq.org %s, not refreshed)\n", path, local, local_str, server_str);
+                num_newer++;
+                continue;
+            }
+            printf("updated %s  (libxmq.org %s, %s %s)\n", path, server_str, local, local_str);
+        }
+        else
+        {
+            printf("new     %s  (libxmq.org %s)\n", path, server_str);
+        }
+        num_refresh++;
+        if (refresh)
+        {
+            fflush(stdout); // Before any error from curl or the sha256 check on stderr.
+            if (refresh_library_file(path, sha)) printf("        refreshed %s/library/%s\n", download_dir(), path);
+            else num_failed++;
+        }
+    }
+    xmqFreeDoc(doc);
+
+    if (num_refresh == 0 && num_newer == 0)
+    {
+        printf("The library is up to date (%d %s).\n", num_same, num_same == 1 ? "file" : "files");
+    }
+    else if (refresh)
+    {
+        int n = num_refresh - num_failed;
+        printf("%d %s refreshed, %d newer locally, %d up to date.\n", n, n == 1 ? "file" : "files", num_newer, num_same);
+    }
+    else
+    {
+        printf("%d %s to refresh (xmq refresh-library), %d newer locally, %d up to date.\n",
+               num_refresh, num_refresh == 1 ? "file" : "files", num_newer, num_same);
+    }
+    return num_failed == 0;
 }
 
 bool load_xslt(XMQCliCommand *command, const char *arg)
@@ -4719,21 +5152,32 @@ void add_xsl_command(XMQCliCommand *command, const char *local_file)
     }
 }
 
+/** The local file of a library stylesheet, eg xsl:data/table-to-html: from the installed
+    library, else downloaded into the download dir. */
+static void xsl_library_file(XMQCliCommand *command, const char *file, char *local_file, size_t size)
+{
+    if (dot_found(file))
+    {
+        printf("xmq: file after xsl: must not contain dots (%s)\n", file);
+        exit(1);
+    }
+    // The installed library is used, unless the newest version is asked for.
+    LibraryMode mode = library_mode(command);
+    if (mode != LIBRARY_IF_MISSING || !find_library_file(file, ".xslq", local_file, size))
+    {
+        snprintf(local_file, size, "%s/library/%s.xslq", download_dir(), file);
+        download(mode, ".xslq", file, local_file, false);
+    }
+}
+
 void prepare_xsl_command(XMQCliCommand *command, const char *arg)
 {
     // An xsl:data/table-to-html argument is interpreted as
     // transform ~/.local/share/xmq/transforms/data/table-to-html.xslq
     const char *file = is_xsl_cmd(arg);
     assert(file);
-    if (dot_found(file))
-    {
-        printf("xmq: file after xsl: must not contain dots (%s)\n", file);
-        exit(1);
-    }
-
-    char local_file[256];
-    snprintf(local_file, 256, "%s/library/%s.xslq", download_dir(), file);
-    download(command->force_download, ".xslq", file, local_file, false);
+    char local_file[1024];
+    xsl_library_file(command, file, local_file, sizeof(local_file));
 
     verbose_("xmq=", "reading xslq file %s", local_file);
     command->cmd = XMQ_CLI_CMD_TRANSFORM;
@@ -4859,8 +5303,24 @@ static bool cli_load_ixml_library(XMQCliCommand *load_command, const char *arg, 
     }
 
     char local_ixml_file[256];
+    LibraryMode mode = library_mode(load_command);
+    if (mode == LIBRARY_IF_MISSING && find_library_file(file, ".ixml", local_ixml_file, sizeof(local_ixml_file)))
+    {
+        // From the library, with its companion xslq if there is one.
+        char installed_xslq[256];
+        if (find_library_file(file, ".xslq", installed_xslq, sizeof(installed_xslq)))
+        {
+            strcpy(add_xslq_file, installed_xslq);
+            *add_xslq = true;
+        }
+        verbose_("xmq=", "reading library ixml file %s", local_ixml_file);
+        load_command->ixml_filename = strdup(local_ixml_file);
+        load_command->ixml_source = load_file_into_buffer(local_ixml_file);
+        if (load_command->ixml_source == NULL) exit(1);
+        return true;
+    }
     snprintf(local_ixml_file, 256, "%s/library/%s.ixml", download_dir(), file);
-    DownloadStatus status = download(load_command->force_download, ".ixml", file, local_ixml_file, false);
+    DownloadStatus status = download(mode, ".ixml", file, local_ixml_file, false);
 
     // The download was DOWNLOAD_OK or DOWNLOAD_EXISTS. Otherwise the download command would have given up.
     // See if there is a companion xslq file with this ixml file.
@@ -4883,7 +5343,7 @@ static bool cli_load_ixml_library(XMQCliCommand *load_command, const char *arg, 
     else
     {
         // The ixml was downloaded, lets try to download an xslq.
-        status = download(load_command->force_download, ".xslq", file, local_xslq_file, true);
+        status = download(mode, ".xslq", file, local_xslq_file, true);
         if (status == DOWNLOAD_OK || status == DOWNLOAD_EXISTS)
         {
             strcpy(add_xslq_file, local_xslq_file);
@@ -5345,6 +5805,14 @@ int main(int argc, const char **argv)
         int help_rc = cmd_help(load_command->next);
         free_all_cli_commands(load_command);
         return help_rc;
+    }
+    if (load_command->next && (load_command->next->cmd == XMQ_CLI_CMD_CHECK_LIBRARY ||
+                               load_command->next->cmd == XMQ_CLI_CMD_REFRESH_LIBRARY))
+    {
+        // These need no input.
+        int rc = cmd_library(load_command->next->cmd == XMQ_CLI_CMD_REFRESH_LIBRARY) ? 0 : 1;
+        free_all_cli_commands(load_command);
+        return rc;
     }
 
     bool more_content = true;

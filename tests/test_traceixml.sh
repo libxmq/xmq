@@ -82,4 +82,23 @@ grep -q 'expression {' "$OUTPUT/shared_tree.xmq" || fail "the expression was not
 $PROG "$OUTPUT/shared.xmq" transform library/xmq-utils/render-trace-to-html.xslq to-html > "$OUTPUT/shared.html" || fail "shared html render failed"
 $PROG "$OUTPUT/shared.html" select "//tr[@class = 'chosen']" to-xmq | grep -q factor && fail "the chosen tree row does not show the deepest nodes"
 
+# --traceixml=terminal saves trace_formula.xmq (after the grammar formula.ixml) and shows
+# it with xsl:xmq-utils/render-trace-to-terminal, the library is taken from XMQ_LIBRARY.
+# Only xmq has it, not xmqj.
+if [ "$ENGINE" = "yaep" ]
+then
+    ROOT=$(pwd)
+    ABS_PROG=$(cd "$(dirname "$PROG")" && pwd)/$(basename "$PROG")
+    rm -f "$OUTPUT/trace_formula.xmq"
+    (cd "$OUTPUT" && XMQ_LIBRARY="$ROOT/library" "$ABS_PROG" --traceixml=terminal formula.ixml -i '1+2*3+4' > terminal.txt) || fail "--traceixml=terminal failed"
+    [ -s "$OUTPUT/trace_formula.xmq" ] || fail "--traceixml=terminal did not save trace_formula.xmq"
+    grep -q 'the chosen tree' "$OUTPUT/terminal.txt" || fail "--traceixml=terminal did not show the trace"
+    grep -q $'\x1b\[' "$OUTPUT/terminal.txt" || fail "--traceixml=terminal has no colors"
+    "$PROG" --traceixml=bad "$OUTPUT/formula.ixml" -i 1 > /dev/null 2>&1 && fail "--traceixml=bad is accepted"
+    "$PROG" --traceixml="$OUTPUT/trace.json" "$OUTPUT/formula.ixml" -i 1 > /dev/null || fail "--traceixml=trace.json failed"
+    head -c 1 "$OUTPUT/trace.json" | grep -q '{' || fail "trace.json is not json"
+    XMQ_LIBRARY="$ROOT/library" "$PROG" "$OUTPUT/trace.xmq" transform xsl:xmq-utils/render-trace-to-html to-html > "$OUTPUT/xsl.html" || fail "transform xsl: failed"
+    grep -q 'node new' "$OUTPUT/xsl.html" || fail "transform xsl:xmq-utils/render-trace-to-html gave no trace"
+fi
+
 echo "OK: traceixml ($ENGINE)"

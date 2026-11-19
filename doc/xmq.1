@@ -131,21 +131,26 @@ Try to recover a parse even if the first attempt fails.
 Do not warn if an ixml parse fails.
 
 .TP
-.BR \-\-traceixml=FILE
+.BR \-\-traceixml=FILE|terminal
 Write a trace of the ixml parse to FILE: the grammar rules, the input tokens,
 every Earley item and the nodes added to the tree, in the order the tree is built,
-with their costs and whether they are in the chosen tree. The trace is xmq, or xml if
-FILE ends with .xml. xmqj parses with its Earley parser when tracing.
+with their costs and whether they are in the chosen tree. The trace is xmq, or xml or
+json if FILE ends with .xml or .json. xmqj parses with its Earley parser when tracing.
 Render the trace as a web page, as LaTeX or in the terminal with colors:
 .br
 .RS
 \fBxmq \-\-traceixml=trace.xmq formula.ixml \-i 1+2*3+4\fP
 .br
-\fBxmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html\fP
+\fBxmq trace.xmq transform xsl:xmq-utils/render-trace-to-html to-html > trace.html\fP
 .br
-\fBxmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex\fP
+\fBxmq trace.xmq transform xsl:xmq-utils/render-trace-to-tex to-text > trace.tex\fP
 .br
-\fBxmq trace.xmq transform render-trace-to-terminal.xslq to-text | less -RS\fP
+\fBxmq trace.xmq transform xsl:xmq-utils/render-trace-to-terminal to-text | less -RS\fP
+.RE
+.IP
+With \fB\-\-traceixml=terminal\fP the trace is saved in trace_GRAMMAR.xmq, after the
+name of the grammar file, and shown in the terminal when the parse is done, like the
+last command above.
 .RE
 
 .TP
@@ -392,7 +397,8 @@ Print no messages, exit with status 1 at the first validation error.
 .TP
 .BR "transform" " xslfile.xslq|library_name [options]"
 Apply the given xsl transform (in xslq format) to the document.
-The transform can be a local file or a library name that will be
+The transform can be a local file or a library name, eg
+\fBxsl:data/table-to-web\fP, from the library installed with xmq, else
 downloaded and cached from https://libxmq.org/library.
 .TP
 .BR \-\-param=NAME=VALUE
@@ -454,6 +460,22 @@ Save the output to a file.
 .TP
 .BR "help" " [command]"
 Print the help text, optionally for a specific command.
+.SS LIBRARY
+
+.TP
+.BR "check-library"
+List the library files (ixml grammars and xsl transforms) that refresh-library
+would download: new on https://libxmq.org/library, or changed there more
+recently than the library file xmq uses. The files are compared using the sha256
+and modification time in the library index https://libxmq.org/library/index.xmq.
+A file that differs but is newer locally is listed and never replaced.
+
+.TP
+.BR "refresh-library"
+Download the library files that check-library lists into
+$HOME/.local/share/xmq/library, where they are used before the library installed
+with xmq. So after \fBmake install\fP the library can be refreshed without
+reinstalling xmq. A download is only kept if its sha256 is the one in the index.
 .SH "OPTIONS FOR to-*/render-*/tokenize"
 The options in this section are \fIper-command\fP options: they must be
 placed after the command they apply to, and each is only accepted by the
@@ -665,17 +687,34 @@ mode.
 Select the ixml engine to use (same as \fB\-\-ixml-engine=\fP).
 
 .TP
+.BR XMQ_LIBRARY
+A directory with library files (ixml grammars and xsl transforms), used for
+\fBixml:\fP and \fBxsl:\fP names before any other, eg the library directory
+of the xmq source.
+
+.TP
+.BR XMQ_LIBRARY_URL
+The url of the library to download from, check and refresh, instead of
+https://libxmq.org/library/ (ending with a slash).
+
+.TP
 .BR COLORFGBG
 Consulted when the terminal background cannot be auto-detected: if the
 value ends in \fB;0\fP the background is assumed to be dark.
 .SH FILES
 .TP
-.BI $HOME/.local/share/xmq/
-Directory where downloaded library files (ixml grammars, xsl
-transforms) are cached.
+.BI $HOME/.local/share/xmq/library/
+Library files downloaded when an \fBixml:\fP or \fBxsl:\fP name is not in the
+library, and the files downloaded by \fBrefresh-library\fP. They are used before
+the installed library.
 .TP
-.BI /usr/local/share/xmq/
-System-wide directory for locally installed library files.
+.BI PREFIX/share/xmq/library/
+The library (ixml grammars and xsl transforms) installed by \fBmake install\fP,
+next to the bin directory of xmq, eg /usr/local/share/xmq/library (also
+looked for in /usr/local/share/xmq/library and /usr/share/xmq/library).
+\fBixml:\fP and \fBxsl:\fP names are looked up in $XMQ_LIBRARY, then in
+$HOME/.local/share/xmq/library, then here, and are downloaded if they are in
+none of them.
 .SH EXAMPLES
 
 .TP

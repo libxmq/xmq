@@ -26,5 +26,12 @@ rm -f "${DESTDIR}/share/man/man1/xmq.1"
 
 rm -f "${DESTDIR}/share/bash-completion/completions/xmq"
 
+# The library installed by install.sh.
+if [ -d "${DESTDIR}/share/xmq/library" ]
+then
+    rm -r "${DESTDIR}/share/xmq/library"
+    rmdir "${DESTDIR}/share/xmq" 2> /dev/null || true
+fi
+
 echo
 echo "xmq and libxmq sucessfully uninstalled."

@@ -43,3 +43,4 @@ check xmq\ t.xml\ select\ \"\" xmq\{file=t.xml\ command\(name=select\)\{arg\}\} 
 check xmq\ t.xmq\ select\ -s\ --gofast\ something xmq\{file=t.xmq\ command\(name=select\)\{option\(name=s\)option\(name=gofast\)arg=something\}\} t.xmq select -s --gofast something
 check xmq\ -lx\ -l\ -lxx\ -zz\ -q\ t.xml\ to-xml\ -co\ -x xmq\{option\(name=log-xmq\)option\(name=l\)option\(name=lxx\)option\(name=zz\)option\(name=q\)file=t.xml\ command\(name=to-xml\)\{option\(name=co\)option\(name=x\)\}\} -lx -l -lxx -zz -q t.xml to-xml -co -x
 check xmq\ t.xmq\ replace-entity\ --a\ X\ --b\ Y\ --c xmq\{file=t.xmq\ command\(name=replace-entity\)\{option\(name=a\)arg=X\ option\(name=b\)arg=Y\ option\(name=c\)\}\} t.xmq replace-entity --a X --b Y --c
+check xmq\ check-library xmq\{command\(name=check-library\)\} check-library

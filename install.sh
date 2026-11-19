@@ -54,5 +54,16 @@ chmod 644 "${DESTDIR}/include/xmq.h"
 install -m 644 "doc/xmq.1" "${DESTDIR}/share/man/man1/xmq.1"
 install -m 644 "scripts/autocompletion_for_xmq.sh" "${DESTDIR}/share/bash-completion/completions/xmq"
 
+# The library of grammars and stylesheets, used by ixml:name and xsl:name. xmq looks for
+# it in share/xmq/library next to its bin directory before it downloads from libxmq.org.
+LIBRARY_DEST="${DESTDIR}/share/xmq/library"
+(cd library && find . -name 'test-*' -prune -o -name 'c-tests' -prune -o -type f \
+     \( -name '*.ixml' -o -name '*.xslq' -o -name '*.xml' -o -name '*.xmq' \) -print) |
+while read -r f
+do
+    mkdir -p "$(dirname "${LIBRARY_DEST}/$f")"
+    install -m 644 "library/$f" "${LIBRARY_DEST}/$f"
+done
+
 echo
 echo "Installed xmq and libxmq into: $DESTDIR"
