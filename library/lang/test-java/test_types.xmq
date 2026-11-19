@@ -1,0 +1,402 @@
+compilation_unit {
+    class(name = Types)
+    {
+        type_parameters {
+            type_parameter(name = T)
+            {
+                extends {
+                    type {
+                        annotation {
+                            name = A
+                        }
+                        name = Comparable
+                        type_arguments {
+                            wildcard {
+                                super {
+                                    type {
+                                        name = T
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    type {
+                        name = Cloneable
+                    }
+                }
+            }
+            type_parameter(name = U)
+            {
+                extends {
+                    type {
+                        name = T
+                    }
+                }
+            }
+        }
+        extends {
+            type {
+                annotation {
+                    name = B
+                }
+                name = Base
+                type_arguments {
+                    type {
+                        annotation {
+                            name = C
+                        }
+                        name = String
+                    }
+                }
+            }
+        }
+        implements {
+            type {
+                annotation {
+                    name = D
+                }
+                name = java.io.Serializable
+            }
+        }
+        body {
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = i)
+            }
+            field {
+                type {
+                    primitive = int
+                    dim
+                }
+                variable(name = ints)
+            }
+            field {
+                type {
+                    name = String
+                    dim
+                    dim
+                }
+                variable(name = strings)
+            }
+            field {
+                type {
+                    name = java.util.Map.Entry
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                        type {
+                            name = Integer
+                        }
+                    }
+                }
+                variable(name = entry)
+            }
+            field {
+                type {
+                    name = Map.Entry
+                    type_arguments {
+                        type {
+                            name = K
+                        }
+                        type {
+                            name = V
+                        }
+                    }
+                    dim
+                }
+                variable(name = entries)
+            }
+            field {
+                type {
+                    name = Outer
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                    }
+                    name = Inner
+                    type_arguments {
+                        type {
+                            name = Integer
+                        }
+                    }
+                    name = Deepest
+                }
+                variable(name = deepest)
+            }
+            field {
+                type {
+                    name = Outer
+                    annotation {
+                        name = A
+                    }
+                    name = Inner
+                }
+                variable(name = annotatedInner)
+            }
+            field {
+                type {
+                    name = java.util
+                    annotation {
+                        name = A
+                    }
+                    name = List
+                    type_arguments {
+                        type {
+                            annotation {
+                                name = B
+                            }
+                            name = String
+                            dim {
+                                annotation {
+                                    name = C
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = lists)
+            }
+            field {
+                type {
+                    name = List
+                    type_arguments {
+                        wildcard {
+                            extends {
+                                type {
+                                    name = Number
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = numbers)
+            }
+            field {
+                type {
+                    name = List
+                    type_arguments {
+                        wildcard {
+                            super {
+                                type {
+                                    annotation {
+                                        name = A
+                                    }
+                                    name = Integer
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = integers)
+            }
+            field {
+                type {
+                    name = List
+                    type_arguments {
+                        wildcard
+                    }
+                }
+                variable(name = unknowns)
+            }
+            field {
+                type {
+                    name = Map
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                        type {
+                            name = List
+                            type_arguments {
+                                type {
+                                    name = Map
+                                    type_arguments {
+                                        type {
+                                            name = Integer
+                                        }
+                                        type {
+                                            name = Set
+                                            type_arguments {
+                                                type {
+                                                    name = String
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = nested)
+            }
+            field {
+                type {
+                    primitive = int
+                    dim {
+                        annotation {
+                            name = A
+                        }
+                    }
+                    dim {
+                        annotation {
+                            name = B
+                        }
+                    }
+                }
+                variable(name = annotatedDims)
+            }
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = matrix)
+                {
+                    dim
+                    dim
+                }
+                variable(name = vector)
+                {
+                    dim {
+                        annotation {
+                            name = A
+                        }
+                    }
+                }
+            }
+            method(name = generic)
+            {
+                type_parameters {
+                    type_parameter(name = R)
+                }
+                type {
+                    name = R
+                }
+                parameter(name = list)
+                {
+                    type {
+                        name = List
+                        type_arguments {
+                            type {
+                                name = R
+                            }
+                        }
+                    }
+                }
+                throws {
+                    type {
+                        annotation {
+                            name = A
+                        }
+                        name = IOException
+                    }
+                    type {
+                        name = E
+                    }
+                }
+                block
+            }
+            method(name = varargs)
+            {
+                void
+                parameter(name = args)
+                {
+                    type {
+                        name = String
+                    }
+                    varargs {
+                        annotation {
+                            name = A
+                        }
+                    }
+                }
+                block
+            }
+            method(name = arrays)
+            {
+                void
+                parameter(name = more)
+                {
+                    type {
+                        primitive = int
+                        dim
+                    }
+                    varargs
+                }
+                block
+            }
+            method(name = receiver)
+            {
+                void
+                receiver {
+                    annotation {
+                        name = A
+                    }
+                    type {
+                        name = Types
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                            type {
+                                name = U
+                            }
+                        }
+                    }
+                }
+                parameter(name = x)
+                {
+                    type {
+                        primitive = int
+                    }
+                }
+                block
+            }
+            method(name = onlyReceiver)
+            {
+                void
+                receiver {
+                    type {
+                        name = Types
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                            type {
+                                name = U
+                            }
+                        }
+                    }
+                }
+                block
+            }
+            class(name = Inner)
+            {
+                body {
+                    constructor(name = Inner)
+                    {
+                        receiver(outer = Types)
+                        {
+                            type {
+                                name = Types
+                                type_arguments {
+                                    type {
+                                        name = T
+                                    }
+                                    type {
+                                        name = U
+                                    }
+                                }
+                            }
+                        }
+                        block
+                    }
+                }
+            }
+        }
+    }
+}

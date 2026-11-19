@@ -1,0 +1,31 @@
+// Types: names, type arguments, wildcards, arrays, varargs, annotations on
+// types and receiver parameters.
+class Types<T extends @A Comparable<? super T> & Cloneable, U extends T>
+    extends @B Base<@C String> implements @D java.io.Serializable
+{
+    int i;
+    int[] ints;
+    String[][] strings;
+    java.util.Map.Entry<String, Integer> entry;
+    Map.Entry<K, V>[] entries;
+    Outer<String>.Inner<Integer>.Deepest deepest;
+    Outer.@A Inner annotatedInner;
+    java.util.@A List<@B String @C []> lists;
+    List<? extends Number> numbers;
+    List<? super @A Integer> integers;
+    List<?> unknowns;
+    Map<String, List<Map<Integer, Set<String>>>> nested;
+    int @A [] @B [] annotatedDims;
+    int matrix[][], vector @A [];
+
+    <R> R generic(List<R> list) throws @A IOException, E { return null; }
+    void varargs(String @A ... args) { }
+    void arrays(int[]... more) { }
+    void receiver(@A Types<T, U> this, int x) { }
+    void onlyReceiver(Types<T, U> this) { }
+
+    class Inner
+    {
+        Inner(Types<T, U> Types.this) { }
+    }
+}
