@@ -1,0 +1,76 @@
+// Expressions, with the cleanup of java.xslq.
+class Expressions
+{
+    void all()
+    {
+        // Assignments
+        a = 1; a += 1; a -= 1; a *= 1; a /= 1; a %= 1;
+        a &= 1; a |= 1; a ^= 1; a <<= 1; a >>= 1; a >>>= 1;
+        a = b = c;
+        this.x = y.z[i] = 0;
+
+        // Binary operators and precedence
+        x = a || b && c | d ^ e & f;
+        x = a == b != c;
+        x = a < b && c > d && e <= f && g >= h;
+        x = a << 1 >> 2 >>> 3;
+        x = a + b - c * d / e % f;
+        x = (a + b) * c;
+        x = a ? b : c ? d : e;
+        x = o instanceof String;
+        x = o instanceof final List<?> list && list.isEmpty();
+
+        // Unary, casts
+        x = -a + +b - ~c + (!d ? 1 : 0);
+        ++i; --i; i++; i--;
+        x = (int) -a + (a) - b;
+        x = (String) o;
+        x = (List<String>) o;
+        x = (int[]) o;
+        x = (Runnable & java.io.Serializable) () -> { };
+        x = (char) (c + 1);
+
+        // Primaries
+        x = 42 + 1.5 + 'c' + "s" + true + false + null;
+        x = """
+            text block""";
+        x = String.class; x = int.class; x = int[].class; x = void.class; x = java.util.List.class;
+        x = this; x = Outer.this.y; x = super.toString(); x = Outer.super.hashCode();
+        x = a.b.c; x = a.b.c(); x = f().g; x = f().g(); x = a[0][1]; x = f()[0].h;
+        x = Collections.<String>emptyList();
+        x = this.<T>m();
+
+        // Creation
+        x = new Foo();
+        x = new Foo<>(1, 2);
+        x = new java.util.ArrayList<String>();
+        x = new Runnable() { public void run() { } };
+        x = outer.new Inner();
+        x = new int[10];
+        x = new int[n][m][];
+        x = new String[] { "a", "b", };
+        x = new int[][] { { 1 }, { 2, 3 } };
+        int[] y = { 1, 2 };
+
+        // Method references and lambdas
+        f(String::valueOf, this::run, super::toString, Foo::new, int[]::new, a.b::c);
+        f(x -> x + 1, (a, b) -> a * b, () -> { return; }, (int a, String... b) -> a);
+        f((var a, var b) -> a, (final int a) -> a);
+        Runnable r = () -> System.out.println("x");
+
+        // Switch expression
+        int s = switch (k) { case 1, 2 -> 10; case 3 -> { yield 30; } default -> throw new Error(); };
+        int t = switch (k) { case A: yield 1; default: yield 2; };
+
+        // Constructor calls
+        this(1);
+        super(2);
+        outer.super(3);
+        <T>this(4);
+    }
+}
+
+@A(1)
+@B(name = "x", values = { 1, 2 }, nested = @C)
+@D({ "a", "b" })
+enum E { ONE(1), TWO(2 + 3) { }, }

@@ -1,0 +1,1143 @@
+compilation_unit {
+    class(name = Expressions)
+    {
+        body {
+            method(name = all)
+            {
+                void
+                block {
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            PLUS_ASSIGN     = +=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            MINUS_ASSIGN    = -=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            STAR_ASSIGN     = *=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            SLASH_ASSIGN    = /=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            MOD_ASSIGN      = %=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            AND_ASSIGN      = '&='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            OR_ASSIGN       = |=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            XOR_ASSIGN      = ^=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            SHL_ASSIGN      = <<=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            SHR_ASSIGN      = >>=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = a
+                            USHR_ASSIGN     = >>>=
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = a
+                            ASSIGN = '='
+                            assignment {
+                                name   = b
+                                ASSIGN = '='
+                                name   = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            field_access(name = x)
+                            {
+                                this
+                            }
+                            ASSIGN = '='
+                            assignment {
+                                array_access {
+                                    name = y.z
+                                    name = i
+                                }
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 0
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_or {
+                                name = a
+                                OR   = ||
+                                logical_and {
+                                    name = b
+                                    AND  = '&&'
+                                    bitwise_or {
+                                        name  = c
+                                        BITOR = |
+                                        bitwise_xor {
+                                            name  = d
+                                            CARET = ^
+                                            bitwise_and {
+                                                name   = e
+                                                BITAND = '&'
+                                                name   = f
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            equality {
+                                equality {
+                                    name = a
+                                    EQ   = '=='
+                                    name = b
+                                }
+                                NE   = !=
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_and {
+                                logical_and {
+                                    logical_and {
+                                        relational {
+                                            name = a
+                                            LT   = <
+                                            name = b
+                                        }
+                                        AND = '&&'
+                                        relational {
+                                            name = c
+                                            GT   = >
+                                            name = d
+                                        }
+                                    }
+                                    AND = '&&'
+                                    relational {
+                                        name = e
+                                        LE   = <=
+                                        name = f
+                                    }
+                                }
+                                AND = '&&'
+                                relational {
+                                    name = g
+                                    GE   = >=
+                                    name = h
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            shift {
+                                shift {
+                                    shift {
+                                        name            = a
+                                        SHL             = <<
+                                        INTEGER_LITERAL = 1
+                                    }
+                                    SHR             = >>
+                                    INTEGER_LITERAL = 2
+                                }
+                                USHR            = >>>
+                                INTEGER_LITERAL = 3
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                additive {
+                                    name = a
+                                    PLUS = +
+                                    name = b
+                                }
+                                MINUS = -
+                                multiplicative {
+                                    multiplicative {
+                                        multiplicative {
+                                            name = c
+                                            STAR = *
+                                            name = d
+                                        }
+                                        SLASH = /
+                                        name  = e
+                                    }
+                                    PERCENT = %
+                                    name    = f
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            multiplicative {
+                                additive {
+                                    name = a
+                                    PLUS = +
+                                    name = b
+                                }
+                                STAR = *
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name = a
+                                name = b
+                                conditional {
+                                    name = c
+                                    name = d
+                                    name = e
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            instanceof {
+                                name = o
+                                type {
+                                    name = String
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_and {
+                                instanceof {
+                                    name = o
+                                    pattern(name = list)
+                                    {
+                                        modifier = final
+                                        type {
+                                            name = List
+                                            type_arguments {
+                                                wildcard
+                                            }
+                                        }
+                                    }
+                                }
+                                AND = '&&'
+                                method_call(name = list.isEmpty)
+                                {
+                                    arguments
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                additive {
+                                    additive {
+                                        unary {
+                                            MINUS = -
+                                            name  = a
+                                        }
+                                        PLUS = +
+                                        unary {
+                                            PLUS = +
+                                            name = b
+                                        }
+                                    }
+                                    MINUS = -
+                                    unary {
+                                        TILDE = ~
+                                        name  = c
+                                    }
+                                }
+                                PLUS = +
+                                conditional {
+                                    unary {
+                                        NOT  = !
+                                        name = d
+                                    }
+                                    INTEGER_LITERAL = 1
+                                    INTEGER_LITERAL = 0
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        prefix {
+                            INC  = ++
+                            name = i
+                        }
+                    }
+                    expression_statement {
+                        prefix {
+                            DEC  = --
+                            name = i
+                        }
+                    }
+                    expression_statement {
+                        postfix {
+                            name = i
+                            INC  = ++
+                        }
+                    }
+                    expression_statement {
+                        postfix {
+                            name = i
+                            DEC  = --
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                additive {
+                                    cast {
+                                        type {
+                                            primitive = int
+                                        }
+                                        unary {
+                                            MINUS = -
+                                            name  = a
+                                        }
+                                    }
+                                    PLUS = +
+                                    name = a
+                                }
+                                MINUS = -
+                                name  = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = String
+                                }
+                                name = o
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = List
+                                    type_arguments {
+                                        type {
+                                            name = String
+                                        }
+                                    }
+                                }
+                                name = o
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    primitive = int
+                                    dim
+                                }
+                                name = o
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = Runnable
+                                }
+                                type {
+                                    name = java.io.Serializable
+                                }
+                                lambda {
+                                    block
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    primitive = char
+                                }
+                                additive {
+                                    name            = c
+                                    PLUS            = +
+                                    INTEGER_LITERAL = 1
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                additive {
+                                    additive {
+                                        additive {
+                                            additive {
+                                                additive {
+                                                    INTEGER_LITERAL        = 42
+                                                    PLUS                   = +
+                                                    FLOATING_POINT_LITERAL = 1.5
+                                                }
+                                                PLUS              = +
+                                                CHARACTER_LITERAL = c
+                                            }
+                                            PLUS           = +
+                                            STRING_LITERAL = s
+                                        }
+                                        PLUS            = +
+                                        BOOLEAN_LITERAL = true
+                                    }
+                                    PLUS            = +
+                                    BOOLEAN_LITERAL = false
+                                }
+                                PLUS         = +
+                                NULL_LITERAL = null
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name       = x
+                            ASSIGN     = '='
+                            TEXT_BLOCK = '            text block'
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            class_literal {
+                                type {
+                                    name = String
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            class_literal {
+                                type {
+                                    primitive = int
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            class_literal {
+                                type {
+                                    primitive = int
+                                    dim
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            class_literal {
+                                void
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            class_literal {
+                                type {
+                                    name = java.util.List
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            this
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = y)
+                            {
+                                this {
+                                    name = Outer
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = toString)
+                            {
+                                super
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = hashCode)
+                            {
+                                super {
+                                    name = Outer
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            name   = a.b.c
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = a.b.c)
+                            {
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = g)
+                            {
+                                method_call(name = f)
+                                {
+                                    arguments
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = g)
+                            {
+                                method_call(name = f)
+                                {
+                                    arguments
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            array_access {
+                                array_access {
+                                    name            = a
+                                    INTEGER_LITERAL = 0
+                                }
+                                INTEGER_LITERAL = 1
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = h)
+                            {
+                                array_access {
+                                    method_call(name = f)
+                                    {
+                                        arguments
+                                    }
+                                    INTEGER_LITERAL = 0
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = Collections.emptyList)
+                            {
+                                type_arguments {
+                                    type {
+                                        name = String
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = m)
+                            {
+                                this
+                                type_arguments {
+                                    type {
+                                        name = T
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                type {
+                                    name = Foo
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                type {
+                                    name = Foo
+                                    type_arguments
+                                }
+                                arguments {
+                                    INTEGER_LITERAL = 1
+                                    INTEGER_LITERAL = 2
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                type {
+                                    name = java.util.ArrayList
+                                    type_arguments {
+                                        type {
+                                            name = String
+                                        }
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                type {
+                                    name = Runnable
+                                }
+                                arguments
+                                body {
+                                    method(name = run)
+                                    {
+                                        modifier = public
+                                        void
+                                        block
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                name = outer
+                                type {
+                                    name = Inner
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new_array {
+                                type {
+                                    primitive = int
+                                }
+                                dim {
+                                    INTEGER_LITERAL = 10
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new_array {
+                                type {
+                                    primitive = int
+                                }
+                                dim {
+                                    name = n
+                                }
+                                dim {
+                                    name = m
+                                }
+                                dim
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new_array {
+                                type {
+                                    name = String
+                                    dim
+                                }
+                                array_initializer {
+                                    STRING_LITERAL = a
+                                    STRING_LITERAL = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new_array {
+                                type {
+                                    primitive = int
+                                    dim
+                                    dim
+                                }
+                                array_initializer {
+                                    array_initializer {
+                                        INTEGER_LITERAL = 1
+                                    }
+                                    array_initializer {
+                                        INTEGER_LITERAL = 2
+                                        INTEGER_LITERAL = 3
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            primitive = int
+                            dim
+                        }
+                        variable(name = y)
+                        {
+                            array_initializer {
+                                INTEGER_LITERAL = 1
+                                INTEGER_LITERAL = 2
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                method_reference(name = valueOf)
+                                {
+                                    name = String
+                                }
+                                method_reference(name = run)
+                                {
+                                    this
+                                }
+                                method_reference(name = toString)
+                                {
+                                    super
+                                }
+                                method_reference(name = new)
+                                {
+                                    name = Foo
+                                }
+                                method_reference(name = new)
+                                {
+                                    type {
+                                        primitive = int
+                                        dim
+                                    }
+                                }
+                                method_reference(name = c)
+                                {
+                                    name = a.b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                lambda {
+                                    parameter(name = x)
+                                    additive {
+                                        name            = x
+                                        PLUS            = +
+                                        INTEGER_LITERAL = 1
+                                    }
+                                }
+                                lambda {
+                                    parameter(name = a)
+                                    parameter(name = b)
+                                    multiplicative {
+                                        name = a
+                                        STAR = *
+                                        name = b
+                                    }
+                                }
+                                lambda {
+                                    block {
+                                        return
+                                    }
+                                }
+                                lambda {
+                                    parameter(name = a)
+                                    {
+                                        type {
+                                            primitive = int
+                                        }
+                                    }
+                                    parameter(name = b)
+                                    {
+                                        type {
+                                            name = String
+                                        }
+                                        varargs
+                                    }
+                                    name = a
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                lambda {
+                                    parameter(name = a)
+                                    {
+                                        var
+                                    }
+                                    parameter(name = b)
+                                    {
+                                        var
+                                    }
+                                    name = a
+                                }
+                                lambda {
+                                    parameter(name = a)
+                                    {
+                                        modifier = final
+                                        type {
+                                            primitive = int
+                                        }
+                                    }
+                                    name = a
+                                }
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = Runnable
+                        }
+                        variable(name = r)
+                        {
+                            lambda {
+                                method_call(name = System.out.println)
+                                {
+                                    arguments {
+                                        STRING_LITERAL = x
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = s)
+                        {
+                            switch {
+                                name = k
+                                switch_rule {
+                                    case {
+                                        INTEGER_LITERAL = 1
+                                        INTEGER_LITERAL = 2
+                                    }
+                                    INTEGER_LITERAL = 10
+                                }
+                                switch_rule {
+                                    case {
+                                        INTEGER_LITERAL = 3
+                                    }
+                                    block {
+                                        yield {
+                                            INTEGER_LITERAL = 30
+                                        }
+                                    }
+                                }
+                                switch_rule {
+                                    default
+                                    throw {
+                                        new {
+                                            type {
+                                                name = Error
+                                            }
+                                            arguments
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = t)
+                        {
+                            switch {
+                                name = k
+                                switch_group {
+                                    case {
+                                        name = A
+                                    }
+                                    yield {
+                                        INTEGER_LITERAL = 1
+                                    }
+                                }
+                                switch_group {
+                                    default
+                                    yield {
+                                        INTEGER_LITERAL = 2
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    constructor_call {
+                        this
+                        arguments {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    constructor_call {
+                        super
+                        arguments {
+                            INTEGER_LITERAL = 2
+                        }
+                    }
+                    constructor_call {
+                        name = outer
+                        super
+                        arguments {
+                            INTEGER_LITERAL = 3
+                        }
+                    }
+                    constructor_call {
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                        }
+                        this
+                        arguments {
+                            INTEGER_LITERAL = 4
+                        }
+                    }
+                }
+            }
+        }
+    }
+    enum(name = E)
+    {
+        annotation {
+            name            = A
+            INTEGER_LITERAL = 1
+        }
+        annotation {
+            name = B
+            pair(name = name)
+            {
+                STRING_LITERAL = x
+            }
+            pair(name = values)
+            {
+                array_initializer {
+                    INTEGER_LITERAL = 1
+                    INTEGER_LITERAL = 2
+                }
+            }
+            pair(name = nested)
+            {
+                annotation {
+                    name = C
+                }
+            }
+        }
+        annotation {
+            name = D
+            array_initializer {
+                STRING_LITERAL = a
+                STRING_LITERAL = b
+            }
+        }
+        body {
+            constant(name = ONE)
+            {
+                arguments {
+                    INTEGER_LITERAL = 1
+                }
+            }
+            constant(name = TWO)
+            {
+                arguments {
+                    additive {
+                        INTEGER_LITERAL = 2
+                        PLUS            = +
+                        INTEGER_LITERAL = 3
+                    }
+                }
+                body
+            }
+        }
+    }
+}

@@ -1,4 +1,4 @@
-{ v0d A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+{ v0e A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -65,14 +65,14 @@ The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
   - Annotations and modifiers are kept in source order.
   - void, varargs, static (of an initializer) and dim are empty elements.
 
+The grammar accepts more than Java in a few places: an expression statement
+can be any primary (a; is accepted, Java requires a call, x++ or an
+assignment) and the left side of an assignment can be any primary (1 = x;).
+
 Not supported: annotation type declarations (@interface), annotations on
 types (eg List<@NonNull String>, annotations before a type are modifiers),
-module-info.java
-and the Java 21 features (record patterns, patterns in switch). }
-
-{ Until step 5 of JAVA_PARSING.txt the expressions (expression), the
-  initializers of fields (init) and the arguments of annotations and enum
-  constants (arguments) are skipped as balanced brackets. }
+method references on a generic type (List<String>::size),
+module-info.java and the Java 21 features (record patterns, patterns in switch). }
 
 compilation_unit = ws, package?, import_declaration*, type_declaration*.
 
@@ -94,7 +94,10 @@ name = -IDENTIFIER, (dot, -IDENTIFIER)*.
 modifier = ('public' | 'protected' | 'private' | 'abstract' | 'static' | 'final'
            | 'transient' | 'volatile' | 'synchronized' | 'native' | 'strictfp'
            | 'default' | 'sealed' | 'non-sealed'), !idchar, ws.
-annotation = -AT, name, arguments?.
+annotation = -AT, name, (-LPAREN, (pair++-COMMA | element_value)?, -RPAREN)?.
+pair = @IDENTIFIER>name, -assign, element_value.
+-element_value = conditional_expression | annotation | ^element_values>array_initializer.
+-element_values = -LBRACE, (element_value++-COMMA)?, -COMMA?, -RBRACE.
 
 { Types. var, yield, record, sealed and permits cannot be the name of a type.
   An annotation before the type of a field, method, parameter or record
@@ -157,7 +160,7 @@ component = annotation*, type, @IDENTIFIER>name.
         | class | interface | enum | record | -SEMI.
 
 field = modifiers, type, variable++-COMMA, -SEMI.
-variable = @IDENTIFIER>name, dim*, (-assign, init)?.
+variable = @IDENTIFIER>name, dim*, (-assign, variable_initializer)?.
 
 method = modifiers, type_parameters?, (type | void), @IDENTIFIER>name,
          -LPAREN, parameters?, -RPAREN, dim*, throws?, (block | -SEMI).
@@ -179,7 +182,7 @@ parameter = modifiers, type, @IDENTIFIER>name, dim*.
 varargs = annotation*, -ELLIPSIS.
 throws = -THROWS, any_type++-COMMA.
 
-{ Statements (step 4). Expressions are skipped until step 5, see below. }
+{ Statements }
 
 block = -LBRACE, block_statement*, -RBRACE.
 -block_statement = local_variable | class | interface | enum | record | statement.
@@ -191,43 +194,30 @@ var = -'var', !idchar, ws.
 
 -statement = block | empty | label | expression_statement | if | assert | switch
            | while | do | for | foreach | break | continue | return | throw
-           | synchronized | try | yield.
+           | synchronized | try | yield | constructor_call.
 
 empty = -SEMI.
 label = @IDENTIFIER>name, -colon, statement.
 
-{ An expression statement cannot start with a statement keyword, so that eg
-  return x; is not an expression statement. It has a cost, so that a local
-  variable declaration wins when both fit, eg int x = 1; The skipped expression
-  never spans more than one statement: it ends before a ; and cannot have a :
-  outside a ? : (so not after a label). A statement that ends with a block and
-  starts with a name is a label or a local record, which is excluded. }
-expression_statement =< !statement_start, expression, -SEMI.
--statement_start = 'if', notid | 'else', notid | 'for', notid | 'while', notid
-                 | 'do', notid | 'switch', notid | 'case', notid | 'default', notid
-                 | 'return', notid | 'break', notid | 'continue', notid
-                 | 'throw', notid | 'try', notid | 'catch', notid | 'finally', notid
-                 | 'synchronized', notid | 'assert', notid | 'yield', notid
-                 | 'class', notid | 'interface', notid | 'enum', notid
-                 | 'final', notid | 'abstract', notid | 'static', notid
-                 | 'strictfp', notid | 'record', notid | '{' | '@' | ';'.
+{ Only the expressions that Java allows as statements, see statement_expression.
+  So a local variable declaration and an expression statement never both fit. }
+expression_statement = statement_expression, -SEMI.
 
 { The dangling else binds to the closest if, using !kw_else. }
 if = -IF, -LPAREN, expression, -RPAREN, statement, (else | !kw_else).
 else = -ELSE, statement.
 -kw_else = 'else', notid.
 
-assert = -ASSERT, ^assert_expression>expression, (-colon, expression)?, -SEMI.
+assert = -ASSERT, expression, (-colon, expression)?, -SEMI.
 
 while = -WHILE, -LPAREN, expression, -RPAREN, statement.
 do = -DO, statement, -WHILE, -LPAREN, expression, -RPAREN, -SEMI.
 
 { for (init; condition; update) and for (T x : xs). The init is a local
-  variable declaration, or expressions that have a cost, eg for (i = 0, j = 1; ...). }
+  variable declaration or statement expressions, eg for (i = 0, j = 1; ...). }
 for = -FOR, -LPAREN, for_init?, -SEMI, expression?, -SEMI, for_update?, -RPAREN, statement.
-for_init = modifiers, (type | var), variable++-COMMA | for_expressions.
--for_expressions =< expression++-COMMA.
-for_update = expression++-COMMA.
+for_init = modifiers, (type | var), variable++-COMMA | statement_expression++-COMMA.
+for_update = statement_expression++-COMMA.
 foreach = -FOR, -LPAREN, modifiers, (type | var), @IDENTIFIER>name, -colon, expression,
           -RPAREN, statement.
 
@@ -239,12 +229,11 @@ yield = -'yield', !idchar, ws, expression, -SEMI.
 synchronized = -SYNCHRONIZED, -LPAREN, expression, -RPAREN, block.
 
 { try, try-with-resources, catch with alternatives (A | B e) and finally. A
-  resource is a declaration, or an existing variable (an expression, with a cost). }
+  resource is a declaration or an existing variable. }
 try = -TRY, (resources, block, catch*, finally? | block, (catch+, finally? | finally)).
 resources = -LPAREN, resource++-SEMI, -SEMI?, -RPAREN.
 resource = modifiers, (type | var), @IDENTIFIER>name, -assign, expression
-         | existing_resource.
--existing_resource =< expression.
+         | primary.
 catch = -CATCH, -LPAREN, modifiers, type, (-bar, type)*, @IDENTIFIER>name, -RPAREN, block.
 finally = -FINALLY, block.
 
@@ -253,46 +242,145 @@ finally = -FINALLY, block.
   so that case 1: case 2: x(); is a single group. }
 switch = -SWITCH, -LPAREN, expression, -RPAREN,
          -LBRACE, (switch_rule+ | switch_group*, ^last_switch_group>switch_group?), -RBRACE.
-switch_rule = (case | default), -arrow, (!rule_start, expression, -SEMI | block | throw).
--rule_start = 'throw', notid | '{'.
+switch_rule = (case | default), -arrow, (expression, -SEMI | block | throw).
 switch_group = ((case | default), -colon)+, block_statement+.
 -last_switch_group = ((case | default), -colon)+.
-case = -CASE, ^case_expression>expression++-COMMA.
+{ A case label is not a lambda, case A -> x(); }
+case = -CASE, conditional_expression++-COMMA.
 default = -DEFAULT.
 
 -colon = -':', !':', ws.
 -arrow = -'->', ws.
 -bar = -'|', !['|='], ws.
 
-{ Skipped for now (step 4): an expression ends before a , or ; that is not inside
-  brackets. In an assert condition it also ends before a : and in a case label
-  before a : , or ->. }
-expression = init_item+.
--assert_expression = (-~[',;:{}()[]"/<'; "'"] | init_lt | init_angle | skip_common)+.
--case_expression = (-~[',;:{}()[]"/<-'; "'"] | -'-', !'>' | init_lt | init_angle | skip_common)+.
+{ Expressions (step 5).
 
-{ Skipped for now (step 2): balanced brackets, string, char and text block
-  literals and comments are skipped, all the characters are deleted. An init
-  ends before a , or ; that is not inside brackets. In an init < starts a group
-  that ends with > and can contain commas, eg new HashMap<String, Integer>().
-  A < that is a less than has a cost, so the group wins when both fit.
-  A ? starts a group that ends with its :, a : is not part of an init
-  otherwise, so that the label outer: is never part of an expression. }
+  The grammar is written for the generated LL(*) parser, which handles direct
+  left recursion (x = -y | x, op, y), as in library/lang/c.ixml. In the raw
+  tree an operand has the element of its level and the operator with its
+  operands is in the element of the level above, eg a + b is
+  conditional_expression { additive { a } PLUS multiplicative { b } }, and the
+  method calls, field and array accesses are a chain of selectors on a primary,
+  eg a.b.c(x) is primary { primary { primary { name = a } field_select(name = b) }
+  call(name = c) { arguments } }. The cleanup library/lang/java.xslq (used
+  automatically with ixml:lang/java) removes the levels without an operator,
+  makes method_call, field_access and array_access of the selectors and folds a
+  chain of names into a dotted name: a.b.c(x) is method_call(name = a.b.c). }
 
-arguments = -'(', skip*, -')', ws.
-init = init_item+.
+{ An assignment is left factored: a conditional expression with an optional
+  assignment operator, the cleanup removes an assignment without an operator.
+  Java requires a variable on the left, the grammar accepts any conditional
+  expression there, except in an expression statement, see statement_expression. }
+-expression = lambda | assignment.
+assignment = conditional_expression, (assignment_operator, expression)?.
+-assignment_operator = ASSIGN | PLUS_ASSIGN | MINUS_ASSIGN | STAR_ASSIGN | SLASH_ASSIGN
+                     | MOD_ASSIGN | AND_ASSIGN | OR_ASSIGN | XOR_ASSIGN | SHL_ASSIGN
+                     | SHR_ASSIGN | USHR_ASSIGN.
 
--skip = -~['{}()[]"/'; "'"] | skip_common.
--init_item = -~[',;:?{}()[]"/<'; "'"] | init_lt | init_angle | init_ternary | -'::' | skip_common.
--init_ternary = -'?', init_item*, -':', !':'.
--init_lt =< -'<'.
--init_angle = -'<', (-~['<>;{}()[]"/'; "'"] | init_angle)*, -'>'.
--skip_common = -'/', !['/*'] | -comment | skip_literal
-             | -'{', skip*, -'}' | -'(', skip*, -')' | -'[', skip*, -']'.
--skip_literal = -'"""', skip_text_block_char*, -'"""'
-              | !'"""', -'"', (-~['"\'; #a; #d] | -'\', -~[#a; #d])*, -'"'
-              | -"'", (-~["'\"; #a; #d] | -'\', -~[#a; #d], -['0'-'9'; 'a'-'f'; 'A'-'F'; 'u']*), -"'".
--skip_text_block_char = -~['"\'] | -'"', !'""' | -'\', -~[].
+{ The true branch comes first, then the false branch. The condition is an
+  element, so that the operands of its operator are not mixed with the branches. }
+conditional_expression = logical_or, (-question, expression, -colon, (conditional_expression | lambda))?.
+-question = -'?', ws.
+
+logical_or = -logical_and | logical_or, OR, logical_and.
+logical_and = -bitwise_or | logical_and, AND, bitwise_or.
+bitwise_or = -bitwise_xor | bitwise_or, BITOR, bitwise_xor.
+bitwise_xor = -bitwise_and | bitwise_xor, CARET, bitwise_and.
+bitwise_and = -equality | bitwise_and, BITAND, equality.
+equality = -relational | equality, (EQ | NE), relational.
+relational = -shift | relational, (LT | GT | LE | GE), shift
+           | relational, ^INSTANCEOF>instanceof, (type | pattern).
+pattern = modifiers, type, @IDENTIFIER>name.
+shift = -additive | shift, (SHL | SHR | USHR), additive.
+additive = -multiplicative | additive, (PLUS | MINUS), multiplicative.
+multiplicative = -unary_level | multiplicative, (STAR | SLASH | PERCENT), unary_level.
+
+{ >> and >>> are > tokens in types, so that List<List<String>> works, but in
+  an expression they are shift operators. }
+SHR = '>>', !['>='], ws.
+USHR = '>>>', !'=', ws.
+
+-unary_level = unary | prefix | unary_not_plus_minus.
+unary = (PLUS | MINUS), unary_level.
+prefix = (INC | DEC), unary_level.
+-unary_not_plus_minus = postfix | not_unary>unary | cast | switch.
+not_unary = (TILDE | NOT), unary_level.
+
+{ A cast to a primitive type is followed by any unary expression, (int) -x,
+  a cast to a reference type only by one that does not start with + or -, so
+  (a) - b is a subtraction. A reference type can have additional bounds,
+  (Runnable & Serializable) () -> {}. }
+cast = -LPAREN, ^primitive_cast_type>type, -RPAREN, unary_level
+     | -LPAREN, ^reference_type>type, (-amp, any_type)*, -RPAREN, (unary_not_plus_minus | lambda).
+-primitive_cast_type = primitive.
+-reference_type = class_type, dim* | primitive, dim+.
+
+postfix = -primary | postfix, (INC | DEC).
+
+{ A primary and its selectors: .f(x) call, .f field_select, [i] index, ::f reference,
+  .new Inner() outer_new, .this outer_this, .super outer_super, [].class
+  class_selector. }
+primary = -primary_start | primary, selector.
+-selector = call | field_select | index | reference | outer_new | outer_this | outer_super
+          | class_selector.
+call = -DOT, type_arguments?, @IDENTIFIER>name, arguments.
+field_select = -DOT, @IDENTIFIER>name.
+index = -LBRACKET, expression, -RBRACKET.
+reference = dim*, -COLONCOLON, type_arguments?, (@IDENTIFIER>name | @new_word>name).
+outer_new = -DOT, new.
+outer_this = -DOT, -THIS.
+outer_super = -DOT, -SUPER.
+class_selector = dim*, -DOT, -CLASS.
+-new_word = 'new', !idchar, ws.
+
+{ An unqualified method cannot be called yield, yield (x); is a yield statement. }
+-primary_start = IDENTIFIER>name | !yield_word, ^unqualified_call>call | literal
+               | ^THIS>this | ^SUPER>super | -LPAREN, expression, -RPAREN
+               | new | new_array | class_literal | primitive_reference>method_reference.
+-unqualified_call = @IDENTIFIER>name, arguments.
+-yield_word = 'yield', notid.
+arguments = -LPAREN, (expression++-COMMA)?, -RPAREN.
+
+-literal = INTEGER_LITERAL | FLOATING_POINT_LITERAL | CHARACTER_LITERAL | STRING_LITERAL
+         | TEXT_BLOCK | BOOLEAN_LITERAL | NULL_LITERAL.
+BOOLEAN_LITERAL = ('true' | 'false'), !idchar, ws.
+NULL_LITERAL = 'null', !idchar, ws.
+
+{ int.class, int[].class, void.class and int[]::new. A class literal of a
+  class, String.class, is a class_selector on a name. }
+class_literal = (^primitive_with_dims>type | ^VOID>void), -DOT, -CLASS.
+-primitive_with_dims = primitive, dim*.
+primitive_reference = ^primitive_with_dims>type, -COLONCOLON, @new_word>name.
+
+{ new Foo<>(x) { body }, new int[n][], new int[] { 1, 2 } }
+new = -NEW, type_arguments?, ^new_type>type, arguments, body?.
+-new_type = annotation*, class_type.
+new_array = -NEW, ^array_element_type>type, dim_expression>dim+, dim*
+          | -NEW, type, array_initializer.
+-array_element_type = primitive | class_type.
+dim_expression = annotation*, -LBRACKET, expression, -RBRACKET.
+array_initializer = -LBRACE, (variable_initializer++-COMMA)?, -COMMA?, -RBRACE.
+-variable_initializer = expression | array_initializer.
+
+{ x -> x + 1, (a, b) -> {...}, (int a, String... b) -> ..., (var a) -> ... }
+lambda = lambda_parameters, -arrow, (expression | block).
+-lambda_parameters = ^inferred_parameter>parameter
+                   | -LPAREN, (^inferred_parameter>parameter++-COMMA | lambda_parameter++-COMMA)?, -RPAREN.
+-inferred_parameter = @IDENTIFIER>name.
+-lambda_parameter = parameter | ^variable_arity>parameter | ^var_parameter>parameter.
+-var_parameter = modifiers, var, @IDENTIFIER>name.
+
+{ The expressions that can be statements: an assignment to a postfix, or a
+  postfix (a primary, eg a method call, or x++), or ++x. So a local variable
+  declaration, eg List<String> x = y; is never also an expression statement. }
+-statement_expression = prefix | ^statement_assignment>assignment.
+-statement_assignment = postfix, (assignment_operator, expression)?.
+
+{ this(x); super(x); outer.super(x); in a constructor. }
+constructor_call = (type_arguments?, (^THIS>this | ^SUPER>super)
+                    | primary, -DOT, type_arguments?, ^SUPER>super),
+                   arguments, -SEMI.
+
 
 { Whitespace and comments. The byte order mark is whitespace too. }
 

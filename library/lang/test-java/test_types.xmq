@@ -300,7 +300,7 @@ compilation_unit {
                 }
                 block {
                     return {
-                        expression
+                        NULL_LITERAL = null
                     }
                 }
             }

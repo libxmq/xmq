@@ -8,27 +8,27 @@ compilation_unit {
                 }
                 variable(name = i)
                 {
-                    init
+                    INTEGER_LITERAL = 0
                 }
                 variable(name = j)
                 {
-                    init
+                    INTEGER_LITERAL = 7
                 }
                 variable(name = k)
                 {
-                    init
+                    INTEGER_LITERAL = 0123
                 }
                 variable(name = l)
                 {
-                    init
+                    INTEGER_LITERAL = 1_000_000
                 }
                 variable(name = m)
                 {
-                    init
+                    INTEGER_LITERAL = 0x1F
                 }
                 variable(name = n)
                 {
-                    init
+                    INTEGER_LITERAL = 0b1010_1010
                 }
             }
             field {
@@ -37,15 +37,15 @@ compilation_unit {
                 }
                 variable(name = a)
                 {
-                    init
+                    INTEGER_LITERAL = 0xCAFE_babeL
                 }
                 variable(name = b)
                 {
-                    init
+                    INTEGER_LITERAL = 42L
                 }
                 variable(name = c)
                 {
-                    init
+                    INTEGER_LITERAL = 9l
                 }
             }
             field {
@@ -54,7 +54,51 @@ compilation_unit {
                 }
                 variable(name = d)
                 {
-                    init
+                    additive {
+                        additive {
+                            additive {
+                                additive {
+                                    additive {
+                                        additive {
+                                            additive {
+                                                additive {
+                                                    additive {
+                                                        additive {
+                                                            additive {
+                                                                FLOATING_POINT_LITERAL = 1.0
+                                                                PLUS                   = +
+                                                                FLOATING_POINT_LITERAL = 1.
+                                                            }
+                                                            PLUS                   = +
+                                                            FLOATING_POINT_LITERAL = .5
+                                                        }
+                                                        PLUS                   = +
+                                                        FLOATING_POINT_LITERAL = 1e10
+                                                    }
+                                                    PLUS                   = +
+                                                    FLOATING_POINT_LITERAL = 1E-5
+                                                }
+                                                PLUS                   = +
+                                                FLOATING_POINT_LITERAL = 2.5e+3f
+                                            }
+                                            PLUS                   = +
+                                            FLOATING_POINT_LITERAL = 3f
+                                        }
+                                        PLUS                   = +
+                                        FLOATING_POINT_LITERAL = 4d
+                                    }
+                                    PLUS                   = +
+                                    FLOATING_POINT_LITERAL = 6.02E23D
+                                }
+                                PLUS                   = +
+                                FLOATING_POINT_LITERAL = 0x1p3
+                            }
+                            PLUS                   = +
+                            FLOATING_POINT_LITERAL = 0x1.8p-2
+                        }
+                        PLUS                   = +
+                        FLOATING_POINT_LITERAL = 0x.8P1f
+                    }
                 }
             }
             field {
@@ -63,43 +107,43 @@ compilation_unit {
                 }
                 variable(name = e)
                 {
-                    init
+                    CHARACTER_LITERAL = a
                 }
                 variable(name = f)
                 {
-                    init
+                    CHARACTER_LITERAL = \n
                 }
                 variable(name = g)
                 {
-                    init
+                    CHARACTER_LITERAL = "\'"
                 }
                 variable(name = h)
                 {
-                    init
+                    CHARACTER_LITERAL = '"'
                 }
                 variable(name = o)
                 {
-                    init
+                    CHARACTER_LITERAL = \\
                 }
                 variable(name = p)
                 {
-                    init
+                    CHARACTER_LITERAL = \u0041
                 }
                 variable(name = q)
                 {
-                    init
+                    CHARACTER_LITERAL = \uu00e5
                 }
                 variable(name = r)
                 {
-                    init
+                    CHARACTER_LITERAL = \0
                 }
                 variable(name = s)
                 {
-                    init
+                    CHARACTER_LITERAL = \377
                 }
                 variable(name = t)
                 {
-                    init
+                    CHARACTER_LITERAL = å
                 }
             }
             field {
@@ -108,27 +152,27 @@ compilation_unit {
                 }
                 variable(name = u)
                 {
-                    init
+                    CHARACTER_LITERAL = '{'
                 }
                 variable(name = v)
                 {
-                    init
+                    CHARACTER_LITERAL = '}'
                 }
                 variable(name = w)
                 {
-                    init
+                    CHARACTER_LITERAL = ;
                 }
                 variable(name = x)
                 {
-                    init
+                    CHARACTER_LITERAL = ,
                 }
                 variable(name = y)
                 {
-                    init
+                    CHARACTER_LITERAL = '('
                 }
                 variable(name = z)
                 {
-                    init
+                    CHARACTER_LITERAL = ')'
                 }
             }
             field {
@@ -137,23 +181,23 @@ compilation_unit {
                 }
                 variable(name = s1)
                 {
-                    init
+                    STRING_LITERAL
                 }
                 variable(name = s2)
                 {
-                    init
+                    STRING_LITERAL = a
                 }
                 variable(name = s3)
                 {
-                    init
+                    STRING_LITERAL = tab\there
                 }
                 variable(name = s4)
                 {
-                    init
+                    STRING_LITERAL = 'quote\"s'
                 }
                 variable(name = s5)
                 {
-                    init
+                    STRING_LITERAL = \u00e5\101\7\s
                 }
             }
             field {
@@ -162,23 +206,23 @@ compilation_unit {
                 }
                 variable(name = s6)
                 {
-                    init
+                    STRING_LITERAL = 'å ä ö €'
                 }
                 variable(name = s7)
                 {
-                    init
+                    STRING_LITERAL = \\
                 }
                 variable(name = s8)
                 {
-                    init
+                    STRING_LITERAL = 'a\\\"b'
                 }
                 variable(name = s9)
                 {
-                    init
+                    STRING_LITERAL = '{;,)'
                 }
                 variable(name = s10)
                 {
-                    init
+                    STRING_LITERAL = '// not a comment'
                 }
             }
             field {
@@ -187,7 +231,9 @@ compilation_unit {
                 }
                 variable(name = t1)
                 {
-                    init
+                    TEXT_BLOCK = '        Hello "world" and ""two"" quotes, { ; , }
+                                          a line continuation \
+                                          and an escape \t.'
                 }
             }
             field {
@@ -196,11 +242,11 @@ compilation_unit {
                 }
                 variable(name = t2)
                 {
-                    init
+                    TEXT_BLOCK = '        '
                 }
                 variable(name = t3)
                 {
-                    init
+                    STRING_LITERAL = x
                 }
             }
             field {
@@ -210,12 +256,24 @@ compilation_unit {
                 }
                 variable(name = array)
                 {
-                    init
+                    array_initializer {
+                        INTEGER_LITERAL = 1
+                        INTEGER_LITERAL = 2
+                        INTEGER_LITERAL = 3
+                    }
                 }
                 variable(name = matrix)
                 {
                     dim
-                    init
+                    array_initializer {
+                        array_initializer {
+                            INTEGER_LITERAL = 1
+                        }
+                        array_initializer {
+                            INTEGER_LITERAL = 2
+                            INTEGER_LITERAL = 3
+                        }
+                    }
                 }
             }
             field {
@@ -224,7 +282,19 @@ compilation_unit {
                 }
                 variable(name = run)
                 {
-                    init
+                    lambda {
+                        block {
+                            local_variable {
+                                type {
+                                    primitive = int
+                                }
+                                variable(name = z)
+                                {
+                                    INTEGER_LITERAL = 1
+                                }
+                            }
+                        }
+                    }
                 }
             }
             field {
@@ -233,11 +303,27 @@ compilation_unit {
                 }
                 variable(name = less)
                 {
-                    init
+                    relational {
+                        INTEGER_LITERAL = 1
+                        LT              = <
+                        INTEGER_LITERAL = 2
+                    }
                 }
                 variable(name = both)
                 {
-                    init
+                    logical_and {
+                        relational {
+                            INTEGER_LITERAL = 1
+                            LT              = <
+                            INTEGER_LITERAL = 2
+                        }
+                        AND = '&&'
+                        relational {
+                            INTEGER_LITERAL = 3
+                            GT              = >
+                            INTEGER_LITERAL = 2
+                        }
+                    }
                 }
             }
             field {
@@ -259,11 +345,29 @@ compilation_unit {
                 }
                 variable(name = map)
                 {
-                    init
+                    new {
+                        type {
+                            name = HashMap
+                            type_arguments {
+                                type {
+                                    name = String
+                                }
+                                type {
+                                    name = List
+                                    type_arguments {
+                                        type {
+                                            name = Integer
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        arguments
+                    }
                 }
                 variable(name = other)
                 {
-                    init
+                    NULL_LITERAL = null
                 }
             }
         }

@@ -37,12 +37,14 @@ compilation_unit {
                         }
                         variable(name = a)
                         {
-                            init
+                            INTEGER_LITERAL = 1
                         }
                         variable(name = b)
                         {
                             dim
-                            init
+                            array_initializer {
+                                INTEGER_LITERAL = 2
+                            }
                         }
                     }
                     local_variable {
@@ -50,7 +52,20 @@ compilation_unit {
                         var
                         variable(name = v)
                         {
-                            init
+                            new {
+                                type {
+                                    name = HashMap
+                                    type_arguments {
+                                        type {
+                                            name = String
+                                        }
+                                        type {
+                                            name = Integer
+                                        }
+                                    }
+                                }
+                                arguments
+                            }
                         }
                     }
                     local_variable {
@@ -72,13 +87,19 @@ compilation_unit {
                         }
                         variable(name = maps)
                         {
-                            init
+                            new {
+                                type {
+                                    name = ArrayList
+                                    type_arguments
+                                }
+                                arguments
+                            }
                         }
                     }
                     local_variable {
                         annotation {
-                            name = SuppressWarnings
-                            arguments
+                            name           = SuppressWarnings
+                            STRING_LITERAL = unused
                         }
                         type {
                             name = String
@@ -86,19 +107,64 @@ compilation_unit {
                         variable(name = s)
                     }
                     expression_statement {
-                        expression
+                        assignment {
+                            name   = a
+                            ASSIGN = '='
+                            array_access {
+                                name            = b
+                                INTEGER_LITERAL = 0
+                            }
+                        }
                     }
                     expression_statement {
-                        expression
+                        postfix {
+                            name = a
+                            INC  = ++
+                        }
                     }
                     expression_statement {
-                        expression
+                        method_call(name = foo)
+                        {
+                            arguments {
+                                name = a
+                                name = b
+                            }
+                        }
                     }
                     expression_statement {
-                        expression
+                        method_call(name = bar)
+                        {
+                            this
+                            type_arguments {
+                                type {
+                                    name = String
+                                }
+                            }
+                            arguments
+                        }
                     }
                     expression_statement {
-                        expression
+                        method_call(name = start)
+                        {
+                            new {
+                                type {
+                                    name = Thread
+                                }
+                                arguments {
+                                    lambda {
+                                        block {
+                                            expression_statement {
+                                                method_call(name = run)
+                                                {
+                                                    arguments
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            arguments
+                        }
                     }
                     empty
                     block {
@@ -108,66 +174,114 @@ compilation_unit {
                             }
                             variable(name = inner)
                             {
-                                init
+                                INTEGER_LITERAL = 0
                             }
                         }
                     }
                     if {
-                        expression
+                        relational {
+                            name            = a
+                            LT              = <
+                            INTEGER_LITERAL = 0
+                        }
                         expression_statement {
-                            expression
+                            assignment {
+                                name            = a
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 0
+                            }
                         }
                     }
                     if {
-                        expression
+                        relational {
+                            name            = a
+                            LT              = <
+                            INTEGER_LITERAL = 0
+                        }
                         block {
                             expression_statement {
-                                expression
+                                assignment {
+                                    name            = a
+                                    ASSIGN          = '='
+                                    INTEGER_LITERAL = 0
+                                }
                             }
                         }
                         else {
                             if {
-                                expression
+                                relational {
+                                    name            = a
+                                    GT              = >
+                                    INTEGER_LITERAL = 9
+                                }
                                 block {
                                     expression_statement {
-                                        expression
+                                        assignment {
+                                            name            = a
+                                            ASSIGN          = '='
+                                            INTEGER_LITERAL = 9
+                                        }
                                     }
                                 }
                                 else {
                                     expression_statement {
-                                        expression
+                                        assignment {
+                                            name            = a
+                                            ASSIGN          = '='
+                                            INTEGER_LITERAL = 1
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                     if {
-                        expression
+                        name = a
                         if {
-                            expression
+                            name = b
                             expression_statement {
-                                expression
+                                method_call(name = x)
+                                {
+                                    arguments
+                                }
                             }
                             else {
                                 expression_statement {
-                                    expression
+                                    method_call(name = y)
+                                    {
+                                        arguments
+                                    }
                                 }
                             }
                         }
                     }
                     while {
-                        expression
+                        relational {
+                            name            = a
+                            GT              = >
+                            INTEGER_LITERAL = 0
+                        }
                         expression_statement {
-                            expression
+                            postfix {
+                                name = a
+                                DEC  = --
+                            }
                         }
                     }
                     do {
                         block {
                             expression_statement {
-                                expression
+                                postfix {
+                                    name = a
+                                    INC  = ++
+                                }
                             }
                         }
-                        expression
+                        relational {
+                            name            = a
+                            LT              = <
+                            INTEGER_LITERAL = 10
+                        }
                     }
                     for {
                         for_init {
@@ -176,24 +290,42 @@ compilation_unit {
                             }
                             variable(name = i)
                             {
-                                init
+                                INTEGER_LITERAL = 0
                             }
                             variable(name = j)
                             {
-                                init
+                                INTEGER_LITERAL = 1
                             }
                         }
-                        expression
+                        relational {
+                            name            = i
+                            LT              = <
+                            INTEGER_LITERAL = 10
+                        }
                         for_update {
-                            expression
-                            expression
+                            postfix {
+                                name = i
+                                INC  = ++
+                            }
+                            postfix {
+                                name = j
+                                INC  = ++
+                            }
                         }
                         block
                     }
                     for {
                         for_init {
-                            expression
-                            expression
+                            assignment {
+                                name            = i
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 0
+                            }
+                            assignment {
+                                name            = j
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 1
+                            }
                         }
                         break
                     }
@@ -207,14 +339,14 @@ compilation_unit {
                         type {
                             name = String
                         }
-                        expression
+                        name = list
                         block
                     }
                     foreach(name = x)
                     {
                         modifier = final
                         var
-                        expression
+                        name = xs
                         block
                     }
                     label(name = outer)
@@ -226,21 +358,32 @@ compilation_unit {
                                 }
                                 variable(name = i)
                                 {
-                                    init
+                                    INTEGER_LITERAL = 0
                                 }
                             }
-                            expression
+                            relational {
+                                name            = i
+                                LT              = <
+                                INTEGER_LITERAL = 3
+                            }
                             for_update {
-                                expression
+                                postfix {
+                                    name = i
+                                    INC  = ++
+                                }
                             }
                             block {
                                 label(name = inner)
                                 {
                                     while {
-                                        expression
+                                        BOOLEAN_LITERAL = true
                                         block {
                                             if {
-                                                expression
+                                                relational {
+                                                    name            = i
+                                                    GT              = >
+                                                    INTEGER_LITERAL = 1
+                                                }
                                                 break(label = outer)
                                             }
                                             continue(label = inner)
@@ -251,27 +394,33 @@ compilation_unit {
                         }
                     }
                     switch {
-                        expression
+                        name = a
                         switch_group {
                             case {
-                                expression
+                                INTEGER_LITERAL = 1
                             }
                             case {
-                                expression
+                                INTEGER_LITERAL = 2
                             }
                             expression_statement {
-                                expression
+                                method_call(name = foo)
+                                {
+                                    arguments
+                                }
                             }
                             break
                         }
                         switch_group {
                             case {
-                                expression
-                                expression
+                                INTEGER_LITERAL = 3
+                                INTEGER_LITERAL = 4
                             }
                             block {
                                 expression_statement {
-                                    expression
+                                    method_call(name = bar)
+                                    {
+                                        arguments
+                                    }
                                 }
                             }
                         }
@@ -280,60 +429,84 @@ compilation_unit {
                         }
                     }
                     switch {
-                        expression
+                        name = s
                         switch_rule {
                             case {
-                                expression
+                                STRING_LITERAL = a
                             }
-                            expression
+                            method_call(name = foo)
+                            {
+                                arguments
+                            }
                         }
                         switch_rule {
                             case {
-                                expression
-                                expression
+                                STRING_LITERAL = b
+                                STRING_LITERAL = c
                             }
                             block {
                                 expression_statement {
-                                    expression
+                                    method_call(name = bar)
+                                    {
+                                        arguments
+                                    }
                                 }
                             }
                         }
                         switch_rule {
                             case {
-                                expression
+                                STRING_LITERAL = x:y
                             }
                             throw {
-                                expression
+                                new {
+                                    type {
+                                        name = IllegalStateException
+                                    }
+                                    arguments
+                                }
                             }
                         }
                         switch_rule {
                             default
-                            expression
+                            assignment {
+                                name   = a
+                                ASSIGN = '='
+                                unary {
+                                    MINUS           = -
+                                    INTEGER_LITERAL = 1
+                                }
+                            }
                         }
                     }
                     switch {
-                        expression
+                        name = a
                     }
                     switch {
-                        expression
+                        name = a
                         switch_group {
                             case {
-                                expression
+                                name = A
                             }
                         }
                     }
                     synchronized {
-                        expression
+                        this
                         block {
                             expression_statement {
-                                expression
+                                postfix {
+                                    name = a
+                                    INC  = ++
+                                }
                             }
                         }
                     }
                     try {
                         block {
                             expression_statement {
-                                expression
+                                method_call(name = foo)
+                                {
+                                    arguments
+                                }
                             }
                         }
                         catch(name = e)
@@ -353,13 +526,19 @@ compilation_unit {
                     try {
                         block {
                             expression_statement {
-                                expression
+                                method_call(name = foo)
+                                {
+                                    arguments
+                                }
                             }
                         }
                         finally {
                             block {
                                 expression_statement {
-                                    expression
+                                    method_call(name = bar)
+                                    {
+                                        arguments
+                                    }
                                 }
                             }
                         }
@@ -369,7 +548,10 @@ compilation_unit {
                             resource(name = in)
                             {
                                 var
-                                expression
+                                method_call(name = open)
+                                {
+                                    arguments
+                                }
                             }
                             resource(name = r)
                             {
@@ -377,7 +559,14 @@ compilation_unit {
                                 type {
                                     name = Reader
                                 }
-                                expression
+                                new {
+                                    type {
+                                        name = StringReader
+                                    }
+                                    arguments {
+                                        STRING_LITERAL = x
+                                    }
+                                }
                             }
                         }
                         block
@@ -385,10 +574,13 @@ compilation_unit {
                     try {
                         resources {
                             resource {
-                                expression
+                                name = in
                             }
                             resource {
-                                expression
+                                field_access(name = out)
+                                {
+                                    this
+                                }
                             }
                         }
                         block
@@ -400,17 +592,29 @@ compilation_unit {
                             }
                             block {
                                 throw {
-                                    expression
+                                    name = e
                                 }
                             }
                         }
                     }
                     assert {
-                        expression
+                        relational {
+                            name            = a
+                            GT              = >
+                            INTEGER_LITERAL = 0
+                        }
                     }
                     assert {
-                        expression
-                        expression
+                        relational {
+                            name            = a
+                            GT              = >
+                            INTEGER_LITERAL = 0
+                        }
+                        additive {
+                            STRING_LITERAL = 'a must be positive: '
+                            PLUS           = +
+                            name           = a
+                        }
                     }
                     class(name = Local)
                     {
@@ -455,11 +659,34 @@ compilation_unit {
                         }
                         variable(name = r)
                         {
-                            init
+                            switch {
+                                name = a
+                                switch_rule {
+                                    case {
+                                        INTEGER_LITERAL = 1
+                                    }
+                                    block {
+                                        yield {
+                                            INTEGER_LITERAL = 10
+                                        }
+                                    }
+                                }
+                                switch_rule {
+                                    default
+                                    INTEGER_LITERAL = 0
+                                }
+                            }
                         }
                     }
                     throw {
-                        expression
+                        new {
+                            type {
+                                name = Exception
+                            }
+                            arguments {
+                                STRING_LITERAL = done
+                            }
+                        }
                     }
                 }
             }
