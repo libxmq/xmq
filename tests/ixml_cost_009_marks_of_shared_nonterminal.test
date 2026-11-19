@@ -1,0 +1,17 @@
+START
+s = line++-#a, -#a?.
+-line = a | b | c | d.
+a =< x, -';'.
+b = -x, -';'.
+c =< x, '!'.
+d = @x, '!'.
+x = 'int'.
+INPUT
+int;
+int!
+OUTPUT
+s {
+    b = int
+    d(x = int) = !
+}
+END

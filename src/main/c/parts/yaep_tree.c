@@ -455,9 +455,13 @@ static void loop_stack(YaepTreeNode **result,
                     node = error_node;
                     error_node->val.error.used = 1;
                 } else
-                if (!ps->run.grammar->one_parse_p && (node = term_node_array[state_set_k]) != NULL)
+                if (!ps->run.grammar->one_parse_p && (node = term_node_array[state_set_k]) != NULL &&
+                    node->val.terminal.mark == (rule->marks ? rule->marks[pos_j] : 0))
                 {
-                    // Reuse existing terminal node.
+                    // Reuse the existing terminal node, it has the same ixml mark. A rule that
+                    // deletes the terminal (-'x') and a rule that keeps it can both use the same
+                    // input position, eg alternatives with different costs, then they need
+                    // different nodes, otherwise the chosen tree can lose (or get) the text.
                 } else
                 {
                     // Allocate terminal node.
@@ -465,14 +469,11 @@ static void loop_stack(YaepTreeNode **result,
                     node = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
                     node->type = YAEP_TERM;
                     node->val.terminal.code = symb->u.terminal.code;
-                    if (rule->marks && rule->marks[pos_j])
-                    {
-                        // Copy the ixml mark from the rhs position on to the terminal.
-                        node->val.terminal.mark = rule->marks[pos_j];
-                    }
+                    // Copy the ixml mark from the rhs position on to the terminal.
+                    node->val.terminal.mark = rule->marks ? rule->marks[pos_j] : 0;
                     // Copy any attr from input token to parsed terminal.
                     node->val.terminal.attr = ps->input[state_set_k].attr;
-                    if (!ps->run.grammar->one_parse_p)
+                    if (!ps->run.grammar->one_parse_p && term_node_array[state_set_k] == NULL)
                     {
                         term_node_array[state_set_k] = node;
                     }
@@ -731,6 +732,30 @@ static void loop_stack(YaepTreeNode **result,
                         state = ((YaepParseTreeBuildState**) VLO_BOUND(stack))[-1];
                         node = table_state->anode;
                         assert(node != NULL);
+                        // The translation is shared by every parent that uses this rule over the
+                        // same input, but the ixml mark (-x ^x @x) and the alias (x>y) belong to
+                        // the parent's rhs position. When they differ from the node's, use a copy
+                        // with the same children, otherwise eg a cheaper alternative that uses x
+                        // gets the -x of a more expensive alternative that was built first.
+                        char want_mark = dotted_rule_rule->mark;
+                        if (rule->marks && rule->marks[pos_j]) want_mark = rule->marks[pos_j];
+                        const char *want_name = (rule->aliases && rule->aliases[pos_j]) ?
+                            rule->aliases[pos_j] : dotted_rule_rule->caller_anode;
+                        if (node->val.anode.mark != want_mark ||
+                            (want_name && node->val.anode.name && strcmp(node->val.anode.name, want_name)))
+                        {
+                            ps->n_parse_abstract_nodes++;
+                            YaepTreeNode *copy = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
+                            *copy = *node; // The children array is shared, it is filled in place.
+                            copy->val.anode.mark = want_mark;
+                            if (want_name && strcmp(node->val.anode.name, want_name))
+                            {
+                                char *name = (char*) (*ps->run.parse_alloc)(strlen(want_name) + 1);
+                                strcpy(name, want_name);
+                                copy->val.anode.name = name;
+                            }
+                            node = copy;
+                        }
                         if (ps->run.debug)
                         {
                             MemBuffer *mb = new_membuffer();

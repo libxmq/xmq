@@ -1,0 +1,15 @@
+START
+s = (a | b), -#a?.
+a = x, -';'.
+x = 'int'.
+b =< y, -';'.
+y = -~[';']+.
+INPUT
+int;
+OUTPUT
+s {
+    a {
+        x = int
+    }
+}
+END
