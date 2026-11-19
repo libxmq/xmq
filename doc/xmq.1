@@ -715,6 +715,12 @@ The url of the library to download from, check and refresh, instead of
 https://libxmq.org/library/ (ending with a slash).
 
 .TP
+.BR XMQ_INSTALLED_LIBRARY
+A directory used instead of the installed library (share/xmq/library next to
+the bin directory of xmq, /usr/local/share/xmq/library and
+/usr/share/xmq/library). Empty means no installed library.
+
+.TP
 .BR COLORFGBG
 Consulted when the terminal background cannot be auto-detected: if the
 value ends in \fB;0\fP the background is assumed to be dark.

@@ -1424,10 +1424,13 @@ const char *share_dir()
 /** Find a library file, eg xmq-utils/render-trace-to-terminal with the suffix .xslq. In order:
     $XMQ_LIBRARY (eg the library of the xmq source), the download dir ~/.local/share/xmq/library
     (files downloaded on demand or with xmq refresh-library), and the library that make install
-    puts in share/xmq/library. Returns false if it is in none of them, then the file is downloaded. */
+    puts in share/xmq/library. $XMQ_INSTALLED_LIBRARY replaces the installed library (eg for an
+    install elsewhere, or none at all in the tests). Returns false if it is in none of them, then
+    the file is downloaded. */
 static bool find_library_file(const char *file, const char *suffix, char *out, size_t size)
 {
     const char *env = getenv("XMQ_LIBRARY");
+    const char *installed = getenv("XMQ_INSTALLED_LIBRARY");
     const char *dirs[] = { env, download_dir(), share_dir(), "/usr/local/share/xmq", "/usr/share/xmq" };
     for (int i = 0; i < 5; i++)
     {
@@ -1435,6 +1438,11 @@ static bool find_library_file(const char *file, const char *suffix, char *out, s
         {
             if (!env || !*env) continue;
             snprintf(out, size, "%s/%s%s", env, file, suffix);
+        }
+        else if (i >= 2 && installed)
+        {
+            if (i > 2 || !*installed) continue;
+            snprintf(out, size, "%s/%s%s", installed, file, suffix);
         }
         else
         {

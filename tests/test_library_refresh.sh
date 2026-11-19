@@ -33,6 +33,9 @@ scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2>&1 || fail "no ind
 export HOME="$OUTPUT/home"
 export XMQ_LIBRARY_URL="file://$OUTPUT/server/"
 unset XMQ_LIBRARY
+# Not the library installed by make install, eg in /usr/local/share/xmq/library.
+mkdir -p "$OUTPUT/installed"
+export XMQ_INSTALLED_LIBRARY="$OUTPUT/installed"
 CACHE="$HOME/.local/share/xmq/library"
 TOTAL=$(grep -c 'file(path' "$OUTPUT/server/index.xmq")
 
