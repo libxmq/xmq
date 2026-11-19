@@ -1,4 +1,4 @@
-{ v0c A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+{ v0d A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -70,11 +70,9 @@ types (eg List<@NonNull String>, annotations before a type are modifiers),
 module-info.java
 and the Java 21 features (record patterns, patterns in switch). }
 
-{ Step 2 of JAVA_PARSING.txt: the declarations. The bodies of methods,
-  constructors and initializers (block), the initializers of fields (init) and
-  the arguments of annotations and enum constants (arguments) are skipped as
-  balanced brackets, until the statements and expressions are written in
-  steps 4 and 5. }
+{ Until step 5 of JAVA_PARSING.txt the expressions (expression), the
+  initializers of fields (init) and the arguments of annotations and enum
+  constants (arguments) are skipped as balanced brackets. }
 
 compilation_unit = ws, package?, import_declaration*, type_declaration*.
 
@@ -181,18 +179,112 @@ parameter = modifiers, type, @IDENTIFIER>name, dim*.
 varargs = annotation*, -ELLIPSIS.
 throws = -THROWS, any_type++-COMMA.
 
+{ Statements (step 4). Expressions are skipped until step 5, see below. }
+
+block = -LBRACE, block_statement*, -RBRACE.
+-block_statement = local_variable | class | interface | enum | record | statement.
+
+{ A local variable declaration wins over an expression statement, eg
+  List<String> x = y; is a declaration (the expression statement has a cost). }
+local_variable = modifiers, (type | var), variable++-COMMA, -SEMI.
+var = -'var', !idchar, ws.
+
+-statement = block | empty | label | expression_statement | if | assert | switch
+           | while | do | for | foreach | break | continue | return | throw
+           | synchronized | try | yield.
+
+empty = -SEMI.
+label = @IDENTIFIER>name, -colon, statement.
+
+{ An expression statement cannot start with a statement keyword, so that eg
+  return x; is not an expression statement. It has a cost, so that a local
+  variable declaration wins when both fit, eg int x = 1; The skipped expression
+  never spans more than one statement: it ends before a ; and cannot have a :
+  outside a ? : (so not after a label). A statement that ends with a block and
+  starts with a name is a label or a local record, which is excluded. }
+expression_statement =< !statement_start, expression, -SEMI.
+-statement_start = 'if', notid | 'else', notid | 'for', notid | 'while', notid
+                 | 'do', notid | 'switch', notid | 'case', notid | 'default', notid
+                 | 'return', notid | 'break', notid | 'continue', notid
+                 | 'throw', notid | 'try', notid | 'catch', notid | 'finally', notid
+                 | 'synchronized', notid | 'assert', notid | 'yield', notid
+                 | 'class', notid | 'interface', notid | 'enum', notid
+                 | 'final', notid | 'abstract', notid | 'static', notid
+                 | 'strictfp', notid | 'record', notid | '{' | '@' | ';'.
+
+{ The dangling else binds to the closest if, using !kw_else. }
+if = -IF, -LPAREN, expression, -RPAREN, statement, (else | !kw_else).
+else = -ELSE, statement.
+-kw_else = 'else', notid.
+
+assert = -ASSERT, ^assert_expression>expression, (-colon, expression)?, -SEMI.
+
+while = -WHILE, -LPAREN, expression, -RPAREN, statement.
+do = -DO, statement, -WHILE, -LPAREN, expression, -RPAREN, -SEMI.
+
+{ for (init; condition; update) and for (T x : xs). The init is a local
+  variable declaration, or expressions that have a cost, eg for (i = 0, j = 1; ...). }
+for = -FOR, -LPAREN, for_init?, -SEMI, expression?, -SEMI, for_update?, -RPAREN, statement.
+for_init = modifiers, (type | var), variable++-COMMA | for_expressions.
+-for_expressions =< expression++-COMMA.
+for_update = expression++-COMMA.
+foreach = -FOR, -LPAREN, modifiers, (type | var), @IDENTIFIER>name, -colon, expression,
+          -RPAREN, statement.
+
+break = -BREAK, (@IDENTIFIER>label)?, -SEMI.
+continue = -CONTINUE, (@IDENTIFIER>label)?, -SEMI.
+return = -RETURN, expression?, -SEMI.
+throw = -THROW, expression, -SEMI.
+yield = -'yield', !idchar, ws, expression, -SEMI.
+synchronized = -SYNCHRONIZED, -LPAREN, expression, -RPAREN, block.
+
+{ try, try-with-resources, catch with alternatives (A | B e) and finally. A
+  resource is a declaration, or an existing variable (an expression, with a cost). }
+try = -TRY, (resources, block, catch*, finally? | block, (catch+, finally? | finally)).
+resources = -LPAREN, resource++-SEMI, -SEMI?, -RPAREN.
+resource = modifiers, (type | var), @IDENTIFIER>name, -assign, expression
+         | existing_resource.
+-existing_resource =< expression.
+catch = -CATCH, -LPAREN, modifiers, type, (-bar, type)*, @IDENTIFIER>name, -RPAREN, block.
+finally = -FINALLY, block.
+
+{ switch with rules (case A, B -> ...) or groups of statements (case A: case B: ...).
+  The labels of a group are followed by statements, except in the last group,
+  so that case 1: case 2: x(); is a single group. }
+switch = -SWITCH, -LPAREN, expression, -RPAREN,
+         -LBRACE, (switch_rule+ | switch_group*, ^last_switch_group>switch_group?), -RBRACE.
+switch_rule = (case | default), -arrow, (!rule_start, expression, -SEMI | block | throw).
+-rule_start = 'throw', notid | '{'.
+switch_group = ((case | default), -colon)+, block_statement+.
+-last_switch_group = ((case | default), -colon)+.
+case = -CASE, ^case_expression>expression++-COMMA.
+default = -DEFAULT.
+
+-colon = -':', !':', ws.
+-arrow = -'->', ws.
+-bar = -'|', !['|='], ws.
+
+{ Skipped for now (step 4): an expression ends before a , or ; that is not inside
+  brackets. In an assert condition it also ends before a : and in a case label
+  before a : , or ->. }
+expression = init_item+.
+-assert_expression = (-~[',;:{}()[]"/<'; "'"] | init_lt | init_angle | skip_common)+.
+-case_expression = (-~[',;:{}()[]"/<-'; "'"] | -'-', !'>' | init_lt | init_angle | skip_common)+.
+
 { Skipped for now (step 2): balanced brackets, string, char and text block
   literals and comments are skipped, all the characters are deleted. An init
   ends before a , or ; that is not inside brackets. In an init < starts a group
   that ends with > and can contain commas, eg new HashMap<String, Integer>().
-  A < that is a less than has a cost, so the group wins when both fit. }
+  A < that is a less than has a cost, so the group wins when both fit.
+  A ? starts a group that ends with its :, a : is not part of an init
+  otherwise, so that the label outer: is never part of an expression. }
 
-block = -'{', skip*, -'}', ws.
 arguments = -'(', skip*, -')', ws.
 init = init_item+.
 
 -skip = -~['{}()[]"/'; "'"] | skip_common.
--init_item = -~[',;{}()[]"/<'; "'"] | init_lt | init_angle | skip_common.
+-init_item = -~[',;:?{}()[]"/<'; "'"] | init_lt | init_angle | init_ternary | -'::' | skip_common.
+-init_ternary = -'?', init_item*, -':', !':'.
 -init_lt =< -'<'.
 -init_angle = -'<', (-~['<>;{}()[]"/'; "'"] | init_angle)*, -'>'.
 -skip_common = -'/', !['/*'] | -comment | skip_literal

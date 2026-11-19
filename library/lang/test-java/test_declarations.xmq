@@ -186,15 +186,27 @@ compilation_unit {
             }
             initializer {
                 static
-                block
+                block {
+                    expression_statement {
+                        expression
+                    }
+                }
             }
             initializer {
-                block
+                block {
+                    expression_statement {
+                        expression
+                    }
+                }
             }
             constructor(name = Shape)
             {
                 modifier = public
-                block
+                block {
+                    expression_statement {
+                        expression
+                    }
+                }
             }
             constructor(name = Shape)
             {
@@ -243,7 +255,11 @@ compilation_unit {
                 type {
                     name = String
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             method(name = convert)
             {
@@ -288,7 +304,11 @@ compilation_unit {
                     }
                 }
                 dim
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             method(name = nothing)
             {
@@ -304,7 +324,11 @@ compilation_unit {
                     primitive = int
                     dim
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             class(name = Inner)
             {
@@ -420,7 +444,11 @@ compilation_unit {
                 type {
                     name = String
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             method(name = of)
             {
@@ -434,7 +462,11 @@ compilation_unit {
                         name = String
                     }
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             method(name = helper)
             {
@@ -482,7 +514,11 @@ compilation_unit {
                         type {
                             name = String
                         }
-                        block
+                        block {
+                            return {
+                                expression
+                            }
+                        }
                     }
                 }
             }
@@ -515,7 +551,11 @@ compilation_unit {
                         primitive = double
                     }
                 }
-                block
+                block {
+                    expression_statement {
+                        expression
+                    }
+                }
             }
         }
     }
@@ -574,7 +614,14 @@ compilation_unit {
             }
             compact_constructor(name = Point)
             {
-                block
+                block {
+                    if {
+                        expression
+                        throw {
+                            expression
+                        }
+                    }
+                }
             }
             constructor(name = Point)
             {
@@ -584,7 +631,11 @@ compilation_unit {
                         primitive = int
                     }
                 }
-                block
+                block {
+                    expression_statement {
+                        expression
+                    }
+                }
             }
             method(name = compareTo)
             {
@@ -598,7 +649,11 @@ compilation_unit {
                         name = Point
                     }
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
         }
     }

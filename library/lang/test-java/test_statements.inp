@@ -1,0 +1,82 @@
+// Statements. The expressions are skipped until step 5 of JAVA_PARSING.txt.
+class Statements
+{
+    int all(int[] xs, List<String> list) throws Exception
+    {
+        int a = 1, b[] = { 2 };
+        final var v = new HashMap<String, Integer>();
+        List<Map<String, Integer>> maps = new ArrayList<>();
+        @SuppressWarnings("unused") String s;
+        a = b[0];
+        a++;
+        foo(a, b);
+        this.<String>bar();
+        new Thread(() -> { run(); }).start();
+        ;
+        { int inner = 0; }
+
+        if (a < 0) a = 0;
+        if (a < 0) { a = 0; } else if (a > 9) { a = 9; } else a = 1;
+        if (a) if (b) x(); else y();
+
+        while (a > 0) a--;
+        do { a++; } while (a < 10);
+
+        for (int i = 0, j = 1; i < 10; i++, j++) { }
+        for (i = 0, j = 1; ; ) break;
+        for (;;) { continue; }
+        for (String x : list) { }
+        for (final var x : xs) { }
+
+        outer:
+        for (int i = 0; i < 3; i++)
+        {
+            inner: while (true) { if (i > 1) break outer; continue inner; }
+        }
+
+        switch (a)
+        {
+        case 1:
+        case 2:
+            foo();
+            break;
+        case 3, 4:
+        {
+            bar();
+        }
+        default:
+        }
+
+        switch (s)
+        {
+        case "a" -> foo();
+        case "b", "c" -> { bar(); }
+        case "x:y" -> throw new IllegalStateException();
+        default -> a = -1;
+        }
+
+        switch (a) { }
+        switch (a) { case A: }
+
+        synchronized (this) { a++; }
+
+        try { foo(); } catch (IOException | RuntimeException e) { } finally { }
+        try { foo(); } finally { bar(); }
+        try (var in = open(); final Reader r = new StringReader("x");) { }
+        try (in; this.out) { } catch (final Exception e) { throw e; }
+
+        assert a > 0;
+        assert a > 0 : "a must be positive: " + a;
+
+        class Local { int x; }
+        record Pair(int a, int b) { }
+        interface Shape { }
+        enum Color { RED }
+
+        int r = switch (a) { case 1 -> { yield 10; } default -> 0; };
+        throw new Exception("done");
+    }
+
+    void empty() { }
+    void returns() { return; }
+}

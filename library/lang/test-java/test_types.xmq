@@ -298,7 +298,11 @@ compilation_unit {
                         name = E
                     }
                 }
-                block
+                block {
+                    return {
+                        expression
+                    }
+                }
             }
             method(name = varargs)
             {
