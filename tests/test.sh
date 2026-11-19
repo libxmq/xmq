@@ -309,6 +309,13 @@ else
     echo "SKIP: tests/test_library_refresh.sh (needs ixml)"
 fi
 
+if has_feature ixml
+then
+    tests/test_java_rejects.sh "$PROG" "$OUTPUT" || exit 1
+else
+    echo "SKIP: tests/test_java_rejects.sh (needs ixml)"
+fi
+
 for i in tests/test_special_???_*.sh
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

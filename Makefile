@@ -286,7 +286,8 @@ test_java_parse_myself: release
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; FILTER="$(FILTER)" $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_java_parse_myself.sh $${x}release/xmq $${x}release/test_output/java_parse_myself || exit 1 ; done
 
 # The same as test_java_parse_myself, but with a C parser generated from java.ixml
-# (xmqj generate-parser --c) instead of the ixml engine. Needs make xmqj.
+# (xmqj generate-parser --c) instead of the ixml engine, and every tree is also cleaned
+# with library/lang/java.xslq. Takes seconds, but cannot detect ambiguities. Needs make xmqj.
 test_java_parse_myself_fast: build/xmqj release
 	@for x in $(BUILDDIRS); do if [ ! -f $${x}release/xmq ]; then echo "Run make first. $${x}release/xmq not found."; exit 1; fi ; XMQJ=build/xmqj FILTER="$(FILTER)" $(if $(filter undefined,$(origin EXCLUDE)),,EXCLUDE="$(EXCLUDE)") $(if $(JOBS),JOBS="$(JOBS)") ./tests/test_java_parse_myself.sh $${x}release/xmq $${x}release/test_output/java_parse_myself_fast || exit 1 ; done
 

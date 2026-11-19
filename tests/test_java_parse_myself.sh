@@ -63,3 +63,32 @@ fi
 
 WHAT="Java files"
 . tests/parse_myself_common.sh
+[ "$FAILED" = "0" ] || exit 1
+
+# With the generated parser (it prints xmq) also run the cleanup library/lang/java.xslq on
+# every tree. It must work and leave none of the elements of the raw tree. (The ixml
+# engine prints xml, and some trees, eg XmlHtml.java, nest deeper than xmq reads xml.)
+if [ -n "$PARSER" ]
+then
+    clean_one()
+    {
+        local tree=$1
+        local out=${tree%.xmq}.clean
+        if ! "$PROG" --trim=none "$tree" transform library/lang/java.xslq > "$out" 2> "$out.err"
+        then
+            echo "FAIL cleanup $tree: $(head -1 "$out.err")"
+        elif grep -qE '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression)( |$|\()' "$out"
+        then
+            echo "FAIL cleanup $tree left a raw element: $(grep -m 1 -E '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression)( |$|\()' "$out" | sed 's/^ *//')"
+        fi
+    }
+    export -f clean_one
+    CLEAN_FAILED=$(ls "$OUTPUT"/*.java.xmq | xargs -P "$JOBS" -I{} bash -c 'clean_one "$@"' _ {})
+    if [ -n "$CLEAN_FAILED" ]
+    then
+        echo "$CLEAN_FAILED"
+        echo "Cleanup failed: $(echo "$CLEAN_FAILED" | wc -l)"
+        exit 1
+    fi
+    echo "Cleanup with library/lang/java.xslq passed: $TOTAL"
+fi
