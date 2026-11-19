@@ -1,4 +1,4 @@
-{ v0e A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+{ v0f A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -94,6 +94,10 @@ name = -IDENTIFIER, (dot, -IDENTIFIER)*.
 modifier = ('public' | 'protected' | 'private' | 'abstract' | 'static' | 'final'
            | 'transient' | 'volatile' | 'synchronized' | 'native' | 'strictfp'
            | 'default' | 'sealed' | 'non-sealed'), !idchar, ws.
+{ A local variable, parameter, catch parameter, resource or pattern can only be
+  final and have annotations. }
+-variable_modifiers = (variable_modifier>modifier | annotation)*.
+variable_modifier = 'final', !idchar, ws.
 annotation = -AT, name, (-LPAREN, (pair++-COMMA | element_value)?, -RPAREN)?.
 pair = @IDENTIFIER>name, -assign, element_value.
 -element_value = conditional_expression | annotation | ^element_values>array_initializer.
@@ -176,9 +180,9 @@ static = -STATIC.
   Only the last parameter can have varargs (...). }
 -parameters = receiver, (-COMMA, parameter_list)? | parameter_list.
 -parameter_list = (parameter, -COMMA)*, (parameter | ^variable_arity>parameter).
-receiver = modifiers, type, (@IDENTIFIER>outer, -DOT)?, -THIS.
-parameter = modifiers, type, @IDENTIFIER>name, dim*.
--variable_arity = modifiers, type, varargs, @IDENTIFIER>name.
+receiver = variable_modifiers, type, (@IDENTIFIER>outer, -DOT)?, -THIS.
+parameter = variable_modifiers, type, @IDENTIFIER>name, dim*.
+-variable_arity = variable_modifiers, type, varargs, @IDENTIFIER>name.
 varargs = annotation*, -ELLIPSIS.
 throws = -THROWS, any_type++-COMMA.
 
@@ -189,7 +193,7 @@ block = -LBRACE, block_statement*, -RBRACE.
 
 { A local variable declaration wins over an expression statement, eg
   List<String> x = y; is a declaration (the expression statement has a cost). }
-local_variable = modifiers, (type | var), variable++-COMMA, -SEMI.
+local_variable = variable_modifiers, (type | var), variable++-COMMA, -SEMI.
 var = -'var', !idchar, ws.
 
 -statement = block | empty | label | expression_statement | if | assert | switch
@@ -216,9 +220,9 @@ do = -DO, statement, -WHILE, -LPAREN, expression, -RPAREN, -SEMI.
 { for (init; condition; update) and for (T x : xs). The init is a local
   variable declaration or statement expressions, eg for (i = 0, j = 1; ...). }
 for = -FOR, -LPAREN, for_init?, -SEMI, expression?, -SEMI, for_update?, -RPAREN, statement.
-for_init = modifiers, (type | var), variable++-COMMA | statement_expression++-COMMA.
+for_init = variable_modifiers, (type | var), variable++-COMMA | statement_expression++-COMMA.
 for_update = statement_expression++-COMMA.
-foreach = -FOR, -LPAREN, modifiers, (type | var), @IDENTIFIER>name, -colon, expression,
+foreach = -FOR, -LPAREN, variable_modifiers, (type | var), @IDENTIFIER>name, -colon, expression,
           -RPAREN, statement.
 
 break = -BREAK, (@IDENTIFIER>label)?, -SEMI.
@@ -232,9 +236,9 @@ synchronized = -SYNCHRONIZED, -LPAREN, expression, -RPAREN, block.
   resource is a declaration or an existing variable. }
 try = -TRY, (resources, block, catch*, finally? | block, (catch+, finally? | finally)).
 resources = -LPAREN, resource++-SEMI, -SEMI?, -RPAREN.
-resource = modifiers, (type | var), @IDENTIFIER>name, -assign, expression
+resource = variable_modifiers, (type | var), @IDENTIFIER>name, -assign, expression
          | primary.
-catch = -CATCH, -LPAREN, modifiers, type, (-bar, type)*, @IDENTIFIER>name, -RPAREN, block.
+catch = -CATCH, -LPAREN, variable_modifiers, type, (-bar, type)*, @IDENTIFIER>name, -RPAREN, block.
 finally = -FINALLY, block.
 
 { switch with rules (case A, B -> ...) or groups of statements (case A: case B: ...).
@@ -290,7 +294,7 @@ bitwise_and = -equality | bitwise_and, BITAND, equality.
 equality = -relational | equality, (EQ | NE), relational.
 relational = -shift | relational, (LT | GT | LE | GE), shift
            | relational, ^INSTANCEOF>instanceof, (type | pattern).
-pattern = modifiers, type, @IDENTIFIER>name.
+pattern = variable_modifiers, type, @IDENTIFIER>name.
 shift = -additive | shift, (SHL | SHR | USHR), additive.
 additive = -multiplicative | additive, (PLUS | MINUS), multiplicative.
 multiplicative = -unary_level | multiplicative, (STAR | SLASH | PERCENT), unary_level.
@@ -315,12 +319,14 @@ cast = -LPAREN, ^primitive_cast_type>type, -RPAREN, unary_level
 -primitive_cast_type = primitive.
 -reference_type = class_type, dim* | primitive, dim+.
 
-postfix = -primary | postfix, (INC | DEC).
+postfix = -primary | new_array | postfix, (INC | DEC).
 
 { A primary and its selectors: .f(x) call, .f field_select, [i] index, ::f reference,
   .new Inner() outer_new, .this outer_this, .super outer_super, [].class
   class_selector. }
-primary = -primary_start | primary, selector.
+{ An array creation is not indexed directly, new int[1][2] is a two
+  dimensional array, but it can have the other selectors, new int[1].length. }
+primary = -primary_start | new_array, (call | field_select | reference) | primary, selector.
 -selector = call | field_select | index | reference | outer_new | outer_this | outer_super
           | class_selector.
 call = -DOT, type_arguments?, @IDENTIFIER>name, arguments.
@@ -336,7 +342,7 @@ class_selector = dim*, -DOT, -CLASS.
 { An unqualified method cannot be called yield, yield (x); is a yield statement. }
 -primary_start = IDENTIFIER>name | !yield_word, ^unqualified_call>call | literal
                | ^THIS>this | ^SUPER>super | -LPAREN, expression, -RPAREN
-               | new | new_array | class_literal | primitive_reference>method_reference.
+               | new | class_literal | primitive_reference>method_reference.
 -unqualified_call = @IDENTIFIER>name, arguments.
 -yield_word = 'yield', notid.
 arguments = -LPAREN, (expression++-COMMA)?, -RPAREN.
@@ -368,7 +374,7 @@ lambda = lambda_parameters, -arrow, (expression | block).
                    | -LPAREN, (^inferred_parameter>parameter++-COMMA | lambda_parameter++-COMMA)?, -RPAREN.
 -inferred_parameter = @IDENTIFIER>name.
 -lambda_parameter = parameter | ^variable_arity>parameter | ^var_parameter>parameter.
--var_parameter = modifiers, var, @IDENTIFIER>name.
+-var_parameter = variable_modifiers, var, @IDENTIFIER>name.
 
 { The expressions that can be statements: an assignment to a postfix, or a
   postfix (a primary, eg a method call, or x++), or ++x. So a local variable

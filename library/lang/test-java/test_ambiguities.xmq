@@ -1,0 +1,2020 @@
+compilation_unit {
+    class(name = Ambiguities)
+    {
+        body {
+            method(name = statements)
+            {
+                void
+                block {
+                    local_variable {
+                        type {
+                            name = a.b
+                        }
+                        variable(name = c)
+                    }
+                    local_variable {
+                        type {
+                            name = a.b.c
+                        }
+                        variable(name = d)
+                        {
+                            name = e
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = Foo
+                            type_arguments {
+                                type {
+                                    name = Bar
+                                }
+                            }
+                        }
+                        variable(name = x)
+                    }
+                    local_variable {
+                        type {
+                            name = Foo
+                            type_arguments {
+                                type {
+                                    name = Bar
+                                }
+                            }
+                        }
+                        variable(name = x)
+                        {
+                            name = y
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = a
+                            type_arguments {
+                                type {
+                                    name = b
+                                }
+                            }
+                        }
+                        variable(name = c)
+                    }
+                    local_variable {
+                        type {
+                            name = Map
+                            type_arguments {
+                                type {
+                                    name = String
+                                }
+                                type {
+                                    name = List
+                                    type_arguments {
+                                        type {
+                                            name = Integer
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        variable(name = m)
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            relational {
+                                name = a
+                                LT   = <
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_and {
+                                relational {
+                                    name = a
+                                    LT   = <
+                                    name = b
+                                }
+                                AND = '&&'
+                                relational {
+                                    name = c
+                                    GT   = >
+                                    name = d
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                relational {
+                                    name = a
+                                    LT   = <
+                                    name = b
+                                }
+                                relational {
+                                    name = c
+                                    GT   = >
+                                    name = d
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            equality {
+                                relational {
+                                    name = a
+                                    LT   = <
+                                    name = b
+                                }
+                                EQ = '=='
+                                relational {
+                                    name = c
+                                    GT   = >
+                                    name = d
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                name  = a
+                                MINUS = -
+                                name  = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                name = a
+                                PLUS = +
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    primitive = int
+                                }
+                                unary {
+                                    MINUS = -
+                                    name  = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    primitive = int
+                                }
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                    dim
+                                }
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a.b
+                                }
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a.b
+                                    type_arguments {
+                                        type {
+                                            name = c
+                                        }
+                                    }
+                                }
+                                name = d
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                unary {
+                                    NOT  = !
+                                    name = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                unary {
+                                    TILDE = ~
+                                    name  = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                this
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                STRING_LITERAL = s
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = a
+                                }
+                                NULL_LITERAL = null
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            name   = a
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            lambda {
+                                parameter(name = a)
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            lambda {
+                                parameter(name = a)
+                                parameter(name = b)
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            name   = a
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = Foo
+                            dim
+                        }
+                        variable(name = x)
+                    }
+                    expression_statement {
+                        assignment {
+                            array_access {
+                                name = a
+                                name = i
+                            }
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            array_access {
+                                array_access {
+                                    name = a
+                                    name = i
+                                }
+                                name = j
+                            }
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = Foo
+                            dim
+                            dim
+                        }
+                        variable(name = x)
+                        {
+                            new_array {
+                                type {
+                                    name = Foo
+                                }
+                                dim {
+                                    INTEGER_LITERAL = 1
+                                }
+                                dim
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_reference(name = c)
+                            {
+                                name = a.b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_reference(name = c)
+                            {
+                                this
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_reference(name = b)
+                            {
+                                name = a
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_reference(name = c)
+                            {
+                                super
+                            }
+                        }
+                    }
+                    switch {
+                        name = k
+                        switch_rule {
+                            case {
+                                name = A
+                            }
+                            assignment {
+                                name   = x
+                                ASSIGN = '='
+                                name   = y
+                            }
+                        }
+                    }
+                    switch {
+                        name = k
+                        switch_rule {
+                            case {
+                                name = A
+                            }
+                            method_call(name = f)
+                            {
+                                arguments {
+                                    lambda {
+                                        parameter(name = x)
+                                        name = y
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                STRING_LITERAL
+                                PLUS = +
+                                STRING_LITERAL
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                TEXT_BLOCK = '            a'
+                                PLUS       = +
+                                STRING_LITERAL
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name = a
+                                name = b
+                                conditional {
+                                    name = c
+                                    name = d
+                                    name = e
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name = a
+                                conditional {
+                                    name = b
+                                    name = c
+                                    name = d
+                                }
+                                name = e
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name = a
+                                lambda {
+                                    name = b
+                                }
+                                lambda {
+                                    name = c
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name = a
+                                name = b
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_and {
+                                instanceof {
+                                    name = a
+                                    type {
+                                        name = B
+                                    }
+                                }
+                                AND  = '&&'
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            logical_and {
+                                instanceof {
+                                    name = a
+                                    pattern(name = b)
+                                    {
+                                        type {
+                                            name = B
+                                        }
+                                    }
+                                }
+                                AND  = '&&'
+                                name = b.c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                instanceof {
+                                    name = a
+                                    type {
+                                        name = B
+                                    }
+                                }
+                                name = c
+                                name = d
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                relational {
+                                    name = a
+                                    LT   = <
+                                    name = b
+                                }
+                                name = c
+                                name = d
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new_array {
+                                type {
+                                    primitive = int
+                                }
+                                dim {
+                                    INTEGER_LITERAL = 1
+                                }
+                                dim {
+                                    INTEGER_LITERAL = 2
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = length)
+                            {
+                                new_array {
+                                    type {
+                                        primitive = int
+                                    }
+                                    dim {
+                                        INTEGER_LITERAL = 1
+                                    }
+                                    dim {
+                                        INTEGER_LITERAL = 2
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            array_access {
+                                new_array {
+                                    type {
+                                        primitive = int
+                                    }
+                                    dim {
+                                        INTEGER_LITERAL = 1
+                                    }
+                                }
+                                INTEGER_LITERAL = 0
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = bar)
+                            {
+                                new {
+                                    type {
+                                        name = Foo
+                                    }
+                                    arguments
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            array_access {
+                                new {
+                                    type {
+                                        name = Foo
+                                    }
+                                    arguments
+                                }
+                                INTEGER_LITERAL = 0
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                name = a
+                                type {
+                                    name = B
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            new {
+                                name = a.b
+                                type {
+                                    name = C
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            field_access(name = x)
+                            {
+                                this {
+                                    name = Outer.Inner
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = a.b)
+                            {
+                                type_arguments {
+                                    type {
+                                        name = T
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            method_call(name = a.b.c)
+                            {
+                                type_arguments {
+                                    type {
+                                        name = T
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                name = a
+                                name = b
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                cast {
+                                    type {
+                                        name = a
+                                    }
+                                    name = b
+                                }
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = f)
+                        {
+                            arguments {
+                                additive {
+                                    name  = a
+                                    MINUS = -
+                                    name  = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = yield
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = record.x)
+                        {
+                            arguments
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = var.x)
+                        {
+                            arguments
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = var
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = sealed
+                            ASSIGN = '='
+                            name   = permits
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                name  = non
+                                MINUS = -
+                                name  = sealed
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = non)
+                        {
+                            INTEGER_LITERAL = 1
+                        }
+                        variable(name = sealed)
+                        {
+                            INTEGER_LITERAL = 2
+                        }
+                    }
+                    label(name = label)
+                    {
+                        expression_statement {
+                            assignment {
+                                name            = x
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 1
+                            }
+                        }
+                    }
+                    label(name = a)
+                    {
+                        label(name = b)
+                        {
+                            expression_statement {
+                                method_call(name = c)
+                                {
+                                    arguments
+                                }
+                            }
+                        }
+                    }
+                    if {
+                        name = a
+                        if {
+                            name = b
+                            expression_statement {
+                                method_call(name = c)
+                                {
+                                    arguments
+                                }
+                            }
+                            else {
+                                expression_statement {
+                                    method_call(name = d)
+                                    {
+                                        arguments
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for {
+                        for_init {
+                            assignment {
+                                name            = a
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 0
+                            }
+                            assignment {
+                                name            = b
+                                ASSIGN          = '='
+                                INTEGER_LITERAL = 1
+                            }
+                        }
+                        block
+                    }
+                    foreach(name = a)
+                    {
+                        type {
+                            name = A
+                        }
+                        name = b
+                        block
+                    }
+                    foreach(name = a)
+                    {
+                        type {
+                            name = A
+                            type_arguments {
+                                type {
+                                    name = B
+                                }
+                            }
+                        }
+                        name = b
+                        block
+                    }
+                    foreach(name = c)
+                    {
+                        type {
+                            name = a.b
+                        }
+                        name = d
+                        block
+                    }
+                    try {
+                        resources {
+                            resource {
+                                name = a
+                            }
+                        }
+                        block
+                    }
+                    try {
+                        resources {
+                            resource {
+                                name = a.b
+                            }
+                        }
+                        block
+                    }
+                    try {
+                        resources {
+                            resource(name = a)
+                            {
+                                type {
+                                    name = A
+                                }
+                                name = b
+                            }
+                            resource {
+                                name = c
+                            }
+                        }
+                        block
+                    }
+                    assert {
+                        name = a
+                        name = b
+                    }
+                    assert {
+                        conditional {
+                            name = a
+                            name = b
+                            name = c
+                        }
+                        name = d
+                    }
+                    switch {
+                        name = x
+                        switch_group {
+                            case {
+                                conditional {
+                                    name = a
+                                    name = b
+                                    name = c
+                                }
+                            }
+                        }
+                    }
+                    switch {
+                        name = x
+                        switch_group {
+                            case {
+                                name = A
+                                name = B
+                            }
+                        }
+                    }
+                    switch {
+                        name = x
+                        switch_rule {
+                            default
+                            block
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                switch {
+                                    name = y
+                                    switch_rule {
+                                        default
+                                        INTEGER_LITERAL = 1
+                                    }
+                                }
+                                PLUS            = +
+                                INTEGER_LITERAL = 2
+                            }
+                        }
+                    }
+                    throw {
+                        name = x
+                    }
+                    return {
+                        lambda {
+                            parameter(name = a)
+                            name = b
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            unary {
+                                MINUS = -
+                                unary {
+                                    MINUS = -
+                                    name  = a
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                name  = a
+                                MINUS = -
+                                unary {
+                                    MINUS = -
+                                    name  = b
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                postfix {
+                                    name = a
+                                    DEC  = --
+                                }
+                                MINUS = -
+                                name  = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            additive {
+                                postfix {
+                                    name = a
+                                    INC  = ++
+                                }
+                                PLUS = +
+                                name = b
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            relational {
+                                shift {
+                                    name = a
+                                    SHR  = >>
+                                    name = b
+                                }
+                                GT   = >
+                                name = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            relational {
+                                shift {
+                                    name = a
+                                    USHR = >>>
+                                    name = b
+                                }
+                                GE   = >=
+                                name = c
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = List
+                            type_arguments {
+                                type {
+                                    name = List
+                                    type_arguments {
+                                        type {
+                                            name = String
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        variable(name = l)
+                        {
+                            new {
+                                type {
+                                    name = ArrayList
+                                    type_arguments {
+                                        type {
+                                            name = List
+                                            type_arguments {
+                                                type {
+                                                    name = String
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                arguments
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            cast {
+                                type {
+                                    name = List
+                                    type_arguments {
+                                        type {
+                                            name = List
+                                            type_arguments {
+                                                type {
+                                                    name = String
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                name = o
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            relational {
+                                name = a
+                                LT   = <
+                                shift {
+                                    name = b
+                                    SHR  = >>
+                                    name = c
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    class(name = Members)
+    {
+        body {
+            method(name = f)
+            {
+                type_parameters {
+                    type_parameter(name = T)
+                }
+                type {
+                    name = T
+                }
+                block {
+                    return {
+                        NULL_LITERAL = null
+                    }
+                }
+            }
+            method(name = sort)
+            {
+                type_parameters {
+                    type_parameter(name = T)
+                    {
+                        extends {
+                            type {
+                                name = Comparable
+                                type_arguments {
+                                    type {
+                                        name = T
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                void
+                parameter(name = l)
+                {
+                    type {
+                        name = List
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                        }
+                    }
+                }
+                block
+            }
+            field {
+                type {
+                    name = A
+                    type_arguments {
+                        type {
+                            name = B
+                        }
+                    }
+                }
+                variable(name = f)
+            }
+            field {
+                type {
+                    name = A
+                    type_arguments {
+                        type {
+                            name = B
+                        }
+                    }
+                    dim
+                }
+                variable(name = f)
+            }
+            field {
+                type {
+                    name = A.B
+                    type_arguments {
+                        type {
+                            name = C
+                        }
+                    }
+                    name = D
+                }
+                variable(name = f)
+            }
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = f)
+                variable(name = g)
+                {
+                    dim
+                }
+                variable(name = h)
+                {
+                    dim
+                    dim
+                }
+            }
+            method(name = f)
+            {
+                type {
+                    primitive = int
+                }
+                dim
+                block {
+                    return {
+                        NULL_LITERAL = null
+                    }
+                }
+            }
+            field {
+                annotation {
+                    name = A
+                }
+                type {
+                    primitive = int
+                }
+                variable(name = f)
+            }
+            field {
+                annotation {
+                    name = A
+                }
+                annotation {
+                    name            = B
+                    INTEGER_LITERAL = 1
+                }
+                modifier = public
+                annotation {
+                    name = C
+                }
+                modifier = static
+                type {
+                    primitive = int
+                }
+                variable(name = f)
+            }
+            method(name = f)
+            {
+                annotation {
+                    name = A
+                    pair(name = b)
+                    {
+                        annotation {
+                            name = C
+                        }
+                    }
+                }
+                void
+                block
+            }
+            method(name = f)
+            {
+                modifier = default
+                void
+                block
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    switch {
+                        name = x
+                        switch_group {
+                            default
+                            expression_statement {
+                                method_call(name = f)
+                                {
+                                    arguments
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    switch {
+                        name = x
+                        switch_rule {
+                            default
+                            method_call(name = f)
+                            {
+                                arguments
+                            }
+                        }
+                    }
+                }
+            }
+            record(name = R)
+            {
+                component(name = x)
+                {
+                    type {
+                        primitive = int
+                    }
+                }
+                body
+            }
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = record)
+            }
+            method(name = record)
+            {
+                void
+                block
+            }
+            method(name = yield)
+            {
+                type {
+                    primitive = int
+                }
+                block {
+                    return {
+                        INTEGER_LITERAL = 0
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = yield)
+                        {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = yield
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 2
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        var
+                        variable(name = var)
+                        {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    record(name = R)
+                    {
+                        body
+                    }
+                    local_variable {
+                        type {
+                            name = R
+                        }
+                        variable(name = r)
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        modifier = final
+                        type {
+                            primitive = int
+                        }
+                        variable(name = x)
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        annotation {
+                            name = A
+                        }
+                        type {
+                            primitive = int
+                        }
+                        variable(name = x)
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        annotation {
+                            name = A
+                        }
+                        modifier = final
+                        var
+                        variable(name = x)
+                        {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    class(name = L)
+                    {
+                        body
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    class(name = L)
+                    {
+                        modifier = abstract
+                        body
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    enum(name = E)
+                    {
+                        body {
+                            constant(name = A)
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    interface(name = I)
+                    {
+                        body
+                    }
+                }
+            }
+            constructor(name = A)
+            {
+                block {
+                    constructor_call {
+                        this
+                        arguments {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                }
+            }
+            constructor(name = A)
+            {
+                block {
+                    constructor_call {
+                        super
+                        arguments
+                    }
+                    expression_statement {
+                        assignment {
+                            name            = x
+                            ASSIGN          = '='
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                }
+            }
+            constructor(name = A)
+            {
+                block {
+                    constructor_call {
+                        name = a
+                        super
+                        arguments
+                    }
+                }
+            }
+            constructor(name = A)
+            {
+                type_parameters {
+                    type_parameter(name = T)
+                }
+                block
+            }
+            initializer {
+                static
+                block
+            }
+            initializer {
+                block
+            }
+            class(name = S)
+            {
+                modifier = static
+                body
+            }
+            interface(name = I)
+            {
+                modifier = sealed
+                permits {
+                    type {
+                        name = A
+                    }
+                    type {
+                        name = B
+                    }
+                }
+                body
+            }
+            class(name = N)
+            {
+                modifier = non-sealed
+                extends {
+                    type {
+                        name = S
+                    }
+                }
+                body
+            }
+            enum(name = E)
+            {
+                body {
+                    constant(name = A)
+                    constant(name = B)
+                    method(name = f)
+                    {
+                        void
+                        block
+                    }
+                }
+            }
+            enum(name = E)
+            {
+                body {
+                    constant(name = A)
+                    {
+                        body {
+                            method(name = f)
+                            {
+                                void
+                                block
+                            }
+                        }
+                    }
+                    constant(name = B)
+                    {
+                        arguments {
+                            INTEGER_LITERAL = 1
+                        }
+                        body
+                    }
+                }
+            }
+            interface(name = I)
+            {
+                body {
+                    field {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = X)
+                        {
+                            INTEGER_LITERAL = 1
+                        }
+                    }
+                    method(name = f)
+                    {
+                        void
+                    }
+                    method(name = g)
+                    {
+                        modifier = default
+                        type {
+                            primitive = int
+                        }
+                        block {
+                            return {
+                                name = X
+                            }
+                        }
+                    }
+                    method(name = h)
+                    {
+                        modifier = static
+                        void
+                        block
+                    }
+                    method(name = i)
+                    {
+                        modifier = private
+                        void
+                        block
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                parameter(name = a)
+                {
+                    type {
+                        primitive = int
+                    }
+                    varargs
+                }
+                block
+            }
+            method(name = f)
+            {
+                void
+                parameter(name = a)
+                {
+                    modifier = final
+                    type {
+                        primitive = int
+                    }
+                    varargs {
+                        annotation {
+                            name = A
+                        }
+                    }
+                }
+                block
+            }
+            method(name = f)
+            {
+                void
+                receiver {
+                    type {
+                        name = A
+                    }
+                }
+                block
+            }
+            method(name = f)
+            {
+                void
+                throws {
+                    type {
+                        name = A
+                    }
+                    type {
+                        name = B.C
+                    }
+                }
+                block
+            }
+            method(name = f)
+            {
+                modifier = abstract
+                void
+            }
+            method(name = f)
+            {
+                modifier = native
+                void
+            }
+            method(name = f)
+            {
+                modifier = synchronized
+                void
+                block {
+                    synchronized {
+                        this
+                        block
+                    }
+                }
+            }
+            field {
+                modifier = transient
+                modifier = volatile
+                type {
+                    primitive = int
+                }
+                variable(name = f)
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    label(name = label)
+                    {
+                        block {
+                            break(label = label)
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    do {
+                        expression_statement {
+                            method_call(name = f)
+                            {
+                                arguments
+                            }
+                        }
+                        name = x
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    while {
+                        name = x
+                        empty
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    for {
+                        empty
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    if {
+                        name = a
+                        empty
+                        else {
+                            empty
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    try {
+                        block
+                        catch(name = e)
+                        {
+                            type {
+                                name = A
+                            }
+                            type {
+                                name = B.C
+                            }
+                            block
+                        }
+                        catch(name = e)
+                        {
+                            type {
+                                name = D
+                            }
+                            block
+                        }
+                        finally {
+                            block
+                        }
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    try {
+                        resources {
+                            resource(name = a)
+                            {
+                                var
+                                method_call(name = b)
+                                {
+                                    arguments
+                                }
+                            }
+                            resource(name = c)
+                            {
+                                type {
+                                    name = A
+                                }
+                                name = d
+                            }
+                        }
+                        block
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                block {
+                    local_variable {
+                        type {
+                            primitive = int
+                            dim
+                        }
+                        variable(name = a)
+                        {
+                            array_initializer
+                        }
+                        variable(name = b)
+                        {
+                            array_initializer {
+                                INTEGER_LITERAL = 1
+                            }
+                        }
+                    }
+                }
+            }
+            field {
+                type {
+                    name = Object
+                }
+                variable(name = o)
+                {
+                    new {
+                        type {
+                            name = Object
+                        }
+                        arguments
+                        body {
+                            field {
+                                type {
+                                    primitive = int
+                                }
+                                variable(name = x)
+                            }
+                        }
+                    }
+                }
+            }
+            field {
+                type {
+                    name = Runnable
+                }
+                variable(name = r)
+                {
+                    lambda {
+                        block
+                    }
+                }
+            }
+            field {
+                type {
+                    name = Runnable
+                }
+                variable(name = r)
+                {
+                    method_reference(name = run)
+                    {
+                        this
+                    }
+                }
+            }
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = x)
+                {
+                    switch {
+                        name = y
+                        switch_group {
+                            case {
+                                INTEGER_LITERAL = 1
+                            }
+                            yield {
+                                INTEGER_LITERAL = 2
+                            }
+                        }
+                        switch_group {
+                            default
+                            block {
+                                yield {
+                                    INTEGER_LITERAL = 3
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

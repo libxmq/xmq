@@ -1,0 +1,168 @@
+// The places where Java is hard to parse without ambiguity: declarations or
+// expressions, generics or comparisons, casts or parentheses, lambdas, array
+// creation or access, contextual keywords as names, and more.
+class Ambiguities
+{
+    void statements()
+    {
+        a.b c;
+        a.b.c d = e;
+        Foo<Bar> x;
+        Foo<Bar> x = y;
+        a < b > c;
+        Map<String, List<Integer>> m;
+        x = a < b;
+        x = a < b && c > d;
+        f(a < b, c > d);
+        x = (a < b) == (c > d);
+        x = (a) b;
+        x = (a) (b);
+        x = (a) - b;
+        x = (a) + b;
+        x = (int) -b;
+        x = (int) (b);
+        x = (a[]) b;
+        x = (a.b) c;
+        x = (a.b<c>) d;
+        x = (a) !b;
+        x = (a) ~b;
+        x = (a) this;
+        x = (a) "s";
+        x = (a) null;
+        x = (a);
+        x = (a) -> b;
+        x = (a, b) -> c;
+        x = (a);
+        Foo[] x;
+        a[i] = 1;
+        a[i][j] = 1;
+        Foo[][] x = new Foo[1][];
+        x = a.b::c;
+        x = this::c;
+        x = a::b;
+        x = super::c;
+        switch (k) { case A -> x = y; }
+        switch (k) { case A -> f(x -> y); }
+        x = "" + "";
+        x = """
+            a""" + "";
+        x = a ? b : c ? d : e;
+        x = a ? b ? c : d : e;
+        x = a ? () -> b : () -> c;
+        x = (a) ? b : c;
+        x = a instanceof B && c;
+        x = a instanceof B b && b.c;
+        x = a instanceof B ? c : d;
+        x = a < b ? c : d;
+        x = new int[1][2];
+        x = new int[1][2].length;
+        x = (new int[1])[0];
+        x = new Foo().bar;
+        x = new Foo()[0];
+        x = a.new B();
+        x = a.b.new C();
+        x = Outer.Inner.this.x;
+        x = a.<T>b();
+        x = a.b.<T>c();
+        f(a, (b), c);
+        f((a) b, c);
+        f((a) -b);
+        yield = 1;
+        record.x();
+        var.x();
+        var = 1;
+        sealed = permits;
+        x = non-sealed;
+        int non = 1, sealed = 2;
+        label: x = 1;
+        a: b: c();
+        if (a) if (b) c(); else d();
+        for (a = 0, b = 1; ; ) { }
+        for (A a : b) { }
+        for (A<B> a : b) { }
+        for (a.b c : d) { }
+        try (a) { }
+        try (a.b) { }
+        try (A a = b; c) { }
+        assert a : b;
+        assert a ? b : c : d;
+        switch (x) { case a ? b : c: }
+        switch (x) { case A, B: }
+        switch (x) { default -> { } }
+        x = switch (y) { default -> 1; } + 2;
+        throw x;
+        return (a) -> b;
+        x = - -a;
+        x = a - -b;
+        x = a---b;
+        x = a+++b;
+        x = a >> b > c;
+        x = a >>> b >= c;
+        List<List<String>> l = new ArrayList<List<String>>();
+        x = (List<List<String>>) o;
+        x = a < b >> c;
+    }
+}
+
+class Members
+{
+    <T> T f() { return null; }
+    <T extends Comparable<T>> void sort(List<T> l) { }
+    A<B> f;
+    A<B>[] f;
+    A.B<C>.D f;
+    int f, g[], h[][];
+    int f()[] { return null; }
+    @A int f;
+    @A @B(1) public @C static int f;
+    @A(b = @C) void f() { }
+    default void f() { }
+    void f() { switch (x) { default: f(); } }
+    void f() { switch (x) { default -> f(); } }
+    record R(int x) { }
+    int record;
+    void record() { }
+    int yield() { return 0; }
+    void f() { int yield = 1; yield = 2; }
+    void f() { var var = 1; }
+    void f() { record R() { } R r; }
+    void f() { final int x; }
+    void f() { @A int x; }
+    void f() { @A final var x = 1; }
+    void f() { class L { } }
+    void f() { abstract class L { } }
+    void f() { enum E { A } }
+    void f() { interface I { } }
+    A() { this(1); }
+    A() { super(); x = 1; }
+    A() { a.super(); }
+    <T> A() { }
+    static { }
+    { }
+    static class S { }
+    sealed interface I permits A, B { }
+    non-sealed class N extends S { }
+    enum E { A, B; void f() { } }
+    enum E { A { void f() { } }, B(1) { }; }
+    interface I { int X = 1; void f(); default int g() { return X; } static void h() { } private void i() { } }
+    void f(int... a) { }
+    void f(final int @A ... a) { }
+    void f(A this) { }
+    void f() throws A, B.C { }
+    abstract void f();
+    native void f();
+    synchronized void f() { synchronized (this) { } }
+    transient volatile int f;
+    void f() { label: { break label; } }
+    void f() { do f(); while (x); }
+    void f() { while (x) ; }
+    void f() { for (;;) ; }
+    void f() { if (a) ; else ; }
+    void f() { try { } catch (A | B.C e) { } catch (D e) { } finally { } }
+    void f() { try (var a = b(); A c = d) { } }
+    void f() { int[] a = { }, b = { 1, }; }
+    Object o = new Object() { int x; };
+    Runnable r = () -> { };
+    Runnable r = this::run;
+    int x = switch (y) { case 1: yield 2; default: { yield 3; } };
+}

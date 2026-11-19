@@ -1,0 +1,272 @@
+// v0f Cleanup after the ixml parse of Java with java.ixml, version v0f as the grammar.
+// Fredrik Öhrström (c) 2026 spdx: MIT
+//
+// The grammar is written for the generated LL(*) parser, so its expressions have an
+// element for every precedence level they pass and the method calls, field and array
+// accesses are chains of selectors on a primary. This stylesheet:
+//
+//   - removes the levels without an operator, eg assignment { conditional_expression {
+//     logical_or { postfix { name = x } } } } is name = x, and names a level with an
+//     operator after the operator, eg additive for + and -,
+//   - conditional_expression with ? : is conditional and a level with instanceof is
+//     instanceof,
+//   - a primary (or postfix) with a selector is method_call, field_access,
+//     array_access, method_reference, new (outer.new), this (Outer.this), super
+//     (Outer.super) or class_literal (a.b.class),
+//   - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+//     it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+//
+//   xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+//   xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq
+
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:template(match = '@*|node()')
+    {
+        xsl:copy {
+            xsl:apply-templates(select = '@*|node()')
+        }
+    }
+
+    // The raw tree has an element for the level of every operand, and an operator with
+    // its operands is in the element of the level above (or the element where the
+    // expression is used). So the levels are recognized by their children, not their names:
+    // a level with one child is the child, one with [left, operator, right] is the element
+    // of the operator, eg additive for + and -.
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 1]')
+    {
+        xsl:apply-templates(select = '*')
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::OR]]')
+    {
+        logical_or {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::AND]]')
+    {
+        logical_and {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::BITOR]]')
+    {
+        bitwise_or {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::CARET]]')
+    {
+        bitwise_xor {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::BITAND]]')
+    {
+        bitwise_and {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::EQ or self::NE]]')
+    {
+        equality {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::LT or self::GT or self::LE or self::GE]]')
+    {
+        relational {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::SHL or self::SHR or self::USHR]]')
+    {
+        shift {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::PLUS or self::MINUS]]')
+    {
+        additive {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::STAR or self::SLASH or self::PERCENT]]')
+    {
+        multiplicative {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*) = 3 and *[2][self::instanceof]]')
+    {
+        instanceof {
+            xsl:apply-templates(select = '*[not(self::instanceof)]')
+        }
+    }
+
+    // a ? b : c, the condition, the true branch and the false branch.
+    xsl:template(match = 'conditional_expression[count(*) = 3]')
+    {
+        conditional {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    // An unqualified method call, foo(x).
+    xsl:template(match = 'call')
+    {
+        method_call(name = '{@name}')
+        {
+            xsl:apply-templates(select = '*')
+        }
+    }
+
+    // A target with a selector. The outermost selector of a chain is in the postfix.
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::call]]')
+    {
+        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[1]') } }
+        method_call {
+            xsl:attribute(name = name)
+            {
+                xsl:if(test = '$pure = 1')
+                {
+                    xsl:call-template(name = dotted) { xsl:with-param(name = n select = '*[1]') }
+                    xsl:text = .
+                }
+                xsl:value-of(select = '*[2]/@name')
+            }
+            xsl:if(test = 'not($pure = 1)')
+            {
+                xsl:apply-templates(select = '*[1]')
+            }
+            xsl:apply-templates(select = '*[2]/*')
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::field_select]]')
+    {
+        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[1]') } }
+        xsl:choose {
+            xsl:when(test = '$pure = 1')
+            {
+                name {
+                    xsl:call-template(name = dotted) { xsl:with-param(name = n select = '.') }
+                }
+            }
+            xsl:otherwise {
+                field_access(name = '{*[2]/@name}')
+                {
+                    xsl:apply-templates(select = '*[1]')
+                }
+            }
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::index]]')
+    {
+        array_access {
+            xsl:apply-templates(select = '*[1]')
+            xsl:apply-templates(select = '*[2]/*')
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::reference]]')
+    {
+        method_reference(name = '{*[2]/@name}')
+        {
+            xsl:choose {
+                xsl:when(test = '*[2]/dim')
+                {
+                    type {
+                        xsl:apply-templates(select = '*[1]')
+                        xsl:apply-templates(select = '*[2]/dim')
+                    }
+                }
+                xsl:otherwise {
+                    xsl:apply-templates(select = '*[1]')
+                }
+            }
+            xsl:apply-templates(select = '*[2]/type_arguments')
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::class_selector]]')
+    {
+        class_literal {
+            type {
+                xsl:apply-templates(select = '*[1]')
+                xsl:apply-templates(select = '*[2]/dim')
+            }
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::outer_new]]')
+    {
+        new {
+            xsl:apply-templates(select = '*[1]')
+            xsl:apply-templates(select = '*[2]/new/*')
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::outer_this]]')
+    {
+        this {
+            xsl:apply-templates(select = '*[1]')
+        }
+    }
+
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*) = 2 and *[2][self::outer_super]]')
+    {
+        super {
+            xsl:apply-templates(select = '*[1]')
+        }
+    }
+
+    // 1 if the raw target n is a chain of names, eg a or a.b.c.
+    xsl:template(name = pure)
+    {
+        xsl:param(name = n)
+        xsl:choose {
+            xsl:when(test = '$n/self::name') { xsl:text = 1 }
+            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*) = 1')
+            {
+                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[1]') }
+            }
+            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*) = 2 and $n/*[2][self::field_select]')
+            {
+                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[1]') }
+            }
+            xsl:otherwise { xsl:text = 0 }
+        }
+    }
+
+    // The dotted name of a chain of names.
+    xsl:template(name = dotted)
+    {
+        xsl:param(name = n)
+        xsl:choose {
+            xsl:when(test = '$n/self::name') { xsl:value-of(select = $n) }
+            xsl:when(test = 'count($n/*) = 1')
+            {
+                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[1]') }
+            }
+            xsl:otherwise {
+                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[1]') }
+                xsl:text = .
+                xsl:value-of(select = '$n/*[2]/@name')
+            }
+        }
+    }
+}
