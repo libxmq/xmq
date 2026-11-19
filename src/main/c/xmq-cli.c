@@ -5221,36 +5221,50 @@ static void library_versions(XMQNode *root, const char *base, char *out, size_t 
     }
 }
 
-/** xmq list-library: every grammar and transform with its versions, ixml:data/csv v2abcd v1abc */
+static int compare_strings(const void *a, const void *b)
+{
+    return strcmp(*(const char * const *)a, *(const char * const *)b);
+}
+
+/** xmq list-library: every grammar and transform with its versions, sorted by name:
+    ixml:data/csv v2abcd v1abc */
 static bool cmd_list_library()
 {
     XMQDoc *doc = load_library_index();
     if (!doc) return false;
     XMQNode *root = xml_dom_root_element(xmq_get_dom(doc));
 
+    size_t num = 0, capacity = 64;
+    char **names = (char**)malloc(capacity * sizeof(char*));
     int width = 0;
-    for (int pass = 0; pass < 2; pass++)
+    for (XMQNode *e = xml_node_first_child(root); e; e = xml_node_next(e))
     {
-        for (XMQNode *e = xml_node_first_child(root); e; e = xml_node_next(e))
+        if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
+        const char *path = index_attr(e, "path");
+        char name[1024];
+        size_t base_len;
+        int major;
+        char letter;
+        if (!path || !library_name_of(path, name, sizeof(name))) continue;
+        // The copies data/csv_v2c.ixml and data/csv_v2.ixml are listed as versions of data/csv.ixml.
+        if (split_versioned_name(name, &base_len, &major, &letter)) continue;
+        if (num == capacity)
         {
-            if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
-            const char *path = index_attr(e, "path");
-            char name[1024], versions[1024];
-            size_t base_len;
-            int major;
-            char letter;
-            if (!path || !library_name_of(path, name, sizeof(name))) continue;
-            // The copies data/csv_v2c.ixml and data/csv_v2.ixml are listed as versions of data/csv.ixml.
-            if (split_versioned_name(name, &base_len, &major, &letter)) continue;
-            if (pass == 0)
-            {
-                if ((int)strlen(name) > width) width = strlen(name);
-                continue;
-            }
-            library_versions(root, name, versions, sizeof(versions));
-            printf("%-*s  %s\n", width, name, versions[0] ? versions : "(no version)");
+            capacity *= 2;
+            names = (char**)realloc(names, capacity * sizeof(char*));
         }
+        names[num++] = strdup(name);
+        if ((int)strlen(name) > width) width = strlen(name);
     }
+    if (num > 0) qsort(names, num, sizeof(char*), compare_strings);
+    for (size_t i = 0; i < num; i++)
+    {
+        char versions[1024];
+        library_versions(root, names[i], versions, sizeof(versions));
+        printf("%-*s  %s\n", width, names[i], versions[0] ? versions : "(no version)");
+        free(names[i]);
+    }
+    free(names);
     xmqFreeDoc(doc);
     return true;
 }
