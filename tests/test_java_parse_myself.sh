@@ -77,9 +77,9 @@ then
         if ! "$PROG" --trim=none "$tree" transform library/lang/java.xslq > "$out" 2> "$out.err"
         then
             echo "FAIL cleanup $tree: $(head -1 "$out.err")"
-        elif grep -qE '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression)( |$|\()' "$out"
+        elif grep -qE '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression|leading_comment|rbrace)( |$|\()' "$out"
         then
-            echo "FAIL cleanup $tree left a raw element: $(grep -m 1 -E '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression)( |$|\()' "$out" | sed 's/^ *//')"
+            echo "FAIL cleanup $tree left a raw element: $(grep -m 1 -E '^ *(primary|field_select|call|index|reference|outer_new|outer_this|outer_super|class_selector|conditional_expression|leading_comment|rbrace)( |$|\()' "$out" | sed 's/^ *//')"
         fi
     }
     export -f clean_one

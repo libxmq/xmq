@@ -1,4 +1,4 @@
-{ v0f A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+{ v0g A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -21,16 +21,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 The grammar parses Java 17 source files, which are UTF-8. The tree has the
-contents of the code: names, literals, operators and the structure. Whitespace,
-comments and punctuation are dropped. (Comments are for a separate grammar for
-syntax coloring and pretty printing.)
+contents of the code: names, literals, operators, comments and the structure.
+Whitespace and punctuation are dropped.
 
 The grammar is written for the LL(*) parser generator (xmqj generate-parser)
 as well as the ixml engine, in the style of library/lang/c.ixml:
 
   - Whitespace and comments (ws) are placed at the end of each token, except
     in the first rule, which accepts leading white space. No rule may start
-    with ws, otherwise whitespace can be split ambiguously.
+    with ws, otherwise whitespace can be split ambiguously. A comment on the
+    line of the token is a comment, a comment on the following lines is a
+    leading_comment, which java.xslq moves to the declaration or statement
+    that follows it.
   - Tokens use the not operator ! to implement maximal munch, e.g. an
     IDENTIFIER cannot be followed by another identifier character (!idchar) and
     the token + cannot be followed by + or =. Keywords cannot be identifiers
@@ -64,6 +66,11 @@ The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
   - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
   - Annotations and modifiers are kept in source order.
   - void, varargs, static (of an initializer) and dim are empty elements.
+  - A comment keeps its text without // or /* */, eg comment = ' the x'. After
+    java.xslq the comments on their own lines before a declaration or
+    statement are its first children, eg the javadoc of a method, the
+    comments before a closing brace are the last children of the block, and
+    a comment on the line of a token is after the element of the token.
 
 The grammar accepts more than Java in a few places: an expression statement
 can be any primary (a; is accepted, Java requires a call, x++ or an
@@ -74,7 +81,7 @@ types (eg List<@NonNull String>, annotations before a type are modifiers),
 method references on a generic type (List<String>::size),
 module-info.java and the Java 21 features (record patterns, patterns in switch). }
 
-compilation_unit = ws, package?, import_declaration*, type_declaration*.
+compilation_unit = lws, package?, import_declaration*, type_declaration*.
 
 package = -PACKAGE, -name, -SEMI.
 
@@ -99,7 +106,7 @@ modifier = ('public' | 'protected' | 'private' | 'abstract' | 'static' | 'final'
 -variable_modifiers = (variable_modifier>modifier | annotation)*.
 variable_modifier = 'final', !idchar, ws.
 annotation = -AT, name, (-LPAREN, (pair++-COMMA | element_value)?, -RPAREN)?.
-pair = @IDENTIFIER>name, -assign, element_value.
+pair = @ident>name, ws, -assign, element_value.
 -element_value = conditional_expression | annotation | ^element_values>array_initializer.
 -element_values = -LBRACE, (element_value++-COMMA)?, -COMMA?, -RBRACE.
 
@@ -127,7 +134,7 @@ wildcard = -'?', ws, (extends | super)?.
 super = -SUPER, any_type.
 
 type_parameters = -lt, type_parameter++-COMMA, -gt.
-type_parameter = annotation*, @IDENTIFIER>name, extends?.
+type_parameter = annotation*, @ident>name, ws, extends?.
 extends = -EXTENDS, any_type, (-amp, any_type)*.
 
 -lt = -'<', !['<='], ws.
@@ -139,12 +146,12 @@ extends = -EXTENDS, any_type, (-amp, any_type)*.
 
 -type_declaration = class | interface | enum | record | -SEMI.
 
-class = modifiers, -CLASS, @IDENTIFIER>name, type_parameters?, extends?, implements?,
+class = modifiers, -CLASS, @ident>name, ws, type_parameters?, extends?, implements?,
         permits?, body.
-interface = modifiers, -INTERFACE, @IDENTIFIER>name, type_parameters?,
+interface = modifiers, -INTERFACE, @ident>name, ws, type_parameters?,
             ^interface_extends>extends?, permits?, body.
-enum = modifiers, -ENUM, @IDENTIFIER>name, implements?, ^enum_body>body.
-record = modifiers, -'record', !idchar, ws, @IDENTIFIER>name, type_parameters?,
+enum = modifiers, -ENUM, @ident>name, ws, implements?, ^enum_body>body.
+record = modifiers, -'record', !idchar, ws, @ident>name, ws, type_parameters?,
          -LPAREN, components?, -RPAREN, implements?, body.
 
 -interface_extends = -EXTENDS, any_type++-COMMA.
@@ -153,10 +160,10 @@ permits = -'permits', !idchar, ws, any_type++-COMMA.
 
 body = -LBRACE, member*, -RBRACE.
 -enum_body = -LBRACE, (constant++-COMMA)?, -COMMA?, (-SEMI, member*)?, -RBRACE.
-constant = annotation*, @IDENTIFIER>name, arguments?, body?.
+constant = annotation*, @ident>name, ws, arguments?, body?.
 -components = (component, -COMMA)*, (component | ^variable_arity_component>component).
-component = annotation*, type, @IDENTIFIER>name.
--variable_arity_component = annotation*, type, varargs, @IDENTIFIER>name.
+component = annotation*, type, @ident>name, ws.
+-variable_arity_component = annotation*, type, varargs, @ident>name, ws.
 
 { Members }
 
@@ -164,14 +171,14 @@ component = annotation*, type, @IDENTIFIER>name.
         | class | interface | enum | record | -SEMI.
 
 field = modifiers, type, variable++-COMMA, -SEMI.
-variable = @IDENTIFIER>name, dim*, (-assign, variable_initializer)?.
+variable = @ident>name, ws, dim*, (-assign, variable_initializer)?.
 
-method = modifiers, type_parameters?, (type | void), @IDENTIFIER>name,
+method = modifiers, type_parameters?, (type | void), @ident>name, ws,
          -LPAREN, parameters?, -RPAREN, dim*, throws?, (block | -SEMI).
 void = -VOID.
-constructor = modifiers, type_parameters?, @IDENTIFIER>name,
+constructor = modifiers, type_parameters?, @ident>name, ws,
               -LPAREN, parameters?, -RPAREN, throws?, block.
-compact_constructor = modifiers, @IDENTIFIER>name, block.
+compact_constructor = modifiers, @ident>name, ws, block.
 initializer = static?, block.
 static = -STATIC.
 
@@ -180,9 +187,9 @@ static = -STATIC.
   Only the last parameter can have varargs (...). }
 -parameters = receiver, (-COMMA, parameter_list)? | parameter_list.
 -parameter_list = (parameter, -COMMA)*, (parameter | ^variable_arity>parameter).
-receiver = variable_modifiers, type, (@IDENTIFIER>outer, -DOT)?, -THIS.
-parameter = variable_modifiers, type, @IDENTIFIER>name, dim*.
--variable_arity = variable_modifiers, type, varargs, @IDENTIFIER>name.
+receiver = variable_modifiers, type, (@ident>outer, ws, -DOT)?, -THIS.
+parameter = variable_modifiers, type, @ident>name, ws, dim*.
+-variable_arity = variable_modifiers, type, varargs, @ident>name, ws.
 varargs = annotation*, -ELLIPSIS.
 throws = -THROWS, any_type++-COMMA.
 
@@ -201,7 +208,7 @@ var = -'var', !idchar, ws.
            | synchronized | try | yield | constructor_call.
 
 empty = -SEMI.
-label = @IDENTIFIER>name, -colon, statement.
+label = @ident>name, ws, -colon, statement.
 
 { Only the expressions that Java allows as statements, see statement_expression.
   So a local variable declaration and an expression statement never both fit. }
@@ -222,11 +229,11 @@ do = -DO, statement, -WHILE, -LPAREN, expression, -RPAREN, -SEMI.
 for = -FOR, -LPAREN, for_init?, -SEMI, expression?, -SEMI, for_update?, -RPAREN, statement.
 for_init = variable_modifiers, (type | var), variable++-COMMA | statement_expression++-COMMA.
 for_update = statement_expression++-COMMA.
-foreach = -FOR, -LPAREN, variable_modifiers, (type | var), @IDENTIFIER>name, -colon, expression,
+foreach = -FOR, -LPAREN, variable_modifiers, (type | var), @ident>name, ws, -colon, expression,
           -RPAREN, statement.
 
-break = -BREAK, (@IDENTIFIER>label)?, -SEMI.
-continue = -CONTINUE, (@IDENTIFIER>label)?, -SEMI.
+break = -BREAK, (@ident>label, ws)?, -SEMI.
+continue = -CONTINUE, (@ident>label, ws)?, -SEMI.
 return = -RETURN, expression?, -SEMI.
 throw = -THROW, expression, -SEMI.
 yield = -'yield', !idchar, ws, expression, -SEMI.
@@ -236,9 +243,9 @@ synchronized = -SYNCHRONIZED, -LPAREN, expression, -RPAREN, block.
   resource is a declaration or an existing variable. }
 try = -TRY, (resources, block, catch*, finally? | block, (catch+, finally? | finally)).
 resources = -LPAREN, resource++-SEMI, -SEMI?, -RPAREN.
-resource = variable_modifiers, (type | var), @IDENTIFIER>name, -assign, expression
+resource = variable_modifiers, (type | var), @ident>name, ws, -assign, expression
          | primary.
-catch = -CATCH, -LPAREN, variable_modifiers, type, (-bar, type)*, @IDENTIFIER>name, -RPAREN, block.
+catch = -CATCH, -LPAREN, variable_modifiers, type, (-bar, type)*, @ident>name, ws, -RPAREN, block.
 finally = -FINALLY, block.
 
 { switch with rules (case A, B -> ...) or groups of statements (case A: case B: ...).
@@ -294,7 +301,7 @@ bitwise_and = -equality | bitwise_and, BITAND, equality.
 equality = -relational | equality, (EQ | NE), relational.
 relational = -shift | relational, (LT | GT | LE | GE), shift
            | relational, ^INSTANCEOF>instanceof, (type | pattern).
-pattern = variable_modifiers, type, @IDENTIFIER>name.
+pattern = variable_modifiers, type, @ident>name, ws.
 shift = -additive | shift, (SHL | SHR | USHR), additive.
 additive = -multiplicative | additive, (PLUS | MINUS), multiplicative.
 multiplicative = -unary_level | multiplicative, (STAR | SLASH | PERCENT), unary_level.
@@ -329,21 +336,21 @@ postfix = -primary | new_array | postfix, (INC | DEC).
 primary = -primary_start | new_array, (call | field_select | reference) | primary, selector.
 -selector = call | field_select | index | reference | outer_new | outer_this | outer_super
           | class_selector.
-call = -DOT, type_arguments?, @IDENTIFIER>name, arguments.
-field_select = -DOT, @IDENTIFIER>name.
+call = -DOT, type_arguments?, @ident>name, ws, arguments.
+field_select = -DOT, @ident>name, ws.
 index = -LBRACKET, expression, -RBRACKET.
-reference = dim*, -COLONCOLON, type_arguments?, (@IDENTIFIER>name | @new_word>name).
+reference = dim*, -COLONCOLON, type_arguments?, (@ident>name, ws | @new_kw>name, ws).
 outer_new = -DOT, new.
 outer_this = -DOT, -THIS.
 outer_super = -DOT, -SUPER.
 class_selector = dim*, -DOT, -CLASS.
--new_word = 'new', !idchar, ws.
+-new_kw = 'new', !idchar.
 
 { An unqualified method cannot be called yield, yield (x); is a yield statement. }
 -primary_start = IDENTIFIER>name | !yield_word, ^unqualified_call>call | literal
                | ^THIS>this | ^SUPER>super | -LPAREN, expression, -RPAREN
                | new | class_literal | primitive_reference>method_reference.
--unqualified_call = @IDENTIFIER>name, arguments.
+-unqualified_call = @ident>name, ws, arguments.
 -yield_word = 'yield', notid.
 arguments = -LPAREN, (expression++-COMMA)?, -RPAREN.
 
@@ -356,7 +363,7 @@ NULL_LITERAL = 'null', !idchar, ws.
   class, String.class, is a class_selector on a name. }
 class_literal = (^primitive_with_dims>type | ^VOID>void), -DOT, -CLASS.
 -primitive_with_dims = primitive, dim*.
-primitive_reference = ^primitive_with_dims>type, -COLONCOLON, @new_word>name.
+primitive_reference = ^primitive_with_dims>type, -COLONCOLON, @new_kw>name, ws.
 
 { new Foo<>(x) { body }, new int[n][], new int[] { 1, 2 } }
 new = -NEW, type_arguments?, ^new_type>type, arguments, body?.
@@ -372,9 +379,9 @@ array_initializer = -LBRACE, (variable_initializer++-COMMA)?, -COMMA?, -RBRACE.
 lambda = lambda_parameters, -arrow, (expression | block).
 -lambda_parameters = ^inferred_parameter>parameter
                    | -LPAREN, (^inferred_parameter>parameter++-COMMA | lambda_parameter++-COMMA)?, -RPAREN.
--inferred_parameter = @IDENTIFIER>name.
+-inferred_parameter = @ident>name, ws.
 -lambda_parameter = parameter | ^variable_arity>parameter | ^var_parameter>parameter.
--var_parameter = variable_modifiers, var, @IDENTIFIER>name.
+-var_parameter = variable_modifiers, var, @ident>name, ws.
 
 { The expressions that can be statements: an assignment to a postfix, or a
   postfix (a primary, eg a method call, or x++), or ++x. So a local variable
@@ -388,13 +395,24 @@ constructor_call = (type_arguments?, (^THIS>this | ^SUPER>super)
                    arguments, -SEMI.
 
 
-{ Whitespace and comments. The byte order mark is whitespace too. }
+{ Whitespace and comments. The byte order mark is whitespace too.
 
--ws = (-[' '; #9; #a; #c; #d; #feff] | -comment)*, !wsstart.
+  The ws after a token is split at the end of its line. A comment on the same
+  line as the token is a comment, eg int x; // the x, it stays where the token
+  is. The comments on the following lines, up to the next token, are each a
+  leading_comment. java.xslq moves a leading comment to the declaration or
+  statement that follows it, eg the javadoc of a method is in the method. }
+
+-ws = (-hspace | comment)*, (-eol, lws | !wsstart).
+-lws = (-[' '; #9; #a; #c; #d; #feff] | leading_comment)*, !wsstart.
+-hspace = -[' '; #9; #c; #feff].
+-eol = -#a | -#d, -#a | -#d, !#a.
 -wsstart = [' '; #9; #a; #c; #d; #feff] | '//' | '/*'.
--comment = -'//', -~[#a; #d]*, !~[#a; #d]
-         | -'/*', comment_char*, -'*/'.
--comment_char = -~['*'] | -'*', !'/'.
+comment = -'//', ~[#a; #d]*, !~[#a; #d]
+        | -'/*', comment_char*, -'*/'.
+leading_comment = -'//', ~[#a; #d]*, !~[#a; #d]
+                | -'/*', comment_char*, -'*/'.
+-comment_char = ~['*'] | '*', !'/'.
 
 { Literals }
 
@@ -439,7 +457,10 @@ TEXT_BLOCK = -'"""', -[' '; #9; #c]*, -#d?, -#a, (-text_block_char)*, -'"""', ws
 -LPAREN = -'(', ws.
 -RPAREN = -')', ws.
 -LBRACE = -'{', ws.
--RBRACE = -'}', ws.
+{ The closing brace is an empty element in the raw tree, so that java.xslq can
+  tell a comment before the brace from one after it. java.xslq removes it. }
+-RBRACE = rbrace, ws.
+rbrace = -'}'.
 -LBRACKET = -'[', ws.
 -RBRACKET = -']', ws.
 -SEMI = -';', ws.
@@ -494,7 +515,8 @@ USHR_ASSIGN = '>>>=', ws.
 { Identifiers and keywords. An identifier is not a keyword, eg classes, done
   and if_x are identifiers. true, false, null and _ are reserved as well. }
 
-IDENTIFIER = !keyword, idstart, idchar*, !idchar, ws.
+IDENTIFIER = ident, ws.
+-ident = !keyword, idstart, idchar*, !idchar.
 -idstart = [L; Nl; Sc; Pc].
 -idchar = [L; Nl; Sc; Pc; Nd; Mn; Mc].
 

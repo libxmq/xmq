@@ -1,12 +1,14 @@
 compilation_unit {
     class(name = Expressions)
     {
+        comment = ' Expressions, with the cleanup of java.xslq.'
         body {
             method(name = all)
             {
                 void
                 block {
                     expression_statement {
+                        comment = ' Assignments'
                         assignment {
                             name            = a
                             ASSIGN          = '='
@@ -119,6 +121,7 @@ compilation_unit {
                         }
                     }
                     expression_statement {
+                        comment = ' Binary operators and precedence'
                         assignment {
                             name   = x
                             ASSIGN = '='
@@ -310,6 +313,7 @@ compilation_unit {
                         }
                     }
                     expression_statement {
+                        comment = ' Unary, casts'
                         assignment {
                             name   = x
                             ASSIGN = '='
@@ -467,6 +471,7 @@ compilation_unit {
                         }
                     }
                     expression_statement {
+                        comment = ' Primaries'
                         assignment {
                             name   = x
                             ASSIGN = '='
@@ -706,6 +711,7 @@ compilation_unit {
                         }
                     }
                     expression_statement {
+                        comment = ' Creation'
                         assignment {
                             name   = x
                             ASSIGN = '='
@@ -867,6 +873,7 @@ compilation_unit {
                         }
                     }
                     expression_statement {
+                        comment = ' Method references and lambdas'
                         method_call(name = f)
                         {
                             arguments {
@@ -990,6 +997,7 @@ compilation_unit {
                         }
                     }
                     local_variable {
+                        comment = ' Switch expression'
                         type {
                             primitive = int
                         }
@@ -1054,6 +1062,7 @@ compilation_unit {
                         }
                     }
                     constructor_call {
+                        comment = ' Constructor calls'
                         this
                         arguments {
                             INTEGER_LITERAL = 1

@@ -1,6 +1,9 @@
 compilation_unit {
     class(name = Ambiguities)
     {
+        comment = ' The places where Java is hard to parse without ambiguity: declarations or'
+        comment = ' expressions, generics or comparisons, casts or parentheses, lambdas, array'
+        comment = ' creation or access, contextual keywords as names, and more.'
         body {
             method(name = statements)
             {

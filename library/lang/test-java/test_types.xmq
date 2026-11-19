@@ -1,6 +1,8 @@
 compilation_unit {
     class(name = Types)
     {
+        comment = ' Types: names, type arguments, wildcards, arrays, varargs, annotations on'
+        comment = ' types and receiver parameters.'
         type_parameters {
             type_parameter(name = T)
             {

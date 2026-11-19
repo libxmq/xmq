@@ -1,0 +1,256 @@
+compilation_unit {
+    comment = ' Copyright header'
+    package = a.b
+    comment = ' pkg'
+    class(name = A)
+    {
+        comment = '* Doc for A. '
+        body {
+            field {
+                comment = ' field x'
+                type {
+                    primitive = int
+                }
+                variable(name = x)
+                {
+                    INTEGER_LITERAL = 1
+                }
+                comment = ' trailing'
+            }
+            method(name = f)
+            {
+                comment = ' before f '
+                void
+                parameter(name = a)
+                {
+                    type {
+                        primitive = int
+                    }
+                    comment = ' arg '
+                }
+                block {
+                    expression_statement {
+                        method_call(name = g)
+                        {
+                            arguments {
+                                name = a
+                            }
+                        }
+                        comment = ' call'
+                    }
+                    comment = ' end of f'
+                }
+            }
+            comment = ' end of A'
+        }
+    }
+    class(name = A)
+    {
+        comment = ' eof'
+        comment = ( '*
+                      * Doc.'
+                    &#10;
+                    ' ' )
+        annotation {
+            name = Deprecated
+        }
+        modifier = public
+        type_parameters {
+            type_parameter(name = T)
+        }
+        extends {
+            type {
+                name = B
+            }
+        }
+        body {
+            field {
+                comment  = '* Doc x. '
+                modifier = private
+                type {
+                    primitive = int
+                }
+                variable(name = x)
+                comment = ' trailing x'
+            }
+            constructor(name = A)
+            {
+                block {
+                    comment = ' after brace'
+                    constructor_call {
+                        super
+                        arguments
+                        comment = ' super call'
+                    }
+                }
+            }
+            method(name = f)
+            {
+                void
+                parameter(name = a)
+                {
+                    type {
+                        primitive = int
+                    }
+                }
+                block {
+                    if {
+                        comment = ' before if'
+                        relational {
+                            name            = a
+                            GT              = >
+                            INTEGER_LITERAL = 0
+                        }
+                        block {
+                            expression_statement {
+                                assignment {
+                                    name   = x
+                                    ASSIGN = '='
+                                    additive {
+                                        name            = a
+                                        comment         = ' trailing a'
+                                        PLUS            = +
+                                        INTEGER_LITERAL = 1
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            comment = ' before else'
+                            block {
+                                expression_statement {
+                                    method_call(name = g)
+                                    {
+                                        arguments {
+                                            name    = a
+                                            comment = ' second arg'
+                                            name    = b
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    local_variable {
+                        type {
+                            primitive = int
+                        }
+                        variable(name = y)
+                        {
+                            method_call(name = a.b.c.d)
+                            {
+                                comment = ' dotted'
+                                arguments
+                            }
+                        }
+                    }
+                    switch {
+                        name = a
+                        switch_rule {
+                            comment = ' first case'
+                            case {
+                                INTEGER_LITERAL = 1
+                            }
+                            method_call(name = y)
+                            {
+                                arguments
+                            }
+                        }
+                        switch_rule {
+                            default
+                            method_call(name = z)
+                            {
+                                arguments
+                            }
+                        }
+                        comment = ' after default'
+                    }
+                    try {
+                        block
+                        catch(name = e)
+                        {
+                            comment = ' before catch'
+                            type {
+                                name = E
+                            }
+                            block
+                        }
+                    }
+                    local_variable {
+                        type {
+                            name = String
+                        }
+                        variable(name = s)
+                        {
+                            cast {
+                                type {
+                                    name = String
+                                }
+                                name = o
+                            }
+                        }
+                        comment = ' cast'
+                    }
+                    local_variable {
+                        type {
+                            name = Runnable
+                        }
+                        variable(name = r)
+                        {
+                            lambda {
+                                block {
+                                    expression_statement {
+                                        comment = ' in lambda'
+                                        method_call(name = run)
+                                        {
+                                            arguments
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    expression_statement {
+                        assignment {
+                            name   = x
+                            ASSIGN = '='
+                            conditional {
+                                name    = a
+                                comment = ' t '
+                                name    = b
+                                name    = c
+                            }
+                        }
+                    }
+                    expression_statement {
+                        method_call(name = baz)
+                        {
+                            method_call(name = foo.bar)
+                            {
+                                arguments {
+                                    comment = ' first'
+                                }
+                            }
+                            arguments
+                        }
+                        comment = ' second'
+                    }
+                }
+            }
+        }
+    }
+    class(name = C)
+    {
+        body {
+            method(name = f)
+            {
+                void
+                block {
+                    comment = ' only '
+                }
+            }
+            comment = ' end'
+        }
+    }
+    comment = ' eof2'
+}

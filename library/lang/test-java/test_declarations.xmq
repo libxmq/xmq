@@ -6,6 +6,7 @@ compilation_unit {
     static_import = java.lang.Math.*
     class(name = Shape)
     {
+        comment = '* A class with generics, extends, implements and permits. '
         annotation {
             name = SuppressWarnings
             array_initializer {

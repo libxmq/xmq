@@ -1,5 +1,5 @@
-// Literals in field initializers. Until step 5 they are skipped, the strings,
-// chars and text blocks contain { } ( ) ; , that must not end the init.
+// Literals in field initializers. The strings, chars and text blocks contain
+// { } ( ) ; , and comments that are text.
 class Literals
 {
     int i = 0, j = 7, k = 0123, l = 1_000_000, m = 0x1F, n = 0b1010_1010;

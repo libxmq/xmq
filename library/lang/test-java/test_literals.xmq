@@ -1,6 +1,8 @@
 compilation_unit {
     class(name = Literals)
     {
+        comment = ' Literals in field initializers. The strings, chars and text blocks contain'
+        comment = ' { } ( ) ; , and comments that are text.'
         body {
             field {
                 type {
@@ -246,6 +248,7 @@ compilation_unit {
                 }
                 variable(name = t3)
                 {
+                    comment        = ' a , comment ; '
                     STRING_LITERAL = x
                 }
             }

@@ -1,6 +1,8 @@
 compilation_unit {
     class(name = classes)
     {
+        comment = '* Identifiers: the contextual keywords, $ _ and Unicode are names.
+                       The keywords are not, eg classes and if_x are identifiers. '
         body {
             field {
                 type {
@@ -21,10 +23,15 @@ compilation_unit {
                 variable(name = classes)
             }
             field {
+                comment = ' a block comment with * and / and // inside '
                 type {
                     primitive = int
+                    comment
                 }
                 variable(name = x)
+                {
+                    comment = c
+                }
             }
             field {
                 type {
@@ -39,4 +46,5 @@ compilation_unit {
             }
         }
     }
+    comment = ' a comment at the end without a newline'
 }

@@ -1,0 +1,66 @@
+// Copyright header
+
+package a.b; // pkg
+
+/** Doc for A. */
+class A {
+    // field x
+    int x = 1; // trailing
+    /* before f */ void f(int a /* arg */) {
+        g(a); // call
+        // end of f
+    }
+    // end of A
+}
+// eof
+/**
+ * Doc.
+ */
+@Deprecated
+public class A<T> extends B {
+    /** Doc x. */
+    private int x; // trailing x
+
+    A() { // after brace
+        super(); // super call
+    }
+
+    void f(int a) {
+        // before if
+        if (a > 0) {
+            x = a // trailing a
+                + 1;
+        }
+        // before else
+        else {
+            g(a,
+              // second arg
+              b);
+        }
+        int y = a.b // dotted
+            .c.d();
+        switch (a) {
+            // first case
+            case 1 -> y();
+            default -> z();
+            // after default
+        }
+        try {
+        }
+        // before catch
+        catch (E e) {
+        }
+        String s = (String) o; // cast
+        Runnable r = () -> {
+            // in lambda
+            run();
+        };
+        x = a ? /* t */ b : c;
+        foo.bar() // first
+           .baz(); // second
+    }
+}
+class C { void f() {
+    /* only */
+} } // end
+// eof2

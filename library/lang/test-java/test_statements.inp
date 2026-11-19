@@ -1,4 +1,4 @@
-// Statements. The expressions are skipped until step 5 of JAVA_PARSING.txt.
+// Statements.
 class Statements
 {
     int all(int[] xs, List<String> list) throws Exception
