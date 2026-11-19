@@ -1,3 +1,4 @@
+{ v1a The ixml grammar for ixml, from the ixml specification. }
 {version 2022-06-07}
          ixml: s, prolog?, rule++RS, s.
 

@@ -1,4 +1,4 @@
-// Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
+// v1a Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
 //   xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
 //   pdflatex trace.tex; pdflatex trace.tex
 // (longtable needs two runs to line up the columns)

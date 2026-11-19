@@ -1,4 +1,4 @@
-{ v1.0.1 Parse nginx config files. }
+{ v1a Parse nginx config files. }
 { by Fredrik Öhrström (c) 2025 spdx: MIT }
 
 nginx = ws, (directive|comment|context)+.

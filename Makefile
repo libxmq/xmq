@@ -248,7 +248,7 @@ java_install_sign:
 .PHONY: dist
 
 library_index:
-	@./scripts/build_library_index.sh
+	@./scripts/build_library_index.py
 
 # Run the ixml community group test suite (cloned into 3rdparty/ixml if it is missing),
 # the catalogs are followed and the results verified with xmq, see tests/test_ixml_standard.sh.

@@ -1,4 +1,4 @@
-// Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
+// v1a Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
 //   xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
 // Every Earley item is a row: a cell spans the input it matched, below the tokens,
 // and the rule with the dot is to the right. The items used in the tree are marked.

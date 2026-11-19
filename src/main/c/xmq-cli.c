@@ -111,7 +111,9 @@ typedef enum
     XMQ_CLI_CMD_QUOTE_C,
     XMQ_CLI_CMD_UNQUOTE_C,
     XMQ_CLI_CMD_CHECK_LIBRARY,
-    XMQ_CLI_CMD_REFRESH_LIBRARY
+    XMQ_CLI_CMD_REFRESH_LIBRARY,
+    XMQ_CLI_CMD_LIST_LIBRARY,
+    XMQ_CLI_CMD_DESCRIBE_LIBRARY
 } XMQCliCmd;
 
 typedef enum {
@@ -214,6 +216,7 @@ struct XMQCliCommand
 
     bool print_help;
     const char *help_command;
+    const char *library_name; // describe-library ixml:data/csv
     bool print_version;
     bool print_license;
     bool debug;
@@ -338,6 +341,8 @@ XMQCliCmd cmd_from(const char *s);
 XMQCliCmdGroup cmd_group(XMQCliCmd cmd);
 bool cmd_help(XMQCliCommand *c);
 static bool cmd_library(bool refresh);
+static bool cmd_list_library(void);
+static bool cmd_describe_library(const char *name);
 void load_using_internal_ixml_engine(XMQCliCommand *command, const char *from);
 void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine, const char *from);
 void save_ixml_trace(XMQCliCommand *command);
@@ -517,6 +522,8 @@ XMQCliCmd cmd_from(const char *s)
     if (!strcmp(s, "help")) return XMQ_CLI_CMD_HELP;
     if (!strcmp(s, "check-library")) return XMQ_CLI_CMD_CHECK_LIBRARY;
     if (!strcmp(s, "refresh-library")) return XMQ_CLI_CMD_REFRESH_LIBRARY;
+    if (!strcmp(s, "list-library")) return XMQ_CLI_CMD_LIST_LIBRARY;
+    if (!strcmp(s, "describe-library")) return XMQ_CLI_CMD_DESCRIBE_LIBRARY;
     if (!strcmp(s, "load")) return XMQ_CLI_CMD_LOAD;
     if (!strcmp(s, "no-output")) return XMQ_CLI_CMD_NO_OUTPUT;
     if (!strcmp(s, "pa")) return XMQ_CLI_CMD_PAGER;
@@ -559,6 +566,8 @@ const char *cmd_name(XMQCliCmd cmd)
     case XMQ_CLI_CMD_HELP: return "help";
     case XMQ_CLI_CMD_CHECK_LIBRARY: return "check-library";
     case XMQ_CLI_CMD_REFRESH_LIBRARY: return "refresh-library";
+    case XMQ_CLI_CMD_LIST_LIBRARY: return "list-library";
+    case XMQ_CLI_CMD_DESCRIBE_LIBRARY: return "describe-library";
     case XMQ_CLI_CMD_LOAD: return "load";
     case XMQ_CLI_CMD_TO_XMQ: return "to-xmq";
     case XMQ_CLI_CMD_TO_XML: return "to-xml";
@@ -671,6 +680,8 @@ XMQCliCmdGroup cmd_group(XMQCliCmd cmd)
 
     case XMQ_CLI_CMD_CHECK_LIBRARY:
     case XMQ_CLI_CMD_REFRESH_LIBRARY:
+    case XMQ_CLI_CMD_LIST_LIBRARY:
+    case XMQ_CLI_CMD_DESCRIBE_LIBRARY:
         return XMQ_CLI_CMD_GROUP_NONE;
     }
     return XMQ_CLI_CMD_GROUP_NONE;
@@ -899,6 +910,12 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
             command->save_file = arg;
             return true;
         }
+    }
+
+    if (command->cmd == XMQ_CLI_CMD_DESCRIBE_LIBRARY && !is_option && command->library_name == NULL)
+    {
+        command->library_name = arg;
+        return true;
     }
 
     if (command->cmd == XMQ_CLI_CMD_HELP && !is_option)
@@ -1792,16 +1809,6 @@ const char *lookup_theme_spec()
     return getenv("XMQ_THEME");
 }
 
-XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data);
-
-XMQProceed print_tool(XMQDoc *doc, XMQNode *node, void *user_data)
-{
-    const char *name = xmqGetStringRel(doc, "name", node);
-    const char *desc = xmqGetStringRel(doc, "description", node);
-    printf("%s %s\n", name, desc);
-    return XMQ_CONTINUE;
-}
-
 bool handle_global_option(const char *arg, XMQCliCommand *command)
 {
     debug_("xmq=", "option %s", arg);
@@ -1824,26 +1831,6 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     if (!strcmp(arg, "--xml-of-ixml"))
     {
         command->build_xml_of_ixml = true;
-        return true;
-    }
-    if (!strcmp(arg, "--list-library"))
-    {
-        const char *file = "index";
-        char local_file[256];
-        snprintf(local_file, 256, "%s/library/%s.xmq", download_dir(), file);
-        download(LIBRARY_FORCE, ".xmq", file, local_file, false);
-        XMQReturnDoc rd = xmqNewDoc();
-        assert(rd.status == XMQ_OK);
-        XMQDoc *doc = rd.doc;
-        bool ok = xmqParseFileWithType(doc, local_file, NULL, XMQ_CONTENT_XMQ, 0);
-        if (!ok)
-        {
-            fprintf(stderr, "Internal error: failed to parse library index.xmq!\n");
-            exit(1);
-        }
-        xmqForeach(doc, "/library/tool", print_tool, NULL);
-        xmqFreeDoc(doc);
-
         return true;
     }
     if (!strcmp(arg, "--trace"))
@@ -2166,7 +2153,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  add\n"
            "  add-root\n"
            "  browser pager\n"
-           "  check-library refresh-library\n"
+           "  check-library refresh-library list-library describe-library\n"
            "  delete delete-entity\n"
            "  for-each\n"
            "  help\n"
@@ -3889,6 +3876,8 @@ void prepare_command(XMQCliCommand *c, XMQCliCommand *load_command)
         return;
     case XMQ_CLI_CMD_CHECK_LIBRARY:
     case XMQ_CLI_CMD_REFRESH_LIBRARY:
+    case XMQ_CLI_CMD_LIST_LIBRARY:
+    case XMQ_CLI_CMD_DESCRIBE_LIBRARY:
         return;
     }
 }
@@ -4184,6 +4173,24 @@ void print_command_help(XMQCliCmd c)
             "https://libxmq.org/library or changed there more recently, into ~/.local/share/xmq/library.\n"
             "Files there are used before the library installed with xmq (share/xmq/library), so\n"
             "after make install the library can be refreshed without reinstalling.\n");
+        break;
+    case XMQ_CLI_CMD_LIST_LIBRARY:
+        printf(
+            "Usage: xmq list-library\n"
+            "List the ixml grammars and xsl transforms in the library on https://libxmq.org/library\n"
+            "(or the installed library index, if libxmq.org cannot be reached) with their versions:\n"
+            "  ixml:data/csv   v2abcd v1abc\n"
+            "A version is a major number and a minor letter, v2c is 2.3.0. ixml:data/csv is the\n"
+            "latest version, ixml:data/csv_v2 the latest 2.x and ixml:data/csv_v2c exactly 2c.\n"
+            "A published version never changes, for example:\n"
+            "  xmq ixml:data/csv data.csv xsl:work/report_v2 to-text\n"
+            "uses the latest csv grammar and the latest version 2 of the report.\n");
+        break;
+    case XMQ_CLI_CMD_DESCRIBE_LIBRARY:
+        printf(
+            "Usage: xmq describe-library <ixml:name|xsl:name>\n"
+            "Print the description (the first comment) of a library grammar or transform and its\n"
+            "versions, for example: xmq describe-library ixml:data/csv\n");
         break;
     case XMQ_CLI_CMD_HELP:
         printf(
@@ -4753,6 +4760,8 @@ bool perform_command(XMQCliCommand *c, bool *no_more_data)
         return cmd_help(c);
     case XMQ_CLI_CMD_CHECK_LIBRARY:
     case XMQ_CLI_CMD_REFRESH_LIBRARY:
+    case XMQ_CLI_CMD_LIST_LIBRARY:
+    case XMQ_CLI_CMD_DESCRIBE_LIBRARY:
         // Handled in main before any input is read.
         return true;
     }
@@ -5000,14 +5009,28 @@ static bool refresh_library_file(const char *path, const char *sha)
     a file that is missing, or that differs and is older than the one on libxmq.org, is listed
     and with refresh downloaded into the download dir, where it is used before the installed
     library. A file that differs but is newer locally is listed and not touched. */
+/** Fetch library_url()/index.xmq into the download dir. A failed fetch keeps the previous one. */
+static bool fetch_library_index(char *index_file, size_t size)
+{
+    char url[1024], tmp[1100];
+    snprintf(index_file, size, "%s/library/index.xmq", download_dir());
+    snprintf(tmp, sizeof(tmp), "%s.download", index_file);
+    snprintf(url, sizeof(url), "%sindex.xmq", library_url());
+    char cmd[3000];
+    snprintf(cmd, sizeof(cmd), "curl -s --fail --create-dirs -o '%s' '%s'", tmp, url);
+    if (system(cmd) != 0 || rename(tmp, index_file) != 0)
+    {
+        remove(tmp);
+        return false;
+    }
+    return true;
+}
+
 static bool cmd_library(bool refresh)
 {
     char index_file[1024], url[1024];
-    snprintf(index_file, sizeof(index_file), "%s/library/index.xmq", download_dir());
     snprintf(url, sizeof(url), "%sindex.xmq", library_url());
-    char cmd[3000];
-    snprintf(cmd, sizeof(cmd), "curl -s --fail --create-dirs -o '%s' '%s'", index_file, url);
-    if (system(cmd) != 0)
+    if (!fetch_library_index(index_file, sizeof(index_file)))
     {
         fprintf(stderr, "xmq: could not fetch the library index %s\n", url);
         return false;
@@ -5091,6 +5114,191 @@ static bool cmd_library(bool refresh)
                num_refresh, num_refresh == 1 ? "file" : "files", num_newer, num_same);
     }
     return num_failed == 0;
+}
+
+/** The library index for list-library and describe-library: fetched from library_url(), else
+    the last fetched or the installed one. Prints when it was created. NULL if there is none. */
+static XMQDoc *load_library_index()
+{
+    char index_file[1024], url[1024];
+    snprintf(url, sizeof(url), "%sindex.xmq", library_url());
+    const char *from = url;
+    if (!fetch_library_index(index_file, sizeof(index_file)))
+    {
+        if (!find_library_file("index.xmq", "", index_file, sizeof(index_file)))
+        {
+            fprintf(stderr, "xmq: could not fetch the library index %s and there is no local one\n", url);
+            return NULL;
+        }
+        fprintf(stderr, "xmq: could not fetch the library index %s, using %s\n", url, index_file);
+        from = index_file;
+    }
+    XMQDoc *doc = xmqNewDoc().doc;
+    XMQNode *root = NULL;
+    if (xmqParseFile(doc, index_file, NULL, 0)) root = xml_dom_root_element(xmq_get_dom(doc));
+    if (!root || strcmp(xml_node_name(root), "library"))
+    {
+        fprintf(stderr, "xmq: could not read the library index %s\n", index_file);
+        xmqFreeDoc(doc);
+        return NULL;
+    }
+    const char *created = index_attr(root, "created");
+    char created_str[32] = "unknown";
+    if (created && parse_utc_time(created)) format_utc_time(parse_utc_time(created), created_str, sizeof(created_str));
+    printf("Library index %s created %s UTC\n", from, created_str);
+    return doc;
+}
+
+/** The library name of an index path: ixml:data/csv for data/csv.ixml, xsl:data/x for
+    data/x.xslq, else false. */
+static bool library_name_of(const char *path, char *out, size_t size)
+{
+    size_t n = strlen(path);
+    if (n > 5 && !strcmp(path+n-5, ".ixml")) snprintf(out, size, "ixml:%.*s", (int)(n-5), path);
+    else if (n > 5 && !strcmp(path+n-5, ".xslq")) snprintf(out, size, "xsl:%.*s", (int)(n-5), path);
+    else return false;
+    return true;
+}
+
+/** For ixml:data/csv_v2c the length of ixml:data/csv, the major 2 and the letter c (0 for
+    ixml:data/csv_v2). False if the name is not a versioned copy. */
+static bool split_versioned_name(const char *name, size_t *base_len, int *major, char *letter)
+{
+    const char *v = strrchr(name, '_');
+    if (!v || v[1] != 'v' || !isdigit((unsigned char)v[2])) return false;
+    const char *p = v+2;
+    int m = 0;
+    while (isdigit((unsigned char)*p)) m = m*10 + (*p++ - '0');
+    char l = 0;
+    if (*p >= 'a' && *p <= 'z') l = *p++;
+    if (*p) return false;
+    *base_len = v - name;
+    *major = m;
+    *letter = l;
+    return true;
+}
+
+typedef struct { int major; char letter; } LibraryVersion;
+
+static int compare_library_versions(const void *a, const void *b)
+{
+    const LibraryVersion *x = a, *y = b;
+    if (x->major != y->major) return y->major - x->major; // Latest major first.
+    return x->letter - y->letter;
+}
+
+/** The versions of the library name base, eg "v2abcd v1abc", from the copies in the index. */
+static void library_versions(XMQNode *root, const char *base, char *out, size_t size)
+{
+    LibraryVersion versions[256];
+    int num = 0;
+    for (XMQNode *e = xml_node_first_child(root); e && num < 256; e = xml_node_next(e))
+    {
+        if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
+        const char *path = index_attr(e, "path");
+        char name[1024];
+        size_t base_len;
+        int major;
+        char letter;
+        if (!path || !library_name_of(path, name, sizeof(name))) continue;
+        if (!split_versioned_name(name, &base_len, &major, &letter) || !letter) continue;
+        if (strlen(base) != base_len || strncmp(name, base, base_len)) continue;
+        versions[num].major = major;
+        versions[num].letter = letter;
+        num++;
+    }
+    qsort(versions, num, sizeof(LibraryVersion), compare_library_versions);
+    size_t len = 0;
+    out[0] = 0;
+    for (int i = 0; i < num && len + 16 < size; i++)
+    {
+        if (i == 0 || versions[i].major != versions[i-1].major)
+        {
+            len += snprintf(out+len, size-len, "%sv%d", i ? " " : "", versions[i].major);
+        }
+        out[len++] = versions[i].letter;
+        out[len] = 0;
+    }
+}
+
+/** xmq list-library: every grammar and transform with its versions, ixml:data/csv v2abcd v1abc */
+static bool cmd_list_library()
+{
+    XMQDoc *doc = load_library_index();
+    if (!doc) return false;
+    XMQNode *root = xml_dom_root_element(xmq_get_dom(doc));
+
+    int width = 0;
+    for (int pass = 0; pass < 2; pass++)
+    {
+        for (XMQNode *e = xml_node_first_child(root); e; e = xml_node_next(e))
+        {
+            if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
+            const char *path = index_attr(e, "path");
+            char name[1024], versions[1024];
+            size_t base_len;
+            int major;
+            char letter;
+            if (!path || !library_name_of(path, name, sizeof(name))) continue;
+            // The copies data/csv_v2c.ixml and data/csv_v2.ixml are listed as versions of data/csv.ixml.
+            if (split_versioned_name(name, &base_len, &major, &letter)) continue;
+            if (pass == 0)
+            {
+                if ((int)strlen(name) > width) width = strlen(name);
+                continue;
+            }
+            library_versions(root, name, versions, sizeof(versions));
+            printf("%-*s  %s\n", width, name, versions[0] ? versions : "(no version)");
+        }
+    }
+    xmqFreeDoc(doc);
+    return true;
+}
+
+/** xmq describe-library ixml:data/csv: the description (the first comment) and the versions. */
+static bool cmd_describe_library(const char *name)
+{
+    if (!name)
+    {
+        fprintf(stderr, "Usage: xmq describe-library <ixml:name|xsl:name>\n");
+        return false;
+    }
+    XMQDoc *doc = load_library_index();
+    if (!doc) return false;
+    XMQNode *root = xml_dom_root_element(xmq_get_dom(doc));
+
+    XMQNode *found = NULL;
+    char found_name[1024];
+    for (XMQNode *e = xml_node_first_child(root); e && !found; e = xml_node_next(e))
+    {
+        if (xml_node_kind(e) != XML_DOM_ELEMENT || strcmp(xml_node_name(e), "file")) continue;
+        const char *path = index_attr(e, "path");
+        if (!path || !library_name_of(path, found_name, sizeof(found_name))) continue;
+        // Without ixml: or xsl: either.
+        const char *short_name = strchr(found_name, ':') + 1;
+        if (!strcmp(found_name, name) || !strcmp(short_name, name)) found = e;
+    }
+    if (!found)
+    {
+        fprintf(stderr, "xmq: %s is not in the library, see xmq list-library\n", name);
+        xmqFreeDoc(doc);
+        return false;
+    }
+    const char *version = index_attr(found, "version");
+    const char *description = index_attr(found, "description");
+    printf("\n%s%s%s\n", found_name, version ? " v" : "", version ? version : "");
+    if (description) printf("\n%s\n", description);
+
+    char base[1024], versions[1024];
+    size_t base_len;
+    int major;
+    char letter;
+    snprintf(base, sizeof(base), "%s", found_name);
+    if (split_versioned_name(found_name, &base_len, &major, &letter)) base[base_len] = 0;
+    library_versions(root, base, versions, sizeof(versions));
+    if (versions[0]) printf("\nVersions of %s: %s\n", base, versions);
+    xmqFreeDoc(doc);
+    return true;
 }
 
 bool load_xslt(XMQCliCommand *command, const char *arg)
@@ -5811,6 +6019,14 @@ int main(int argc, const char **argv)
     {
         // These need no input.
         int rc = cmd_library(load_command->next->cmd == XMQ_CLI_CMD_REFRESH_LIBRARY) ? 0 : 1;
+        free_all_cli_commands(load_command);
+        return rc;
+    }
+    if (load_command->next && (load_command->next->cmd == XMQ_CLI_CMD_LIST_LIBRARY ||
+                               load_command->next->cmd == XMQ_CLI_CMD_DESCRIBE_LIBRARY))
+    {
+        int rc = (load_command->next->cmd == XMQ_CLI_CMD_LIST_LIBRARY ? cmd_list_library() :
+                  cmd_describe_library(load_command->next->library_name)) ? 0 : 1;
         free_all_cli_commands(load_command);
         return rc;
     }

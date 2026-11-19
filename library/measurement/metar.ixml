@@ -1,7 +1,7 @@
 {
-    v1.0.1 Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
+    v1a A grammar for parsing METAR weather reports.
 
-    A grammar for parsing METAR weather reports.
+    Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
     Example reports:
     METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="

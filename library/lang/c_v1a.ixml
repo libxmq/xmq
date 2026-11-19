@@ -1,0 +1,681 @@
+{ v1a A C grammar written in IXML by Fredrik Öhrström 2024.
+
+Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+as well as the ixml engine: alternatives that share a long prefix are left
+factored and the dangling else is bound with !kw_else, so that most decisions
+need a short lookahead. Lists are flat, one element per item.
+
+In general we place whitespace ws at the end of each token.
+Except for the first rule, where we need to accept leading white space.
+No rule may start with ws, otherwise whitespace can be split ambiguously.
+
+
+The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
+The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+
+Tokens use the not operator ! to implement maximal munch, e.g. an
+IDENTIFIER cannot be followed by another identifier character (!idchar) and
+the token + cannot be followed by + or =. Keywords cannot be identifiers
+(!keyword).
+
+C is not context free, since x * y; is either a declaration or
+an expression depending on whether x is a typedef name. Some heuristics
+are used to reduce such ambiguities:
+  - Declaration specifiers can contain at most one typedef name (type_identifier).
+  - A parenthesized declarator must start with a pointer and be
+    followed by a function or array suffix, e.g. (*fp)(int).
+  - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+    since (x)+1 is then parsed as an expression. A function call has a cost
+    so (T)(x) is a cast and not a call of (T).
+  - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+  - An expression statement has a cost, so T *p; in a block is a declaration.
+  - The dangling else binds to the closest if, using !kw_else. }
+
+translation_unit = ws, external_declaration*.
+
+-ws = (-[Zs;#a;#d;#9] | -line_marker)*.
+-line_marker = -'#', -~[#a]*, -#a.
+
+{ Constants }
+
+CONSTANT = (-decimal, -int_suffix | -hexadecimal, -int_suffix | -float, -float_suffix),
+           !numchar, ws.
+-numchar = ['A'-'Z';'a'-'z';'0'-'9';'_';'.'].
+-decimal = ['0'-'9']+.
+-hexadecimal = '0', ['xX'], ['0'-'9';'a'-'f';'A'-'F']+.
+-int_suffix = ['uUlL']*.
+-float = ['0'-'9']+, '.', ['0'-'9']*, exponent?
+       | '.', ['0'-'9']+, exponent?
+       | ['0'-'9']+, exponent.
+-exponent = ['eE'], ['+-']?, ['0'-'9']+.
+-float_suffix = ['fFlL']?.
+
+CHAR_LITERAL = -"'", (~["'\";#a] | -escape), -"'", ws.
+STRING_LITERAL = -'"', (~['"\';#a] | -escape)*, -'"', ws.
+-escape = '\', ( ['"?\abfnrtv';"'"]
+               | 'x', ['0'-'9';'a'-'f';'A'-'F']+, !['0'-'9';'a'-'f';'A'-'F']
+               | ['0'-'7'], !['0'-'7']
+               | ['0'-'7'], ['0'-'7'], !['0'-'7']
+               | ['0'-'7'], ['0'-'7'], ['0'-'7']).
+
+{ Punctuators }
+
+-LEFT_PAR = -'(', ws.
+-RIGHT_PAR = -')', ws.
+-LEFT_BRACKET = -'[', ws.
+-RIGHT_BRACKET = -']', ws.
+-LEFT_BRACE = -'{', ws.
+-RIGHT_BRACE = -'}', ws.
+-COMMA = -',', ws.
+-SEMICOLON = -';', ws.
+-COLON = -':', ws.
+-QMARK = -'?', ws.
+-DOT = -'.', ws.
+ELLIPSIS = '...', ws.
+
+EQUAL_SIGN = '=', !'=', ws.
+ASTERISK = '*', !'=', ws.
+SLASH = '/', !'=', ws.
+PERCENT = '%', !'=', ws.
+PLUS = '+', !['+='], ws.
+MINUS = '-', !['-=>'], ws.
+AMPERSAND = '&', !['&='], ws.
+PIPE = '|', !['|='], ws.
+HAT = '^', !'=', ws.
+EXCLAMATION = '!', !'=', ws.
+NEGATION = '~', ws.
+L_OP = '<', !['<='], ws.
+G_OP = '>', !['>='], ws.
+LEFT_OP = '<<', !'=', ws.
+RIGHT_OP = '>>', !'=', ws.
+LE_OP = '<=', ws.
+GE_OP = '>=', ws.
+EQ_OP = '==', ws.
+NE_OP = '!=', ws.
+AND_OP = '&&', ws.
+OR_OP = '||', ws.
+INC_OP = '++', ws.
+DEC_OP = '--', ws.
+ARROW = '->', ws.
+RIGHT_ASSIGN = '>>=', ws.
+LEFT_ASSIGN = '<<=', ws.
+ADD_ASSIGN = '+=', ws.
+SUB_ASSIGN = '-=', ws.
+MUL_ASSIGN = '*=', ws.
+DIV_ASSIGN = '/=', ws.
+MOD_ASSIGN = '%=', ws.
+AND_ASSIGN = '&=', ws.
+XOR_ASSIGN = '^=', ws.
+OR_ASSIGN = '|=', ws.
+
+{ Expressions }
+
+primary_expression
+	= IDENTIFIER
+	| CONSTANT
+	| STRING_LITERAL+
+	| CHAR_LITERAL
+	| LEFT_PAR, expression, RIGHT_PAR
+	| LEFT_PAR, compound_statement, RIGHT_PAR
+	| BUILTIN_VA_ARG, LEFT_PAR, assignment_expression, COMMA, type_name, RIGHT_PAR
+	| BUILTIN_OFFSETOF, LEFT_PAR, type_name, COMMA, member_designator, RIGHT_PAR
+	| generic_selection
+	.
+
+{ C11 _Generic, eg glibc 2.43 implements the const preserving strchr with it. }
+generic_selection = GENERIC, LEFT_PAR, assignment_expression, COMMA, generic_association++COMMA, RIGHT_PAR.
+generic_association = (type_name | DEFAULT), COLON, assignment_expression.
+
+member_designator = IDENTIFIER | member_designator, DOT, IDENTIFIER | member_designator, LEFT_BRACKET, expression, RIGHT_BRACKET.
+
+postfix_expression
+	= -primary_expression
+	| postfix_expression, LEFT_BRACKET, expression, RIGHT_BRACKET
+	| postfix_expression, call_arguments
+	| postfix_expression, DOT, IDENTIFIER
+	| postfix_expression, ARROW, IDENTIFIER
+	| postfix_expression, INC_OP
+	| postfix_expression, DEC_OP
+	| LEFT_PAR, type_name, RIGHT_PAR, LEFT_BRACE, initializer_list, COMMA?, RIGHT_BRACE
+	.
+
+{ A function call has the cost =< so that (T)(x) is a cast of (x) to the
+  typedef name T, rather than a call of the parenthesized function (T). }
+-call_arguments =< LEFT_PAR, argument_expression_list?, RIGHT_PAR.
+
+{ Lists are flat, one element per item, not left nested. }
+argument_expression_list = assignment_expression++COMMA.
+
+unary_expression
+	= -postfix_expression
+	| INC_OP, unary_expression
+	| DEC_OP, unary_expression
+	| unary_operator, cast_expression
+	| SIZEOF, unary_expression
+	| SIZEOF, LEFT_PAR, complex_type_name, RIGHT_PAR
+	| (ALIGNOF | GNU_ALIGNOF), LEFT_PAR, type_name, RIGHT_PAR
+	| EXTENSION, cast_expression
+	.
+
+unary_operator
+	= AMPERSAND
+	| ASTERISK
+	| PLUS
+	| MINUS
+	| NEGATION
+	| EXCLAMATION
+	.
+
+cast_expression
+	= -unary_expression
+	| LEFT_PAR, complex_type_name, RIGHT_PAR, cast_expression
+	| LEFT_PAR, lone_type_name, RIGHT_PAR, !['+';'-';'*';'&'], cast_expression
+	.
+
+multiplicative_expression
+	= -cast_expression
+	| multiplicative_expression, (ASTERISK | SLASH | PERCENT), cast_expression
+	.
+
+additive_expression
+	= -multiplicative_expression
+	| additive_expression, (PLUS | MINUS), multiplicative_expression
+	.
+
+shift_expression
+	= -additive_expression
+	| shift_expression, (LEFT_OP | RIGHT_OP), additive_expression
+	.
+
+relational_expression
+	= -shift_expression
+	| relational_expression, (L_OP | G_OP | LE_OP | GE_OP), shift_expression
+	.
+
+equality_expression
+	= -relational_expression
+	| equality_expression, (EQ_OP | NE_OP), relational_expression
+	.
+
+and_expression
+	= -equality_expression
+	| and_expression, AMPERSAND, equality_expression
+	.
+
+exclusive_or_expression
+	= -and_expression
+	| exclusive_or_expression, HAT, and_expression
+	.
+
+or_expression
+	= -exclusive_or_expression
+	| or_expression, PIPE, exclusive_or_expression
+	.
+
+logical_and_expression
+	= -or_expression
+	| logical_and_expression, AND_OP, or_expression
+	.
+
+logical_or_expression
+	= -logical_and_expression
+	| logical_or_expression, OR_OP, logical_and_expression
+	.
+
+{ Left factored, so that the parser decides at the ? instead of looking ahead
+  over the whole condition. In the tree the condition comes first, then the
+  expression of the true branch and the conditional_expression of the false branch. }
+conditional_expression
+	= -logical_or_expression, (QMARK, expression, COLON, conditional_expression)?
+	.
+
+{ Left factored like conditional_expression. The left hand side is any
+  conditional expression (a compiler checks that it is an lvalue), in the tree
+  it is what comes before the assignment_operator. }
+assignment_expression
+	= -conditional_expression, (assignment_operator, assignment_expression)?
+	.
+
+assignment_operator
+	= EQUAL_SIGN
+	| MUL_ASSIGN
+	| DIV_ASSIGN
+	| MOD_ASSIGN
+	| ADD_ASSIGN
+	| SUB_ASSIGN
+	| LEFT_ASSIGN
+	| RIGHT_ASSIGN
+	| AND_ASSIGN
+	| XOR_ASSIGN
+	| OR_ASSIGN
+	.
+
+expression
+	= -assignment_expression
+	| expression, COMMA, assignment_expression
+	.
+
+constant_expression
+	= conditional_expression
+	.
+
+{ Declarations }
+
+{ The declarators can only be left out after a struct, union or enum,
+  e.g. struct Foo; or struct Foo { int x; };. The two kinds of specifiers
+  are decided at the first type specifier, not after a long struct body. }
+declaration
+	= ^specifiers_tagged>declaration_specifiers, init_declarator_list?, SEMICOLON
+	| ^specifiers_plain>declaration_specifiers, init_declarator_list, SEMICOLON
+	.
+
+{ At most one typedef name, struct, union or enum, or a sequence of basic type keywords. }
+declaration_specifiers
+	= -specifiers_tagged
+	| -specifiers_plain
+	.
+
+-specifiers_tagged
+	= declaration_specifier_other*, (struct_or_union_specifier | enum_specifier), declaration_specifier_other*
+	.
+
+-specifiers_plain
+	= declaration_specifier_other*, ( (type_identifier | typeof_specifier), declaration_specifier_other*
+	                                | type_specifier_basic, (type_specifier_basic | declaration_specifier_other)* )
+	.
+
+-declaration_specifier_other
+	= storage_class_specifier
+	| type_qualifier
+	| function_specifier
+	| attribute
+	| EXTENSION
+	.
+
+storage_class_specifier
+	= TYPEDEF
+	| EXTERN
+	| STATIC
+	| AUTO
+	| REGISTER
+	| THREAD
+	.
+
+function_specifier
+	= INLINE
+	| GNU_INLINE
+	| NORETURN
+	.
+
+type_specifier_basic
+	= VOID
+	| CHAR
+	| SHORT
+	| INT
+	| LONG
+	| FLOAT
+	| DOUBLE
+	| SIGNED
+	| GNU_SIGNED
+	| UNSIGNED
+	| BOOL
+	| COMPLEX
+	| INT128
+	.
+
+-type_specifier_single
+	= struct_or_union_specifier
+	| enum_specifier
+	| type_identifier
+	| typeof_specifier
+	.
+
+type_identifier = IDENTIFIER.
+
+typeof_specifier = TYPEOF, LEFT_PAR, (expression | complex_type_name), RIGHT_PAR.
+
+type_qualifier
+	= CONST
+	| GNU_CONST
+	| VOLATILE
+	| GNU_VOLATILE
+	| RESTRICT
+	| GNU_RESTRICT
+	.
+
+init_declarator_list = init_declarator++COMMA.
+
+init_declarator
+	= declarator, asm?, attribute*, (EQUAL_SIGN, initializer)?
+	.
+
+struct_or_union_specifier
+	= struct_or_union, attribute*, (IDENTIFIER, struct_body? | struct_body)
+	.
+-struct_body = LEFT_BRACE, struct_declaration*, RIGHT_BRACE, attribute*.
+
+struct_or_union
+	= STRUCT
+	| UNION
+	.
+
+{ The declarators can only be left out for an anonymous struct or union member. }
+struct_declaration
+	= ^qualifiers_tagged>specifier_qualifier_list, struct_declarator_list?, SEMICOLON
+	| ^qualifiers_plain>specifier_qualifier_list, struct_declarator_list, SEMICOLON
+	.
+
+-specifier_qualifier_other = type_qualifier | attribute | EXTENSION.
+
+-qualifiers_tagged
+	= specifier_qualifier_other*, (struct_or_union_specifier | enum_specifier), specifier_qualifier_other*
+	.
+
+-qualifiers_plain
+	= specifier_qualifier_other*, ( (type_identifier | typeof_specifier), specifier_qualifier_other*
+	                              | type_specifier_basic, (type_specifier_basic | specifier_qualifier_other)* )
+	.
+
+struct_declarator_list = struct_declarator++COMMA.
+
+struct_declarator
+	= declarator, (COLON, constant_expression)?, attribute*
+	| COLON, constant_expression, attribute*
+	.
+
+enum_specifier
+	= ENUM, attribute*, (IDENTIFIER, enum_body? | enum_body)
+	.
+-enum_body = LEFT_BRACE, enumerator_list, COMMA?, RIGHT_BRACE.
+
+enumerator_list = enumerator++COMMA.
+
+enumerator
+	= IDENTIFIER, attribute*, (EQUAL_SIGN, constant_expression)?
+	.
+
+declarator
+	= pointer, direct_declarator
+	| -direct_declarator
+	.
+
+direct_declarator
+	= IDENTIFIER
+	| LEFT_PAR, attribute*, pointer, direct_declarator, RIGHT_PAR, declarator_suffix
+	| direct_declarator, declarator_suffix
+	.
+
+-declarator_suffix
+	= array_suffix
+	| function_suffix
+	.
+
+array_suffix = LEFT_BRACKET, (type_qualifier | STATIC)*, assignment_expression?, RIGHT_BRACKET.
+function_suffix = LEFT_PAR, parameter_type_list?, RIGHT_PAR.
+
+pointer = (ASTERISK, (type_qualifier | attribute)*)+.
+
+attribute = ATTRIBUTE, attrpar, ws.
+asm = ASM, attrpar, ws.
+attrpar = -"(", (-achar | -attrpar)*, -")".
+-achar = ~["()"].
+
+parameter_type_list
+	= parameter_list, (COMMA, ELLIPSIS)?
+	.
+
+parameter_list = parameter_declaration++COMMA.
+
+parameter_declaration
+	= declaration_specifiers, declarator, attribute*
+	| declaration_specifiers, abstract_declarator
+	| declaration_specifiers
+	.
+
+{ A type name that is just a typedef name, e.g. (T) is ambiguous with (x). }
+lone_type_name = type_identifier.
+
+{ The cost =< makes an expression win over a type name, e.g. sizeof(a[0])
+  is sizeof of an array element, not of an array type with the typedef a. }
+complex_type_name
+	=< specifier_qualifier_other+, type_specifier_single, specifier_qualifier_other*, abstract_declarator?
+	| (struct_or_union_specifier | enum_specifier | typeof_specifier), specifier_qualifier_other*, abstract_declarator?
+	| type_identifier, specifier_qualifier_other+, abstract_declarator?
+	| type_identifier, abstract_declarator
+	| specifier_qualifier_other*, type_specifier_basic, (type_specifier_basic | specifier_qualifier_other)*, abstract_declarator?
+	.
+
+type_name = -lone_type_name | -complex_type_name.
+
+abstract_declarator
+	= pointer
+	| pointer?, direct_abstract_declarator
+	.
+
+direct_abstract_declarator
+	= LEFT_PAR, abstract_declarator, RIGHT_PAR
+	| direct_abstract_declarator?, declarator_suffix
+	.
+
+initializer
+	= assignment_expression
+	| LEFT_BRACE, RIGHT_BRACE
+	| LEFT_BRACE, initializer_list, COMMA?, RIGHT_BRACE
+	.
+
+initializer_list = (designation?, initializer)++COMMA.
+
+designation = designator+, EQUAL_SIGN.
+designator = LEFT_BRACKET, constant_expression, RIGHT_BRACKET | DOT, IDENTIFIER.
+
+{ Statements }
+
+statement
+	= labeled_statement
+	| compound_statement
+	| expression_statement
+	| selection_statement
+	| iteration_statement
+	| jump_statement
+	.
+
+-label
+	= IDENTIFIER, COLON
+	| CASE, constant_expression, COLON
+	| DEFAULT, COLON
+	.
+
+labeled_statement = label, statement.
+
+{ The dangling else binds to the closest if: the alternative without else
+  cannot be followed by the keyword else (but by an identifier like elsewhere). }
+selection_statement
+	= IF, LEFT_PAR, expression, RIGHT_PAR, statement, (ELSE, statement | !kw_else)
+	| SWITCH, LEFT_PAR, expression, RIGHT_PAR, statement
+	.
+-kw_else = 'else', ~['A'-'Z';'a'-'z';'0'-'9';'_'].
+
+-loop_head
+	= WHILE, LEFT_PAR, expression, RIGHT_PAR
+	| FOR, LEFT_PAR, (expression_statement | declaration), expression?, SEMICOLON, expression?, RIGHT_PAR
+	.
+
+iteration_statement
+	= loop_head, statement
+	| DO, statement, WHILE, LEFT_PAR, expression, RIGHT_PAR, SEMICOLON
+	.
+
+compound_statement
+	= LEFT_BRACE, block_item*, RIGHT_BRACE
+	.
+
+-block_item
+	= declaration
+	| statement
+	.
+
+{ An expression statement has the cost 1 (=<). Inside a block T *p; is either
+  a declaration or a multiplication of T with p. A C compiler knows if T is a
+  typedef name, a grammar does not. The minimal cost parse is selected, i.e.
+  the declaration wins, since a statement that only multiplies is useless. }
+expression_statement
+	=< SEMICOLON
+	| expression, SEMICOLON
+	.
+
+jump_statement
+	= GOTO, IDENTIFIER, SEMICOLON
+	| CONTINUE, SEMICOLON
+	| BREAK, SEMICOLON
+	| RETURN, expression?, SEMICOLON
+	.
+
+{ Top level }
+
+external_declaration
+	= function_definition
+	| declaration
+	| SEMICOLON
+	.
+
+function_definition
+	= declaration_specifiers, declarator, attribute*, compound_statement
+	.
+
+{ Generated part start: keywords and identifiers. }
+
+{ An identifier is not a keyword, eg integer, done and if_x are identifiers.
+  Each keyword alternative is followed by a char that cannot continue an identifier. }
+IDENTIFIER = !keyword, -idstart, -idchar*, !idchar, ws.
+-keyword = 'auto', notid
+         | 'break', notid
+         | 'case', notid
+         | 'char', notid
+         | 'const', notid
+         | 'continue', notid
+         | 'default', notid
+         | 'do', notid
+         | 'double', notid
+         | 'else', notid
+         | 'enum', notid
+         | 'extern', notid
+         | 'float', notid
+         | 'for', notid
+         | 'goto', notid
+         | 'if', notid
+         | 'inline', notid
+         | 'int', notid
+         | 'long', notid
+         | 'register', notid
+         | 'restrict', notid
+         | 'return', notid
+         | 'short', notid
+         | 'signed', notid
+         | 'sizeof', notid
+         | 'static', notid
+         | 'struct', notid
+         | 'switch', notid
+         | 'typedef', notid
+         | 'union', notid
+         | 'unsigned', notid
+         | 'void', notid
+         | 'volatile', notid
+         | 'while', notid
+         | '_Bool', notid
+         | '_Complex', notid
+         | '_Noreturn', notid
+         | '_Alignof', notid
+         | '_Generic', notid
+         | '__attribute__', notid
+         | '__extension__', notid
+         | '__asm__', notid
+         | '__restrict', notid
+         | '__inline', notid
+         | '__const', notid
+         | '__signed__', notid
+         | '__volatile__', notid
+         | '__typeof__', notid
+         | '__typeof', notid
+         | '__alignof__', notid
+         | '__int128', notid
+         | '__thread', notid
+         | '__builtin_va_arg', notid
+         | '__builtin_offsetof', notid.
+-notid = ~['A'-'Z';'a'-'z';'0'-'9';'_'].
+-idstart = ['A'-'Z';'a'-'z';'_'].
+-idchar = ['A'-'Z';'a'-'z';'0'-'9';'_'].
+
+AUTO = 'auto', !idchar, ws.
+BREAK = 'break', !idchar, ws.
+CASE = 'case', !idchar, ws.
+CHAR = 'char', !idchar, ws.
+CONST = 'const', !idchar, ws.
+CONTINUE = 'continue', !idchar, ws.
+DEFAULT = 'default', !idchar, ws.
+DO = 'do', !idchar, ws.
+DOUBLE = 'double', !idchar, ws.
+ELSE = 'else', !idchar, ws.
+ENUM = 'enum', !idchar, ws.
+EXTERN = 'extern', !idchar, ws.
+FLOAT = 'float', !idchar, ws.
+FOR = 'for', !idchar, ws.
+GOTO = 'goto', !idchar, ws.
+IF = 'if', !idchar, ws.
+INLINE = 'inline', !idchar, ws.
+INT = 'int', !idchar, ws.
+LONG = 'long', !idchar, ws.
+REGISTER = 'register', !idchar, ws.
+RESTRICT = 'restrict', !idchar, ws.
+RETURN = 'return', !idchar, ws.
+SHORT = 'short', !idchar, ws.
+SIGNED = 'signed', !idchar, ws.
+SIZEOF = 'sizeof', !idchar, ws.
+STATIC = 'static', !idchar, ws.
+STRUCT = 'struct', !idchar, ws.
+SWITCH = 'switch', !idchar, ws.
+TYPEDEF = 'typedef', !idchar, ws.
+UNION = 'union', !idchar, ws.
+UNSIGNED = 'unsigned', !idchar, ws.
+VOID = 'void', !idchar, ws.
+VOLATILE = 'volatile', !idchar, ws.
+WHILE = 'while', !idchar, ws.
+BOOL = '_Bool', !idchar, ws.
+COMPLEX = '_Complex', !idchar, ws.
+NORETURN = '_Noreturn', !idchar, ws.
+ALIGNOF = '_Alignof', !idchar, ws.
+GENERIC = '_Generic', !idchar, ws.
+ATTRIBUTE = '__attribute__', !idchar, ws.
+EXTENSION = '__extension__', !idchar, ws.
+ASM = '__asm__', !idchar, ws.
+GNU_RESTRICT = '__restrict', !idchar, ws.
+GNU_INLINE = '__inline', !idchar, ws.
+GNU_CONST = '__const', !idchar, ws.
+GNU_SIGNED = '__signed__', !idchar, ws.
+GNU_VOLATILE = '__volatile__', !idchar, ws.
+TYPEOF = ('__typeof__' | '__typeof'), !idchar, ws.
+GNU_ALIGNOF = '__alignof__', !idchar, ws.
+INT128 = '__int128', !idchar, ws.
+THREAD = '__thread', !idchar, ws.
+BUILTIN_VA_ARG = '__builtin_va_arg', !idchar, ws.
+BUILTIN_OFFSETOF = '__builtin_offsetof', !idchar, ws.
+{ Generated part end. }

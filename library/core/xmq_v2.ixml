@@ -1,0 +1,144 @@
+{ v2a The xmq language in ixml.
+  by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+  Rewritten with the not operator ! and greedy tokens, so that the grammar
+  has a single parse and works with the LL(*) parser generator. A greedy
+  token ends with !c where c is a rule that matches one character, eg
+  name = ..., -namechar*, !namechar.
+
+  The parse tree is turned into the xml dom of the xmq document by xmq.xslq:
+
+      xmq xmq.ixml input.xmq transform xmq.xslq
+
+  gives the same document as xmq input.xmq. The tree:
+
+      xmq { node* }
+      node = element(name) { attributes? children? }
+           | keyvalue(name) { attributes? value }
+           | quote | entity | comment { part+ } | line_comment
+           | doctype { value } | pi(name) { value } | xml
+      attributes { attr(name) { value? }* }
+      children { node* }
+      value = text | quote | entity | compound { (quote | entity)* }
+
+  Quotes, comments and texts keep their raw content (without the quote
+  chars and comment markers), the incidental indentation is removed by
+  xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
+  eg nbsp or #10. }
+
+xmq = ws, (-node, ws)*.
+
+node = element | keyvalue | quote | entity | comment | line_comment | doctype | pi | xml.
+
+{ An element with optional attributes and an optional body. }
+element = @name, (ws, attributes)?, (ws, children)?.
+children = -'{', ws, (-node, ws)*, -'}'.
+
+{ A key value: an element with a value. }
+keyvalue = @name, (ws, attributes)?, ws, -'=', ws, -value.
+
+attributes = -'(', ws, (attr, ws)*, -')'.
+attr = @name, (ws, -'=', ws, -value)?.
+
+value = text | quote | entity | compound.
+compound = -'(', ws, ((quote | entity), ws)*, -')'.
+
+{ Names start with a letter or _ and are greedy. A : separates a namespace prefix. }
+name = ['a'-'z'; 'A'-'Z'; '_'], -namechar*, !namechar.
+-namechar = ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'; '#'].
+
+{ A text value runs to whitespace or one of ( ) { } ' ". It cannot start with
+  & = // or /* }
+text = !'//', !'/*', ~['&'; '='; ' '; #9; #a; #d; #a0; #2000-#2003; '('; ')'; '{'; '}'; "'"; '"'],
+       safe*, !safe.
+-safe = ~[' '; #9; #a; #d; #a0; #2000-#2003; '('; ')'; '{'; '}'; "'"; '"'].
+
+{ An entity &name; or &#10; The ; can be left out if the name is only lower case hex digits. }
+entity = -'&', -namechar*, -';'
+       | -'&', ['0'-'9'; 'a'-'f']+, !namechar, !';'.
+
+{ A quote starts and ends with the same number of quote chars ' or " (two is
+  the empty quote). Inside, runs of fewer quote chars are content. }
+quote = -sq | -dq.
+-sq = -"''", !"'"
+    | -sq1
+    | -sq3
+    | -sq4
+    | -sq5
+    | -sq6
+    | -sq7
+    | -sq8
+    | -sq9.
+-sq1 = -"'", !"'", (~["'"])*, -"'", !"'".
+-sq3 = -"'''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"])*, -"'''", !"'".
+-sq4 = -"''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"])*, -"''''", !"'".
+-sq5 = -"'''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"] | "''''", ~["'"])*, -"'''''", !"'".
+-sq6 = -"''''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"] | "''''", ~["'"] | "'''''", ~["'"])*, -"''''''", !"'".
+-sq7 = -"'''''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"] | "''''", ~["'"] | "'''''", ~["'"] | "''''''", ~["'"])*, -"'''''''", !"'".
+-sq8 = -"''''''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"] | "''''", ~["'"] | "'''''", ~["'"] | "''''''", ~["'"] | "'''''''", ~["'"])*, -"''''''''", !"'".
+-sq9 = -"'''''''''", !"'", (~["'"] | "'", ~["'"] | "''", ~["'"] | "'''", ~["'"] | "''''", ~["'"] | "'''''", ~["'"] | "''''''", ~["'"] | "'''''''", ~["'"] | "''''''''", ~["'"])*, -"'''''''''", !"'".
+-dq = -'""', !'"'
+    | -dq1
+    | -dq3
+    | -dq4
+    | -dq5
+    | -dq6
+    | -dq7
+    | -dq8
+    | -dq9.
+-dq1 = -'"', !'"', (~['"'])*, -'"', !'"'.
+-dq3 = -'"""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'])*, -'"""', !'"'.
+-dq4 = -'""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'])*, -'""""', !'"'.
+-dq5 = -'"""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'])*, -'"""""', !'"'.
+-dq6 = -'""""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'] | '"""""', ~['"'])*, -'""""""', !'"'.
+-dq7 = -'"""""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'] | '"""""', ~['"'] | '""""""', ~['"'])*, -'"""""""', !'"'.
+-dq8 = -'""""""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'] | '"""""', ~['"'] | '""""""', ~['"'] | '"""""""', ~['"'])*, -'""""""""', !'"'.
+-dq9 = -'"""""""""', !'"', (~['"'] | '"', ~['"'] | '""', ~['"'] | '"""', ~['"'] | '""""', ~['"'] | '"""""', ~['"'] | '""""""', ~['"'] | '"""""""', ~['"'] | '""""""""', ~['"'])*, -'"""""""""', !'"'.
+
+{ A comment // to the end of the line, or /* */ with any number of slashes,
+  //* *// etc, where */* continues the comment with a new part. The * after
+  the closing */ decides the continuation, so it needs one char lookahead. }
+line_comment = -'//', -lcrest, (-#a | !~[]).
+{ The run of slashes after // must not be followed by a *, that is a /* comment. }
+-lcrest = '/', -lcrest | !['/*'], ~[#a]*.
+comment = -c1
+        | -c2
+        | -c3
+        | -c4
+        | -c5
+        | -c6.
+-c1 = -'/*', p1, -'*/', (-'*', p1, -'*/')*, !'/'.
+p1>part = (~['*'] | '*', !'/')*.
+-c2 = -'//*', p2, -'*//', (-'*', p2, -'*//')*, !'/'.
+p2>part = (~['*'] | '*', !'//')*.
+-c3 = -'///*', p3, -'*///', (-'*', p3, -'*///')*, !'/'.
+p3>part = (~['*'] | '*', !'///')*.
+-c4 = -'////*', p4, -'*////', (-'*', p4, -'*////')*, !'/'.
+p4>part = (~['*'] | '*', !'////')*.
+-c5 = -'/////*', p5, -'*/////', (-'*', p5, -'*/////')*, !'/'.
+p5>part = (~['*'] | '*', !'/////')*.
+-c6 = -'//////*', p6, -'*//////', (-'*', p6, -'*//////')*, !'/'.
+p6>part = (~['*'] | '*', !'//////')*.
+
+{ The !DOCTYPE and processing instructions ?name = value }
+doctype = -'!DOCTYPE', ws, -'=', ws, -value.
+pi = -'?', @piname>name, ws, -'=', ws, -value.
+piname = -namechar+, !namechar.
+
+{ An embedded xml fragment, the text is the raw xml. }
+xml = xelement.
+-xelement = '<', xname, xattr*, xs, ('/>' | '>', xcontent*, '</', xname, xs, '>').
+-xattr = xs, xname, xs, '=', xs, ('"', ~['"']*, '"' | "'", ~["'"]*, "'").
+-xcontent = ~['<']+, !~['<'] | xelement | xcomment | xcdata | xpi.
+-xcomment = '<!--', (~['-'] | '-', ~['-'])*, '-->'.
+-xcdata = '<![CDATA[', (~[']'] | ']', ~[']'] | ']]', ~['>'])*, ']]>'.
+-xpi = '<?', (~['?'] | '?', ~['>'])*, '?>'.
+-xname = ['a'-'z'; 'A'-'Z'; '_'; ':'], xnamechar*, !xnamechar.
+-xnamechar = ['a'-'z'; 'A'-'Z'; '0'-'9'; '-'; '_'; '.'; ':'].
+-xs = xschar*, !xschar.
+-xschar = [' '; #9; #a; #d].
+
+{ Whitespace between tokens is greedy. A tab is not xmq whitespace. }
+-ws = (-wsstart, -wschar*)?, !wsstart.
+-wsstart = -[' '; #a; #d].
+-wschar = -[' '; #a; #d; #a0; #2000-#2003].

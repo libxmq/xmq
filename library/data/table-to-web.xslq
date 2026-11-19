@@ -1,3 +1,6 @@
+// v1a Render a table/tr/td document (eg from ixml:data/csv) as a web page.
+// by Fredrik Öhrström spdx: CC0-1.0
+
 xsl:stylesheet(version   = 1.0
                xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {

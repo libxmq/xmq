@@ -1,4 +1,4 @@
-/* v2.0.0 Build the xmq document from the parse tree of xmq.ixml.
+/* v2a Build the xmq document from the parse tree of xmq.ixml.
    by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
        xmq xmq.ixml input.xmq transform xmq.xslq

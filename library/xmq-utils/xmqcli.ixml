@@ -1,4 +1,4 @@
-{ v2.0.0 The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+{ v2a The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
 
   The command line arguments (argv) are joined into a single line, which is
   parsed with this grammar. The line starts with xmq, then every argument
@@ -82,10 +82,10 @@ name0 = 'to-xmq' | 'to-xml' | 'to-htmq' | 'to-html' | 'to-json' | 'to-yaml'
       | 'tokenize' | 'no-output' | 'print' | 'page' | 'pa' | 'browse' | 'br'
       | 'statistics' | 'heu' | 'quote-c' | 'unquote-c'
       | 'substitute-char-entities' | 'expand-entities'
-      | 'check-library' | 'refresh-library'.
+      | 'check-library' | 'refresh-library' | 'list-library'.
 name1 = 'add' | 'add-root' | 'delete' | 'delete-entity' | 'select'
       | 'for-each' | 'transform' | 'validate' | 'save-to' | 'replace'
-      | 'substitute-entity'.
+      | 'substitute-entity' | 'describe-library'.
 name2 = 'replace-entity'.
 load = 'load'.
 xsl = 'xsl'.

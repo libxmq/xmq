@@ -1,3 +1,4 @@
+{ v1a Render an ixml grammar as html, from the ixml specification. }
 {version 2022-06-07}
          ixml:  +"<HTML>", HEADER, +"<BODY><PRE>", s, prolog?, rule++RS, s, +"</PRE></BODY></HTML>".
 

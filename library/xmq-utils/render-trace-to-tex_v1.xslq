@@ -1,0 +1,472 @@
+// v1a Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
+//   xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
+//   pdflatex trace.tex; pdflatex trace.tex
+// (longtable needs two runs to line up the columns)
+// Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+// matched below the tokens, and the rule with the dot is in the last column. The items
+// used in the tree are dark green. Then the tree building: every row adds a node, top-down,
+// and a column shows the latest node added over it. The new node is dark green and its
+// parent orange. When a choice is made by cost the alternatives are all built, the ones
+// not chosen are grey, and the last row shows the chosen tree.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method = text)
+
+    // The nodes of the chosen tree, to find the items used in the tree.
+    xsl:key(name  = used
+            match = "/trace/tree/node[not(@chosen = 'no')]"
+            use   = "concat(@id, ',', @from, ',', @to)")
+
+    // The number of tokens, the input and the end of input ω.
+    xsl:variable(name   = n
+                 select = 'count(/trace/input/token)')
+
+    xsl:template(match = /)
+    {
+        '\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[landscape,margin=1cm]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{longtable}
+\definecolor{predicted}{RGB}{255,255,224}
+\definecolor{partial}{RGB}{255,165,0}
+\definecolor{complete}{RGB}{200,230,200}
+\definecolor{used}{RGB}{46,158,46}
+\definecolor{blocked}{RGB}{255,0,0}
+\definecolor{token}{RGB}{0,255,255}
+\definecolor{treenode}{RGB}{200,230,200}
+\definecolor{treenew}{RGB}{46,158,46}
+\definecolor{treeparent}{RGB}{255,165,0}
+\definecolor{treerejected}{RGB}{238,238,238}
+\definecolor{treenewrejected}{RGB}{136,136,136}
+\definecolor{treeparentrejected}{RGB}{245,214,160}
+\begin{document}
+\ttfamily\small
+\section*{ixml trace, '
+        xsl:value-of(select = 'count(/trace/steps/item)')
+        ' Earley items by '
+        xsl:value-of(select = /trace/@engine)
+        ', '
+        xsl:value-of(select = 'count(/trace/tree/node)')
+        ' used in the tree}'
+        xsl:text { &#10; }
+'\subsection*{Grammar}
+\begin{tabular}{l}'
+        xsl:text { &#10; }
+xsl:for-each(select = /trace/grammar/rule)
+        {
+            xsl:call-template(name = rule-text)
+            {
+                xsl:with-param(name   = rhs
+                               select = @rhs)
+            }
+            ' \\'
+        xsl:text { &#10; }
+}
+        '\end{tabular}
+\subsection*{Earley items}
+\begin{longtable}{|'
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "'c|'")
+            xsl:with-param(name   = count
+                           select = $n)
+        }
+        'l|}
+\hline'
+        xsl:text { &#10; }
+xsl:for-each(select = /trace/input/token)
+        {
+            '\cellcolor{token}'
+            xsl:call-template(name = tex)
+            {
+                xsl:with-param(name   = text
+                               select = .)
+            }
+            ' & '
+        }
+        'rule \\ \hline
+\endhead'
+        xsl:text { &#10; }
+xsl:apply-templates(select = /trace/steps/*)
+        '\end{longtable}
+\subsection*{Tree building}
+\begin{longtable}{|'
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "'c|'")
+            xsl:with-param(name   = count
+                           select = $n)
+        }
+        'l|}
+\hline'
+        xsl:text { &#10; }
+xsl:for-each(select = /trace/input/token)
+        {
+            '\cellcolor{token}'
+            xsl:call-template(name = tex)
+            {
+                xsl:with-param(name   = text
+                               select = .)
+            }
+            ' & '
+        }
+        'node \\ \hline
+\endhead'
+        xsl:text { &#10; }
+xsl:apply-templates(select = /trace/tree/node)
+        xsl:if(test = /trace/tree/node)
+        {
+            '\hline'
+            xsl:text { &#10; }
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = 'count(/trace/tree/node)')
+                xsl:with-param(name   = c
+                               select = 0)
+                xsl:with-param(name   = chosen
+                               select = 'true()')
+            }
+            'the chosen tree \\ \hline'
+            xsl:text { &#10; }
+        }
+        '\end{longtable}
+\end{document}'
+    xsl:text { &#10; }
+}
+
+    // The parser reads the token at pos: mark its column.
+    xsl:template(match = read)
+    {
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "' & '")
+            xsl:with-param(name   = count
+                           select = @pos)
+        }
+        '\cellcolor{lightgray}$\downarrow$'
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "' & '")
+            xsl:with-param(name   = count
+                           select = '$n - @pos')
+        }
+        'read '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = '/trace/input/token[@pos = current()/@pos]')
+        }
+        ' \\ \hline'
+    xsl:text { &#10; }
+}
+
+    // An Earley item: the cell spans from..to (at least one column).
+    xsl:template(match = item)
+    {
+        xsl:variable(name = span)
+        {
+            xsl:choose {
+                xsl:when(test = '@to > @from')
+                {
+                    xsl:value-of(select = '@to - @from')
+                }
+                xsl:otherwise = 1
+            }
+        }
+        // Do not go beyond the last column (the C start rule ends after ω).
+        xsl:variable(name = width)
+        {
+            xsl:choose {
+                xsl:when(test = '@from + $span > $n')
+                {
+                    xsl:value-of(select = '$n - @from')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = $span)
+                }
+            }
+        }
+        xsl:variable(name = color)
+        {
+            xsl:choose {
+                xsl:when(test = "@state = 'complete' and count(key('used', concat(@id, ',', @from, ',', @to))) > 0") = used
+                xsl:otherwise {
+                    xsl:value-of(select = @state)
+                }
+            }
+        }
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "' & '")
+            xsl:with-param(name   = count
+                           select = @from)
+        }
+        '\multicolumn{'
+        xsl:value-of(select = $width)
+        // Only the first column has a left border of its own.
+        xsl:choose {
+            xsl:when(test = '@from = 0') = '}{|c|}{\cellcolor{'
+            xsl:otherwise = '}{c|}{\cellcolor{'
+        }
+        xsl:value-of(select = $color)
+        '}'
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rule)
+        }
+        '}'
+        xsl:call-template(name = repeat)
+        {
+            xsl:with-param(name   = text
+                           select = "' & '")
+            xsl:with-param(name   = count
+                           select = '$n - @from - $width + 1')
+        }
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rule)
+        }
+        ' $\rightarrow$ '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @matched)
+        }
+        xsl:if(test = "@state != 'complete'") = ' $\cdot$ '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @expected)
+        }
+        ' {\tiny (d'
+        xsl:value-of(select = @id)
+        ','
+        xsl:value-of(select = @from)
+        '-'
+        xsl:value-of(select = @to)
+        ')} \\ \hline'
+    xsl:text { &#10; }
+}
+
+    // A node added to the tree: the frontier after adding it, and the node.
+    xsl:template(match = node)
+    {
+        xsl:call-template(name = frontier)
+        {
+            xsl:with-param(name   = k
+                           select = 'count(preceding-sibling::node) + 1')
+            xsl:with-param(name   = c
+                           select = 0)
+        }
+        xsl:value-of(select = @step)
+        '. '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rule)
+        }
+        ' $\rightarrow$ '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @rhs)
+        }
+        ' {\tiny (d'
+        xsl:value-of(select = @id)
+        ','
+        xsl:value-of(select = @from)
+        '-'
+        xsl:value-of(select = @to)
+        ') in '
+        xsl:value-of(select = @parent)
+        xsl:if(test = @cost)
+        {
+            ' cost '
+            xsl:value-of(select = @cost)
+        }
+        '}'
+        xsl:if(test = "@chosen = 'no'") = ' \textcolor{red}{not chosen}'
+        ' \\ \hline'
+    xsl:text { &#10; }
+}
+
+    // The cells from column c after the first k nodes were added, each followed by &:
+    // a column shows the latest node over it, the columns with the same node are one cell.
+    // With chosen, the deepest node of the final tree over it (a node can be used by
+    // another parent than the one it was built for, so it is not always the latest).
+    xsl:template(name = frontier)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:param(name   = chosen
+                  select = 'false()')
+        xsl:if(test = '$c < $n')
+        {
+            xsl:variable(name   = x
+                         select = "/trace/tree/node[position() <= $k][@from <= $c and @to > $c][not($chosen) or (@chosen = 'yes' and not(@step = /trace/tree/node[@chosen = 'yes'][@from <= $c and @to > $c]/@tree-parent))][last()]")
+            xsl:variable(name = end)
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = 'generate-id($x)')
+                    xsl:with-param(name   = chosen
+                                   select = $chosen)
+                }
+            }
+            '\multicolumn{'
+            xsl:value-of(select = '$end - $c')
+            xsl:choose {
+                xsl:when(test = '$c = 0') = '}{|c|}{'
+                xsl:otherwise = '}{c|}{'
+            }
+            xsl:if(test = $x)
+            {
+                '\cellcolor{'
+                xsl:choose {
+                    xsl:when(test = 'generate-id($x) = generate-id(current())') = treenew
+                    xsl:when(test = '$x/@step = current()/@parent') = treeparent
+                    xsl:when(test = "$x/@chosen = 'no'") = treerejected
+                    xsl:otherwise = treenode
+                }
+                xsl:if(test = "$x/@chosen = 'no' and (generate-id($x) = generate-id(current()) or $x/@step = current()/@parent)") = rejected
+                '}'
+                xsl:choose {
+                    xsl:when(test = "$x/@chosen = 'no' and generate-id($x) = generate-id(current())") = '\color{white}'
+                    xsl:when(test = "$x/@chosen = 'no'") = '\color{gray}'
+                }
+                xsl:call-template(name = tex)
+                {
+                    xsl:with-param(name   = text
+                                   select = $x/@rule)
+                }
+            }
+            '} & '
+            xsl:call-template(name = frontier)
+            {
+                xsl:with-param(name   = k
+                               select = $k)
+                xsl:with-param(name   = c
+                               select = $end)
+                xsl:with-param(name   = chosen
+                               select = $chosen)
+            }
+        }
+    }
+
+    // The first column from c that does not show the node with the id.
+    xsl:template(name = run-end)
+    {
+        xsl:param(name = k)
+        xsl:param(name = c)
+        xsl:param(name = id)
+        xsl:param(name = chosen)
+        xsl:choose {
+            xsl:when(test = "$c < $n and generate-id(/trace/tree/node[position() <= $k][@from <= $c and @to > $c][not($chosen) or (@chosen = 'yes' and not(@step = /trace/tree/node[@chosen = 'yes'][@from <= $c and @to > $c]/@tree-parent))][last()]) = $id")
+            {
+                xsl:call-template(name = run-end)
+                {
+                    xsl:with-param(name   = k
+                                   select = $k)
+                    xsl:with-param(name   = c
+                                   select = '$c + 1')
+                    xsl:with-param(name   = id
+                                   select = $id)
+                    xsl:with-param(name   = chosen
+                                   select = $chosen)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $c)
+            }
+        }
+    }
+
+    // A grammar rule: name → rhs.
+    xsl:template(name = rule-text)
+    {
+        xsl:param(name = rhs)
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = @name)
+        }
+        ' $\rightarrow$ '
+        xsl:call-template(name = tex)
+        {
+            xsl:with-param(name   = text
+                           select = $rhs)
+        }
+    }
+
+    // Write text count times.
+    xsl:template(name = repeat)
+    {
+        xsl:param(name = text)
+        xsl:param(name = count)
+        xsl:if(test = '$count > 0')
+        {
+            xsl:value-of(select = $text)
+            xsl:call-template(name = repeat)
+            {
+                xsl:with-param(name   = text
+                               select = $text)
+                xsl:with-param(name   = count
+                               select = '$count - 1')
+            }
+        }
+    }
+
+    // Write the text with the characters that are special in TeX escaped,
+    // one character at a time. ω (end of input) becomes $\omega$.
+    xsl:template(name = tex)
+    {
+        xsl:param(name = text)
+        xsl:if(test = "string-length($text) > 0")
+        {
+            xsl:variable(name   = c
+                         select = 'substring($text, 1, 1)')
+            xsl:choose {
+                xsl:when(test = '$c = "\"') = '\textbackslash{}'
+                xsl:when(test = "$c = '{'") = '\{'
+                xsl:when(test = "$c = '}'") = '\}'
+                xsl:when(test = "$c = '$'") = '\$'
+                xsl:when(test = "$c = '&'") = '\&'
+                xsl:when(test = "$c = '#'") = '\#'
+                xsl:when(test = "$c = '%'") = '\%'
+                xsl:when(test = "$c = '_'") = '\_'
+                xsl:when(test = "$c = '^'") = '\^{}'
+                xsl:when(test = "$c = '~'") = '\~{}'
+                xsl:when(test = "$c = 'ω'") = '$\omega$'
+                xsl:when(test = "$c = '·'") = '$\cdot$'
+                xsl:when(test = "$c = '|'") = '\textbar{}'
+                xsl:when(test = "$c = '<'") = '\textless{}'
+                xsl:when(test = "$c = '>'") = '\textgreater{}'
+                xsl:when(test = '''$c = "'"''') = '\textquotesingle{}'
+                xsl:otherwise {
+                    xsl:value-of(select = $c)
+                }
+            }
+            xsl:call-template(name = tex)
+            {
+                xsl:with-param(name   = text
+                               select = 'substring($text, 2)')
+            }
+        }
+    }
+}

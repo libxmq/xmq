@@ -1,4 +1,4 @@
-// Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
+// v1a Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
 // with ansi colors:
 //   xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
 //   xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text | less -RS

@@ -1,3 +1,5 @@
+{ v1a Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts). }
+
 parse = line++-#a, -#a?.
 -line = ixml-gr|
         ixml-nt|

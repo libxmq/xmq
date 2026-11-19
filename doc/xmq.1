@@ -167,11 +167,6 @@ Print the parse progress on stderr when parsing with an ixml grammar.
 Output the xml representation of the ixml parse result (debugging aid).
 
 .TP
-.BR \-\-list-library
-Print the library index (ixml grammars and xsl transforms) available
-from https://libxmq.org/library.
-
-.TP
 .BR \-\-trace[=filter] ", " \-\-debug[=filter] ", " \-\-verbose[=filter]
 Enable and optionally filter trace/debug/verbose diagnostic output.
 
@@ -476,6 +471,28 @@ Download the library files that check-library lists into
 $HOME/.local/share/xmq/library, where they are used before the library installed
 with xmq. So after \fBmake install\fP the library can be refreshed without
 reinstalling xmq. A download is only kept if its sha256 is the one in the index.
+.TP
+.BR "list-library"
+List the ixml grammars and xsl transforms of the library with their versions,
+for example \fBixml:data/csv  v2abcd v1abc\fP, and when the library index was
+created. The index is fetched from https://libxmq.org/library, or if that fails
+the last fetched or the installed index is used.
+
+A version is a major number and a minor letter (a=1 ... z=26) in the first
+comment of the grammar or transform, eg \fBv2c\fP is 2.3.0. A new minor
+version is compatible, a new major version is not. \fBixml:data/csv\fP is
+the latest version, \fBixml:data/csv_v2\fP the latest 2.x and
+\fBixml:data/csv_v2c\fP exactly 2c. A published version never changes, so a
+script can lock a major version:
+
+.nf
+    xmq ixml:data/csv data.csv xsl:work/report_v2 to-text > report.txt
+.fi
+
+.TP
+.BR "describe-library" " ixml:name|xsl:name"
+Print the description (the first comment) of a library grammar or transform,
+its version, the available versions and when the library index was created.
 .SH "OPTIONS FOR to-*/render-*/tokenize"
 The options in this section are \fIper-command\fP options: they must be
 placed after the command they apply to, and each is only accepted by the

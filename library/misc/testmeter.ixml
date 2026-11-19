@@ -1,3 +1,5 @@
+{ v1a Parse a wireless mbus telegram from a test meter, the example telegram follows. }
+
 {4E4401062020202205077A4B0040852F2F0FE566B99390000087C0B24B732679FF75350010FCFB00004155594265086A0043B4017301DFF600006AE70000BFD5000051BC0000A0F56C2602FFFF1B1B}
 
 telegram = len, c, dll-mfct, dll-id, dll-version, dll-type, tpl-ci, tpl-acc, tpl-sts, tpl-cfg, '2F2F0F', intro, parts, outro, ws.

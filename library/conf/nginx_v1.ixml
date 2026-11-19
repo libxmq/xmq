@@ -1,0 +1,13 @@
+{ v1a Parse nginx config files. }
+{ by Fredrik Öhrström (c) 2025 spdx: MIT }
+
+nginx = ws, (directive|comment|context)+.
+-ws = -[' ';#9;#d;#a]*.
+comment = -'#', ~[#a]*, -#a, ws.
+directive = @key, -' '+, -value, -';', ws.
+context = @key, -' '+, (args, ws)?, -'{', -nginx, -'}', ws.
+@args = argchar, (~['{;']*, argchar)?.
+-argchar = ~['{; '; #9; #d; #a].
+key = [Ll;'_']+.
+{ A value cannot contain an open brace, that starts a context. }
+value = ~[' {'], ~[';{']*.

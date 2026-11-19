@@ -1,4 +1,4 @@
-{ v1.0.1 Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT }
+{ v1a Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT }
 
 nix = ws, (module | set), ws.
 module = parameters, ws, -':', ws, expression.

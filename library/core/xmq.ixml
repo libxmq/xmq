@@ -1,4 +1,4 @@
-{ v2.0.0 The xmq language in ixml.
+{ v2a The xmq language in ixml.
   by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
   Rewritten with the not operator ! and greedy tokens, so that the grammar
