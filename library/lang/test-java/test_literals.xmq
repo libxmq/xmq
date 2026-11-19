@@ -1,45 +1,271 @@
 compilation_unit {
-    INTEGER_LITERAL        = 0
-    INTEGER_LITERAL        = 7
-    INTEGER_LITERAL        = 0123
-    INTEGER_LITERAL        = 1_000_000
-    INTEGER_LITERAL        = 0x1F
-    INTEGER_LITERAL        = 0xCAFE_babeL
-    INTEGER_LITERAL        = 0b1010_1010
-    INTEGER_LITERAL        = 42L
-    INTEGER_LITERAL        = 9l
-    FLOATING_POINT_LITERAL = 1.0
-    FLOATING_POINT_LITERAL = 1.
-    FLOATING_POINT_LITERAL = .5
-    FLOATING_POINT_LITERAL = 1e10
-    FLOATING_POINT_LITERAL = 1E-5
-    FLOATING_POINT_LITERAL = 2.5e+3f
-    FLOATING_POINT_LITERAL = 3f
-    FLOATING_POINT_LITERAL = 4d
-    FLOATING_POINT_LITERAL = 6.02E23D
-    FLOATING_POINT_LITERAL = 0x1p3
-    FLOATING_POINT_LITERAL = 0x1.8p-2
-    FLOATING_POINT_LITERAL = 0x.8P1f
-    CHARACTER_LITERAL      = a
-    CHARACTER_LITERAL      = \n
-    CHARACTER_LITERAL      = "\'"
-    CHARACTER_LITERAL      = '"'
-    CHARACTER_LITERAL      = \\
-    CHARACTER_LITERAL      = \u0041
-    CHARACTER_LITERAL      = \uu00e5
-    CHARACTER_LITERAL      = \0
-    CHARACTER_LITERAL      = \377
-    CHARACTER_LITERAL      = å
-    STRING_LITERAL
-    STRING_LITERAL = a
-    STRING_LITERAL = tab\there
-    STRING_LITERAL = 'quote\"s'
-    STRING_LITERAL = \u00e5\101\7\s
-    STRING_LITERAL = 'å ä ö €'
-    STRING_LITERAL = \\
-    STRING_LITERAL = 'a\\\"b'
-    TEXT_BLOCK     = '    Hello "world" and ""two"" quotes,
-                          a line continuation \
-                          and an escape \t.'
-    TEXT_BLOCK     = '    '
+    class(name = Literals)
+    {
+        body {
+            field {
+                type {
+                    primitive = int
+                }
+                variable(name = i)
+                {
+                    init
+                }
+                variable(name = j)
+                {
+                    init
+                }
+                variable(name = k)
+                {
+                    init
+                }
+                variable(name = l)
+                {
+                    init
+                }
+                variable(name = m)
+                {
+                    init
+                }
+                variable(name = n)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = long
+                }
+                variable(name = a)
+                {
+                    init
+                }
+                variable(name = b)
+                {
+                    init
+                }
+                variable(name = c)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = double
+                }
+                variable(name = d)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = char
+                }
+                variable(name = e)
+                {
+                    init
+                }
+                variable(name = f)
+                {
+                    init
+                }
+                variable(name = g)
+                {
+                    init
+                }
+                variable(name = h)
+                {
+                    init
+                }
+                variable(name = o)
+                {
+                    init
+                }
+                variable(name = p)
+                {
+                    init
+                }
+                variable(name = q)
+                {
+                    init
+                }
+                variable(name = r)
+                {
+                    init
+                }
+                variable(name = s)
+                {
+                    init
+                }
+                variable(name = t)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = char
+                }
+                variable(name = u)
+                {
+                    init
+                }
+                variable(name = v)
+                {
+                    init
+                }
+                variable(name = w)
+                {
+                    init
+                }
+                variable(name = x)
+                {
+                    init
+                }
+                variable(name = y)
+                {
+                    init
+                }
+                variable(name = z)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    name = String
+                }
+                variable(name = s1)
+                {
+                    init
+                }
+                variable(name = s2)
+                {
+                    init
+                }
+                variable(name = s3)
+                {
+                    init
+                }
+                variable(name = s4)
+                {
+                    init
+                }
+                variable(name = s5)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    name = String
+                }
+                variable(name = s6)
+                {
+                    init
+                }
+                variable(name = s7)
+                {
+                    init
+                }
+                variable(name = s8)
+                {
+                    init
+                }
+                variable(name = s9)
+                {
+                    init
+                }
+                variable(name = s10)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    name = String
+                }
+                variable(name = t1)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    name = String
+                }
+                variable(name = t2)
+                {
+                    init
+                }
+                variable(name = t3)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = int
+                    dim
+                }
+                variable(name = array)
+                {
+                    init
+                }
+                variable(name = matrix)
+                {
+                    dim
+                    init
+                }
+            }
+            field {
+                type {
+                    name = Runnable
+                }
+                variable(name = run)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    primitive = boolean
+                }
+                variable(name = less)
+                {
+                    init
+                }
+                variable(name = both)
+                {
+                    init
+                }
+            }
+            field {
+                type {
+                    name = Map
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                        type {
+                            name = List
+                            type_arguments {
+                                type {
+                                    name = Integer
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = map)
+                {
+                    init
+                }
+                variable(name = other)
+                {
+                    init
+                }
+            }
+        }
+    }
 }

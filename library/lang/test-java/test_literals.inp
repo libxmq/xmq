@@ -1,10 +1,22 @@
-0 7 0123 1_000_000 0x1F 0xCAFE_babeL 0b1010_1010 42L 9l
-1.0 1. .5 1e10 1E-5 2.5e+3f 3f 4d 6.02E23D 0x1p3 0x1.8p-2 0x.8P1f
-'a' '\n' '\'' '"' '\\' '\u0041' '\uu00e5' '\0' '\377' 'å'
-"" "a" "tab\there" "quote\"s" "\u00e5\101\7\s" "å ä ö €" "\\" "a\\\"b"
-"""
-    Hello "world" and ""two"" quotes,
-    a line continuation \
-    and an escape \t."""
-"""
-    """
+// Literals in field initializers. Until step 5 they are skipped, the strings,
+// chars and text blocks contain { } ( ) ; , that must not end the init.
+class Literals
+{
+    int i = 0, j = 7, k = 0123, l = 1_000_000, m = 0x1F, n = 0b1010_1010;
+    long a = 0xCAFE_babeL, b = 42L, c = 9l;
+    double d = 1.0 + 1. + .5 + 1e10 + 1E-5 + 2.5e+3f + 3f + 4d + 6.02E23D + 0x1p3 + 0x1.8p-2 + 0x.8P1f;
+    char e = 'a', f = '\n', g = '\'', h = '"', o = '\\', p = '\u0041', q = '\uu00e5', r = '\0', s = '\377', t = 'å';
+    char u = '{', v = '}', w = ';', x = ',', y = '(', z = ')';
+    String s1 = "", s2 = "a", s3 = "tab\there", s4 = "quote\"s", s5 = "\u00e5\101\7\s";
+    String s6 = "å ä ö €", s7 = "\\", s8 = "a\\\"b", s9 = "{;,)", s10 = "// not a comment";
+    String t1 = """
+        Hello "world" and ""two"" quotes, { ; , }
+        a line continuation \
+        and an escape \t.""";
+    String t2 = """
+        """, t3 = /* a , comment ; */ "x";
+    int[] array = { 1, 2, 3 }, matrix[] = { { 1 }, { 2, 3 } };
+    Runnable run = () -> { int z = 1; };
+    boolean less = 1 < 2, both = 1 < 2 && 3 > 2;
+    Map<String, List<Integer>> map = new HashMap<String, List<Integer>>(), other = null;
+}

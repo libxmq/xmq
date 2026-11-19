@@ -59,15 +59,15 @@ compare()
     if [ -n "$JAR" ]
     then
         cls=P_$name
-        mkdir -p "$OUTPUT/java"
-        if ! "$XMQJ" generate-parser --java "$g" --class=$cls > "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jerr" \
+        mkdir -p "$OUTPUT/java_parsers"
+        if ! "$XMQJ" generate-parser --java "$g" --class=$cls > "$OUTPUT/java_parsers/$cls.java" 2> "$OUTPUT/$name.jerr" \
            && grep -q "runtime prediction" "$OUTPUT/$name.jerr"
         then
             # The Java generator does not support runtime prediction yet.
             [ -n "$VERBOSE" ] && echo "SKIP java (runtime prediction): $g"
             cls=""
-        elif [ ! -s "$OUTPUT/java/$cls.java" ] \
-           || ! javac -nowarn -d "$OUTPUT/java" -cp "$JAR" "$OUTPUT/java/$cls.java" 2> "$OUTPUT/$name.jcerr"
+        elif [ ! -s "$OUTPUT/java_parsers/$cls.java" ] \
+           || ! javac -nowarn -d "$OUTPUT/java_parsers" -cp "$JAR" "$OUTPUT/java_parsers/$cls.java" 2> "$OUTPUT/$name.jcerr"
         then
             echo "FAIL: generate or compile java $g"
             head -5 "$OUTPUT/$name.jerr" "$OUTPUT/$name.jcerr"
@@ -79,7 +79,7 @@ compare()
     do
         local expected=$("$PROG" "$g" "$input" 2>&1)
         check_one "$g" "$input" "$expected" C "$OUTPUT/$name"
-        [ -n "$cls" ] && check_one "$g" "$input" "$expected" Java java -cp "$OUTPUT/java:$JAR" $cls
+        [ -n "$cls" ] && check_one "$g" "$input" "$expected" Java java -cp "$OUTPUT/java_parsers:$JAR" $cls
     done
 }
 

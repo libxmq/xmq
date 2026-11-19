@@ -1,4 +1,0 @@
-a = b; a == b; a != b; !a; ~a; a ? b : c; a -> b; X::new; f(a, b...); @A
-a < b; a <= b; a << b; a <<= b; a > b; a >= b; a >> b; a >>> b; a >>= b; a >>>= b;
-List<List<Map<String, Integer>>> x; a++ + ++b; a-- - --b; a+=1; a-=1; a*=1; a/=1;
-a%=1; a&=1; a|=1; a^=1; a && b || c & d | e ^ f; a * b / c % d; a[0].b;

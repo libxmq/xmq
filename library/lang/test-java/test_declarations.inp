@@ -1,0 +1,76 @@
+package org.example.test;
+
+import java.util.List;
+import java.util.*;
+import static java.lang.Math.max;
+import static java.lang.Math.*;
+
+/** A class with generics, extends, implements and permits. */
+@SuppressWarnings({"unchecked", "rawtypes"})
+public abstract sealed class Shape<T extends Comparable<T> & java.io.Serializable, U>
+    extends Base<List<T>> implements Comparable<Shape<?, ?>>, Cloneable permits Circle, Square
+{
+    private static final int A = 1, B[] = { 1, 2 }, C;
+    protected Map<String, List<Integer>> map = new HashMap<String, List<Integer>>(), other;
+    transient volatile long[][] matrix;
+    java.util.Map.Entry<String, ? extends Number> entry;
+    Outer<String>.Inner<Integer> inner;
+    List<? super Integer> sink;
+    List<?> any;
+
+    static { init(); }
+    { count++; }
+
+    public Shape() { this(0); }
+    protected <V> Shape(V v, int... more) throws IllegalArgumentException, java.io.IOException { }
+
+    public abstract double area();
+    @Override public final String toString() { return "{" + '}' + "(;,"; }
+    <R extends T> R[] convert(final @Deprecated List<? extends R> list, R[] array)[] { return null; }
+    synchronized native void nothing();
+    static strictfp int[] numbers() { return new int[] { 1, 2, 3 }; }
+
+    final class Inner { }
+    static interface Visitor<R> { R visit(Shape<?, ?> s); }
+    enum Color { RED, GREEN }
+    record Pair<A, B>(A first, B second) { }
+}
+
+non-sealed class Square extends Shape<Integer, String> { }
+
+interface Named extends Comparable<Named>, Cloneable
+{
+    String NAME = "named";
+    String name();
+    default String upper() { return name().toUpperCase(); }
+    static Named of(String n) { return () -> n; }
+    private void helper() { }
+}
+
+sealed interface Expr permits Num, Add { }
+
+enum Planet implements Named
+{
+    MERCURY(3.303e+23, 2.4397e6),
+    EARTH(5.976e+24, 6.37814e6) { @Override public String name() { return "earth"; } },
+    @Deprecated PLUTO(1.0, 1.0),
+    ;
+
+    private final double mass;
+    Planet(double mass, double radius) { this.mass = mass; }
+}
+
+enum Empty { }
+enum Trailing { A, B, }
+
+record Point(int x, @Deprecated int y, String... labels) implements Comparable<Point>
+{
+    static int count;
+    Point { if (x < 0) throw new IllegalArgumentException(); }
+    Point(int x) { this(x, 0); }
+    public int compareTo(Point o) { return Integer.compare(x, o.x); }
+}
+
+@interface_is_not_supported_but_this_is_an_annotation
+class Annotated { @A @B(1) @C(value = "x", other = { 1, 2 }) int field; }
+;

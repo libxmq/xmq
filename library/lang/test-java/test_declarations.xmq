@@ -1,0 +1,630 @@
+compilation_unit {
+    package       = org.example.test
+    import        = java.util.List
+    import        = java.util.*
+    static_import = java.lang.Math.max
+    static_import = java.lang.Math.*
+    class(name = Shape)
+    {
+        annotation {
+            name = SuppressWarnings
+            arguments
+        }
+        modifier = public
+        modifier = abstract
+        modifier = sealed
+        type_parameters {
+            type_parameter(name = T)
+            {
+                extends {
+                    type {
+                        name = Comparable
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                        }
+                    }
+                    type {
+                        name = java.io.Serializable
+                    }
+                }
+            }
+            type_parameter(name = U)
+        }
+        extends {
+            type {
+                name = Base
+                type_arguments {
+                    type {
+                        name = List
+                        type_arguments {
+                            type {
+                                name = T
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        implements {
+            type {
+                name = Comparable
+                type_arguments {
+                    type {
+                        name = Shape
+                        type_arguments {
+                            wildcard
+                            wildcard
+                        }
+                    }
+                }
+            }
+            type {
+                name = Cloneable
+            }
+        }
+        permits {
+            type {
+                name = Circle
+            }
+            type {
+                name = Square
+            }
+        }
+        body {
+            field {
+                modifier = private
+                modifier = static
+                modifier = final
+                type {
+                    primitive = int
+                }
+                variable(name = A)
+                {
+                    init
+                }
+                variable(name = B)
+                {
+                    dim
+                    init
+                }
+                variable(name = C)
+            }
+            field {
+                modifier = protected
+                type {
+                    name = Map
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                        type {
+                            name = List
+                            type_arguments {
+                                type {
+                                    name = Integer
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = map)
+                {
+                    init
+                }
+                variable(name = other)
+            }
+            field {
+                modifier = transient
+                modifier = volatile
+                type {
+                    primitive = long
+                    dim
+                    dim
+                }
+                variable(name = matrix)
+            }
+            field {
+                type {
+                    name = java.util.Map.Entry
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                        wildcard {
+                            extends {
+                                type {
+                                    name = Number
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = entry)
+            }
+            field {
+                type {
+                    name = Outer
+                    type_arguments {
+                        type {
+                            name = String
+                        }
+                    }
+                    name = Inner
+                    type_arguments {
+                        type {
+                            name = Integer
+                        }
+                    }
+                }
+                variable(name = inner)
+            }
+            field {
+                type {
+                    name = List
+                    type_arguments {
+                        wildcard {
+                            super {
+                                type {
+                                    name = Integer
+                                }
+                            }
+                        }
+                    }
+                }
+                variable(name = sink)
+            }
+            field {
+                type {
+                    name = List
+                    type_arguments {
+                        wildcard
+                    }
+                }
+                variable(name = any)
+            }
+            initializer {
+                static
+                block
+            }
+            initializer {
+                block
+            }
+            constructor(name = Shape)
+            {
+                modifier = public
+                block
+            }
+            constructor(name = Shape)
+            {
+                modifier = protected
+                type_parameters {
+                    type_parameter(name = V)
+                }
+                parameter(name = v)
+                {
+                    type {
+                        name = V
+                    }
+                }
+                parameter(name = more)
+                {
+                    type {
+                        primitive = int
+                    }
+                    varargs
+                }
+                throws {
+                    type {
+                        name = IllegalArgumentException
+                    }
+                    type {
+                        name = java.io.IOException
+                    }
+                }
+                block
+            }
+            method(name = area)
+            {
+                modifier = public
+                modifier = abstract
+                type {
+                    primitive = double
+                }
+            }
+            method(name = toString)
+            {
+                annotation {
+                    name = Override
+                }
+                modifier = public
+                modifier = final
+                type {
+                    name = String
+                }
+                block
+            }
+            method(name = convert)
+            {
+                type_parameters {
+                    type_parameter(name = R)
+                    {
+                        extends {
+                            type {
+                                name = T
+                            }
+                        }
+                    }
+                }
+                type {
+                    name = R
+                    dim
+                }
+                parameter(name = list)
+                {
+                    modifier = final
+                    annotation {
+                        name = Deprecated
+                    }
+                    type {
+                        name = List
+                        type_arguments {
+                            wildcard {
+                                extends {
+                                    type {
+                                        name = R
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                parameter(name = array)
+                {
+                    type {
+                        name = R
+                        dim
+                    }
+                }
+                dim
+                block
+            }
+            method(name = nothing)
+            {
+                modifier = synchronized
+                modifier = native
+                void
+            }
+            method(name = numbers)
+            {
+                modifier = static
+                modifier = strictfp
+                type {
+                    primitive = int
+                    dim
+                }
+                block
+            }
+            class(name = Inner)
+            {
+                modifier = final
+                body
+            }
+            interface(name = Visitor)
+            {
+                modifier = static
+                type_parameters {
+                    type_parameter(name = R)
+                }
+                body {
+                    method(name = visit)
+                    {
+                        type {
+                            name = R
+                        }
+                        parameter(name = s)
+                        {
+                            type {
+                                name = Shape
+                                type_arguments {
+                                    wildcard
+                                    wildcard
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            enum(name = Color)
+            {
+                body {
+                    constant(name = RED)
+                    constant(name = GREEN)
+                }
+            }
+            record(name = Pair)
+            {
+                type_parameters {
+                    type_parameter(name = A)
+                    type_parameter(name = B)
+                }
+                component(name = first)
+                {
+                    type {
+                        name = A
+                    }
+                }
+                component(name = second)
+                {
+                    type {
+                        name = B
+                    }
+                }
+                body
+            }
+        }
+    }
+    class(name = Square)
+    {
+        modifier = non-sealed
+        extends {
+            type {
+                name = Shape
+                type_arguments {
+                    type {
+                        name = Integer
+                    }
+                    type {
+                        name = String
+                    }
+                }
+            }
+        }
+        body
+    }
+    interface(name = Named)
+    {
+        extends {
+            type {
+                name = Comparable
+                type_arguments {
+                    type {
+                        name = Named
+                    }
+                }
+            }
+            type {
+                name = Cloneable
+            }
+        }
+        body {
+            field {
+                type {
+                    name = String
+                }
+                variable(name = NAME)
+                {
+                    init
+                }
+            }
+            method(name = name)
+            {
+                type {
+                    name = String
+                }
+            }
+            method(name = upper)
+            {
+                modifier = default
+                type {
+                    name = String
+                }
+                block
+            }
+            method(name = of)
+            {
+                modifier = static
+                type {
+                    name = Named
+                }
+                parameter(name = n)
+                {
+                    type {
+                        name = String
+                    }
+                }
+                block
+            }
+            method(name = helper)
+            {
+                modifier = private
+                void
+                block
+            }
+        }
+    }
+    interface(name = Expr)
+    {
+        modifier = sealed
+        permits {
+            type {
+                name = Num
+            }
+            type {
+                name = Add
+            }
+        }
+        body
+    }
+    enum(name = Planet)
+    {
+        implements {
+            type {
+                name = Named
+            }
+        }
+        body {
+            constant(name = MERCURY)
+            {
+                arguments
+            }
+            constant(name = EARTH)
+            {
+                arguments
+                body {
+                    method(name = name)
+                    {
+                        annotation {
+                            name = Override
+                        }
+                        modifier = public
+                        type {
+                            name = String
+                        }
+                        block
+                    }
+                }
+            }
+            constant(name = PLUTO)
+            {
+                annotation {
+                    name = Deprecated
+                }
+                arguments
+            }
+            field {
+                modifier = private
+                modifier = final
+                type {
+                    primitive = double
+                }
+                variable(name = mass)
+            }
+            constructor(name = Planet)
+            {
+                parameter(name = mass)
+                {
+                    type {
+                        primitive = double
+                    }
+                }
+                parameter(name = radius)
+                {
+                    type {
+                        primitive = double
+                    }
+                }
+                block
+            }
+        }
+    }
+    enum(name = Empty)
+    {
+        body
+    }
+    enum(name = Trailing)
+    {
+        body {
+            constant(name = A)
+            constant(name = B)
+        }
+    }
+    record(name = Point)
+    {
+        component(name = x)
+        {
+            type {
+                primitive = int
+            }
+        }
+        component(name = y)
+        {
+            annotation {
+                name = Deprecated
+            }
+            type {
+                primitive = int
+            }
+        }
+        component(name = labels)
+        {
+            type {
+                name = String
+            }
+            varargs
+        }
+        implements {
+            type {
+                name = Comparable
+                type_arguments {
+                    type {
+                        name = Point
+                    }
+                }
+            }
+        }
+        body {
+            field {
+                modifier = static
+                type {
+                    primitive = int
+                }
+                variable(name = count)
+            }
+            compact_constructor(name = Point)
+            {
+                block
+            }
+            constructor(name = Point)
+            {
+                parameter(name = x)
+                {
+                    type {
+                        primitive = int
+                    }
+                }
+                block
+            }
+            method(name = compareTo)
+            {
+                modifier = public
+                type {
+                    primitive = int
+                }
+                parameter(name = o)
+                {
+                    type {
+                        name = Point
+                    }
+                }
+                block
+            }
+        }
+    }
+    class(name = Annotated)
+    {
+        annotation {
+            name = interface_is_not_supported_but_this_is_an_annotation
+        }
+        body {
+            field {
+                annotation {
+                    name = A
+                }
+                annotation {
+                    name = B
+                    arguments
+                }
+                annotation {
+                    name = C
+                    arguments
+                }
+                type {
+                    primitive = int
+                }
+                variable(name = field)
+            }
+        }
+    }
+}

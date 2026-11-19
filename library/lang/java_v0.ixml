@@ -1,4 +1,4 @@
-{ v0a A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+{ v0b A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -44,15 +44,124 @@ as well as the ixml engine, in the style of library/lang/c.ixml:
   - Literals keep their source text without the quotes, escapes are not
     translated, e.g. "a\n" is STRING_LITERAL = a\n
 
-Not supported: annotation type declarations (@interface), module-info.java
+Not supported: annotation type declarations (@interface), annotations on
+types (eg List<@NonNull String>, annotations before a type are modifiers),
+module-info.java
 and the Java 21 features (record patterns, patterns in switch). }
 
-{ Step 1 of JAVA_PARSING.txt: a file is a sequence of tokens. This start rule
-  is replaced by the declarations in step 2. }
-compilation_unit = ws, token*.
--token = keyword_token | IDENTIFIER | literal | operator | separator.
--literal = INTEGER_LITERAL | FLOATING_POINT_LITERAL | CHARACTER_LITERAL
-         | STRING_LITERAL | TEXT_BLOCK.
+{ Step 2 of JAVA_PARSING.txt: the declarations. The bodies of methods,
+  constructors and initializers (block), the initializers of fields (init) and
+  the arguments of annotations and enum constants (arguments) are skipped as
+  balanced brackets, until the statements and expressions are written in
+  steps 4 and 5. }
+
+compilation_unit = ws, package?, import_declaration*, type_declaration*.
+
+package = -PACKAGE, -name, -SEMI.
+
+-import_declaration = import | static_import.
+import = -IMPORT, -name, on_demand?, -SEMI.
+static_import = -IMPORT, -STATIC, -name, on_demand?, -SEMI.
+-on_demand = dot, '*', ws.
+
+{ A dotted name, eg java.util.List, is a single name. It is maximal: it cannot
+  be followed by a dot and an identifier, so a.b.c is never split. }
+name = -IDENTIFIER, (dot, -IDENTIFIER)*, !name_dot.
+-dot = '.', !['0'-'9'; '.'], ws.
+-name_dot = '.', [L; Nl; Sc; Pc].
+
+{ Modifiers and annotations, in any order. sealed and non-sealed are
+  contextual keywords. }
+-modifiers = (modifier | annotation)*.
+modifier = ('public' | 'protected' | 'private' | 'abstract' | 'static' | 'final'
+           | 'transient' | 'volatile' | 'synchronized' | 'native' | 'strictfp'
+           | 'default' | 'sealed' | 'non-sealed'), !idchar, ws.
+annotation = -AT, name, arguments?.
+
+{ Types. var, yield, record, sealed and permits cannot be the name of a type. }
+type = (primitive | class_type), dim*.
+primitive = ('boolean' | 'byte' | 'short' | 'char' | 'int' | 'long' | 'float' | 'double'),
+            !idchar, ws.
+-class_type = !restricted, name, type_arguments?, (-DOT, name, type_arguments?)*.
+-restricted = 'var', notid | 'yield', notid | 'record', notid | 'sealed', notid
+            | 'permits', notid.
+dim = -LBRACKET, -RBRACKET.
+type_arguments = -lt, (type_argument++-COMMA)?, -gt.
+-type_argument = type | wildcard.
+wildcard = -'?', ws, (extends | super)?.
+super = -SUPER, type.
+
+type_parameters = -lt, type_parameter++-COMMA, -gt.
+type_parameter = annotation*, @IDENTIFIER>name, extends?.
+extends = -EXTENDS, type, (-amp, type)*.
+
+-lt = -'<', !['<='], ws.
+-gt = -'>', !gt_follow, ws.
+-amp = -'&', !['&='], ws.
+-assign = -'=', !'=', ws.
+
+{ Type declarations }
+
+-type_declaration = class | interface | enum | record | -SEMI.
+
+class = modifiers, -CLASS, @IDENTIFIER>name, type_parameters?, extends?, implements?,
+        permits?, body.
+interface = modifiers, -INTERFACE, @IDENTIFIER>name, type_parameters?,
+            ^interface_extends>extends?, permits?, body.
+enum = modifiers, -ENUM, @IDENTIFIER>name, implements?, ^enum_body>body.
+record = modifiers, -'record', !idchar, ws, @IDENTIFIER>name, type_parameters?,
+         -LPAREN, (component++-COMMA)?, -RPAREN, implements?, body.
+
+-interface_extends = -EXTENDS, type++-COMMA.
+implements = -IMPLEMENTS, type++-COMMA.
+permits = -'permits', !idchar, ws, type++-COMMA.
+
+body = -LBRACE, member*, -RBRACE.
+-enum_body = -LBRACE, (constant++-COMMA)?, -COMMA?, (-SEMI, member*)?, -RBRACE.
+constant = annotation*, @IDENTIFIER>name, arguments?, body?.
+component = annotation*, type, varargs?, @IDENTIFIER>name.
+
+{ Members }
+
+-member = field | method | constructor | compact_constructor | initializer
+        | class | interface | enum | record | -SEMI.
+
+field = modifiers, type, variable++-COMMA, -SEMI.
+variable = @IDENTIFIER>name, dim*, (-assign, init)?.
+
+method = modifiers, type_parameters?, (type | void), @IDENTIFIER>name,
+         -LPAREN, (parameter++-COMMA)?, -RPAREN, dim*, throws?, (block | -SEMI).
+void = -VOID.
+constructor = modifiers, type_parameters?, @IDENTIFIER>name,
+              -LPAREN, (parameter++-COMMA)?, -RPAREN, throws?, block.
+compact_constructor = modifiers, @IDENTIFIER>name, block.
+initializer = static?, block.
+static = -STATIC.
+
+parameter = modifiers, type, varargs?, @IDENTIFIER>name, dim*.
+varargs = -ELLIPSIS.
+throws = -THROWS, type++-COMMA.
+
+{ Skipped for now (step 2): balanced brackets, string, char and text block
+  literals and comments are skipped, all the characters are deleted. An init
+  ends before a , or ; that is not inside brackets. In an init < starts a group
+  that ends with > and can contain commas, eg new HashMap<String, Integer>().
+  A < that is a less than has a cost, so the group wins when both fit. }
+
+block = -'{', skip*, -'}', ws.
+arguments = -'(', skip*, -')', ws.
+init = init_item+.
+
+-skip = -~['{}()[]"/'; "'"] | skip_common.
+-init_item = -~[',;{}()[]"/<'; "'"] | init_lt | init_angle | skip_common.
+-init_lt =< -'<'.
+-init_angle = -'<', (-~['<>;{}()[]"/'; "'"] | init_angle)*, -'>'.
+-skip_common = -'/', !['/*'] | -comment | skip_literal
+             | -'{', skip*, -'}' | -'(', skip*, -')' | -'[', skip*, -']'.
+-skip_literal = -'"""', skip_text_block_char*, -'"""'
+              | !'"""', -'"', (-~['"\'; #a; #d] | -'\', -~[#a; #d])*, -'"'
+              | -"'", (-~["'\"; #a; #d] | -'\', -~[#a; #d], -['0'-'9'; 'a'-'f'; 'A'-'F'; 'u']*), -"'".
+-skip_text_block_char = -~['"\'] | -'"', !'""' | -'\', -~[].
 
 { Whitespace and comments. The byte order mark is whitespace too. }
 
@@ -115,8 +224,6 @@ TEXT_BLOCK = -'"""', -[' '; #9; #c]*, -#d?, -#a, (-text_block_char)*, -'"""', ws
 -AT = -'@', ws.
 -COLONCOLON = -'::', ws.
 
--separator = ^LPAREN | ^RPAREN | ^LBRACE | ^RBRACE | ^LBRACKET | ^RBRACKET | ^SEMI
-           | ^COMMA | ^DOT | ^ELLIPSIS | ^AT | ^COLONCOLON.
 
 { Operators }
 
@@ -158,11 +265,6 @@ SHL_ASSIGN = '<<=', ws.
 SHR_ASSIGN = '>>=', ws.
 USHR_ASSIGN = '>>>=', ws.
 
--operator = ASSIGN | GT | LT | NOT | TILDE | QUESTION | COLON | ARROW | EQ | GE | LE
-          | NE | AND | OR | INC | DEC | PLUS | MINUS | STAR | SLASH | BITAND | BITOR
-          | CARET | PERCENT | SHL | PLUS_ASSIGN | MINUS_ASSIGN | STAR_ASSIGN
-          | SLASH_ASSIGN | AND_ASSIGN | OR_ASSIGN | XOR_ASSIGN | MOD_ASSIGN
-          | SHL_ASSIGN | SHR_ASSIGN | USHR_ASSIGN.
 
 { Identifiers and keywords. An identifier is not a keyword, eg classes, done
   and if_x are identifiers. true, false, null and _ are reserved as well. }
@@ -227,66 +329,58 @@ IDENTIFIER = !keyword, idstart, idchar*, !idchar, ws.
          | '_', notid.
 -notid = ~[L; Nl; Sc; Pc; Nd; Mn; Mc].
 
-ABSTRACT = 'abstract', !idchar, ws.
-ASSERT = 'assert', !idchar, ws.
-BOOLEAN = 'boolean', !idchar, ws.
-BREAK = 'break', !idchar, ws.
-BYTE = 'byte', !idchar, ws.
-CASE = 'case', !idchar, ws.
-CATCH = 'catch', !idchar, ws.
-CHAR = 'char', !idchar, ws.
-CLASS = 'class', !idchar, ws.
-CONST = 'const', !idchar, ws.
-CONTINUE = 'continue', !idchar, ws.
-DEFAULT = 'default', !idchar, ws.
-DO = 'do', !idchar, ws.
-DOUBLE = 'double', !idchar, ws.
-ELSE = 'else', !idchar, ws.
-ENUM = 'enum', !idchar, ws.
-EXTENDS = 'extends', !idchar, ws.
-FINAL = 'final', !idchar, ws.
-FINALLY = 'finally', !idchar, ws.
-FLOAT = 'float', !idchar, ws.
-FOR = 'for', !idchar, ws.
-GOTO = 'goto', !idchar, ws.
-IF = 'if', !idchar, ws.
-IMPLEMENTS = 'implements', !idchar, ws.
-IMPORT = 'import', !idchar, ws.
-INSTANCEOF = 'instanceof', !idchar, ws.
-INT = 'int', !idchar, ws.
-INTERFACE = 'interface', !idchar, ws.
-LONG = 'long', !idchar, ws.
-NATIVE = 'native', !idchar, ws.
-NEW = 'new', !idchar, ws.
-PACKAGE = 'package', !idchar, ws.
-PRIVATE = 'private', !idchar, ws.
-PROTECTED = 'protected', !idchar, ws.
-PUBLIC = 'public', !idchar, ws.
-RETURN = 'return', !idchar, ws.
-SHORT = 'short', !idchar, ws.
-STATIC = 'static', !idchar, ws.
-STRICTFP = 'strictfp', !idchar, ws.
-SUPER = 'super', !idchar, ws.
-SWITCH = 'switch', !idchar, ws.
-SYNCHRONIZED = 'synchronized', !idchar, ws.
-THIS = 'this', !idchar, ws.
-THROW = 'throw', !idchar, ws.
-THROWS = 'throws', !idchar, ws.
-TRANSIENT = 'transient', !idchar, ws.
-TRY = 'try', !idchar, ws.
-VOID = 'void', !idchar, ws.
-VOLATILE = 'volatile', !idchar, ws.
-WHILE = 'while', !idchar, ws.
-TRUE = 'true', !idchar, ws.
-FALSE = 'false', !idchar, ws.
-NULL = 'null', !idchar, ws.
-UNDERSCORE = '_', !idchar, ws.
+-ABSTRACT = -'abstract', !idchar, ws.
+-ASSERT = -'assert', !idchar, ws.
+-BOOLEAN = -'boolean', !idchar, ws.
+-BREAK = -'break', !idchar, ws.
+-BYTE = -'byte', !idchar, ws.
+-CASE = -'case', !idchar, ws.
+-CATCH = -'catch', !idchar, ws.
+-CHAR = -'char', !idchar, ws.
+-CLASS = -'class', !idchar, ws.
+-CONST = -'const', !idchar, ws.
+-CONTINUE = -'continue', !idchar, ws.
+-DEFAULT = -'default', !idchar, ws.
+-DO = -'do', !idchar, ws.
+-DOUBLE = -'double', !idchar, ws.
+-ELSE = -'else', !idchar, ws.
+-ENUM = -'enum', !idchar, ws.
+-EXTENDS = -'extends', !idchar, ws.
+-FINAL = -'final', !idchar, ws.
+-FINALLY = -'finally', !idchar, ws.
+-FLOAT = -'float', !idchar, ws.
+-FOR = -'for', !idchar, ws.
+-GOTO = -'goto', !idchar, ws.
+-IF = -'if', !idchar, ws.
+-IMPLEMENTS = -'implements', !idchar, ws.
+-IMPORT = -'import', !idchar, ws.
+-INSTANCEOF = -'instanceof', !idchar, ws.
+-INT = -'int', !idchar, ws.
+-INTERFACE = -'interface', !idchar, ws.
+-LONG = -'long', !idchar, ws.
+-NATIVE = -'native', !idchar, ws.
+-NEW = -'new', !idchar, ws.
+-PACKAGE = -'package', !idchar, ws.
+-PRIVATE = -'private', !idchar, ws.
+-PROTECTED = -'protected', !idchar, ws.
+-PUBLIC = -'public', !idchar, ws.
+-RETURN = -'return', !idchar, ws.
+-SHORT = -'short', !idchar, ws.
+-STATIC = -'static', !idchar, ws.
+-STRICTFP = -'strictfp', !idchar, ws.
+-SUPER = -'super', !idchar, ws.
+-SWITCH = -'switch', !idchar, ws.
+-SYNCHRONIZED = -'synchronized', !idchar, ws.
+-THIS = -'this', !idchar, ws.
+-THROW = -'throw', !idchar, ws.
+-THROWS = -'throws', !idchar, ws.
+-TRANSIENT = -'transient', !idchar, ws.
+-TRY = -'try', !idchar, ws.
+-VOID = -'void', !idchar, ws.
+-VOLATILE = -'volatile', !idchar, ws.
+-WHILE = -'while', !idchar, ws.
+-TRUE = -'true', !idchar, ws.
+-FALSE = -'false', !idchar, ws.
+-NULL = -'null', !idchar, ws.
+-UNDERSCORE = -'_', !idchar, ws.
 
--keyword_token = ABSTRACT | ASSERT | BOOLEAN | BREAK | BYTE | CASE | CATCH
-               | CHAR | CLASS | CONST | CONTINUE | DEFAULT | DO | DOUBLE
-               | ELSE | ENUM | EXTENDS | FINAL | FINALLY | FLOAT | FOR
-               | GOTO | IF | IMPLEMENTS | IMPORT | INSTANCEOF | INT | INTERFACE
-               | LONG | NATIVE | NEW | PACKAGE | PRIVATE | PROTECTED | PUBLIC
-               | RETURN | SHORT | STATIC | STRICTFP | SUPER | SWITCH | SYNCHRONIZED
-               | THIS | THROW | THROWS | TRANSIENT | TRY | VOID | VOLATILE
-               | WHILE | TRUE | FALSE | NULL | UNDERSCORE.
