@@ -107,20 +107,22 @@ else
 SILENCER:=| (grep ERR | true)
 endif
 
+# Only the build for one host, eg make release winapi64 (a pattern with two % does not
+# match anywhere in the name, so findstring).
 ifeq (winapi64,$(findstring winapi64,$(MAKECMDGOALS)))
-BUILDDIRS:=$(filter %x86_64-w64-mingw32%,$(BUILDDIRS))
+BUILDDIRS:=$(foreach d,$(BUILDDIRS),$(if $(findstring x86_64-w64-mingw32,$(d)),$(d)))
 endif
 
 ifeq (linux64,$(findstring linux64,$(MAKECMDGOALS)))
-BUILDDIRS:=$(filter %x86_64-pc-linux-gnu%,$(BUILDDIRS))
+BUILDDIRS:=$(foreach d,$(BUILDDIRS),$(if $(findstring x86_64-pc-linux-gnu,$(d)),$(d)))
 endif
 
 ifeq (osx64,$(findstring osx64,$(MAKECMDGOALS)))
-BUILDDIRS:=$(filter %x86_64-apple-darwin%,$(BUILDDIRS))
+BUILDDIRS:=$(foreach d,$(BUILDDIRS),$(if $(findstring x86_64-apple-darwin,$(d)),$(d)))
 endif
 
 ifeq (arm32,$(findstring arm32,$(MAKECMDGOALS)))
-BUILDDIRS:=$(filter %arm-unknown-linux-gnueabihf%,$(BUILDDIRS))
+BUILDDIRS:=$(foreach d,$(BUILDDIRS),$(if $(findstring arm-unknown-linux-gnueabihf,$(d)),$(d)))
 endif
 
 release:

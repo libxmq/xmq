@@ -4822,6 +4822,33 @@ static const char *library_url()
     return (env && *env) ? env : "https://libxmq.org/library/";
 }
 
+/** Fetch url into local_file with curl, the directories are created. With keep_time the
+    file gets the modification time of the server (curl -R). The command is stored in cmd
+    for error messages. Windows runs it with cmd.exe, which only knows double quotes (curl
+    is included in Windows 10 and later). Returns true if the file was fetched. */
+static bool curl_fetch(const char *url, const char *local_file, bool keep_time, char *cmd, size_t cmd_size)
+{
+#ifdef PLATFORM_WINAPI
+    const char *q = "\"";
+#else
+    const char *q = "'";
+#endif
+    snprintf(cmd, cmd_size, "curl -s --fail%s --create-dirs -o %s%s%s %s%s%s",
+             keep_time ? " -R" : "", q, local_file, q, q, url, q);
+    return system(cmd) == 0;
+}
+
+/** Move the downloaded tmp file to dest, replacing dest. On Windows rename fails when dest
+    exists, MoveFileEx replaces it. Returns true on success. */
+static bool replace_file(const char *tmp, const char *dest)
+{
+#ifdef PLATFORM_WINAPI
+    return MoveFileExA(tmp, dest, MOVEFILE_REPLACE_EXISTING) != 0;
+#else
+    return rename(tmp, dest) == 0;
+#endif
+}
+
 /** Fetch library_url()/file+suffix into local_file, unless it is cached and the mode is not
     LIBRARY_FORCE. The file gets the modification time of the server (curl -R), which
     check-library compares with the time in the index. */
@@ -4838,23 +4865,15 @@ DownloadStatus download(LibraryMode mode, const char *suffix, const char *file, 
     char url[1024];
     snprintf(url, sizeof(url), "%s%s%s", library_url(), file, suffix);
     char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "curl -s --fail -R --create-dirs -o '%s' '%s'", local_file, url);
 
     fprintf(stderr, "fetching %s\n", url);
-#ifndef PLATFORM_WINAPI
-    bool ok = system(cmd) == 0;
-    if (!ok)
+    if (!curl_fetch(url, local_file, true, cmd, sizeof(cmd)))
     {
         if (accept_fail) return DOWNLOAD_ERROR;
 
         fprintf(stderr, "xmq: failed to fetch %s using this command: %s\n", suffix, cmd);
         exit(1);
     }
-#else
-    printf("Invocation for curl for WINAPI is not yet implemented.\n");
-    printf("Please execute: %s\n", cmd);
-    exit(0);
-#endif
     fprintf(stderr, "downloaded and cached %s\n", local_file);
     return DOWNLOAD_OK;
 }
@@ -4988,8 +5007,7 @@ static bool refresh_library_file(const char *path, const char *sha)
     snprintf(tmp, sizeof(tmp), "%s.download", dest);
     snprintf(url, sizeof(url), "%s%s", library_url(), path);
     char cmd[4096];
-    snprintf(cmd, sizeof(cmd), "curl -s --fail -R --create-dirs -o '%s' '%s'", tmp, url);
-    if (system(cmd) != 0)
+    if (!curl_fetch(url, tmp, true, cmd, sizeof(cmd)))
     {
         fprintf(stderr, "xmq: could not fetch %s\n", url);
         remove(tmp);
@@ -5002,7 +5020,7 @@ static bool refresh_library_file(const char *path, const char *sha)
         remove(tmp);
         return false;
     }
-    if (rename(tmp, dest) != 0)
+    if (!replace_file(tmp, dest))
     {
         fprintf(stderr, "xmq: could not write %s\n", dest);
         remove(tmp);
@@ -5025,8 +5043,7 @@ static bool fetch_library_index(char *index_file, size_t size)
     snprintf(tmp, sizeof(tmp), "%s.download", index_file);
     snprintf(url, sizeof(url), "%sindex.xmq", library_url());
     char cmd[3000];
-    snprintf(cmd, sizeof(cmd), "curl -s --fail --create-dirs -o '%s' '%s'", tmp, url);
-    if (system(cmd) != 0 || rename(tmp, index_file) != 0)
+    if (!curl_fetch(url, tmp, false, cmd, sizeof(cmd)) || !replace_file(tmp, index_file))
     {
         remove(tmp);
         return false;
