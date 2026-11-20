@@ -745,8 +745,16 @@ static void loop_stack(YaepTreeNode **result,
                             (want_name && node->val.anode.name && strcmp(node->val.anode.name, want_name)))
                         {
                             ps->n_parse_abstract_nodes++;
-                            YaepTreeNode *copy = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-                            *copy = *node; // The children array is shared, it is filled in place.
+                            // Room for the children, they are copied when the tree is built.
+                            YaepTreeNode *copy = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode) + sizeof(YaepTreeNode*) * (dotted_rule_rule->trans_len + 1)));
+                            *copy = *node; // Until then the children array is shared, it is filled in place.
+                            if (ps->anode_copies_n == ps->anode_copies_cap)
+                            {
+                                ps->anode_copies_cap = ps->anode_copies_cap ? 2*ps->anode_copies_cap : 64;
+                                ps->anode_copies = (YaepTreeNode**)realloc(ps->anode_copies, ps->anode_copies_cap * sizeof(YaepTreeNode*));
+                                assert(ps->anode_copies);
+                            }
+                            ps->anode_copies[ps->anode_copies_n++] = copy;
                             copy->val.anode.mark = want_mark;
                             if (want_name && strcmp(node->val.anode.name, want_name))
                             {
@@ -1105,6 +1113,20 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     verbose("ixml=", "building tree");
 
     loop_stack(&result, n_candidates, ps, empty_node, error_node, set, dotted_rule, ambiguous_p);
+
+    // The children of the originals are complete now, give each copy its own children.
+    for (size_t c = 0; c < ps->anode_copies_n; ++c)
+    {
+        YaepTreeNode *copy = ps->anode_copies[c];
+        YaepTreeNode **own = (YaepTreeNode**)((char*)copy + sizeof(YaepTreeNode));
+        YaepTreeNode **shared = copy->val.anode.children;
+        size_t i = 0;
+        while ((own[i] = shared[i]) != NULL) i++;
+        copy->val.anode.children = own;
+    }
+    free(ps->anode_copies);
+    ps->anode_copies = NULL;
+    ps->anode_copies_n = ps->anode_copies_cap = 0;
 
     free_parse_state(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;

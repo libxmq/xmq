@@ -840,6 +840,13 @@ struct YaepParseState
        freed.  The same reference can be represented more on time. */
     vlo_t tnodes_vlo;
 
+    /* The copies of abstract nodes with another ixml mark or name (see build_parse_tree).
+       While the tree is built a copy uses the children array of the original node, then
+       it gets its own copy of the children, so that the nodes can be freed separately. */
+    YaepTreeNode **anode_copies;
+    size_t anode_copies_n;
+    size_t anode_copies_cap;
+
     /* The key of the following table is node itself. */
     hash_table_t map_node_to_visit;
 
