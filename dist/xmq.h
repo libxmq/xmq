@@ -412,6 +412,8 @@ typedef enum
     XMQ_ERROR_ENTITY_EXPANSION = 38,
     /** The input is not valid UTF-8. */
     XMQ_ERROR_INVALID_UTF8 = 39,
+    /** The elements, objects or arrays are nested deeper than XMQ_MAX_NESTING_DEPTH. */
+    XMQ_ERROR_TOO_DEEP = 40,
     /** The ixml grammar cannot be parsed. */
     XMQ_ERROR_IXML_SYNTAX_ERROR = 50,
     /** The xslt stylesheet cannot be compiled. */

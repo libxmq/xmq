@@ -7365,6 +7365,13 @@ struct YaepParseState
        freed.  The same reference can be represented more on time. */
     vlo_t tnodes_vlo;
 
+    /* The copies of abstract nodes with another ixml mark or name (see build_parse_tree).
+       While the tree is built a copy uses the children array of the original node, then
+       it gets its own copy of the children, so that the nodes can be freed separately. */
+    YaepTreeNode **anode_copies;
+    size_t anode_copies_n;
+    size_t anode_copies_cap;
+
     /* The key of the following table is node itself. */
     hash_table_t map_node_to_visit;
 
@@ -7684,6 +7691,10 @@ typedef struct YaepParseRun YaepParseRun;
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 
+/** The parsers recurse for every nested xmq body or json object or array, deeper nesting
+    is an error (XMQ_ERROR_TOO_DEEP) instead of a stack overflow. Java has XMQParser.MAX_NESTING_DEPTH. */
+#define XMQ_MAX_NESTING_DEPTH 10000
+
 struct XMQParseState;
 typedef struct XMQParseState XMQParseState;
 
@@ -7918,6 +7929,8 @@ struct XMQParseState
     XMQDoc *doq;
     const char *implicit_root; // Assume that this is the first element name
     Stack *element_stack; // Top is last created node
+    size_t nesting_depth; // The depth of the xmq bodies or json objects and arrays being parsed.
+    Stack *json_keys; // The keys and strings of the json being parsed, freed if the parse fails.
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.
@@ -8330,6 +8343,7 @@ char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 XMQNode* create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, XMQNode* parent);
 XMQStatus create_node(XMQParseState *state, const char *start, const char *stop);
+XMQNode *parent_node(XMQParseState *state);
 XmlNs* find_ns(XMQNode* node, const char *prefix);
 void update_namespace_href(XMQParseState *state, XmlNs* ns, const char *start, const char *stop);
 XMQReturnXMLNode create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  XMQNode* parent);
@@ -9416,7 +9430,7 @@ const char *find_word_ignore_case(const char *start, const char *stop, const cha
 
     while (i < stop && is_xml_whitespace(*i)) i++;
     // Never compare or look beyond stop.
-    if ((size_t)(stop-i) >= len && !strncasecmp(i, word, len))
+    if (i < stop && (size_t)(stop-i) >= len && !strncasecmp(i, word, len))
     {
         const char *next = i+len;
         if (next == stop || is_xml_whitespace(*next) || *next == 0 || !isalnum(*next))
@@ -9486,7 +9500,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 if (is_doctype)
                 {
                     i = is_doctype;
-                    is_html = find_word_ignore_case(is_doctype+1, stop, "html");
+                    is_html = find_word_ignore_case(is_doctype, stop, "html");
                     if (is_html)
                     {
                         debug("xmq=", "content detected as html since doctype html found");
@@ -9685,9 +9699,9 @@ XMQReturnString xmq_un_comment(const char *start, const char *stop)
     if (i == stop || *i != '*')
     {
         // No asterisk * after the slashes. This is a single line comment //.....
-        i = start+2;
+        i = (stop-start >= 2) ? start+2 : stop;
         // If there is a space after //, skip it.
-        if (*i == ' ') i++;
+        if (i < stop && *i == ' ') i++;
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
@@ -10490,6 +10504,13 @@ void xmqFreeParseState(XMQParseState *state)
     }
     stack_free(state->element_stack);
     state->element_stack = NULL;
+    if (state->json_keys)
+    {
+        // A failed json parse leaves the keys of the objects it was in.
+        while (state->json_keys->size > 0) free(stack_pop(state->json_keys));
+        stack_free(state->json_keys);
+        state->json_keys = NULL;
+    }
     // A pi whose content was never parsed (the parse failed) still owns its name.
     free((char*)state->pi_name);
     state->pi_name = NULL;
@@ -10814,6 +10835,13 @@ XMQReturnXMLNode create_quote(XMQParseState *state,
         if (rs.status != XMQ_OK) return (XMQReturnXMLNode){ rs.status, NULL };
         trimmed = rs.string;
     }
+    if (!parent)
+    {
+        // There is no node for the value, eg an attribute of a processing
+        // instruction ?a(b='c'), the value is dropped.
+        free(trimmed);
+        return (XMQReturnXMLNode){ XMQ_OK, NULL };
+    }
     XMQNode *n = xml_node_new_text(state->doq->dom_, trimmed);
     if (state->merge_text)
     {
@@ -10836,7 +10864,7 @@ XMQStatus do_quote(XMQParseState *state,
                    const char *suffix)
 {
     XMQReturnXMLNode rn = create_quote(state, l, col, start, stop, suffix,
-                                       (XMQNode*)state->element_stack->top->data);
+                                       parent_node(state));
     if (rn.status != XMQ_OK) return rn.status;
     state->element_last = rn.node;
     return XMQ_OK;
@@ -10850,6 +10878,9 @@ XMQNode* create_entity(XMQParseState *state,
                          const char *suffix,
                          XMQNode* parent)
 {
+    // There is no node for the value, eg an attribute of a processing
+    // instruction ?a(b=&x;), the value is dropped.
+    if (!parent) return NULL;
     char *tmp = strndup(start, stop-start);
     XMQNode* n = NULL;
     if (tmp[1] == '#')
@@ -10902,7 +10933,7 @@ XMQStatus do_entity(XMQParseState *state,
                const char *stop,
                const char *suffix)
 {
-    state->element_last = create_entity(state, l, c, start, stop, suffix, (XMQNode*)state->element_stack->top->data);
+    state->element_last = create_entity(state, l, c, start, stop, suffix, parent_node(state));
     return XMQ_OK;
 }
 
@@ -10913,7 +10944,7 @@ XMQStatus do_comment(XMQParseState*state,
                 const char *stop,
                 const char *suffix)
 {
-    XMQNode* parent = (XMQNode*)state->element_stack->top->data;
+    XMQNode* parent = parent_node(state);
     char *trimmed = NULL;
     if (state->no_trim_quotes)
     {
@@ -10992,7 +11023,7 @@ XMQStatus do_element_value_text(XMQParseState *state,
     {
         char *content = potentially_add_leading_ending_space(start, stop);
         XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         free(content);
 
@@ -11007,7 +11038,7 @@ XMQStatus do_element_value_text(XMQParseState *state,
         memcpy(tmp, start, l);
         tmp[l] = 0;
         XMQNode *n = xml_dom_set_dtd(state->doq->dom_, tmp, NULL, NULL);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         free(tmp);
 
@@ -11045,7 +11076,7 @@ XMQStatus do_element_value_quote(XMQParseState *state,
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
         XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         state->parsing_pi = false;
         free((char*)state->pi_name);
@@ -11065,6 +11096,8 @@ XMQStatus do_element_value_quote(XMQParseState *state,
         XMQNode* dtd = parse_doctype_raw(state->doq, buf, buf+n-1);
         if (!dtd)
         {
+            free(buf);
+            free(trimmed);
             state->error_nr = XMQ_ERROR_BAD_DOCTYPE;
             longjmp(state->error_handler, 1);
         }
@@ -11078,7 +11111,7 @@ XMQStatus do_element_value_quote(XMQParseState *state,
         else
         {
             // Append doctype to document.
-            XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+            XMQNode *parent = parent_node(state);
             xml_node_add_child(parent, dtd);
         }
         state->parsing_doctype = false;
@@ -11101,6 +11134,8 @@ XMQStatus do_element_value_entity(XMQParseState *state,
                              const char *stop,
                              const char *suffix)
 {
+    // The content of a processing instruction ?a=&amp; is the text of the entity.
+    if (state->parsing_pi) return do_element_value_text(state, line, col, start, stop, suffix);
     create_entity(state, line, col, start, stop, suffix, (XMQNode*)state->element_last);
     return XMQ_OK;
 }
@@ -11327,7 +11362,7 @@ void update_namespace_href(XMQParseState *state,
     free(href);
     debug("xmq=", "update namespace %s with href=%s", xml_ns_prefix(ns), xml_ns_href(ns));
 
-    if (start[0] == 0 && ns == state->default_namespace)
+    if (start == stop && ns == state->default_namespace) // An empty href, xmlns=
     {
         XMQNode* element = (XMQNode*)state->element_stack->top->data;
         if (element)
@@ -11434,6 +11469,14 @@ XMQStatus do_attr_value_compound_entity(XMQParseState *state,
     return XMQ_OK;
 }
 
+/** The node that gets the new children: the top of the element stack, or the document
+    when the top is not a node, eg in the body of a processing instruction ?a { b }. */
+XMQNode *parent_node(XMQParseState *state)
+{
+    XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+    return parent ? parent : xml_dom_document(state->doq->dom_);
+}
+
 XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
 {
     size_t len = stop-start;
@@ -11478,7 +11521,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
                 stack_push(state->element_stack, state->element_last);
             }
         }
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, new_node);
 
         if (state->element_namespace)
@@ -11575,6 +11618,12 @@ XMQStatus do_brace_left(XMQParseState *state,
                    const char *suffix)
 {
     stack_push(state->element_stack, state->element_last);
+    // The document is at the bottom of the stack, then one entry per nesting level.
+    if (state->element_stack->size > XMQ_MAX_NESTING_DEPTH + 1)
+    {
+        state->error_nr = XMQ_ERROR_TOO_DEEP;
+        longjmp(state->error_handler, 1);
+    }
     return XMQ_OK;
 }
 
@@ -14310,6 +14359,11 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb);
 // an attribute that occurs twice on an element (ixml error D02), or NULL.
 static char *ixml_dynamic_error_ = NULL;
 
+// The number of elements being generated from the yaep tree, at most XMQ_MAX_NESTING_DEPTH.
+static size_t ixml_element_depth_ = 0;
+
+#define IXML_TOO_DEEP_MSG "dynamic error: nesting is too deep, the output has more than 10000 nested elements"
+
 /** Remember the first dynamic error, eg ixml_dynamic_error("D02", "the attribute %s ...", name). */
 static void ixml_dynamic_error(const char *code, const char *format, ...)
 {
@@ -14504,6 +14558,13 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                 {
                     // Normal node that should be generated.
                     ixml_check_name(an->name);
+                    if (ixml_element_depth_ >= XMQ_MAX_NESTING_DEPTH)
+                    {
+                        // Like the other parsers, deeper nesting is an error.
+                        if (!ixml_dynamic_error_) ixml_dynamic_error_ = strdup(IXML_TOO_DEEP_MSG);
+                        return;
+                    }
+                    ixml_element_depth_++;
                     XMQNode* new_node = xml_node_new_element(doc, an->name, NULL);
 
                     if (node == NULL)
@@ -14520,6 +14581,7 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                         YaepTreeNode *nn = an->children[i];
                         generate_dom_from_yaep_node(doc, new_node, nn, n, depth+1, i);
                     }
+                    ixml_element_depth_--;
                 }
             }
             else
@@ -14875,6 +14937,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     else
     {
         // IXML parse was fine, generate a DOM from the yaep tree.
+        ixml_element_depth_ = 0;
         generate_dom_from_yaep_node(doc->dom_, NULL, run->root, NULL, 0, 0);
         doc->root_ = xml_dom_root_element(doc->dom_);
         if (doc->root_ == NULL)
@@ -20487,6 +20550,12 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
 
 void fixup_json(XMQDoc *doq, XMQNode *node);
 
+/** The character at state->i, or 0 at the end of the buffer, which is never valid json. */
+static char json_peek(XMQParseState *state)
+{
+    return state->i < state->buffer_stop ? *state->i : 0;
+}
+
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop);
@@ -20571,7 +20640,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
         if (c == '\\')
         {
             increment(c, 1, &i, &line, &col);
-            c = *i;
+            c = i < stop ? *i : 0; // A backslash at the end is an invalid escape.
             if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't' || c == '/')
             {
                 increment(c, 1, &i, &line, &col);
@@ -20590,7 +20659,6 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
             else if (c == 'u')
             {
                 increment(c, 1, &i, &line, &col);
-                c = *i;
                 if (i+3 < stop)
                 {
                     // Woot? Json can only escape unicode up to 0xffff ? What about 10000 up to 10ffff?
@@ -20617,6 +20685,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                     }
                 }
             }
+            free_membuffer_and_free_content(buf);
             state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
             longjmp(state->error_handler, 1);
         }
@@ -20700,6 +20769,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     // Decode and content_start points to newly allocated buffer where escapes have been removed.
     eat_json_quote(state, &content_start, &content_stop);
     size_t content_len = content_stop-content_start;
+    // Kept in the state until it is freed, so that it is freed when a callback fails too.
+    if (!state->json_keys) state->json_keys = stack_create();
+    stack_push(state->json_keys, content_start);
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -20707,7 +20779,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     {
         // This is "|":"symbol" which means a pure text node in xml.
         DO_CALLBACK_SIM(quote, state, start_line, 1, content_start, content_stop, content_stop);
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -20715,7 +20787,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     {
         // This is "//":"symbol" which means a comment node in xml.
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -20727,7 +20799,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
         if (!state->root_found) state->add_pre_node_before = NULL;
         else                    state->add_post_node_after = NULL;
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -20766,7 +20838,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         free(name);
         if (do_return)
         {
-            free(content_start);
+            free(stack_pop(state->json_keys));
             // This will be set many times.
             state->root_found = true;
             return;
@@ -20784,7 +20856,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             state->add_pre_node_before = (XMQNode*)state->element_stack->top->data;
             DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
             state->add_pre_node_before = NULL;
-            free(content_start);
+            free(stack_pop(state->json_keys));
             return;
         }
     }
@@ -20833,7 +20905,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
             DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
         }
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -20868,7 +20940,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     }
 
     DO_CALLBACK_SIM(element_value_text, state, start_line, start_col, content_start, content_stop, content_stop);
-    free(content_start);
+    free(stack_pop(state->json_keys));
 }
 
 bool is_json_null(XMQParseState *state)
@@ -21231,7 +21303,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    char c = *state->i;
+    char c = json_peek(state);
     assert(c == '[');
     increment(c, 1, &state->i, &state->line, &state->col);
 
@@ -21279,11 +21351,11 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
     while (state->i < stop && c == ',')
     {
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
         if (c == ']') break;
 
         parse_json(state, NULL, NULL);
-        c = *state->i;
+        c = json_peek(state);
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
 
@@ -21301,14 +21373,23 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
 {
     eat_xml_whitespace(state, NULL, NULL);
 
-    char c = *(state->i);
+    char c = json_peek(state);
 
     if (is_json_quote_start(c)) parse_json_quote(state, key_start, key_stop);
     else if (is_json_boolean(state)) parse_json_boolean(state, key_start, key_stop);
     else if (is_json_null(state)) parse_json_null(state, key_start, key_stop);
     else if (is_json_number(state)) parse_json_number(state, key_start, key_stop);
-    else if (c == '{') parse_json_object(state, key_start, key_stop);
-    else if (c == '[') parse_json_array(state, key_start, key_stop);
+    else if (c == '{' || c == '[')
+    {
+        if (++state->nesting_depth > XMQ_MAX_NESTING_DEPTH)
+        {
+            state->error_nr = XMQ_ERROR_TOO_DEEP;
+            longjmp(state->error_handler, 1);
+        }
+        if (c == '{') parse_json_object(state, key_start, key_stop);
+        else parse_json_array(state, key_start, key_stop);
+        state->nesting_depth--;
+    }
     else
     {
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
@@ -21375,8 +21456,11 @@ void json_print_array_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from
     {
         json_check_comma(ps);
         bool force_string = xml_get_attribute(i, "S");
-        bool is_number = xml_element_content(i) && json_is_number(xml_element_content(i));
-        bool is_keyword = xml_element_content(i) && json_is_keyword(xml_element_content(i));
+        // Only a text node is a value, eg not a comment // 0 (like JsonPrinter.element_content).
+        int kind = xml_node_kind(i);
+        const char *content = (kind == XML_DOM_TEXT || kind == XML_DOM_CDATA) ? xml_element_content(i) : NULL;
+        bool is_number = content && json_is_number(content);
+        bool is_keyword = content && json_is_keyword(content);
 
         if (force_string || is_number || is_keyword)
         {
@@ -21475,7 +21559,7 @@ void json_print_node(XMQPrintState *ps, XMQNode *container, XMQNode *node, size_
 
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    char c = *state->i;
+    char c = json_peek(state);
     assert(c == '{');
     increment(c, 1, &state->i, &state->line, &state->col);
 
@@ -21504,7 +21588,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
         key_start = colon+1;
     }
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, colon?colon+1:key_start, key_stop, key_stop);
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);
@@ -21522,7 +21606,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     while (state->i < stop && c == ',')
     {
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
         if (c == '}') break;
 
         if (!is_json_quote_start(c))
@@ -21535,9 +21619,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         char *new_key_start = NULL;
         char *new_key_stop = NULL;
         eat_json_quote(state, &new_key_start, &new_key_stop);
+        // Kept in the state until it is freed, so that it is freed on an error too.
+        if (!state->json_keys) state->json_keys = stack_create();
+        stack_push(state->json_keys, new_key_start);
 
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
 
         if (c == ':')
         {
@@ -21550,9 +21637,9 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         }
 
         parse_json(state, new_key_start, new_key_stop);
-        free(new_key_start);
+        free(stack_pop(state->json_keys));
 
-        c = *state->i;
+        c = json_peek(state);
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
 
@@ -21573,6 +21660,13 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
     void *writer_state = output_settings->content.writer_state;
 
     XMQNode *node = from;
+    if (!node)
+    {
+        // An element without content, eg _(S) in an array, is the empty string.
+        write(writer_state, "\"\"", NULL);
+        ps->last_char = '"';
+        return XMQ_OK;
+    }
     const char *content = xml_element_content(node);
 
     // An entity reference (kept when it is not a character entity) has no content.
@@ -22889,7 +22983,7 @@ yflow_key(y_parser *p, XMQParseState *state, const char *k, const char *ke)
         if (end != tagname)
         {
             taglen = (size_t)(end - tagname);
-            while (yspace(*end)) { ++end; }
+            while (end < ke && yspace(*end)) { ++end; }
             tk = end;
         }
         else
@@ -22908,7 +23002,7 @@ yflow_key(y_parser *p, XMQParseState *state, const char *k, const char *ke)
     else
     {
         ktxt = tk;
-        klen = (size_t)(ke - tk);
+        klen = tk < ke ? (size_t)(ke - tk) : 0;
     }
 
     if (klen) { ykey(state, ktxt, ktxt+klen); }
@@ -24043,7 +24137,12 @@ bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const cha
 
     if (state->parse->init) state->parse->init(state);
 
-    bool ok = yparse_document(&p, state);
+    // A callback, eg do_brace_left for too deep nesting, can longjmp to the error handler.
+    bool ok = false;
+    if (!setjmp(state->error_handler))
+    {
+        ok = yparse_document(&p, state);
+    }
     if (!ok || state->error_nr != XMQ_OK)
     {
         generate_state_error_message(state, state->error_nr, start, stop);
@@ -24545,6 +24644,7 @@ void xmq_print_yaml(XMQDoc *doq, XMQOutputSettings *output_settings)
 
 size_t count_whitespace(const char *i, const char *stop)
 {
+    if (i >= stop) return 0;
     unsigned char c = *i;
     if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
     {
@@ -25025,7 +25125,7 @@ bool is_xmq_element_name(const char *start, const char *stop, const char **colon
     for (; i < stop; ++i)
     {
         char c = *i;
-        if (!is_xmq_text_name(c)) return false;
+        if (!is_xmq_text_name(c)) { *colon = NULL; return false; } // Not a name, so no namespace either.
         if (c == ':') *colon = i;
     }
 
@@ -25220,6 +25320,7 @@ XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remov
 char *potentially_add_leading_ending_space(const char *start, const char *stop)
 {
     char *content = NULL;
+    if (start >= stop) return strdup(""); // An empty value, eg ?a=
     int prefix = *start == '\'' ? 1 : 0;
     int postfix = *(stop-1) == '\'' ? 1 : 0;
     if (prefix || postfix)
@@ -29055,7 +29156,7 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     if (p->depth >= p->settings->max_depth)
     {
-        xml_parser_fatal(p, tag_start, "Excessive depth in document: %zu use XML_PARSE_HUGE option", p->settings->max_depth);
+        xml_parser_fatal(p, tag_start, "Excessive depth in document: %zu", p->settings->max_depth);
     }
 
     p->num_attrs = 0;
@@ -30668,7 +30769,7 @@ static void xml_parse_document(XmlParser *p)
 void xml_parse_settings_default(XmlParseSettings *s)
 {
     memset(s, 0, sizeof(*s));
-    s->max_depth = 256;
+    s->max_depth = 10000; // Like the xmq, json, yaml and ixml parsers (libxml2 has 256).
     s->max_name_length = 50000;
     s->max_text_length = 10000000;
     s->max_amplification = 5;
@@ -34335,11 +34436,11 @@ const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, si
     // Port of libxml2 htmlFindEntityPrefix.
     const unsigned char *match = NULL;
     unsigned left, right;
-    int first = string[0];
     size_t match_len = 0;
     size_t soff = 1;
 
     if (slen < 2) return NULL;
+    int first = string[0];
     if (!xml_html_is_ascii_letter(first)) return NULL;
 
     // Look up range by first character.
@@ -34359,13 +34460,16 @@ const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, si
         bytes = htmlEntStrings + htmlEntValues[mid];
         len = bytes[0] & ~ENT_F_ALL;
 
+        // The string is not NUL terminated, so compare only the slen - soff
+        // characters that are left (libxml2 relies on the terminating NUL).
+        size_t left_len = slen - soff;
         cmp = string[soff] - bytes[1];
 
         if (cmp == 0)
         {
-            if (slen < len)
+            if (left_len < len)
             {
-                cmp = strncmp((const char*)string + soff + 1, (const char*)bytes + 2, slen - 1);
+                cmp = strncmp((const char*)string + soff + 1, (const char*)bytes + 2, left_len - 1);
                 // Prefix can never match.
                 if (cmp == 0) break;
             }
@@ -98695,7 +98799,7 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
     {
         UTF8Char utf8_char;
         peek_utf8_char(statei, stop, &utf8_char);
-        char utf8_codepoint[8];
+        char utf8_codepoint[16]; // utf8_char_to_codepoint_string writes up to 16, eg U+10A29F for a too large code point.
         utf8_char_to_codepoint_string(&utf8_char, utf8_codepoint);
 
         snprintf(buf, 32, " \"%s\" %s", utf8_char.bytes, utf8_codepoint);
@@ -98821,6 +98925,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_ERROR_ENTITY_EXPANSION: return "entity expansion failed";
     case XMQ_ERROR_INVALID_UTF8: return "invalid UTF-8";
+    case XMQ_ERROR_TOO_DEEP: return "nesting is too deep";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);
@@ -99537,7 +99642,7 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
 
     while (i < stop && *i == '/') i++;
 
-    if (*i == '*') *found_asterisk = true;
+    if (i < stop && *i == '*') *found_asterisk = true;
     else *found_asterisk = false;
 
     return i-start;
@@ -100113,7 +100218,13 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         const char *stop = state->i;
         DO_CALLBACK(brace_left, state, start_line, start_col, start, stop, stop);
 
+        if (++state->nesting_depth > XMQ_MAX_NESTING_DEPTH)
+        {
+            state->error_nr = XMQ_ERROR_TOO_DEEP;
+            longjmp(state->error_handler, 1);
+        }
         parse_xmq(state);
+        state->nesting_depth--;
         c = xmq_parser_peek(state, 0);
         if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != '}')
@@ -104798,8 +104909,16 @@ static void loop_stack(YaepTreeNode **result,
                             (want_name && node->val.anode.name && strcmp(node->val.anode.name, want_name)))
                         {
                             ps->n_parse_abstract_nodes++;
-                            YaepTreeNode *copy = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode)));
-                            *copy = *node; // The children array is shared, it is filled in place.
+                            // Room for the children, they are copied when the tree is built.
+                            YaepTreeNode *copy = ((YaepTreeNode*) (*ps->run.parse_alloc)(sizeof(YaepTreeNode) + sizeof(YaepTreeNode*) * (dotted_rule_rule->trans_len + 1)));
+                            *copy = *node; // Until then the children array is shared, it is filled in place.
+                            if (ps->anode_copies_n == ps->anode_copies_cap)
+                            {
+                                ps->anode_copies_cap = ps->anode_copies_cap ? 2*ps->anode_copies_cap : 64;
+                                ps->anode_copies = (YaepTreeNode**)realloc(ps->anode_copies, ps->anode_copies_cap * sizeof(YaepTreeNode*));
+                                assert(ps->anode_copies);
+                            }
+                            ps->anode_copies[ps->anode_copies_n++] = copy;
                             copy->val.anode.mark = want_mark;
                             if (want_name && strcmp(node->val.anode.name, want_name))
                             {
@@ -105158,6 +105277,20 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
     verbose("ixml=", "building tree");
 
     loop_stack(&result, n_candidates, ps, empty_node, error_node, set, dotted_rule, ambiguous_p);
+
+    // The children of the originals are complete now, give each copy its own children.
+    for (size_t c = 0; c < ps->anode_copies_n; ++c)
+    {
+        YaepTreeNode *copy = ps->anode_copies[c];
+        YaepTreeNode **own = (YaepTreeNode**)((char*)copy + sizeof(YaepTreeNode));
+        YaepTreeNode **shared = copy->val.anode.children;
+        size_t i = 0;
+        while ((own[i] = shared[i]) != NULL) i++;
+        copy->val.anode.children = own;
+    }
+    free(ps->anode_copies);
+    ps->anode_copies = NULL;
+    ps->anode_copies_n = ps->anode_copies_cap = 0;
 
     free_parse_state(ps);
     ps->run.grammar->one_parse_p = saved_one_parse_p;
