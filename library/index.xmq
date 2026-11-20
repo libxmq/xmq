@@ -1,0 +1,1971 @@
+// The library index, made by scripts/build_library_index.py, see xmq help list-library.
+library(created = 2026-11-20T22:39:40Z)
+{
+    file(path        = conf/crontab.ixml
+         size        = 725
+         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+    file(path        = conf/crontab_v1.ixml
+         size        = 725
+         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+    file(path        = conf/crontab_v1a.ixml
+         size        = 725
+         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+    file(path        = conf/nginx.ixml
+         size        = 463
+         sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse nginx config files.')
+    file(path        = conf/nginx.xslq
+         size        = 870
+         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nginx_v1.ixml
+         size        = 463
+         sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse nginx config files.')
+    file(path        = conf/nginx_v1.xslq
+         size        = 870
+         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nginx_v1a.ixml
+         size        = 463
+         sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse nginx config files.')
+    file(path        = conf/nginx_v1a.xslq
+         size        = 870
+         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix.ixml
+         size        = 1295
+         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix.xslq
+         size        = 5551
+         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix_v1.ixml
+         size        = 1295
+         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix_v1.xslq
+         size        = 5551
+         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix_v1a.ixml
+         size        = 1295
+         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/nix_v1a.xslq
+         size        = 5551
+         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nginx.xslq
+         size        = 1700
+         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nginx_v1.xslq
+         size        = 1700
+         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nginx_v1a.xslq
+         size        = 1700
+         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nix.xslq
+         size        = 10157
+         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nix_v1.xslq
+         size        = 10157
+         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = conf/to-nix_v1a.xslq
+         size        = 10157
+         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+    file(path        = core/ixml.ixml
+         size        = 2345
+         sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'The ixml grammar for ixml, from the ixml specification.')
+    file(path        = core/ixml.xml
+         size        = 13619
+         sha256      = 31e7c9fd5fad0585fcf2d4ac50fe7830c252ab0a9fb2a64ac95c118e5a5046da
+         mtime       = 2026-10-20T08:08:55Z)
+    file(path        = core/ixml2html.ixml
+         size        = 3596
+         sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml grammar as html, from the ixml specification.')
+    file(path        = core/ixml2html_v1.ixml
+         size        = 3596
+         sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml grammar as html, from the ixml specification.')
+    file(path        = core/ixml2html_v1a.ixml
+         size        = 3596
+         sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml grammar as html, from the ixml specification.')
+    file(path        = core/ixml_v1.ixml
+         size        = 2345
+         sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'The ixml grammar for ixml, from the ixml specification.')
+    file(path        = core/ixml_v1a.ixml
+         size        = 2345
+         sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'The ixml grammar for ixml, from the ixml specification.')
+    file(path        = core/xmq.ixml
+         size        = 6762
+         sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'The xmq language in ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                        Rewritten with the not operator ! and greedy tokens, so that the grammar
+                        has a single parse and works with the LL(*) parser generator. A greedy
+                        token ends with !c where c is a rule that matches one character, eg
+                        name = ..., -namechar*, !namechar.
+
+                        The parse tree is turned into the xml dom of the xmq document by xmq.xslq:
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The tree:
+
+                            xmq { node* }
+                            node = element(name) { attributes? children? }
+                                 | keyvalue(name) { attributes? value }
+                                 | quote | entity | comment { part+ } | line_comment
+                                 | doctype { value } | pi(name) { value } | xml
+                            attributes { attr(name) { value? }* }
+                            children { node* }
+                            value = text | quote | entity | compound { (quote | entity)* }
+
+                        Quotes, comments and texts keep their raw content (without the quote
+                        chars and comment markers), the incidental indentation is removed by
+                        xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
+                        eg nbsp or #10.')
+    file(path        = core/xmq.xslq
+         size        = 30253
+         sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'Build the xmq document from the parse tree of xmq.ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The element and attribute
+                        names come from the name attributes, the namespaces from the xmlns
+                        declarations, quotes and comments get their incidental indentation
+                        removed with the same rules as xmq_trim_quote in xmq.c.
+
+                        What xslt 1.0 cannot create (entity references, the doctype, embedded
+                        xml, empty texts, unused namespace declarations, undeclared prefixes) is
+                        output as marker elements in the namespace https://libxmq.org/xmq/markers
+                        that xmq replaces after the transform, see xmq_replace_transform_markers.')
+    file(path        = core/xmq_v2.ixml
+         size        = 6762
+         sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'The xmq language in ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                        Rewritten with the not operator ! and greedy tokens, so that the grammar
+                        has a single parse and works with the LL(*) parser generator. A greedy
+                        token ends with !c where c is a rule that matches one character, eg
+                        name = ..., -namechar*, !namechar.
+
+                        The parse tree is turned into the xml dom of the xmq document by xmq.xslq:
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The tree:
+
+                            xmq { node* }
+                            node = element(name) { attributes? children? }
+                                 | keyvalue(name) { attributes? value }
+                                 | quote | entity | comment { part+ } | line_comment
+                                 | doctype { value } | pi(name) { value } | xml
+                            attributes { attr(name) { value? }* }
+                            children { node* }
+                            value = text | quote | entity | compound { (quote | entity)* }
+
+                        Quotes, comments and texts keep their raw content (without the quote
+                        chars and comment markers), the incidental indentation is removed by
+                        xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
+                        eg nbsp or #10.')
+    file(path        = core/xmq_v2.xslq
+         size        = 30253
+         sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'Build the xmq document from the parse tree of xmq.ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The element and attribute
+                        names come from the name attributes, the namespaces from the xmlns
+                        declarations, quotes and comments get their incidental indentation
+                        removed with the same rules as xmq_trim_quote in xmq.c.
+
+                        What xslt 1.0 cannot create (entity references, the doctype, embedded
+                        xml, empty texts, unused namespace declarations, undeclared prefixes) is
+                        output as marker elements in the namespace https://libxmq.org/xmq/markers
+                        that xmq replaces after the transform, see xmq_replace_transform_markers.')
+    file(path        = core/xmq_v2a.ixml
+         size        = 6762
+         sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'The xmq language in ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                        Rewritten with the not operator ! and greedy tokens, so that the grammar
+                        has a single parse and works with the LL(*) parser generator. A greedy
+                        token ends with !c where c is a rule that matches one character, eg
+                        name = ..., -namechar*, !namechar.
+
+                        The parse tree is turned into the xml dom of the xmq document by xmq.xslq:
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The tree:
+
+                            xmq { node* }
+                            node = element(name) { attributes? children? }
+                                 | keyvalue(name) { attributes? value }
+                                 | quote | entity | comment { part+ } | line_comment
+                                 | doctype { value } | pi(name) { value } | xml
+                            attributes { attr(name) { value? }* }
+                            children { node* }
+                            value = text | quote | entity | compound { (quote | entity)* }
+
+                        Quotes, comments and texts keep their raw content (without the quote
+                        chars and comment markers), the incidental indentation is removed by
+                        xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
+                        eg nbsp or #10.')
+    file(path        = core/xmq_v2a.xslq
+         size        = 30253
+         sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = 'Build the xmq document from the parse tree of xmq.ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The element and attribute
+                        names come from the name attributes, the namespaces from the xmlns
+                        declarations, quotes and comments get their incidental indentation
+                        removed with the same rules as xmq_trim_quote in xmq.c.
+
+                        What xslt 1.0 cannot create (entity references, the doctype, embedded
+                        xml, empty texts, unused namespace declarations, undeclared prefixes) is
+                        output as marker elements in the namespace https://libxmq.org/xmq/markers
+                        that xmq replaces after the transform, see xmq_replace_transform_markers.')
+    file(path        = data/csv.ixml
+         size        = 290
+         sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a csv file (comma separated values).
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/csv_v1.ixml
+         size        = 290
+         sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a csv file (comma separated values).
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/csv_v1a.ixml
+         size        = 290
+         sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a csv file (comma separated values).
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/scsv.ixml
+         size        = 297
+         sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
+    file(path        = data/scsv_v1.ixml
+         size        = 297
+         sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
+    file(path        = data/scsv_v1a.ixml
+         size        = 297
+         sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
+    file(path        = data/table-to-web.xslq
+         size        = 1158
+         sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/table-to-web_v1.xslq
+         size        = 1158
+         sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/table-to-web_v1a.xslq
+         size        = 1158
+         sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
+                        by Fredrik Öhrström spdx: CC0-1.0')
+    file(path        = data/tsv.ixml
+         size        = 212
+         sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a file with lines containing tab separated values.')
+    file(path        = data/tsv_v1.ixml
+         size        = 212
+         sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a file with lines containing tab separated values.')
+    file(path        = data/tsv_v1a.ixml
+         size        = 212
+         sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Create a table/tr/td from a file with lines containing tab separated values.')
+    file(path        = lang/c.ixml
+         size        = 19646
+         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+
+                        Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine: alternatives that share a long prefix are left
+                        factored and the dangling else is bound with !kw_else, so that most decisions
+                        need a short lookahead. Lists are flat, one element per item.
+
+                        In general we place whitespace ws at the end of each token.
+                        Except for the first rule, where we need to accept leading white space.
+                        No rule may start with ws, otherwise whitespace can be split ambiguously.
+
+
+                        The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
+                        The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+
+                        Tokens use the not operator ! to implement maximal munch, e.g. an
+                        IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                        the token + cannot be followed by + or =. Keywords cannot be identifiers
+                        (!keyword).
+
+                        C is not context free, since x * y; is either a declaration or
+                        an expression depending on whether x is a typedef name. Some heuristics
+                        are used to reduce such ambiguities:
+                          - Declaration specifiers can contain at most one typedef name (type_identifier).
+                          - A parenthesized declarator must start with a pointer and be
+                            followed by a function or array suffix, e.g. (*fp)(int).
+                          - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+                            since (x)+1 is then parsed as an expression. A function call has a cost
+                            so (T)(x) is a cast and not a call of (T).
+                          - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+                          - An expression statement has a cost, so T *p; in a block is a declaration.
+                          - The dangling else binds to the closest if, using !kw_else.')
+    file(path        = lang/c_v1.ixml
+         size        = 19646
+         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+
+                        Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine: alternatives that share a long prefix are left
+                        factored and the dangling else is bound with !kw_else, so that most decisions
+                        need a short lookahead. Lists are flat, one element per item.
+
+                        In general we place whitespace ws at the end of each token.
+                        Except for the first rule, where we need to accept leading white space.
+                        No rule may start with ws, otherwise whitespace can be split ambiguously.
+
+
+                        The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
+                        The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+
+                        Tokens use the not operator ! to implement maximal munch, e.g. an
+                        IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                        the token + cannot be followed by + or =. Keywords cannot be identifiers
+                        (!keyword).
+
+                        C is not context free, since x * y; is either a declaration or
+                        an expression depending on whether x is a typedef name. Some heuristics
+                        are used to reduce such ambiguities:
+                          - Declaration specifiers can contain at most one typedef name (type_identifier).
+                          - A parenthesized declarator must start with a pointer and be
+                            followed by a function or array suffix, e.g. (*fp)(int).
+                          - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+                            since (x)+1 is then parsed as an expression. A function call has a cost
+                            so (T)(x) is a cast and not a call of (T).
+                          - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+                          - An expression statement has a cost, so T *p; in a block is a declaration.
+                          - The dangling else binds to the closest if, using !kw_else.')
+    file(path        = lang/c_v1a.ixml
+         size        = 19646
+         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+
+                        Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine: alternatives that share a long prefix are left
+                        factored and the dangling else is bound with !kw_else, so that most decisions
+                        need a short lookahead. Lists are flat, one element per item.
+
+                        In general we place whitespace ws at the end of each token.
+                        Except for the first rule, where we need to accept leading white space.
+                        No rule may start with ws, otherwise whitespace can be split ambiguously.
+
+
+                        The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
+                        The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+
+                        Tokens use the not operator ! to implement maximal munch, e.g. an
+                        IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                        the token + cannot be followed by + or =. Keywords cannot be identifiers
+                        (!keyword).
+
+                        C is not context free, since x * y; is either a declaration or
+                        an expression depending on whether x is a typedef name. Some heuristics
+                        are used to reduce such ambiguities:
+                          - Declaration specifiers can contain at most one typedef name (type_identifier).
+                          - A parenthesized declarator must start with a pointer and be
+                            followed by a function or array suffix, e.g. (*fp)(int).
+                          - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+                            since (x)+1 is then parsed as an expression. A function call has a cost
+                            so (T)(x) is a cast and not a call of (T).
+                          - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+                          - An expression statement has a cost, so T *p; in a block is a declaration.
+                          - The dangling else binds to the closest if, using !kw_else.')
+    file(path        = lang/java.ixml
+         size        = 27486
+         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                          Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                          Permission is hereby granted, free of charge, to any person obtaining a copy
+                          of this software and associated documentation files (the "Software"), to deal
+                          in the Software without restriction, including without limitation the rights
+                          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                          copies of the Software, and to permit persons to whom the Software is
+                          furnished to do so, subject to the following conditions:
+
+                          The above copyright notice and this permission notice shall be included in all
+                          copies or substantial portions of the Software.
+
+                          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                          SOFTWARE.
+
+                          The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                          contents of the code: names, literals, operators, comments and the structure.
+                          Whitespace and punctuation are dropped.
+
+                          The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                          as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                            - Whitespace and comments (ws) are placed at the end of each token, except
+                              in the first rule, which accepts leading white space. No rule may start
+                              with ws, otherwise whitespace can be split ambiguously. A comment on the
+                              line of the token is a comment, a comment on the following lines is a
+                              leading_comment, which java.xslq moves to the declaration or statement
+                              that follows it.
+                            - Tokens use the not operator ! to implement maximal munch, e.g. an
+                              IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                              the token + cannot be followed by + or =. Keywords cannot be identifiers
+                              (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                              are identifiers, matched as keywords only where the syntax needs them.
+                            - > is always a single token, so that List<List<String>> closes two type
+                              argument lists. The shift operators >> and >>> are > tokens without
+                              whitespace between them. The assignments >>= and >>>= are tokens.
+                            - Unicode escapes (A) are only recognized inside char, string and
+                              text block literals.
+                            - Literals keep their source text without the quotes, escapes are not
+                              translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                          The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                            method(name = f) {
+                                modifier = public
+                                modifier = static
+                                type_parameters { type_parameter(name = T) }
+                                type { name = List  type_arguments { type { name = T } }  dim }
+                                parameter(name = x) { modifier = final  type { primitive = int } }
+                                throws { type { name = E } }
+                                block
+                            }
+
+                            - Declared names are attributes: class(name = A), variable(name = x), ...
+                            - A type has a primitive (int) or a dotted name (java.util.List), then its
+                              type_arguments, and a dim for every []. A name is split only where type
+                              arguments or annotations come between its parts:
+                              Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                            - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                            - Annotations and modifiers are kept in source order.
+                            - void, varargs, static (of an initializer) and dim are empty elements.
+                            - A comment keeps its text without // or /* */, eg comment = ' the x'. After
+                              java.xslq the comments on their own lines before a declaration or
+                              statement are its first children, eg the javadoc of a method, the
+                              comments before a closing brace are the last children of the block, and
+                              a comment on the line of a token is after the element of the token.
+
+                          The grammar accepts more than Java in a few places: an expression statement
+                          can be any primary (a; is accepted, Java requires a call, x++ or an
+                          assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                          Not supported: annotation type declarations (@interface), annotations on
+                          types (eg List<@NonNull String>, annotations before a type are modifiers),
+                          method references on a generic type (List<String>::size),
+                          module-info.java and the Java 21 features (record patterns, patterns in switch).''')
+    file(path        = lang/java.xslq
+         size        = 22426
+         sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+                          - a leading comment (on its own line) is moved to the declaration or statement
+                            that follows it, or to the end of the block before a closing brace, and the
+                            comments of a token with text, eg a name, are after its element.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = lang/java_v0.ixml
+         size        = 27486
+         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                          Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                          Permission is hereby granted, free of charge, to any person obtaining a copy
+                          of this software and associated documentation files (the "Software"), to deal
+                          in the Software without restriction, including without limitation the rights
+                          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                          copies of the Software, and to permit persons to whom the Software is
+                          furnished to do so, subject to the following conditions:
+
+                          The above copyright notice and this permission notice shall be included in all
+                          copies or substantial portions of the Software.
+
+                          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                          SOFTWARE.
+
+                          The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                          contents of the code: names, literals, operators, comments and the structure.
+                          Whitespace and punctuation are dropped.
+
+                          The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                          as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                            - Whitespace and comments (ws) are placed at the end of each token, except
+                              in the first rule, which accepts leading white space. No rule may start
+                              with ws, otherwise whitespace can be split ambiguously. A comment on the
+                              line of the token is a comment, a comment on the following lines is a
+                              leading_comment, which java.xslq moves to the declaration or statement
+                              that follows it.
+                            - Tokens use the not operator ! to implement maximal munch, e.g. an
+                              IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                              the token + cannot be followed by + or =. Keywords cannot be identifiers
+                              (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                              are identifiers, matched as keywords only where the syntax needs them.
+                            - > is always a single token, so that List<List<String>> closes two type
+                              argument lists. The shift operators >> and >>> are > tokens without
+                              whitespace between them. The assignments >>= and >>>= are tokens.
+                            - Unicode escapes (A) are only recognized inside char, string and
+                              text block literals.
+                            - Literals keep their source text without the quotes, escapes are not
+                              translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                          The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                            method(name = f) {
+                                modifier = public
+                                modifier = static
+                                type_parameters { type_parameter(name = T) }
+                                type { name = List  type_arguments { type { name = T } }  dim }
+                                parameter(name = x) { modifier = final  type { primitive = int } }
+                                throws { type { name = E } }
+                                block
+                            }
+
+                            - Declared names are attributes: class(name = A), variable(name = x), ...
+                            - A type has a primitive (int) or a dotted name (java.util.List), then its
+                              type_arguments, and a dim for every []. A name is split only where type
+                              arguments or annotations come between its parts:
+                              Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                            - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                            - Annotations and modifiers are kept in source order.
+                            - void, varargs, static (of an initializer) and dim are empty elements.
+                            - A comment keeps its text without // or /* */, eg comment = ' the x'. After
+                              java.xslq the comments on their own lines before a declaration or
+                              statement are its first children, eg the javadoc of a method, the
+                              comments before a closing brace are the last children of the block, and
+                              a comment on the line of a token is after the element of the token.
+
+                          The grammar accepts more than Java in a few places: an expression statement
+                          can be any primary (a; is accepted, Java requires a call, x++ or an
+                          assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                          Not supported: annotation type declarations (@interface), annotations on
+                          types (eg List<@NonNull String>, annotations before a type are modifiers),
+                          method references on a generic type (List<String>::size),
+                          module-info.java and the Java 21 features (record patterns, patterns in switch).''')
+    file(path        = lang/java_v0.xslq
+         size        = 22426
+         sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+                          - a leading comment (on its own line) is moved to the declaration or statement
+                            that follows it, or to the end of the block before a closing brace, and the
+                            comments of a token with text, eg a name, are after its element.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = lang/java_v0a.ixml
+         size        = 10748
+         sha256      = 14057ee8c9f0232ccd76ef83e6d09a139de99d9d658a890ce2eceb3718681469
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0a
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        Not supported: annotation type declarations (@interface), module-info.java
+                        and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0b.ixml
+         size        = 14408
+         sha256      = 1aabff6d138690ac04a9da00b580deb3bfe3e8d7b44e9e8234a67e501271cb40
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0b
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        Not supported: annotation type declarations (@interface), annotations on
+                        types (eg List<@NonNull String>, annotations before a type are modifiers),
+                        module-info.java
+                        and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0c.ixml
+         size        = 16542
+         sha256      = 88fe1d963a96e021d319e2c9aac1538fc92f7741210e8c5397b51378ac379582
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0c
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                          method(name = f) {
+                              modifier = public
+                              modifier = static
+                              type_parameters { type_parameter(name = T) }
+                              type { name = List  type_arguments { type { name = T } }  dim }
+                              parameter(name = x) { modifier = final  type { primitive = int } }
+                              throws { type { name = E } }
+                              block
+                          }
+
+                          - Declared names are attributes: class(name = A), variable(name = x), ...
+                          - A type has a primitive (int) or a dotted name (java.util.List), then its
+                            type_arguments, and a dim for every []. A name is split only where type
+                            arguments or annotations come between its parts:
+                            Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                          - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                          - Annotations and modifiers are kept in source order.
+                          - void, varargs, static (of an initializer) and dim are empty elements.
+
+                        Not supported: annotation type declarations (@interface), annotations on
+                        types (eg List<@NonNull String>, annotations before a type are modifiers),
+                        module-info.java
+                        and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0d.ixml
+         size        = 21334
+         sha256      = 8aa288911ea30522699c575bbbded76f6df7f654f0e336b9309c417ee5b6cb73
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0d
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                          method(name = f) {
+                              modifier = public
+                              modifier = static
+                              type_parameters { type_parameter(name = T) }
+                              type { name = List  type_arguments { type { name = T } }  dim }
+                              parameter(name = x) { modifier = final  type { primitive = int } }
+                              throws { type { name = E } }
+                              block
+                          }
+
+                          - Declared names are attributes: class(name = A), variable(name = x), ...
+                          - A type has a primitive (int) or a dotted name (java.util.List), then its
+                            type_arguments, and a dim for every []. A name is split only where type
+                            arguments or annotations come between its parts:
+                            Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                          - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                          - Annotations and modifiers are kept in source order.
+                          - void, varargs, static (of an initializer) and dim are empty elements.
+
+                        Not supported: annotation type declarations (@interface), annotations on
+                        types (eg List<@NonNull String>, annotations before a type are modifiers),
+                        module-info.java
+                        and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0e.ixml
+         size        = 25748
+         sha256      = 38047f6d42918bd1b6de7b725c1ee77cf5addbd68c10e919b574ad1ceaf54f65
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0e
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                          method(name = f) {
+                              modifier = public
+                              modifier = static
+                              type_parameters { type_parameter(name = T) }
+                              type { name = List  type_arguments { type { name = T } }  dim }
+                              parameter(name = x) { modifier = final  type { primitive = int } }
+                              throws { type { name = E } }
+                              block
+                          }
+
+                          - Declared names are attributes: class(name = A), variable(name = x), ...
+                          - A type has a primitive (int) or a dotted name (java.util.List), then its
+                            type_arguments, and a dim for every []. A name is split only where type
+                            arguments or annotations come between its parts:
+                            Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                          - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                          - Annotations and modifiers are kept in source order.
+                          - void, varargs, static (of an initializer) and dim are empty elements.
+
+                        The grammar accepts more than Java in a few places: an expression statement
+                        can be any primary (a; is accepted, Java requires a call, x++ or an
+                        assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                        Not supported: annotation type declarations (@interface), annotations on
+                        types (eg List<@NonNull String>, annotations before a type are modifiers),
+                        method references on a generic type (List<String>::size),
+                        module-info.java and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0e.xslq
+         size        = 12400
+         sha256      = d81e68cf8a5247eb14aa17f3c88893f4fdfa6c63104d59a9d5fe97391638d249
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0e
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0e as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = lang/java_v0f.ixml
+         size        = 26252
+         sha256      = e9491d2e7bd80e48c4d38d3b68a8ef010dac7c601fda832d903d6758bfcc93f7
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0f
+         description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                        contents of the code: names, literals, operators and the structure. Whitespace,
+                        comments and punctuation are dropped. (Comments are for a separate grammar for
+                        syntax coloring and pretty printing.)
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                          - Whitespace and comments (ws) are placed at the end of each token, except
+                            in the first rule, which accepts leading white space. No rule may start
+                            with ws, otherwise whitespace can be split ambiguously.
+                          - Tokens use the not operator ! to implement maximal munch, e.g. an
+                            IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                            the token + cannot be followed by + or =. Keywords cannot be identifiers
+                            (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                            are identifiers, matched as keywords only where the syntax needs them.
+                          - > is always a single token, so that List<List<String>> closes two type
+                            argument lists. The shift operators >> and >>> are > tokens without
+                            whitespace between them. The assignments >>= and >>>= are tokens.
+                          - Unicode escapes (A) are only recognized inside char, string and
+                            text block literals.
+                          - Literals keep their source text without the quotes, escapes are not
+                            translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                        The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                          method(name = f) {
+                              modifier = public
+                              modifier = static
+                              type_parameters { type_parameter(name = T) }
+                              type { name = List  type_arguments { type { name = T } }  dim }
+                              parameter(name = x) { modifier = final  type { primitive = int } }
+                              throws { type { name = E } }
+                              block
+                          }
+
+                          - Declared names are attributes: class(name = A), variable(name = x), ...
+                          - A type has a primitive (int) or a dotted name (java.util.List), then its
+                            type_arguments, and a dim for every []. A name is split only where type
+                            arguments or annotations come between its parts:
+                            Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                          - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                          - Annotations and modifiers are kept in source order.
+                          - void, varargs, static (of an initializer) and dim are empty elements.
+
+                        The grammar accepts more than Java in a few places: an expression statement
+                        can be any primary (a; is accepted, Java requires a call, x++ or an
+                        assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                        Not supported: annotation type declarations (@interface), annotations on
+                        types (eg List<@NonNull String>, annotations before a type are modifiers),
+                        method references on a generic type (List<String>::size),
+                        module-info.java and the Java 21 features (record patterns, patterns in switch).')
+    file(path        = lang/java_v0f.xslq
+         size        = 12400
+         sha256      = e653caa5bc3ca4bd0499bd171bd460e0b628c6bb33e21d121fe60a4f343aa28b
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0f
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0f as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = lang/java_v0g.ixml
+         size        = 27486
+         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+
+                          Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                          Permission is hereby granted, free of charge, to any person obtaining a copy
+                          of this software and associated documentation files (the "Software"), to deal
+                          in the Software without restriction, including without limitation the rights
+                          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                          copies of the Software, and to permit persons to whom the Software is
+                          furnished to do so, subject to the following conditions:
+
+                          The above copyright notice and this permission notice shall be included in all
+                          copies or substantial portions of the Software.
+
+                          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                          SOFTWARE.
+
+                          The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                          contents of the code: names, literals, operators, comments and the structure.
+                          Whitespace and punctuation are dropped.
+
+                          The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                          as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                            - Whitespace and comments (ws) are placed at the end of each token, except
+                              in the first rule, which accepts leading white space. No rule may start
+                              with ws, otherwise whitespace can be split ambiguously. A comment on the
+                              line of the token is a comment, a comment on the following lines is a
+                              leading_comment, which java.xslq moves to the declaration or statement
+                              that follows it.
+                            - Tokens use the not operator ! to implement maximal munch, e.g. an
+                              IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                              the token + cannot be followed by + or =. Keywords cannot be identifiers
+                              (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                              are identifiers, matched as keywords only where the syntax needs them.
+                            - > is always a single token, so that List<List<String>> closes two type
+                              argument lists. The shift operators >> and >>> are > tokens without
+                              whitespace between them. The assignments >>= and >>>= are tokens.
+                            - Unicode escapes (A) are only recognized inside char, string and
+                              text block literals.
+                            - Literals keep their source text without the quotes, escapes are not
+                              translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                          The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                            method(name = f) {
+                                modifier = public
+                                modifier = static
+                                type_parameters { type_parameter(name = T) }
+                                type { name = List  type_arguments { type { name = T } }  dim }
+                                parameter(name = x) { modifier = final  type { primitive = int } }
+                                throws { type { name = E } }
+                                block
+                            }
+
+                            - Declared names are attributes: class(name = A), variable(name = x), ...
+                            - A type has a primitive (int) or a dotted name (java.util.List), then its
+                              type_arguments, and a dim for every []. A name is split only where type
+                              arguments or annotations come between its parts:
+                              Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                            - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                            - Annotations and modifiers are kept in source order.
+                            - void, varargs, static (of an initializer) and dim are empty elements.
+                            - A comment keeps its text without // or /* */, eg comment = ' the x'. After
+                              java.xslq the comments on their own lines before a declaration or
+                              statement are its first children, eg the javadoc of a method, the
+                              comments before a closing brace are the last children of the block, and
+                              a comment on the line of a token is after the element of the token.
+
+                          The grammar accepts more than Java in a few places: an expression statement
+                          can be any primary (a; is accepted, Java requires a call, x++ or an
+                          assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                          Not supported: annotation type declarations (@interface), annotations on
+                          types (eg List<@NonNull String>, annotations before a type are modifiers),
+                          method references on a generic type (List<String>::size),
+                          module-info.java and the Java 21 features (record patterns, patterns in switch).''')
+    file(path        = lang/java_v0g.xslq
+         size        = 22426
+         sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 0g
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+                          - a leading comment (on its own line) is moved to the declaration or statement
+                            that follows it, or to the end of the block before a closing brace, and the
+                            comments of a token with text, eg a name, are after its element.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = measurement/metar-to-html.xslq
+         size        = 96112
+         sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1b
+         description = 'Render a METAR report, parsed with metar.ixml, as a web page:
+                          xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+
+                        A blue header shows the station, the time, the flight category (VFR, MVFR,
+                        IFR, LIFR) and the temperature, dew point, pressure and visibility.
+
+                        The wind is drawn on a compass with a bezel and a compass rose, the arrow flies
+                        with the wind from the direction it blows from, the variation is drawn as a
+                        wedge. The hub shows the speed, colored by its strength, and the Beaufort force
+                        is printed below. Every weather group gets an icon on a sky tile with cloud,
+                        sun, rain, snow, ice, lightning and fog.
+
+                        The cloud layers are drawn as a cross section of the sky at their altitudes,
+                        with as many clouds as the layer has oktas, cumulonimbus and towering cumulus
+                        as towers, the precipitation falling from the lowest layer and the vertical
+                        visibility as a hatched fog. Every layer is labeled with its okta symbol.
+                        Everything is also printed in words in the table below.
+
+                        The groups after a trend (BECMG, TEMPO) are the forecast, they are not drawn
+                        but printed with the trend.')
+    file(path        = measurement/metar-to-html_v1.xslq
+         size        = 96112
+         sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1b
+         description = 'Render a METAR report, parsed with metar.ixml, as a web page:
+                          xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+
+                        A blue header shows the station, the time, the flight category (VFR, MVFR,
+                        IFR, LIFR) and the temperature, dew point, pressure and visibility.
+
+                        The wind is drawn on a compass with a bezel and a compass rose, the arrow flies
+                        with the wind from the direction it blows from, the variation is drawn as a
+                        wedge. The hub shows the speed, colored by its strength, and the Beaufort force
+                        is printed below. Every weather group gets an icon on a sky tile with cloud,
+                        sun, rain, snow, ice, lightning and fog.
+
+                        The cloud layers are drawn as a cross section of the sky at their altitudes,
+                        with as many clouds as the layer has oktas, cumulonimbus and towering cumulus
+                        as towers, the precipitation falling from the lowest layer and the vertical
+                        visibility as a hatched fog. Every layer is labeled with its okta symbol.
+                        Everything is also printed in words in the table below.
+
+                        The groups after a trend (BECMG, TEMPO) are the forecast, they are not drawn
+                        but printed with the trend.')
+    file(path        = measurement/metar-to-html_v1a.xslq
+         size        = 47885
+         sha256      = a361861148d1729d968cac00e3bb4e3df3ed304df5c9d3d723ba00dbe05fc3db
+         mtime       = 2026-11-20T21:47:52Z
+         version     = 1a
+         description = 'Render a METAR report, parsed with metar.ixml, as a web page:
+                          xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+
+                        The wind is drawn on a compass dial, the arrow flies with the wind from the
+                        direction it blows from, the variation is drawn as an arc. Every weather group
+                        gets an icon with cloud, sun, rain, snow, ice, lightning and fog. The cloud
+                        layers are drawn from the highest to the lowest with the oktas as puffs.
+                        Everything is also printed in words in the table below.
+
+                        The groups after a trend (BECMG, TEMPO) are the forecast, they are not drawn
+                        but printed with the trend.')
+    file(path        = measurement/metar-to-html_v1b.xslq
+         size        = 96112
+         sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1b
+         description = 'Render a METAR report, parsed with metar.ixml, as a web page:
+                          xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+
+                        A blue header shows the station, the time, the flight category (VFR, MVFR,
+                        IFR, LIFR) and the temperature, dew point, pressure and visibility.
+
+                        The wind is drawn on a compass with a bezel and a compass rose, the arrow flies
+                        with the wind from the direction it blows from, the variation is drawn as a
+                        wedge. The hub shows the speed, colored by its strength, and the Beaufort force
+                        is printed below. Every weather group gets an icon on a sky tile with cloud,
+                        sun, rain, snow, ice, lightning and fog.
+
+                        The cloud layers are drawn as a cross section of the sky at their altitudes,
+                        with as many clouds as the layer has oktas, cumulonimbus and towering cumulus
+                        as towers, the precipitation falling from the lowest layer and the vertical
+                        visibility as a hatched fog. Every layer is labeled with its okta symbol.
+                        Everything is also printed in words in the table below.
+
+                        The groups after a trend (BECMG, TEMPO) are the forecast, they are not drawn
+                        but printed with the trend.')
+    file(path        = measurement/metar.ixml
+         size        = 10488
+         sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
+         mtime       = 2026-11-20T22:39:25Z
+         version     = 1c
+         description = 'A grammar for parsing METAR weather reports.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized: leading zeros are removed, M becomes a minus sign,
+                        cloud bases and vertical visibility are given in feet and inHg pressure
+                        gets its decimal point.
+
+                        Example reports:
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG=
+                        METAR EFJY 201050Z AUTO 16007KT 9999 -SHRA OVC060CB 15/09 Q1017
+
+                        Not supported yet: runway state groups like 8849//91, wind shear groups
+                        and the time groups (FM, TL, AT) after a trend.')
+    file(path        = measurement/metar_v1.ixml
+         size        = 10488
+         sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
+         mtime       = 2026-11-20T22:39:25Z
+         version     = 1c
+         description = 'A grammar for parsing METAR weather reports.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized: leading zeros are removed, M becomes a minus sign,
+                        cloud bases and vertical visibility are given in feet and inHg pressure
+                        gets its decimal point.
+
+                        Example reports:
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG=
+                        METAR EFJY 201050Z AUTO 16007KT 9999 -SHRA OVC060CB 15/09 Q1017
+
+                        Not supported yet: runway state groups like 8849//91, wind shear groups
+                        and the time groups (FM, TL, AT) after a trend.')
+    file(path        = measurement/metar_v1a.ixml
+         size        = 5754
+         sha256      = df742665ac809f52c3ef42d490758a35d4290b239d355e93d52bfa0f12e18651
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'A grammar for parsing METAR weather reports.
+
+                        Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Example reports:
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN="
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG 8849//91=
+
+                        Not supported yet: runway state groups like 8849//91.')
+    file(path        = measurement/metar_v1b.ixml
+         size        = 10505
+         sha256      = d1ce7403b1de12ce47fdfa8162f6f02b799efc27df1127fda35bbedcc0021e45
+         mtime       = 2026-11-20T21:47:52Z
+         version     = 1b
+         description = 'A grammar for parsing METAR weather reports.
+
+                        Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized: leading zeros are removed, M becomes a minus sign,
+                        cloud bases and vertical visibility are given in feet and inHg pressure
+                        gets its decimal point.
+
+                        Example reports:
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG=
+                        METAR EFJY 201050Z AUTO 16007KT 9999 -SHRA OVC060CB 15/09 Q1017
+
+                        Not supported yet: runway state groups like 8849//91, wind shear groups
+                        and the time groups (FM, TL, AT) after a trend.')
+    file(path        = measurement/metar_v1c.ixml
+         size        = 10488
+         sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
+         mtime       = 2026-11-20T22:39:25Z
+         version     = 1c
+         description = 'A grammar for parsing METAR weather reports.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized: leading zeros are removed, M becomes a minus sign,
+                        cloud bases and vertical visibility are given in feet and inHg pressure
+                        gets its decimal point.
+
+                        Example reports:
+                        METAR LBBG 041600Z 12012MPS 090V150 1400 R04/P1500N R22/P1500U +SN BKN022 OVC050 M04/M07 Q1020 NOSIG=
+                        METAR EFJY 201050Z AUTO 16007KT 9999 -SHRA OVC060CB 15/09 Q1017
+
+                        Not supported yet: runway state groups like 8849//91, wind shear groups
+                        and the time groups (FM, TL, AT) after a trend.')
+    file(path        = measurement/taf-to-html.xslq
+         size        = 71799
+         sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1a
+         description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
+                          xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
+
+                        A blue header shows the station, the issue time, the validity period, the
+                        flight category (VFR, MVFR, IFR, LIFR) of the base forecast and the maximum
+                        and minimum temperatures.
+
+                        A timeline spans the validity period. The prevailing conditions, the base
+                        forecast and the FM groups, are drawn on the first row, every BECMG, TEMPO,
+                        INTER and PROB group gets a row of its own. The bars are colored by the
+                        flight category of their conditions, a BECMG bar fades into the new
+                        conditions that then last until the next FM group.
+
+                        Below every period gets a card with a weather icon, the wind arrow, the
+                        visibility, the weather and the cloud layers with their okta symbols.')
+    file(path        = measurement/taf-to-html_v1.xslq
+         size        = 71799
+         sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1a
+         description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
+                          xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
+
+                        A blue header shows the station, the issue time, the validity period, the
+                        flight category (VFR, MVFR, IFR, LIFR) of the base forecast and the maximum
+                        and minimum temperatures.
+
+                        A timeline spans the validity period. The prevailing conditions, the base
+                        forecast and the FM groups, are drawn on the first row, every BECMG, TEMPO,
+                        INTER and PROB group gets a row of its own. The bars are colored by the
+                        flight category of their conditions, a BECMG bar fades into the new
+                        conditions that then last until the next FM group.
+
+                        Below every period gets a card with a weather icon, the wind arrow, the
+                        visibility, the weather and the cloud layers with their okta symbols.')
+    file(path        = measurement/taf-to-html_v1a.xslq
+         size        = 71799
+         sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1a
+         description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
+                          xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
+
+                        A blue header shows the station, the issue time, the validity period, the
+                        flight category (VFR, MVFR, IFR, LIFR) of the base forecast and the maximum
+                        and minimum temperatures.
+
+                        A timeline spans the validity period. The prevailing conditions, the base
+                        forecast and the FM groups, are drawn on the first row, every BECMG, TEMPO,
+                        INTER and PROB group gets a row of its own. The bars are colored by the
+                        flight category of their conditions, a BECMG bar fades into the new
+                        conditions that then last until the next FM group.
+
+                        Below every period gets a card with a weather icon, the wind arrow, the
+                        visibility, the weather and the cloud layers with their okta symbols.')
+    file(path        = measurement/taf.ixml
+         size        = 11588
+         sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
+         mtime       = 2026-11-20T22:39:38Z
+         version     = 1b
+         description = 'A grammar for parsing TAF terminal aerodrome forecasts.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        The forecast is split into the base forecast, the conditions expected
+                        for the whole validity period, followed by a change element for every
+                        change group, FM (from), BECMG (becoming), TEMPO (temporarily),
+                        INTER (intermittently) and PROB30/PROB40, that holds the conditions
+                        it changes. The groups may be written on several lines.
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized like in metar.ixml: leading zeros are removed, M
+                        becomes a minus sign and cloud bases are given in feet.
+
+                        Example forecasts:
+                        TAF EGLL 201059Z 2012/2118 24012KT 9999 SCT030 TEMPO 2012/2016 4000 SHRA BKN014
+                            BECMG 2020/2023 VRB03KT PROB30 2103/2108 0800 FG BKN002
+                        TAF AMD KJFK 201745Z 2018/2124 24015G25KT P6SM SCT050
+                            FM202200 30010KT P6SM FEW250 TX25/2019Z TN14/2110Z
+
+                        Not supported: the old validity periods with 6 digits (eg 051212), the
+                        military icing and turbulence groups and the QNH groups.')
+    file(path        = measurement/taf_v1.ixml
+         size        = 11588
+         sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
+         mtime       = 2026-11-20T22:39:38Z
+         version     = 1b
+         description = 'A grammar for parsing TAF terminal aerodrome forecasts.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        The forecast is split into the base forecast, the conditions expected
+                        for the whole validity period, followed by a change element for every
+                        change group, FM (from), BECMG (becoming), TEMPO (temporarily),
+                        INTER (intermittently) and PROB30/PROB40, that holds the conditions
+                        it changes. The groups may be written on several lines.
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized like in metar.ixml: leading zeros are removed, M
+                        becomes a minus sign and cloud bases are given in feet.
+
+                        Example forecasts:
+                        TAF EGLL 201059Z 2012/2118 24012KT 9999 SCT030 TEMPO 2012/2016 4000 SHRA BKN014
+                            BECMG 2020/2023 VRB03KT PROB30 2103/2108 0800 FG BKN002
+                        TAF AMD KJFK 201745Z 2018/2124 24015G25KT P6SM SCT050
+                            FM202200 30010KT P6SM FEW250 TX25/2019Z TN14/2110Z
+
+                        Not supported: the old validity periods with 6 digits (eg 051212), the
+                        military icing and turbulence groups and the QNH groups.')
+    file(path        = measurement/taf_v1a.ixml
+         size        = 11600
+         sha256      = 98e9ef1bd4f77d03994e3807f9130699508a15a2245d90e7c4977c2d9a81df19
+         mtime       = 2026-11-20T22:15:06Z
+         version     = 1a
+         description = 'A grammar for parsing TAF terminal aerodrome forecasts.
+
+                        Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        The forecast is split into the base forecast, the conditions expected
+                        for the whole validity period, followed by a change element for every
+                        change group, FM (from), BECMG (becoming), TEMPO (temporarily),
+                        INTER (intermittently) and PROB30/PROB40, that holds the conditions
+                        it changes. The groups may be written on several lines.
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized like in metar.ixml: leading zeros are removed, M
+                        becomes a minus sign and cloud bases are given in feet.
+
+                        Example forecasts:
+                        TAF EGLL 201059Z 2012/2118 24012KT 9999 SCT030 TEMPO 2012/2016 4000 SHRA BKN014
+                            BECMG 2020/2023 VRB03KT PROB30 2103/2108 0800 FG BKN002
+                        TAF AMD KJFK 201745Z 2018/2124 24015G25KT P6SM SCT050
+                            FM202200 30010KT P6SM FEW250 TX25/2019Z TN14/2110Z
+
+                        Not supported: the old validity periods with 6 digits (eg 051212), the
+                        military icing and turbulence groups and the QNH groups.')
+    file(path        = measurement/taf_v1b.ixml
+         size        = 11588
+         sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
+         mtime       = 2026-11-20T22:39:38Z
+         version     = 1b
+         description = 'A grammar for parsing TAF terminal aerodrome forecasts.
+
+                        Public Domain LLM-generated code (spdx: CC0)
+
+                        The forecast is split into the base forecast, the conditions expected
+                        for the whole validity period, followed by a change element for every
+                        change group, FM (from), BECMG (becoming), TEMPO (temporarily),
+                        INTER (intermittently) and PROB30/PROB40, that holds the conditions
+                        it changes. The groups may be written on several lines.
+
+                        Codes are kept, and a sibling -info element explains them in plain words.
+                        Numbers are normalized like in metar.ixml: leading zeros are removed, M
+                        becomes a minus sign and cloud bases are given in feet.
+
+                        Example forecasts:
+                        TAF EGLL 201059Z 2012/2118 24012KT 9999 SCT030 TEMPO 2012/2016 4000 SHRA BKN014
+                            BECMG 2020/2023 VRB03KT PROB30 2103/2108 0800 FG BKN002
+                        TAF AMD KJFK 201745Z 2018/2124 24015G25KT P6SM SCT050
+                            FM202200 30010KT P6SM FEW250 TX25/2019Z TN14/2110Z
+
+                        Not supported: the old validity periods with 6 digits (eg 051212), the
+                        military icing and turbulence groups and the QNH groups.')
+    file(path        = misc/testmeter.ixml
+         size        = 1580
+         sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
+    file(path        = misc/testmeter_v1.ixml
+         size        = 1580
+         sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
+    file(path        = misc/testmeter_v1a.ixml
+         size        = 1580
+         sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
+    file(path        = xmq-utils/parse-trace.ixml
+         size        = 1283
+         sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
+    file(path        = xmq-utils/parse-trace_v1.ixml
+         size        = 1283
+         sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
+    file(path        = xmq-utils/parse-trace_v1a.ixml
+         size        = 1283
+         sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
+    file(path        = xmq-utils/render-trace-to-html.xslq
+         size        = 14321
+         sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
+                          xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
+                        Every Earley item is a row: a cell spans the input it matched, below the tokens,
+                        and the rule with the dot is to the right. The items used in the tree are marked.
+                        Then the tree building: the tree is built top-down from the start rule, and every
+                        row adds a node. A column shows the latest node added over it, so a new node
+                        replaces its parent over the input it matched. When a choice is made by cost the
+                        alternatives are all built, the ones not chosen are struck out, and the last row
+                        shows the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-html_v1.xslq
+         size        = 14321
+         sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
+                          xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
+                        Every Earley item is a row: a cell spans the input it matched, below the tokens,
+                        and the rule with the dot is to the right. The items used in the tree are marked.
+                        Then the tree building: the tree is built top-down from the start rule, and every
+                        row adds a node. A column shows the latest node added over it, so a new node
+                        replaces its parent over the input it matched. When a choice is made by cost the
+                        alternatives are all built, the ones not chosen are struck out, and the last row
+                        shows the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-html_v1a.xslq
+         size        = 14321
+         sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
+                          xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
+                        Every Earley item is a row: a cell spans the input it matched, below the tokens,
+                        and the rule with the dot is to the right. The items used in the tree are marked.
+                        Then the tree building: the tree is built top-down from the start rule, and every
+                        row adds a node. A column shows the latest node added over it, so a new node
+                        replaces its parent over the input it matched. When a choice is made by cost the
+                        alternatives are all built, the ones not chosen are struck out, and the last row
+                        shows the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-terminal.xslq
+         size        = 22933
+         sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
+                        with ansi colors:
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text | less -RS
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is to the right. The items used in
+                        the tree are dark green. Then the tree building: every row adds a node, top-down, and a
+                        column shows the latest node added over it. The new node is dark green, its parent
+                        orange, the nodes not chosen by cost are struck out, and the last row is the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-terminal_v1.xslq
+         size        = 22933
+         sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
+                        with ansi colors:
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text | less -RS
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is to the right. The items used in
+                        the tree are dark green. Then the tree building: every row adds a node, top-down, and a
+                        column shows the latest node added over it. The new node is dark green, its parent
+                        orange, the nodes not chosen by cost are struck out, and the last row is the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-terminal_v1a.xslq
+         size        = 22933
+         sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
+                        with ansi colors:
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
+                          xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text | less -RS
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is to the right. The items used in
+                        the tree are dark green. Then the tree building: every row adds a node, top-down, and a
+                        column shows the latest node added over it. The new node is dark green, its parent
+                        orange, the nodes not chosen by cost are struck out, and the last row is the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-tex.xslq
+         size        = 16132
+         sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
+                          xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
+                          pdflatex trace.tex; pdflatex trace.tex
+                        (longtable needs two runs to line up the columns)
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is in the last column. The items
+                        used in the tree are dark green. Then the tree building: every row adds a node, top-down,
+                        and a column shows the latest node added over it. The new node is dark green and its
+                        parent orange. When a choice is made by cost the alternatives are all built, the ones
+                        not chosen are grey, and the last row shows the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-tex_v1.xslq
+         size        = 16132
+         sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
+                          xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
+                          pdflatex trace.tex; pdflatex trace.tex
+                        (longtable needs two runs to line up the columns)
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is in the last column. The items
+                        used in the tree are dark green. Then the tree building: every row adds a node, top-down,
+                        and a column shows the latest node added over it. The new node is dark green and its
+                        parent orange. When a choice is made by cost the alternatives are all built, the ones
+                        not chosen are grey, and the last row shows the chosen tree.')
+    file(path        = xmq-utils/render-trace-to-tex_v1a.xslq
+         size        = 16132
+         sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 1a
+         description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
+                          xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
+                          pdflatex trace.tex; pdflatex trace.tex
+                        (longtable needs two runs to line up the columns)
+                        Like render-trace-to-html.xslq: every Earley item is a row, a cell spans the input it
+                        matched below the tokens, and the rule with the dot is in the last column. The items
+                        used in the tree are dark green. Then the tree building: every row adds a node, top-down,
+                        and a column shows the latest node added over it. The new node is dark green and its
+                        parent orange. When a choice is made by cost the alternatives are all built, the ones
+                        not chosen are grey, and the last row shows the chosen tree.')
+    file(path        = xmq-utils/xmqcli.ixml
+         size        = 5307
+         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          The command line arguments (argv) are joined into a single line, which is
+                          parsed with this grammar. The line starts with xmq, then every argument
+                          follows separated by a single space. An argument that is empty or contains
+                          whitespace, quotes or backslashes is written inside double quotes, where
+                          " and \ are escaped with a backslash. For an option with a value,
+                          --name=value, only the value is quoted, eg --shell="echo \"${.}\"".
+
+                          Example: xmq --trim=none index.html delete //script select -c "//a[@x=1]" to-html
+                          gives:   xmq { option(name=trim value=none) file=index.html
+                                         command(name=delete){arg='//script'}
+                                         command(name=select){option(name=compact) arg='//a[@x=1]'}
+                                         command(name=to-html) }
+
+                          An argument never starts with a minus, to give an argument starting with a
+                          minus, use -- before it: select -x -- -x''')
+    file(path        = xmq-utils/xmqcli_v2.ixml
+         size        = 5307
+         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          The command line arguments (argv) are joined into a single line, which is
+                          parsed with this grammar. The line starts with xmq, then every argument
+                          follows separated by a single space. An argument that is empty or contains
+                          whitespace, quotes or backslashes is written inside double quotes, where
+                          " and \ are escaped with a backslash. For an option with a value,
+                          --name=value, only the value is quoted, eg --shell="echo \"${.}\"".
+
+                          Example: xmq --trim=none index.html delete //script select -c "//a[@x=1]" to-html
+                          gives:   xmq { option(name=trim value=none) file=index.html
+                                         command(name=delete){arg='//script'}
+                                         command(name=select){option(name=compact) arg='//a[@x=1]'}
+                                         command(name=to-html) }
+
+                          An argument never starts with a minus, to give an argument starting with a
+                          minus, use -- before it: select -x -- -x''')
+    file(path        = xmq-utils/xmqcli_v2a.ixml
+         size        = 5307
+         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
+         mtime       = 2026-11-20T20:49:16Z
+         version     = 2a
+         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          The command line arguments (argv) are joined into a single line, which is
+                          parsed with this grammar. The line starts with xmq, then every argument
+                          follows separated by a single space. An argument that is empty or contains
+                          whitespace, quotes or backslashes is written inside double quotes, where
+                          " and \ are escaped with a backslash. For an option with a value,
+                          --name=value, only the value is quoted, eg --shell="echo \"${.}\"".
+
+                          Example: xmq --trim=none index.html delete //script select -c "//a[@x=1]" to-html
+                          gives:   xmq { option(name=trim value=none) file=index.html
+                                         command(name=delete){arg='//script'}
+                                         command(name=select){option(name=compact) arg='//a[@x=1]'}
+                                         command(name=to-html) }
+
+                          An argument never starts with a minus, to give an argument starting with a
+                          minus, use -- before it: select -x -- -x''')
+}

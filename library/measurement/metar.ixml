@@ -1,5 +1,5 @@
 {
-    v1b A grammar for parsing METAR weather reports.
+    v1c A grammar for parsing METAR weather reports.
 
     Public Domain LLM-generated code (spdx: CC0)
 

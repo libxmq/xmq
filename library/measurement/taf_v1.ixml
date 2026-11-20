@@ -1,7 +1,7 @@
 {
-    v1a A grammar for parsing TAF terminal aerodrome forecasts.
+    v1b A grammar for parsing TAF terminal aerodrome forecasts.
 
-    Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+    Public Domain LLM-generated code (spdx: CC0)
 
     The forecast is split into the base forecast, the conditions expected
     for the whole validity period, followed by a change element for every
