@@ -131,7 +131,7 @@ do
     n=$(basename "$t" .test)
     sed -n '/^START$/,/^INPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUTPUT/ext/$n.ixml"
     sed -n '/^INPUT$/,/^OUTPUT$/p' "$t" | tail -n +2 | sed '$d' > "$OUTPUT/ext/$n.inp"
-    if [ "1" = "$(wc -l < "$OUTPUT/ext/$n.inp")" ]
+    if [ "1" = "$(( $(wc -l < "$OUTPUT/ext/$n.inp") ))" ]
     then
         # Like test_ixml_not.sh, a single line input has no newline.
         printf '%s' "$(cat "$OUTPUT/ext/$n.inp")" > "$OUTPUT/ext/$n.inp"

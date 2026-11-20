@@ -29,7 +29,7 @@ then
     echo "Built the generated parser $PARSER"
 fi
 
-TOTAL=$(echo "$FILES" | wc -l)
+TOTAL=$(( $(echo "$FILES" | wc -l) ))
 
 # Clear the status line before printing a result, if we are printing status lines.
 CLEAR=""
@@ -86,7 +86,7 @@ show_status()
 {
     while true
     do
-        local done=$(ls "$OUTPUT"/*.done 2>/dev/null | wc -l)
+        local done=$(( $(ls "$OUTPUT"/*.done 2>/dev/null | wc -l) ))
         local line="[$done/$TOTAL done]"
         for f in "$OUTPUT"/*.stderr
         do

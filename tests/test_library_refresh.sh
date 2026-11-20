@@ -37,6 +37,39 @@ unset XMQ_LIBRARY
 mkdir -p "$OUTPUT/installed"
 export XMQ_INSTALLED_LIBRARY="$OUTPUT/installed"
 CACHE="$HOME/.local/share/xmq/library"
+# The file edits are done with python3 (needed for build_library_index.py anyway),
+# since sed -i and touch -d differ between GNU and BSD (macos).
+
+# replace_first <old> <new> <file>, in the first line.
+replace_first()
+{
+    python3 -c 'import sys
+p, old, new = sys.argv[1], sys.argv[2], sys.argv[3]
+lines = open(p, encoding="utf-8").read().split("\n")
+lines[0] = lines[0].replace(old, new, 1)
+open(p, "w", encoding="utf-8").write("\n".join(lines))' "$3" "$1" "$2"
+}
+
+# touch_later <seconds> <file>, set the modification time to now plus seconds.
+touch_later()
+{
+    python3 -c 'import os, sys, time
+t = time.time() + int(sys.argv[1])
+os.utime(sys.argv[2], (t, t))' "$1" "$2"
+}
+
+# bad_sha256 <path> <index.xmq>, replace the sha256 of the file entry with the path by zeros.
+bad_sha256()
+{
+    python3 -c 'import re, sys
+path, p = sys.argv[1], sys.argv[2]
+s = open(p, encoding="utf-8").read()
+i = re.search(r"path *= " + re.escape(path) + r"\n", s).start()
+m = re.compile(r"sha256 *= [0-9a-f]+").search(s, i)
+s = s[:m.start()] + "sha256 = " + "0" * 64 + s[m.end():]
+open(p, "w", encoding="utf-8").write(s)' "$1" "$2"
+}
+
 TOTAL=$(grep -c 'file(path' "$OUTPUT/server/index.xmq")
 
 # Nothing is downloaded yet, every file is new.
@@ -54,8 +87,8 @@ grep -q "The library is up to date ($TOTAL files)" "$OUTPUT/check2.txt" || fail 
 echo '{changed}' >> "$OUTPUT/server/data/csv.ixml"
 scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2> "$OUTPUT/noversion.err" && fail "a change without a new version was accepted"
 grep -q 'give it a new version (eg v1b or v2a)' "$OUTPUT/noversion.err" || fail "no message for a change without a new version"
-sed -i '1s/{ v1a /{ v1b /' "$OUTPUT/server/data/csv.ixml"
-touch -d '+1 hour' "$OUTPUT/server/data/csv.ixml"
+replace_first '{ v1a ' '{ v1b ' "$OUTPUT/server/data/csv.ixml"
+touch_later 3600 "$OUTPUT/server/data/csv.ixml"
 scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2>&1 || fail "the index with csv v1b"
 cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1b.ixml" || fail "no csv_v1b.ixml"
 cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1.ixml" || fail "csv_v1.ixml is not the latest 1.x"
@@ -68,7 +101,7 @@ cmp -s "$OUTPUT/server/data/csv.ixml" "$CACHE/data/csv.ixml" || fail "the change
 
 # A file changed locally, more recently than the one on the server, is kept.
 echo '{mine}' >> "$CACHE/data/tsv.ixml"
-touch -d '+2 hours' "$CACHE/data/tsv.ixml"
+touch_later 7200 "$CACHE/data/tsv.ixml"
 "$PROG" check-library > "$OUTPUT/check4.txt"
 grep -q '^newer   data/tsv.ixml' "$OUTPUT/check4.txt" || fail "the local tsv.ixml is not listed as newer"
 "$PROG" refresh-library > /dev/null
@@ -76,7 +109,7 @@ grep -q '{mine}' "$CACHE/data/tsv.ixml" || fail "refresh-library replaced the ne
 
 # A download with another sha256 than the index is not used.
 rm "$CACHE/core/xmq.ixml"
-sed -i "/path *= core\/xmq.ixml\$/{n;n;s/sha256 *= .*/sha256 = $(printf '0%.0s' $(seq 64))/}" "$OUTPUT/server/index.xmq"
+bad_sha256 core/xmq.ixml "$OUTPUT/server/index.xmq"
 "$PROG" refresh-library > /dev/null 2> "$OUTPUT/badsha.err" && fail "a bad sha256 exits 0"
 grep -q 'is not the one in the library index' "$OUTPUT/badsha.err" || fail "no message for a bad sha256"
 [ -f "$CACHE/core/xmq.ixml" ] && fail "a download with a bad sha256 was kept"

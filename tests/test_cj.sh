@@ -81,7 +81,7 @@ touch "$OUT/differ.txt"
     sed 's/^/to-xml /' "$HTML_FILES"
 } | xargs -P "${JOBS:-8}" -L 1 bash -c 'one "$@"' _
 
-NH=$(wc -l < "$HTML_FILES")
+NH=$(( $(wc -l < "$HTML_FILES") ))
 N=$(( $(wc -l < "$FILES") + $(grep -l "<!ENTITY" $(cat "$FILES") 2>/dev/null | wc -l) + 2 * NH ))
 
 # transform: every stylesheet name.xsl with an input name.xml of the libxslt test suite
@@ -126,7 +126,7 @@ onex()
 }
 export -f onex
 xargs -P "${JOBS:-8}" -L 1 bash -c 'onex "$@"' _ < "$XSLT_CASES"
-NX=$(wc -l < "$XSLT_CASES")
+NX=$(( $(wc -l < "$XSLT_CASES") ))
 N=$((N + NX))
 # The files written by xsl:document.
 if ! diff -r "$OUT/xslt/c" "$OUT/xslt/j" > "$OUT/xslt_files.diff"
@@ -184,10 +184,10 @@ onev()
 }
 export -f onev
 xargs -P "${JOBS:-8}" -L 1 bash -c 'onev "$@"' _ < "$VALIDATE_CASES"
-NV=$(wc -l < "$VALIDATE_CASES")
+NV=$(( $(wc -l < "$VALIDATE_CASES") ))
 N=$((N + NV))
 
-D=$(wc -l < "$OUT/differ.txt")
+D=$(( $(wc -l < "$OUT/differ.txt") ))
 sort "$OUT/differ.txt" | sed "s#$ROOT/##"
 if [ "$D" = "0" ]
 then

@@ -42,21 +42,23 @@ head -c 5 "$OUTPUT/trace.xml" | grep -q '<?xml' || fail "trace.xml is not xml"
 
 # Every tree node marks an item as used in the web page.
 $PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-html.xslq to-html > "$OUTPUT/trace.html" || fail "html render failed"
-[ "$(grep -o 'complete used' "$OUTPUT/trace.html" | wc -l)" = "$NODES" ] || fail "html does not mark the $NODES used items"
+[ "$(( $(grep -o 'complete used' "$OUTPUT/trace.html" | wc -l) ))" = "$NODES" ] || fail "html does not mark the $NODES used items"
 # The tree building table has a row with a new node for every node.
-[ "$(grep -o 'node new' "$OUTPUT/trace.html" | wc -l)" = "$NODES" ] || fail "html does not show the $NODES added nodes"
+[ "$(( $(grep -o 'node new' "$OUTPUT/trace.html" | wc -l) ))" = "$NODES" ] || fail "html does not show the $NODES added nodes"
 
 $PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-tex.xslq to-text > "$OUTPUT/trace.tex" || fail "tex render failed"
 grep -q 'begin{longtable}' "$OUTPUT/trace.tex" || fail "tex has no table"
-[ "$(grep -o 'cellcolor{used}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not mark the $NODES used items"
-[ "$(grep -o 'cellcolor{treenew}' "$OUTPUT/trace.tex" | wc -l)" = "$NODES" ] || fail "tex does not show the $NODES added nodes"
+[ "$(( $(grep -o 'cellcolor{used}' "$OUTPUT/trace.tex" | wc -l) ))" = "$NODES" ] || fail "tex does not mark the $NODES used items"
+[ "$(( $(grep -o 'cellcolor{treenew}' "$OUTPUT/trace.tex" | wc -l) ))" = "$NODES" ] || fail "tex does not show the $NODES added nodes"
 
 # In the terminal: ansi colors, and the tables line up, the │ before the rules is in the same
 # column on every row (ω and ↓ are one character, counted as one byte here).
 $PROG "$OUTPUT/trace.xmq" transform library/xmq-utils/render-trace-to-terminal.xslq to-text > "$OUTPUT/trace.txt" || fail "terminal render failed"
 grep -q $'\x1b\[30;48;5;151m' "$OUTPUT/trace.txt" || fail "terminal output has no ansi colors"
 grep -q 'the chosen tree' "$OUTPUT/trace.txt" || fail "terminal output has no chosen tree"
-COLUMNS_USED=$(sed 's/\x1b\[[0-9;]*m//g' "$OUTPUT/trace.txt" | grep '│' | sed 's/│.*//; s/ω/w/g; s/↓/v/g' | awk '{ print length($0) }' | sort -u | wc -l)
+# Not \x1b in the sed pattern and the count as a number: macos (BSD) sed and wc differ.
+ESC=$(printf '\033')
+COLUMNS_USED=$(( $(sed "s/${ESC}\[[0-9;]*m//g" "$OUTPUT/trace.txt" | grep '│' | sed 's/│.*//; s/ω/w/g; s/↓/v/g' | awk '{ print length($0) }' | sort -u | wc -l) ))
 [ "$COLUMNS_USED" = "1" ] || fail "terminal tables do not line up"
 
 # A choice by cost: A and B both match aaa, B costs 1. Both are built, S → B is not chosen.

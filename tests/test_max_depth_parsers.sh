@@ -58,7 +58,7 @@ generate()
 # count_elements <file.xml>, the number of start tags.
 count_elements()
 {
-    grep -o '<[a-z_]' "$1" | wc -l
+    echo $(( $(grep -o '<[a-z_]' "$1" | wc -l) ))
 }
 
 check()

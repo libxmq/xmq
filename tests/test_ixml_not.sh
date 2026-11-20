@@ -25,7 +25,7 @@ ARGS=$(grep ^ARGS $TEST_FILE | cut -b 6- | tr -d '\n')
 
 sed -n '/^START$/,/^INPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.ixml
 sed -n '/^INPUT$/,/^OUTPUT$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST_NAME}.input
-if [ "1" = "$(wc -l $OUTPUT/${TEST_NAME}.input | cut -f 1 -d ' ')" ]
+if [ "1" = "$(( $(wc -l < $OUTPUT/${TEST_NAME}.input) ))" ]
 then
     cat $OUTPUT/${TEST_NAME}.input | tr -d '\n' > $OUTPUT/tempo
     mv $OUTPUT/tempo $OUTPUT/${TEST_NAME}.input

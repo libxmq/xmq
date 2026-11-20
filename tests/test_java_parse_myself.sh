@@ -87,7 +87,7 @@ then
     if [ -n "$CLEAN_FAILED" ]
     then
         echo "$CLEAN_FAILED"
-        echo "Cleanup failed: $(echo "$CLEAN_FAILED" | wc -l)"
+        echo "Cleanup failed: $(( $(echo "$CLEAN_FAILED" | wc -l) ))"
         exit 1
     fi
     echo "Cleanup with library/lang/java.xslq passed: $TOTAL"
