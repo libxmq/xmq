@@ -2148,11 +2148,11 @@ const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, si
     // Port of libxml2 htmlFindEntityPrefix.
     const unsigned char *match = NULL;
     unsigned left, right;
-    int first = string[0];
     size_t match_len = 0;
     size_t soff = 1;
 
     if (slen < 2) return NULL;
+    int first = string[0];
     if (!xml_html_is_ascii_letter(first)) return NULL;
 
     // Look up range by first character.
@@ -2172,13 +2172,16 @@ const unsigned char *xml_html_find_entity_prefix(const unsigned char *string, si
         bytes = htmlEntStrings + htmlEntValues[mid];
         len = bytes[0] & ~ENT_F_ALL;
 
+        // The string is not NUL terminated, so compare only the slen - soff
+        // characters that are left (libxml2 relies on the terminating NUL).
+        size_t left_len = slen - soff;
         cmp = string[soff] - bytes[1];
 
         if (cmp == 0)
         {
-            if (slen < len)
+            if (left_len < len)
             {
-                cmp = strncmp((const char*)string + soff + 1, (const char*)bytes + 2, slen - 1);
+                cmp = strncmp((const char*)string + soff + 1, (const char*)bytes + 2, left_len - 1);
                 // Prefix can never match.
                 if (cmp == 0) break;
             }

@@ -308,6 +308,7 @@ struct XMQParseState
     XMQDoc *doq;
     const char *implicit_root; // Assume that this is the first element name
     Stack *element_stack; // Top is last created node
+    Stack *json_keys; // The keys of the json objects being parsed, freed if the parse fails.
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.

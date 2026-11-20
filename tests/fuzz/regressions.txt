@@ -11,3 +11,20 @@ xmq_pi_in_pi_leak|\000?html?htmlmlke}=x{ze}=x{zw\n
 yaml_utf8_peek_at_stop|\004e: { f: 1,\n\n
 yaml_wrong_bracket_hang|\004a: [b}]\n
 html_detect_read_at_stop|\002<\n
+html_entity_prefix_at_stop|\002<p>&ab
+html_entity_prefix_in_attr_at_stop|\002<a b="&ab
+html_entity_prefix_capital_at_stop|\002<p>&Ab
+html_doctype_detect_beyond_stop|\002<!DOCTYPE
+json_whitespace_at_stop|\003"0
+json_object_peek_at_stop|\003{\n
+json_object_key_leak_on_error|\003{"a": x}
+json_backslash_at_stop|\003{"a\\
+json_invalid_escape_leak|\003"\\x"
+xmq_comment_slashes_at_stop|\000x //
+xmq_pi_empty_value|\000?=
+xmq_pi_body_has_no_parent|\000?a { b }
+yaml_tag_spaces_beyond_key|\004a: { ? !!s : 4 -\n}
+xmq_pi_attr_value_has_no_node|\000?(m='')
+xmq_pi_value_entity|\000?=&
+xmq_bad_doctype_leak|\000!DOCTYPE=''
+yaml_to_json_comment_in_array|\004-\000#0

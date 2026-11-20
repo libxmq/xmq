@@ -536,7 +536,7 @@ size_t count_xmq_slashes(const char *i, const char *stop, bool *found_asterisk)
 
     while (i < stop && *i == '/') i++;
 
-    if (*i == '*') *found_asterisk = true;
+    if (i < stop && *i == '*') *found_asterisk = true;
     else *found_asterisk = false;
 
     return i-start;

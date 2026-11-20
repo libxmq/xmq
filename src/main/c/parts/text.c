@@ -14,6 +14,7 @@
 
 size_t count_whitespace(const char *i, const char *stop)
 {
+    if (i >= stop) return 0;
     unsigned char c = *i;
     if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
     {
@@ -689,6 +690,7 @@ XMQReturnString xmq_unquote_as_c(const char *start, const char *stop, bool remov
 char *potentially_add_leading_ending_space(const char *start, const char *stop)
 {
     char *content = NULL;
+    if (start >= stop) return strdup(""); // An empty value, eg ?a=
     int prefix = *start == '\'' ? 1 : 0;
     int postfix = *(stop-1) == '\'' ? 1 : 0;
     if (prefix || postfix)

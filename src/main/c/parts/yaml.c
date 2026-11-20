@@ -804,7 +804,7 @@ yflow_key(y_parser *p, XMQParseState *state, const char *k, const char *ke)
         if (end != tagname)
         {
             taglen = (size_t)(end - tagname);
-            while (yspace(*end)) { ++end; }
+            while (end < ke && yspace(*end)) { ++end; }
             tk = end;
         }
         else
@@ -823,7 +823,7 @@ yflow_key(y_parser *p, XMQParseState *state, const char *k, const char *ke)
     else
     {
         ktxt = tk;
-        klen = (size_t)(ke - tk);
+        klen = tk < ke ? (size_t)(ke - tk) : 0;
     }
 
     if (klen) { ykey(state, ktxt, ktxt+klen); }

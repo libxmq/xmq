@@ -139,9 +139,12 @@ public class XMQParseIntoDOM extends XMQParser
         element_last_ = null;
     }
 
+    /** The node that gets the new children: the top of the element stack, or the document
+        when the top is not a node, eg in the body of a processing instruction ?a { b }. */
     XmlNode top()
     {
-        return element_stack_.get(element_stack_.size() - 1);
+        XmlNode n = element_stack_.get(element_stack_.size() - 1);
+        return n != null ? n : doc_;
     }
 
     void push(XmlNode n)
@@ -376,6 +379,9 @@ public class XMQParseIntoDOM extends XMQParser
 
     XmlNode create_entity(int start, int stop, XmlNode parent)
     {
+        // There is no node for the value, eg the value of a processing instruction
+        // attribute ?a(b=&x;), the value is dropped.
+        if (parent == null) return null;
         String tmp = buffer_.substring(start, stop);
         XmlNode n;
         if (tmp.length() > 1 && tmp.charAt(1) == '#')
@@ -421,6 +427,12 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_element_value_entity(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        // The content of a processing instruction ?a=&amp; is the text of the entity.
+        if (parsing_pi_)
+        {
+            do_element_value_text(start_line, start_col, start, stop, stop_suffix);
+            return;
+        }
         create_entity(start, stop, element_last_);
     }
 

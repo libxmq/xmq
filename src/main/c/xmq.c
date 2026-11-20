@@ -110,6 +110,7 @@ char *copy_lines(int num_prefix_spaces, const char *start, const char *stop, int
 void copy_quote_settings_from_output_settings(XMQQuoteSettings *qs, XMQOutputSettings *os);
 XMQNode* create_entity(XMQParseState *state, size_t l, size_t c, const char *cstart, const char *cstop, const char*stop, XMQNode* parent);
 XMQStatus create_node(XMQParseState *state, const char *start, const char *stop);
+XMQNode *parent_node(XMQParseState *state);
 XmlNs* find_ns(XMQNode* node, const char *prefix);
 void update_namespace_href(XMQParseState *state, XmlNs* ns, const char *start, const char *stop);
 XMQReturnXMLNode create_quote(XMQParseState *state, size_t l, size_t col, const char *start, const char *stop, const char *suffix,  XMQNode* parent);
@@ -1196,7 +1197,7 @@ const char *find_word_ignore_case(const char *start, const char *stop, const cha
 
     while (i < stop && is_xml_whitespace(*i)) i++;
     // Never compare or look beyond stop.
-    if ((size_t)(stop-i) >= len && !strncasecmp(i, word, len))
+    if (i < stop && (size_t)(stop-i) >= len && !strncasecmp(i, word, len))
     {
         const char *next = i+len;
         if (next == stop || is_xml_whitespace(*next) || *next == 0 || !isalnum(*next))
@@ -1266,7 +1267,7 @@ XMQContentType xmqDetectContentType(const char *start, const char *stop)
                 if (is_doctype)
                 {
                     i = is_doctype;
-                    is_html = find_word_ignore_case(is_doctype+1, stop, "html");
+                    is_html = find_word_ignore_case(is_doctype, stop, "html");
                     if (is_html)
                     {
                         debug("xmq=", "content detected as html since doctype html found");
@@ -1465,9 +1466,9 @@ XMQReturnString xmq_un_comment(const char *start, const char *stop)
     if (i == stop || *i != '*')
     {
         // No asterisk * after the slashes. This is a single line comment //.....
-        i = start+2;
+        i = (stop-start >= 2) ? start+2 : stop;
         // If there is a space after //, skip it.
-        if (*i == ' ') i++;
+        if (i < stop && *i == ' ') i++;
         // Remove trailing spaces.
         while (i < stop && *(stop-1) == ' ') stop--;
         assert(i <= stop);
@@ -2270,6 +2271,13 @@ void xmqFreeParseState(XMQParseState *state)
     }
     stack_free(state->element_stack);
     state->element_stack = NULL;
+    if (state->json_keys)
+    {
+        // A failed json parse leaves the keys of the objects it was in.
+        while (state->json_keys->size > 0) free(stack_pop(state->json_keys));
+        stack_free(state->json_keys);
+        state->json_keys = NULL;
+    }
     // A pi whose content was never parsed (the parse failed) still owns its name.
     free((char*)state->pi_name);
     state->pi_name = NULL;
@@ -2594,6 +2602,13 @@ XMQReturnXMLNode create_quote(XMQParseState *state,
         if (rs.status != XMQ_OK) return (XMQReturnXMLNode){ rs.status, NULL };
         trimmed = rs.string;
     }
+    if (!parent)
+    {
+        // There is no node for the value, eg an attribute of a processing
+        // instruction ?a(b='c'), the value is dropped.
+        free(trimmed);
+        return (XMQReturnXMLNode){ XMQ_OK, NULL };
+    }
     XMQNode *n = xml_node_new_text(state->doq->dom_, trimmed);
     if (state->merge_text)
     {
@@ -2616,7 +2631,7 @@ XMQStatus do_quote(XMQParseState *state,
                    const char *suffix)
 {
     XMQReturnXMLNode rn = create_quote(state, l, col, start, stop, suffix,
-                                       (XMQNode*)state->element_stack->top->data);
+                                       parent_node(state));
     if (rn.status != XMQ_OK) return rn.status;
     state->element_last = rn.node;
     return XMQ_OK;
@@ -2630,6 +2645,9 @@ XMQNode* create_entity(XMQParseState *state,
                          const char *suffix,
                          XMQNode* parent)
 {
+    // There is no node for the value, eg an attribute of a processing
+    // instruction ?a(b=&x;), the value is dropped.
+    if (!parent) return NULL;
     char *tmp = strndup(start, stop-start);
     XMQNode* n = NULL;
     if (tmp[1] == '#')
@@ -2682,7 +2700,7 @@ XMQStatus do_entity(XMQParseState *state,
                const char *stop,
                const char *suffix)
 {
-    state->element_last = create_entity(state, l, c, start, stop, suffix, (XMQNode*)state->element_stack->top->data);
+    state->element_last = create_entity(state, l, c, start, stop, suffix, parent_node(state));
     return XMQ_OK;
 }
 
@@ -2693,7 +2711,7 @@ XMQStatus do_comment(XMQParseState*state,
                 const char *stop,
                 const char *suffix)
 {
-    XMQNode* parent = (XMQNode*)state->element_stack->top->data;
+    XMQNode* parent = parent_node(state);
     char *trimmed = NULL;
     if (state->no_trim_quotes)
     {
@@ -2772,7 +2790,7 @@ XMQStatus do_element_value_text(XMQParseState *state,
     {
         char *content = potentially_add_leading_ending_space(start, stop);
         XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         free(content);
 
@@ -2787,7 +2805,7 @@ XMQStatus do_element_value_text(XMQParseState *state,
         memcpy(tmp, start, l);
         tmp[l] = 0;
         XMQNode *n = xml_dom_set_dtd(state->doq->dom_, tmp, NULL, NULL);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         free(tmp);
 
@@ -2825,7 +2843,7 @@ XMQStatus do_element_value_quote(XMQParseState *state,
     {
         char *content = potentially_add_leading_ending_space(trimmed, trimmed+strlen(trimmed));
         XMQNode *n = xml_node_new_pi(state->doq->dom_, state->pi_name, content);
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, n);
         state->parsing_pi = false;
         free((char*)state->pi_name);
@@ -2845,6 +2863,8 @@ XMQStatus do_element_value_quote(XMQParseState *state,
         XMQNode* dtd = parse_doctype_raw(state->doq, buf, buf+n-1);
         if (!dtd)
         {
+            free(buf);
+            free(trimmed);
             state->error_nr = XMQ_ERROR_BAD_DOCTYPE;
             longjmp(state->error_handler, 1);
         }
@@ -2858,7 +2878,7 @@ XMQStatus do_element_value_quote(XMQParseState *state,
         else
         {
             // Append doctype to document.
-            XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+            XMQNode *parent = parent_node(state);
             xml_node_add_child(parent, dtd);
         }
         state->parsing_doctype = false;
@@ -2881,6 +2901,8 @@ XMQStatus do_element_value_entity(XMQParseState *state,
                              const char *stop,
                              const char *suffix)
 {
+    // The content of a processing instruction ?a=&amp; is the text of the entity.
+    if (state->parsing_pi) return do_element_value_text(state, line, col, start, stop, suffix);
     create_entity(state, line, col, start, stop, suffix, (XMQNode*)state->element_last);
     return XMQ_OK;
 }
@@ -3214,6 +3236,14 @@ XMQStatus do_attr_value_compound_entity(XMQParseState *state,
     return XMQ_OK;
 }
 
+/** The node that gets the new children: the top of the element stack, or the document
+    when the top is not a node, eg in the body of a processing instruction ?a { b }. */
+XMQNode *parent_node(XMQParseState *state)
+{
+    XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+    return parent ? parent : xml_dom_document(state->doq->dom_);
+}
+
 XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
 {
     size_t len = stop-start;
@@ -3258,7 +3288,7 @@ XMQStatus create_node(XMQParseState *state, const char *start, const char *stop)
                 stack_push(state->element_stack, state->element_last);
             }
         }
-        XMQNode *parent = (XMQNode*)state->element_stack->top->data;
+        XMQNode *parent = parent_node(state);
         xml_node_add_child(parent, new_node);
 
         if (state->element_namespace)

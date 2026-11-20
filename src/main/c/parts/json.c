@@ -34,6 +34,12 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
 
 void fixup_json(XMQDoc *doq, XMQNode *node);
 
+/** The character at state->i, or 0 at the end of the buffer, which is never valid json. */
+static char json_peek(XMQParseState *state)
+{
+    return state->i < state->buffer_stop ? *state->i : 0;
+}
+
 void parse_json(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop);
 void parse_json_boolean(XMQParseState *state, const char *key_start, const char *key_stop);
@@ -118,7 +124,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
         if (c == '\\')
         {
             increment(c, 1, &i, &line, &col);
-            c = *i;
+            c = i < stop ? *i : 0; // A backslash at the end is an invalid escape.
             if (c == '"' || c == '\\' || c == 'b' || c == 'f' || c == 'n' || c == 'r' || c == 't' || c == '/')
             {
                 increment(c, 1, &i, &line, &col);
@@ -137,7 +143,6 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
             else if (c == 'u')
             {
                 increment(c, 1, &i, &line, &col);
-                c = *i;
                 if (i+3 < stop)
                 {
                     // Woot? Json can only escape unicode up to 0xffff ? What about 10000 up to 10ffff?
@@ -164,6 +169,7 @@ void eat_json_quote(XMQParseState *state, char **content_start, char **content_s
                     }
                 }
             }
+            free_membuffer_and_free_content(buf);
             state->error_nr = XMQ_ERROR_JSON_INVALID_ESCAPE;
             longjmp(state->error_handler, 1);
         }
@@ -778,7 +784,7 @@ bool xmq_tokenize_buffer_json(XMQParseState *state, const char *start, const cha
 
 void parse_json_array(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    char c = *state->i;
+    char c = json_peek(state);
     assert(c == '[');
     increment(c, 1, &state->i, &state->line, &state->col);
 
@@ -826,11 +832,11 @@ void parse_json_array(XMQParseState *state, const char *key_start, const char *k
     while (state->i < stop && c == ',')
     {
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
         if (c == ']') break;
 
         parse_json(state, NULL, NULL);
-        c = *state->i;
+        c = json_peek(state);
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
 
@@ -848,7 +854,7 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
 {
     eat_xml_whitespace(state, NULL, NULL);
 
-    char c = *(state->i);
+    char c = json_peek(state);
 
     if (is_json_quote_start(c)) parse_json_quote(state, key_start, key_stop);
     else if (is_json_boolean(state)) parse_json_boolean(state, key_start, key_stop);
@@ -922,8 +928,11 @@ void json_print_array_nodes(XMQPrintState *ps, XMQNode *container, XMQNode *from
     {
         json_check_comma(ps);
         bool force_string = xml_get_attribute(i, "S");
-        bool is_number = xml_element_content(i) && json_is_number(xml_element_content(i));
-        bool is_keyword = xml_element_content(i) && json_is_keyword(xml_element_content(i));
+        // Only a text node is a value, eg not a comment // 0 (like JsonPrinter.element_content).
+        int kind = xml_node_kind(i);
+        const char *content = (kind == XML_DOM_TEXT || kind == XML_DOM_CDATA) ? xml_element_content(i) : NULL;
+        bool is_number = content && json_is_number(content);
+        bool is_keyword = content && json_is_keyword(content);
 
         if (force_string || is_number || is_keyword)
         {
@@ -1022,7 +1031,7 @@ void json_print_node(XMQPrintState *ps, XMQNode *container, XMQNode *node, size_
 
 void parse_json_object(XMQParseState *state, const char *key_start, const char *key_stop)
 {
-    char c = *state->i;
+    char c = json_peek(state);
     assert(c == '{');
     increment(c, 1, &state->i, &state->line, &state->col);
 
@@ -1069,7 +1078,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
     while (state->i < stop && c == ',')
     {
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
         if (c == '}') break;
 
         if (!is_json_quote_start(c))
@@ -1082,9 +1091,12 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         char *new_key_start = NULL;
         char *new_key_stop = NULL;
         eat_json_quote(state, &new_key_start, &new_key_stop);
+        // Kept in the state until it is freed, so that it is freed on an error too.
+        if (!state->json_keys) state->json_keys = stack_create();
+        stack_push(state->json_keys, new_key_start);
 
         eat_xml_whitespace(state, NULL, NULL);
-        c = *(state->i);
+        c = json_peek(state);
 
         if (c == ':')
         {
@@ -1097,9 +1109,9 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         }
 
         parse_json(state, new_key_start, new_key_stop);
-        free(new_key_start);
+        free(stack_pop(state->json_keys));
 
-        c = *state->i;
+        c = json_peek(state);
         if (c == ',') increment(c, 1, &state->i, &state->line, &state->col);
     }
 
