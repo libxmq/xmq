@@ -103,7 +103,7 @@ void generate_state_error_message(XMQParseState *state, XMQStatus error_nr, cons
     {
         UTF8Char utf8_char;
         peek_utf8_char(statei, stop, &utf8_char);
-        char utf8_codepoint[8];
+        char utf8_codepoint[16]; // utf8_char_to_codepoint_string writes up to 16, eg U+10A29F for a too large code point.
         utf8_char_to_codepoint_string(&utf8_char, utf8_codepoint);
 
         snprintf(buf, 32, " \"%s\" %s", utf8_char.bytes, utf8_codepoint);
@@ -229,6 +229,7 @@ const char *xmqParseErrorToString(XMQStatus e)
     case XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED: return "embedded xml fragment is not closed";
     case XMQ_ERROR_ENTITY_EXPANSION: return "entity expansion failed";
     case XMQ_ERROR_INVALID_UTF8: return "invalid UTF-8";
+    case XMQ_ERROR_TOO_DEEP: return "nesting is too deep";
     case XMQ_WARNING_QUOTES_NEEDED: return "perhaps you need more quotes to quote this quote";
     }
     assert(false);

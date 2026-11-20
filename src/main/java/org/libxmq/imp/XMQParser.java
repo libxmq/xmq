@@ -31,6 +31,14 @@ import org.libxmq.ParseErrorCode;
  */
 public abstract class XMQParser extends XMQParseCallbacks
 {
+    /** The parsers recurse for every nested xmq body or json object or array, deeper
+        nesting is an error (XMQ_ERROR_TOO_DEEP) instead of a stack overflow. Like
+        XMQ_MAX_NESTING_DEPTH in C. */
+    public static final int MAX_NESTING_DEPTH = 10000;
+
+    /** The depth of the xmq bodies, or the json objects and arrays, being parsed. */
+    int nesting_depth_;
+
     /**
      * Creates the parser.
      */
@@ -1114,7 +1122,13 @@ public abstract class XMQParser extends XMQParseCallbacks
             stop = i_;
             do_brace_left(start_line, start_col, start, stop, stop);
 
+            if (++nesting_depth_ > MAX_NESTING_DEPTH)
+            {
+                error_nr_ = ParseErrorCode.XMQ_ERROR_TOO_DEEP;
+                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+            }
             parse_xmq();
+            nesting_depth_--;
 
             c = currentChar();
 

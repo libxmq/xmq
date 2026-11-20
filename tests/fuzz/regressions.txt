@@ -28,3 +28,7 @@ xmq_pi_attr_value_has_no_node|\000?(m='')
 xmq_pi_value_entity|\000?=&
 xmq_bad_doctype_leak|\000!DOCTYPE=''
 yaml_to_json_comment_in_array|\004-\000#0
+xmq_empty_xmlns_at_stop|\000a(xmlns=
+xmq_to_json_empty_string_in_array|\000_(A) { _(S) }
+xmq_too_large_code_point_message|\000\364\212\212\237
+json_string_leak_on_bad_doctype|\003{"!DOCTYPE":":ml"}

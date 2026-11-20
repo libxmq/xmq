@@ -74,6 +74,10 @@ typedef struct YaepParseRun YaepParseRun;
 struct YaepGrammar;
 typedef struct YaepGrammar YaepGrammar;
 
+/** The parsers recurse for every nested xmq body or json object or array, deeper nesting
+    is an error (XMQ_ERROR_TOO_DEEP) instead of a stack overflow. Java has XMQParser.MAX_NESTING_DEPTH. */
+#define XMQ_MAX_NESTING_DEPTH 10000
+
 struct XMQParseState;
 typedef struct XMQParseState XMQParseState;
 
@@ -308,7 +312,8 @@ struct XMQParseState
     XMQDoc *doq;
     const char *implicit_root; // Assume that this is the first element name
     Stack *element_stack; // Top is last created node
-    Stack *json_keys; // The keys of the json objects being parsed, freed if the parse fails.
+    size_t nesting_depth; // The depth of the xmq bodies or json objects and arrays being parsed.
+    Stack *json_keys; // The keys and strings of the json being parsed, freed if the parse fails.
     void *element_last; // Last added sibling to stack top node.
     bool parsing_doctype; // True when parsing a doctype.
     void *add_pre_node_before; // Used when retrofitting pre-root comments and doctype found in json.

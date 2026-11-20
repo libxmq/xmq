@@ -316,6 +316,8 @@ else
     echo "SKIP: tests/test_java_rejects.sh (needs ixml)"
 fi
 
+tests/test_max_depth_parsers.sh "$PROG" "$OUTPUT" || exit 1
+
 for i in tests/test_special_???_*.sh
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi

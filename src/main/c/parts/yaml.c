@@ -1958,7 +1958,12 @@ bool xmq_tokenize_buffer_yaml(XMQParseState *state, const char *start, const cha
 
     if (state->parse->init) state->parse->init(state);
 
-    bool ok = yparse_document(&p, state);
+    // A callback, eg do_brace_left for too deep nesting, can longjmp to the error handler.
+    bool ok = false;
+    if (!setjmp(state->error_handler))
+    {
+        ok = yparse_document(&p, state);
+    }
     if (!ok || state->error_nr != XMQ_OK)
     {
         generate_state_error_message(state, state->error_nr, start, stop);

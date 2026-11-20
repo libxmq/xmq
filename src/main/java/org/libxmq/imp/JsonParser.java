@@ -243,8 +243,13 @@ public class JsonParser extends XMQParseIntoDOM
         else if (buffer_.startsWith("true", i_) || buffer_.startsWith("false", i_)) parse_json_value(key, buffer_.charAt(i_) == 't' ? 4 : 5);
         else if (buffer_.startsWith("null", i_)) parse_json_null(key);
         else if (is_jnumber(buffer_, i_, buffer_len_) >= 0) parse_json_value(key, is_jnumber(buffer_, i_, buffer_len_) - i_);
-        else if (c == '{') parse_json_object(key);
-        else if (c == '[') parse_json_array(key);
+        else if (c == '{' || c == '[')
+        {
+            if (++nesting_depth_ > XMQParser.MAX_NESTING_DEPTH) error(ParseErrorCode.XMQ_ERROR_TOO_DEEP);
+            if (c == '{') parse_json_object(key);
+            else parse_json_array(key);
+            nesting_depth_--;
+        }
         else error(ParseErrorCode.XMQ_ERROR_JSON_INVALID_CHAR);
         eat_whitespace();
     }

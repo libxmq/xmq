@@ -1112,7 +1112,13 @@ void parse_xmq_element_internal(XMQParseState *state, bool doctype, bool pi)
         const char *stop = state->i;
         DO_CALLBACK(brace_left, state, start_line, start_col, start, stop, stop);
 
+        if (++state->nesting_depth > XMQ_MAX_NESTING_DEPTH)
+        {
+            state->error_nr = XMQ_ERROR_TOO_DEEP;
+            longjmp(state->error_handler, 1);
+        }
         parse_xmq(state);
+        state->nesting_depth--;
         c = xmq_parser_peek(state, 0);
         if (is_xml_whitespace(c)) { parse_xmq_whitespace(state); c = xmq_parser_peek(state, 0); }
         if (c != '}')

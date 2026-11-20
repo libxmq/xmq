@@ -523,6 +523,14 @@ public class XMQParseIntoDOM extends XMQParser
     protected void do_brace_left(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
         push(element_last_);
+        // The document is at the bottom of the stack, then one entry per nesting level.
+        if (element_stack_.size() > MAX_NESTING_DEPTH + 1)
+        {
+            error_nr_ = ParseErrorCode.XMQ_ERROR_TOO_DEEP;
+            // The yaml parser simulates the brace, then the position is not in buffer_.
+            String text = buffer_.length() == buffer_len_ ? buffer_.substring(line_start_, findNL(i_, 20)) : "";
+            throw new XMQRuntimeException(new ParseException(error_nr_, text, line_, col_, source_));
+        }
     }
 
     protected void do_brace_right(int start_line, int start_col, int start, int stop, int stop_suffix)

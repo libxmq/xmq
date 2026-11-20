@@ -54,7 +54,7 @@ public final class XmlWriter
         // The start rule is written like a call of it without a mark of its own.
         // It is written into a holder element, its first child is the root.
         XmlElement holder = new XmlElement("holder");
-        write(tree.as(new Call(grammar.start, (char)0, null)), holder, null);
+        write(tree.as(new Call(grammar.start, (char)0, null)), holder, null, 0);
 
         XmlDocument doc = new XmlDocument();
         XmlNode root = holder.firstChild();
@@ -75,7 +75,10 @@ public final class XmlWriter
      * Write the node into the parent element. If attribute is not null we are
      * inside an attribute and only collect its text.
      */
-    private static void write(Tree node, XmlElement parent, StringBuilder attribute) throws DynamicError
+    /** Like the other parsers, more nested elements than this is an error, as in C. */
+    static final int MAX_NESTING_DEPTH = 10000;
+
+    private static void write(Tree node, XmlElement parent, StringBuilder attribute, int depth) throws DynamicError
     {
         if (node.symbol() instanceof Chars chars)
         {
@@ -94,26 +97,30 @@ public final class XmlWriter
         switch (mark)
         {
         case '^' -> {
+            if (depth >= MAX_NESTING_DEPTH)
+            {
+                throw new DynamicError("dynamic error: nesting is too deep, the output has more than 10000 nested elements");
+            }
             XmlElement element = new XmlElement(name);
             parent.appendRaw(element);
-            writeChildren(node, element, null);
+            writeChildren(node, element, null, depth + 1);
         }
         case '@' -> {
             StringBuilder value = new StringBuilder();
-            writeChildren(node, parent, value);
+            writeChildren(node, parent, value, depth);
             if (parent.attribute(name) != null)
             {
                 throw new DynamicError("dynamic error D02: the attribute " + name + " occurs more than once on an element");
             }
             parent.setAttribute(name, value.toString());
         }
-        default -> writeChildren(node, parent, attribute); // Hidden, the content goes into the parent.
+        default -> writeChildren(node, parent, attribute, depth); // Hidden, the content goes into the parent.
         }
     }
 
-    private static void writeChildren(Tree node, XmlElement parent, StringBuilder attribute) throws DynamicError
+    private static void writeChildren(Tree node, XmlElement parent, StringBuilder attribute, int depth) throws DynamicError
     {
-        for (Tree child : node.children()) write(child, parent, attribute);
+        for (Tree child : node.children()) write(child, parent, attribute, depth);
     }
 
     private static void text(String s, XmlElement parent, StringBuilder attribute)

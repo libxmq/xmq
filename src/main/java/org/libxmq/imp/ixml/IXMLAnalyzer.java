@@ -380,12 +380,17 @@ public final class IXMLAnalyzer {
         int lr_children, lr_text_len, lr_attrs;
     }
     private int failed_at;
+    /** At most this many nested elements in the output, like the other parsers. */
+    static final int MAX_NESTING_DEPTH = 10000;
+    // The number of elements being built, the '^' frames on the stack.
+    private int element_depth;
     // Run the LL(*) parser on the input, the tree is added below into.
     // Returns null if accepted, else an error message. An explicit call stack
     // executes the parser without Java stack limits.
     private String run(String input, Element into) {
         int[] cps = input.codePoints().toArray(); int offset = 0;
         Deque<Frame> stack = new ArrayDeque<>();
+        element_depth = 0;
         Term start_term = Term.call(grammar.start);
         String err = enter(stack, start_term, cps, offset, into);
         if (err != null) return err;
@@ -393,6 +398,7 @@ public final class IXMLAnalyzer {
             Frame f = stack.peek();
             if (f.idx == f.terms.size()) {
                 stack.pop();
+                if (f.kind == '^') element_depth--;
                 if (f.kind == '@') {
                     Element target = nearestElement(stack, into);
                     if (target.attribute(f.name) != null) {
@@ -466,6 +472,12 @@ public final class IXMLAnalyzer {
         for (Frame p : stack) if (p.kind == '@') { in_attribute = true; break; }
         f.kind = in_attribute ? '-' : mark.charAt(0);
         if (f.kind == '^') {
+            if (element_depth >= MAX_NESTING_DEPTH) {
+                // Like the other parsers, deeper nesting is an error, as in C.
+                failed_at = offset;
+                return "dynamic error: nesting is too deep, the output has more than 10000 nested elements";
+            }
+            element_depth++;
             f.element = new Element(f.name);
             Element parent = nearestElement(stack, into);
             parent.addContent(f.element);

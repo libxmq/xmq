@@ -197,6 +197,27 @@ run_fuzz_clang: build_fuzz_clang
 	@mkdir -p fuzz_findings_clang/corpus
 	$(FUZZ_CLANG_DIR)/fuzzxmq -artifact_prefix=fuzz_findings_clang/ -timeout=10 fuzz_findings_clang/corpus fuzz_testcases/clang
 
+# Fuzz only one parser, eg make run_fuzz_clang_xmq or run_fuzz_clang_json: the harness is
+# built with the content type fixed (0 xmq, 1 xml, 2 html, 3 json, 4 yaml), the inputs are
+# plain files of that type (seeds fuzz_testcases/<type> or FUZZ_SEEDS_<type>), findings go into
+# fuzz_findings_clang_<type>. Add the type byte (eg \003 for json) first when adding a
+# finding to tests/fuzz/regressions.txt.
+FUZZ_TYPE_xmq:=0
+FUZZ_TYPE_xml:=1
+FUZZ_TYPE_html:=2
+FUZZ_TYPE_json:=3
+FUZZ_TYPE_yaml:=4
+# The seeds, fuzz_testcases/<type> unless the test suite has better ones.
+FUZZ_SEEDS_xml:=tests/libxml2/test
+FUZZ_SEEDS_html:=tests/libxml2/test/HTML
+
+build_fuzz_clang_%:
+	@$(MAKE) --no-print-directory build_fuzz_clang FUZZ_CLANG_DIR=$(FIRSTDIR)fuzz_clang_$* FUZZ_CLANG_FLAGS="$(FUZZ_CLANG_FLAGS) -DFUZZ_CONTENT_TYPE=$(FUZZ_TYPE_$*)"
+
+run_fuzz_clang_%: build_fuzz_clang_%
+	@mkdir -p fuzz_findings_clang_$*/corpus
+	$(FIRSTDIR)fuzz_clang_$*/fuzzxmq -artifact_prefix=fuzz_findings_clang_$*/ -timeout=10 fuzz_findings_clang_$*/corpus $(or $(FUZZ_SEEDS_$*),fuzz_testcases/$*)
+
 run_fuzz_yaml_until_crash:
 	$(CURDIR)/scripts/fuzz_until_crash.sh \
 		$(CURDIR)/AFLplusplus/usroot/usr/bin/afl-fuzz \
@@ -493,6 +514,8 @@ testj: build/xmqj release
 	@./tests/testj.sh "" build build/test_output $(FILTER)
 # The ixml trace of the Java Earley parser (xmqj --traceixml=file) and its rendering.
 	@./tests/test_traceixml.sh build/xmqj build/test_output
+# At most 10000 nested elements in xmq, json, xml, yaml and ixml.
+	@./tests/test_max_depth_parsers.sh build/xmqj build/test_output
 # Run xmqj cli binary comparing to xmq cli binary results.
 #	@./tests/testj.sh build/xmqj build build/test_output $(FILTER)
 

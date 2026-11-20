@@ -3129,7 +3129,7 @@ void update_namespace_href(XMQParseState *state,
     free(href);
     debug("xmq=", "update namespace %s with href=%s", xml_ns_prefix(ns), xml_ns_href(ns));
 
-    if (start[0] == 0 && ns == state->default_namespace)
+    if (start == stop && ns == state->default_namespace) // An empty href, xmlns=
     {
         XMQNode* element = (XMQNode*)state->element_stack->top->data;
         if (element)
@@ -3385,6 +3385,12 @@ XMQStatus do_brace_left(XMQParseState *state,
                    const char *suffix)
 {
     stack_push(state->element_stack, state->element_last);
+    // The document is at the bottom of the stack, then one entry per nesting level.
+    if (state->element_stack->size > XMQ_MAX_NESTING_DEPTH + 1)
+    {
+        state->error_nr = XMQ_ERROR_TOO_DEEP;
+        longjmp(state->error_handler, 1);
+    }
     return XMQ_OK;
 }
 
@@ -6120,6 +6126,11 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb);
 // an attribute that occurs twice on an element (ixml error D02), or NULL.
 static char *ixml_dynamic_error_ = NULL;
 
+// The number of elements being generated from the yaep tree, at most XMQ_MAX_NESTING_DEPTH.
+static size_t ixml_element_depth_ = 0;
+
+#define IXML_TOO_DEEP_MSG "dynamic error: nesting is too deep, the output has more than 10000 nested elements"
+
 /** Remember the first dynamic error, eg ixml_dynamic_error("D02", "the attribute %s ...", name). */
 static void ixml_dynamic_error(const char *code, const char *format, ...)
 {
@@ -6314,6 +6325,13 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                 {
                     // Normal node that should be generated.
                     ixml_check_name(an->name);
+                    if (ixml_element_depth_ >= XMQ_MAX_NESTING_DEPTH)
+                    {
+                        // Like the other parsers, deeper nesting is an error.
+                        if (!ixml_dynamic_error_) ixml_dynamic_error_ = strdup(IXML_TOO_DEEP_MSG);
+                        return;
+                    }
+                    ixml_element_depth_++;
                     XMQNode* new_node = xml_node_new_element(doc, an->name, NULL);
 
                     if (node == NULL)
@@ -6330,6 +6348,7 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                         YaepTreeNode *nn = an->children[i];
                         generate_dom_from_yaep_node(doc, new_node, nn, n, depth+1, i);
                     }
+                    ixml_element_depth_--;
                 }
             }
             else
@@ -6685,6 +6704,7 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     else
     {
         // IXML parse was fine, generate a DOM from the yaep tree.
+        ixml_element_depth_ = 0;
         generate_dom_from_yaep_node(doc->dom_, NULL, run->root, NULL, 0, 0);
         doc->root_ = xml_dom_root_element(doc->dom_);
         if (doc->root_ == NULL)

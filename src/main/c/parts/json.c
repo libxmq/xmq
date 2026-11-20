@@ -253,6 +253,9 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     // Decode and content_start points to newly allocated buffer where escapes have been removed.
     eat_json_quote(state, &content_start, &content_stop);
     size_t content_len = content_stop-content_start;
+    // Kept in the state until it is freed, so that it is freed when a callback fails too.
+    if (!state->json_keys) state->json_keys = stack_create();
+    stack_push(state->json_keys, content_start);
 
     trim_index_suffix(key_start, &key_stop);
 
@@ -260,7 +263,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     {
         // This is "|":"symbol" which means a pure text node in xml.
         DO_CALLBACK_SIM(quote, state, start_line, 1, content_start, content_stop, content_stop);
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -268,7 +271,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     {
         // This is "//":"symbol" which means a comment node in xml.
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -280,7 +283,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         DO_CALLBACK_SIM(comment, state, start_line, start_col, content_start, content_stop, content_stop);
         if (!state->root_found) state->add_pre_node_before = NULL;
         else                    state->add_post_node_after = NULL;
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -319,7 +322,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
         free(name);
         if (do_return)
         {
-            free(content_start);
+            free(stack_pop(state->json_keys));
             // This will be set many times.
             state->root_found = true;
             return;
@@ -337,7 +340,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             state->add_pre_node_before = (XMQNode*)state->element_stack->top->data;
             DO_CALLBACK_SIM(element_value_quote, state, state->line, state->col, content_start, content_stop, content_stop);
             state->add_pre_node_before = NULL;
-            free(content_start);
+            free(stack_pop(state->json_keys));
             return;
         }
     }
@@ -386,7 +389,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
             DO_CALLBACK_SIM(attr_key, state, state->line, state->col, key_start+1, key_stop, key_stop);
             DO_CALLBACK_SIM(attr_value_quote, state, start_line, start_col, content_start, content_stop, content_stop);
         }
-        free(content_start);
+        free(stack_pop(state->json_keys));
         return;
     }
 
@@ -421,7 +424,7 @@ void parse_json_quote(XMQParseState *state, const char *key_start, const char *k
     }
 
     DO_CALLBACK_SIM(element_value_text, state, start_line, start_col, content_start, content_stop, content_stop);
-    free(content_start);
+    free(stack_pop(state->json_keys));
 }
 
 bool is_json_null(XMQParseState *state)
@@ -860,8 +863,17 @@ void parse_json(XMQParseState *state, const char *key_start, const char *key_sto
     else if (is_json_boolean(state)) parse_json_boolean(state, key_start, key_stop);
     else if (is_json_null(state)) parse_json_null(state, key_start, key_stop);
     else if (is_json_number(state)) parse_json_number(state, key_start, key_stop);
-    else if (c == '{') parse_json_object(state, key_start, key_stop);
-    else if (c == '[') parse_json_array(state, key_start, key_stop);
+    else if (c == '{' || c == '[')
+    {
+        if (++state->nesting_depth > XMQ_MAX_NESTING_DEPTH)
+        {
+            state->error_nr = XMQ_ERROR_TOO_DEEP;
+            longjmp(state->error_handler, 1);
+        }
+        if (c == '{') parse_json_object(state, key_start, key_stop);
+        else parse_json_array(state, key_start, key_stop);
+        state->nesting_depth--;
+    }
     else
     {
         state->error_nr = XMQ_ERROR_JSON_INVALID_CHAR;
@@ -1132,6 +1144,13 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
     void *writer_state = output_settings->content.writer_state;
 
     XMQNode *node = from;
+    if (!node)
+    {
+        // An element without content, eg _(S) in an array, is the empty string.
+        write(writer_state, "\"\"", NULL);
+        ps->last_char = '"';
+        return XMQ_OK;
+    }
     const char *content = xml_element_content(node);
 
     // An entity reference (kept when it is not a character entity) has no content.

@@ -336,6 +336,13 @@ public class JsonPrinter extends XMQPrinter
     void print_value(XMQPrintState ps, XmlNode from, XmlNode to, boolean force_string)
     {
         XmlNode node = from;
+        if (node == null)
+        {
+            // An element without content, eg _(S) in an array, is the empty string.
+            write(ps, "\"\"");
+            ps.last_char = '"';
+            return;
+        }
         String content = element_content(node);
         if (node.next() == null && !force_string && content != null
             && (JsonParser.is_number(content) || JsonParser.is_keyword(content)))

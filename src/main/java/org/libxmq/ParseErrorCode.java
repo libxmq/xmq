@@ -93,6 +93,8 @@ public enum ParseErrorCode
     XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED(37),
     /** The input is not valid UTF-8. */
     XMQ_ERROR_INVALID_UTF8(39),
+    /** The elements, objects or arrays are nested deeper than XMQParser.MAX_NESTING_DEPTH. */
+    XMQ_ERROR_TOO_DEEP(40),
     /** IXML expected rule. */
     XMQ_ERROR_IXML_EXPECTED_RULE(50),
     /** IXML expected name. */

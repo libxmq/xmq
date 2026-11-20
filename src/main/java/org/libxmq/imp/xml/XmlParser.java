@@ -553,6 +553,7 @@ public final class XmlParser
     void parse_element_tree() throws XmlParseException
     {
         List<Open> stack = new ArrayList<>();
+        open_depth_ = 0;
         Open root = parse_start_tag();
         if (root == null) return;
         stack.add(root);
@@ -592,6 +593,7 @@ public final class XmlParser
                 }
                 else
                 {
+                    open_depth_ = stack.size();
                     Open child = parse_start_tag();
                     if (child != null) stack.add(child);
                 }
@@ -641,6 +643,7 @@ public final class XmlParser
                 else if (n == '!') throw fatal("StartTag: invalid element name");
                 else
                 {
+                    open_depth_ = stack.size();
                     Open child = parse_start_tag();
                     if (child != null) stack.add(child);
                 }
@@ -742,6 +745,12 @@ public final class XmlParser
 
     record EntityName(String name) { }
 
+    /** At most this many nested elements, like the max_depth of xml_parser.c (libxml2 has 256). */
+    static final int MAX_DEPTH = 10000;
+
+    /** The number of open elements when a start tag is parsed. */
+    int open_depth_;
+
     /** Parse a start tag, returns the open element, or null if it was an empty element tag. */
     Open parse_start_tag() throws XmlParseException
     {
@@ -752,6 +761,10 @@ public final class XmlParser
         if (qn == null)
         {
             throw fatal("StartTag: invalid element name");
+        }
+        if (open_depth_ >= MAX_DEPTH)
+        {
+            throw fatal("Excessive depth in document: " + MAX_DEPTH, tag_start);
         }
         String qname = qn[0] == null ? qn[1] : qn[0] + ":" + qn[1];
         List<RawAttr> attrs = new ArrayList<>();

@@ -1418,7 +1418,7 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     if (p->depth >= p->settings->max_depth)
     {
-        xml_parser_fatal(p, tag_start, "Excessive depth in document: %zu use XML_PARSE_HUGE option", p->settings->max_depth);
+        xml_parser_fatal(p, tag_start, "Excessive depth in document: %zu", p->settings->max_depth);
     }
 
     p->num_attrs = 0;
@@ -3031,7 +3031,7 @@ static void xml_parse_document(XmlParser *p)
 void xml_parse_settings_default(XmlParseSettings *s)
 {
     memset(s, 0, sizeof(*s));
-    s->max_depth = 256;
+    s->max_depth = 10000; // Like the xmq, json, yaml and ixml parsers (libxml2 has 256).
     s->max_name_length = 50000;
     s->max_text_length = 10000000;
     s->max_amplification = 5;
