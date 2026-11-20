@@ -495,7 +495,7 @@ bool is_xmq_element_name(const char *start, const char *stop, const char **colon
     for (; i < stop; ++i)
     {
         char c = *i;
-        if (!is_xmq_text_name(c)) return false;
+        if (!is_xmq_text_name(c)) { *colon = NULL; return false; } // Not a name, so no namespace either.
         if (c == ':') *colon = i;
     }
 

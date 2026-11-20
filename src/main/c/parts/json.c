@@ -1072,7 +1072,7 @@ void parse_json_object(XMQParseState *state, const char *key_start, const char *
         DO_CALLBACK_SIM(element_ns, state, state->line, state->col, key_start, colon, colon);
         key_start = colon+1;
     }
-    DO_CALLBACK_SIM(element_key, state, state->line, state->col, colon?colon+1:key_start, key_stop, key_stop);
+    DO_CALLBACK_SIM(element_key, state, state->line, state->col, key_start, key_stop, key_stop);
     if (unsafe_key_start)
     {
         DO_CALLBACK_SIM(apar_left, state, state->line, state->col, leftpar, leftpar+1, leftpar+1);

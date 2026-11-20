@@ -32,3 +32,4 @@ xmq_empty_xmlns_at_stop|\000a(xmlns=
 xmq_to_json_empty_string_in_array|\000_(A) { _(S) }
 xmq_too_large_code_point_message|\000\364\212\212\237
 json_string_leak_on_bad_doctype|\003{"!DOCTYPE":":ml"}
+json_unsafe_key_with_colon_freed_root|\003{"//":"","s:?":{"_c":"","e":"x"}}
