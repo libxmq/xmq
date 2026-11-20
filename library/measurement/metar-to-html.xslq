@@ -1,0 +1,2216 @@
+// v1b Render a METAR report, parsed with metar.ixml, as a web page:
+//   xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+//
+// A blue header shows the station, the time, the flight category (VFR, MVFR,
+// IFR, LIFR) and the temperature, dew point, pressure and visibility.
+//
+// The wind is drawn on a compass with a bezel and a compass rose, the arrow flies
+// with the wind from the direction it blows from, the variation is drawn as a
+// wedge. The hub shows the speed, colored by its strength, and the Beaufort force
+// is printed below. Every weather group gets an icon on a sky tile with cloud,
+// sun, rain, snow, ice, lightning and fog.
+//
+// The cloud layers are drawn as a cross section of the sky at their altitudes,
+// with as many clouds as the layer has oktas, cumulonimbus and towering cumulus
+// as towers, the precipitation falling from the lowest layer and the vertical
+// visibility as a hatched fog. Every layer is labeled with its okta symbol.
+// Everything is also printed in words in the table below.
+//
+// The groups after a trend (BECMG, TEMPO) are the forecast, they are not drawn
+// but printed with the trend.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8)
+
+    // The observed groups, ie not the forecast groups after a trend.
+    xsl:variable(name   = now
+                 select = '/weather_report/*[not(preceding-sibling::trend)]')
+    xsl:variable(name   = wd
+                 select = '$now[self::wind]/wind_direction[1]')
+    xsl:variable(name   = wv
+                 select = '$now[self::wind]/wind_variation[1]')
+    xsl:variable(name   = layers
+                 select = '$now[self::clouds]/observation[cloud_cover/code = "FEW" or cloud_cover/code = "SCT" or cloud_cover/code = "BKN" or cloud_cover/code = "OVC"]')
+    xsl:variable(name   = vv
+                 select = '$now[self::vertical_visibility][1]')
+    xsl:variable(name   = calm
+                 select = '$wd/degrees = 0 and $wd/speed/value = 0')
+
+    // The most covering cloud layer, used for the sky in the weather icons.
+    xsl:variable(name = cover)
+    {
+        xsl:choose {
+            xsl:when(test = '$vv') = VV
+            xsl:when(test = '$layers/cloud_cover/code = "OVC"') = OVC
+            xsl:when(test = '$layers/cloud_cover/code = "BKN"') = BKN
+            xsl:when(test = '$layers/cloud_cover/code = "SCT"') = SCT
+            xsl:when(test = '$layers/cloud_cover/code = "FEW"') = FEW
+        }
+    }
+    xsl:variable(name   = cb
+                 select = '$layers/cloud_type/code = "CB"')
+
+    // The weather at the station, drawn in the sky of the cloud cross section.
+    xsl:variable(name   = wx
+                 select = '$now[self::weather]/observation[not(intensity = "in the vicinity")]')
+    xsl:variable(name   = rainy
+                 select = 'boolean($wx[type = "RA" or type = "DZ" or type = "UP" or (chrct = "SH" and not(type))])')
+    xsl:variable(name   = snowy
+                 select = 'boolean($wx[type = "SN" or type = "SG" or type = "GS" or type = "GR" or type = "PL" or type = "IC"])')
+    xsl:variable(name   = foggy
+                 select = 'boolean($wx[type = "FG" or type = "BR" or type = "HZ" or type = "FU"])')
+    xsl:variable(name   = stormy
+                 select = 'boolean($wx[chrct = "TS"])')
+
+    // The wind speed in knots, for the strength color and the Beaufort force.
+    xsl:variable(name = kt)
+    {
+        xsl:choose {
+            xsl:when(test = '$wd/speed/unit/code = "MPS"')
+            {
+                xsl:value-of(select = '$wd/speed/value * 1.944')
+            }
+            xsl:when(test = '$wd/speed/unit/code = "KMH"')
+            {
+                xsl:value-of(select = '$wd/speed/value * 0.54')
+            }
+            xsl:otherwise {
+                xsl:value-of(select = 'number($wd/speed/value)')
+            }
+        }
+    }
+
+    // The ceiling, the lowest broken or overcast layer or the vertical visibility.
+    xsl:variable(name = ceiling)
+    {
+        xsl:for-each(select = '$layers[cloud_cover/code = "BKN" or cloud_cover/code = "OVC"]/altitude_ft[number(.) = number(.)] | $vv/altitude_ft[number(.) = number(.)]')
+        {
+            xsl:sort(select    = .
+                     data-type = number)
+            xsl:if(test = 'position() = 1')
+            {
+                xsl:value-of(select = .)
+            }
+        }
+    }
+
+    // The prevailing visibility in meters.
+    xsl:variable(name   = vis
+                 select = '$now[self::visibility][1]')
+    xsl:variable(name = vis_m)
+    {
+        xsl:choose {
+            xsl:when(test = '$now[self::cavok]') = 10000
+            xsl:when(test = '$vis/meters = 9999') = 10000
+            xsl:when(test = 'number($vis/meters) = number($vis/meters)')
+            {
+                xsl:value-of(select = 'number($vis/meters)')
+            }
+            xsl:when(test = 'contains($vis/miles, "/")')
+            {
+                xsl:value-of(select = 'round(substring-before($vis/miles, "/") div substring-after($vis/miles, "/") * 1609)')
+            }
+            xsl:when(test = 'number($vis/miles) = number($vis/miles)')
+            {
+                xsl:value-of(select = 'round($vis/miles * 1609)')
+            }
+        }
+    }
+
+    // ================================================================ page
+
+    xsl:template(match = /)
+    {
+        html(lang = en) {
+            head {
+                meta(charset = utf-8)
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                title {
+                    'METAR '
+                    xsl:value-of(select = /weather_report/icao_airport_code)
+                }
+                style = '
+:root {
+  --bg: #e9f1fb; --card: #ffffff; --ink: #13223a; --muted: #56688a; --line: #d3e0f0;
+  --blue-900: #0a2856; --blue-700: #1b4ea6; --blue-500: #2f7be6; --blue-100: #e4efff;
+  --accent: #2f7be6; --accent-soft: rgba(47,123,230,0.20);
+  --arrow1: #ffc233; --arrow2: #ff5a2b;
+  --sun1: #fff4b0; --sun2: #ffb300; --ray: #ffc02a;
+  --cloud1: #ffffff; --cloud2: #d3deec; --mid1: #edf1f7; --mid2: #a4b3c8; --dark1: #8b98ad; --dark2: #46526a;
+  --drop1: #a6dcff; --drop2: #1a72dc; --ice: #8fdcff; --snow: #ffffff; --bolt1: #fff36b; --bolt2: #ff9d00;
+  --sky1: #1a58b8; --sky2: #5aa3ec; --sky3: #c4e4ff;
+  --grey1: #56667e; --grey2: #8fa1b8; --grey3: #cbd5e2;
+  --ground1: #7cc35f; --ground2: #3e8a3c; --runway: #4a5263;
+  --tile1: #4b9ff2; --tile2: #c2e3ff; --storm1: #45546e; --storm2: #95a8c2;
+  --face1: #ffffff; --face2: #d8e7fb; --bezel1: #0d2c66; --bezel2: #2a6bd3; --bezel3: #10367c;
+  --rose1: #c9dcf6; --rose2: #6f8fbf; --north: #e8412c;
+  --warn: #d6332a; --light: #1fa463; --moderate: #2f7be6; --strong: #f08a12; --gale: #d6332a;
+  --vfr: #1f9d55; --mvfr: #2f6fe0; --ifr: #d6332a; --lifr: #b5179e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1220; --card: #111c30; --ink: #e6eefb; --muted: #91a4c4; --line: #22334f;
+    --blue-100: #16294a; --accent: #6aa8ff; --accent-soft: rgba(106,168,255,0.22);
+    --cloud1: #eef3fa; --cloud2: #a9b8cc; --mid1: #c9d3e0; --mid2: #7b8ba2; --dark1: #6c7a90; --dark2: #343f52;
+    --sky1: #071733; --sky2: #183a74; --sky3: #3a67a6; --grey1: #2c3646; --grey2: #4a586c; --grey3: #6d7b8f;
+    --ground1: #2f6a35; --ground2: #1b4321; --runway: #2a303b;
+    --tile1: #1b4a94; --tile2: #3c78c8; --storm1: #2a3446; --storm2: #556580;
+    --face1: #1d2c48; --face2: #0e182c; --rose1: #3b5884; --rose2: #5675a3; --warn: #ff7a62;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1220; --card: #111c30; --ink: #e6eefb; --muted: #91a4c4; --line: #22334f;
+  --blue-100: #16294a; --accent: #6aa8ff; --accent-soft: rgba(106,168,255,0.22);
+  --cloud1: #eef3fa; --cloud2: #a9b8cc; --mid1: #c9d3e0; --mid2: #7b8ba2; --dark1: #6c7a90; --dark2: #343f52;
+  --sky1: #071733; --sky2: #183a74; --sky3: #3a67a6; --grey1: #2c3646; --grey2: #4a586c; --grey3: #6d7b8f;
+  --ground1: #2f6a35; --ground2: #1b4321; --runway: #2a303b;
+  --tile1: #1b4a94; --tile2: #3c78c8; --storm1: #2a3446; --storm2: #556580;
+  --face1: #1d2c48; --face2: #0e182c; --rose1: #3b5884; --rose2: #5675a3; --warn: #ff7a62;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px 16px 40px; color: var(--ink); line-height: 1.4;
+       background: radial-gradient(1200px 500px at 50% -200px, rgba(47,123,230,0.25), transparent), var(--bg);
+       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; min-height: 100vh; }
+main { max-width: 1080px; margin: 0 auto; }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.hero { position: relative; overflow: hidden; color: #fff; border-radius: 22px; padding: 26px 28px 22px;
+        background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-700) 48%, var(--blue-500) 100%);
+        box-shadow: 0 14px 34px rgba(16,58,140,0.28); }
+.hero::before { content: ""; position: absolute; right: -80px; top: -110px; width: 340px; height: 340px; border-radius: 50%;
+                background: radial-gradient(circle, rgba(255,214,90,0.45), rgba(255,214,90,0) 65%); }
+.hero::after { content: ""; position: absolute; left: -60px; bottom: -140px; width: 420px; height: 260px; border-radius: 50%;
+               background: radial-gradient(ellipse, rgba(255,255,255,0.16), rgba(255,255,255,0) 70%); }
+.hero > * { position: relative; z-index: 1; }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.kicker { margin: 0; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.16em; opacity: 0.85; }
+.hero h1 { margin: 2px 0 2px; font-size: 3.1rem; line-height: 1.05; letter-spacing: 0.05em; }
+.when { margin: 0; opacity: 0.92; font-size: 1.02rem; }
+.badge { text-align: center; border-radius: 14px; padding: 8px 16px 9px; min-width: 120px;
+         background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.3); }
+.badge b { display: block; font-size: 1.7rem; letter-spacing: 0.06em; line-height: 1.1; }
+.badge small { display: block; font-size: 0.72rem; opacity: 0.9; }
+.badge.VFR { background: var(--vfr); } .badge.MVFR { background: var(--mvfr); }
+.badge.IFR { background: var(--ifr); } .badge.LIFR { background: var(--lifr); }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+.chip { border-radius: 14px; padding: 10px 14px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); }
+.chip span { display: block; }
+.chip .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.82; }
+.chip .value { font-size: 1.45rem; font-weight: 700; }
+.chip .note { font-size: 0.8rem; opacity: 0.85; }
+.chip.cold { box-shadow: inset 4px 0 0 #7fd3ff; } .chip.mild { box-shadow: inset 4px 0 0 #8ee07a; }
+.chip.warm { box-shadow: inset 4px 0 0 #ffb340; } .chip.hot { box-shadow: inset 4px 0 0 #ff5a3c; }
+
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 20px 0; }
+@media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+.card { --c: var(--accent); position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+        padding: 18px; box-shadow: 0 4px 16px rgba(20,50,100,0.07); overflow: hidden; }
+.card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, var(--c), transparent); }
+.card.wind { --c: #2f7be6; } .card.weather { --c: #f2a516; } .card.clouds { --c: #15a3c7; grid-column: 1 / -1; }
+.card h2, .report h2 { margin: 0 0 10px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--c, var(--accent)); }
+.card h2::before, .report h2::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--c, var(--accent)); margin-right: 8px; vertical-align: 1px; }
+.card svg { display: block; width: 100%; height: auto; }
+.compass { max-width: 300px; margin: 0 auto; }
+.caption { text-align: center; margin: 10px 0 0; font-weight: 650; font-size: 1.05rem; }
+.sub { text-align: center; margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+.icons { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: flex-start; }
+.icon { flex: 1 1 140px; max-width: 220px; text-align: center; }
+.icon svg { filter: drop-shadow(0 6px 10px rgba(20,60,130,0.2)); }
+.icon p { margin: 8px 0 0; font-size: 0.95rem; font-weight: 600; }
+
+/* compass */
+.bezel { fill: url(#g-bezel); }
+.bezel-ring { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 1; }
+.face { fill: url(#g-face); }
+.face-ring { fill: none; stroke: var(--rose2); stroke-width: 0.8; stroke-dasharray: 2 3; opacity: 0.7; }
+.tick { stroke: var(--rose2); stroke-width: 1; }
+.tick.mid { stroke-width: 1.6; }
+.tick.major { stroke: var(--ink); stroke-width: 2.4; }
+.cardinal { fill: #ffffff; font-size: 14px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.cardinal.n { fill: #ffd34d; }
+.intercardinal { fill: rgba(255,255,255,0.75); font-size: 8px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.degree { fill: var(--muted); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.rose-a { fill: var(--rose1); } .rose-b { fill: var(--rose2); }
+.rose-n { fill: var(--north); } .rose-nb { fill: #a8261a; }
+.varc { fill: none; stroke: var(--accent-soft); }
+.varc-rim { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
+.arrow { fill: url(#g-arrow); stroke: #b8400f; stroke-width: 0.8; stroke-linejoin: round; }
+.hub { fill: var(--card); stroke-width: 4; }
+.hub.light { stroke: var(--light); } .hub.moderate { stroke: var(--moderate); }
+.hub.strong { stroke: var(--strong); } .hub.gale { stroke: var(--gale); }
+.hub-speed { fill: var(--ink); font-size: 24px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.hub-unit { fill: var(--muted); font-size: 9px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.gust { paint-order: stroke; stroke: var(--face1); stroke-width: 4px; stroke-linejoin: round;
+        fill: var(--strong); font-size: 11px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.center-text { fill: var(--ink); font-size: 18px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.vrb-ring { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 10 8; stroke-linecap: round; }
+
+/* weather icons */
+.tile { fill: url(#g-tile); } .tile.storm { fill: url(#g-storm); }
+.glow { fill: #ffe27a; opacity: 0.35; }
+.sun { fill: url(#g-sun); }
+.ray { stroke: var(--ray); stroke-width: 3.5; stroke-linecap: round; }
+.cloud { fill: url(#g-cloud); filter: url(#f-soft); }
+.cloud.mid { fill: url(#g-cloud-mid); }
+.cloud.dark { fill: url(#g-cloud-dark); }
+.cloud.back { opacity: 0.7; }
+.drop { fill: url(#g-drop); stroke: rgba(255,255,255,0.7); stroke-width: 0.8; }
+.drop.freezing { fill: var(--ice); stroke: #ffffff; stroke-width: 1.4; }
+.dot { fill: var(--drop2); stroke: rgba(255,255,255,0.7); stroke-width: 0.6; }
+.flake { stroke: var(--snow); stroke-width: 2.2; stroke-linecap: round; filter: url(#f-soft); }
+.ice { fill: var(--ice); stroke: #ffffff; stroke-width: 1.6; }
+.bolt { fill: url(#g-bolt); stroke: #c86e00; stroke-width: 1; stroke-linejoin: round; filter: url(#f-soft); }
+.fogline { stroke: rgba(255,255,255,0.85); stroke-width: 4; stroke-linecap: round; }
+.vicinity { opacity: 0.55; }
+
+/* cloud cross section */
+.sky { fill: url(#g-sky); } .sky.grey { fill: url(#g-sky-grey); }
+.grid { stroke: rgba(255,255,255,0.35); stroke-width: 1; stroke-dasharray: 3 5; }
+.alt-label { fill: rgba(255,255,255,0.92); font-size: 11px; font-weight: 600; paint-order: stroke;
+             stroke: rgba(10,40,90,0.45); stroke-width: 3px; stroke-linejoin: round; }
+.ground { fill: url(#g-ground); }
+.runway { fill: var(--runway); }
+.runway-mark { stroke: #ffffff; stroke-width: 1.5; stroke-dasharray: 10 8; }
+.tower { fill: #e8edf4; stroke: #56627a; stroke-width: 1; }
+.tower-cab { fill: #2a6bd3; stroke: #56627a; stroke-width: 1; }
+.blob { fill: url(#g-cloud); filter: url(#f-soft); }
+.blob.mid { fill: url(#g-cloud-mid); }
+.blob.dark { fill: url(#g-cloud-dark); }
+.cb-tower { fill: url(#g-cb); filter: url(#f-soft); }
+.tcu-tower { fill: url(#g-cloud-mid); filter: url(#f-soft); }
+.rain { fill: url(#p-rain); }
+.snowfall { fill: url(#p-snow); }
+.mist { fill: url(#g-mist); }
+.vvfog { fill: url(#p-fog); }
+.vvfog-bg { fill: var(--grey3); opacity: 0.55; }
+.leader { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
+.leader-dot { fill: var(--card); stroke: var(--ink); stroke-width: 1.5; }
+.okta { fill: var(--card); stroke: var(--ink); stroke-width: 1.6; }
+.okta-fill { fill: var(--ink); }
+.layer-label { fill: var(--ink); font-size: 15px; font-weight: 700; }
+.layer-info { fill: var(--muted); font-size: 12px; }
+.pill { fill: var(--warn); } .pill.tcu { fill: var(--strong); }
+.pill-text { fill: #ffffff; font-size: 11px; font-weight: 800; text-anchor: middle; dominant-baseline: central; }
+.scene-text { fill: #ffffff; font-size: 22px; font-weight: 700; text-anchor: middle; paint-order: stroke;
+              stroke: rgba(10,40,90,0.35); stroke-width: 4px; stroke-linejoin: round; }
+
+/* stops */
+.s-sun1 { stop-color: var(--sun1); } .s-sun2 { stop-color: var(--sun2); }
+.s-cloud1 { stop-color: var(--cloud1); } .s-cloud2 { stop-color: var(--cloud2); }
+.s-mid1 { stop-color: var(--mid1); } .s-mid2 { stop-color: var(--mid2); }
+.s-dark1 { stop-color: var(--dark1); } .s-dark2 { stop-color: var(--dark2); }
+.s-drop1 { stop-color: var(--drop1); } .s-drop2 { stop-color: var(--drop2); }
+.s-bolt1 { stop-color: var(--bolt1); } .s-bolt2 { stop-color: var(--bolt2); }
+.s-sky1 { stop-color: var(--sky1); } .s-sky2 { stop-color: var(--sky2); } .s-sky3 { stop-color: var(--sky3); }
+.s-grey1 { stop-color: var(--grey1); } .s-grey2 { stop-color: var(--grey2); } .s-grey3 { stop-color: var(--grey3); }
+.s-ground1 { stop-color: var(--ground1); } .s-ground2 { stop-color: var(--ground2); }
+.s-tile1 { stop-color: var(--tile1); } .s-tile2 { stop-color: var(--tile2); }
+.s-storm1 { stop-color: var(--storm1); } .s-storm2 { stop-color: var(--storm2); }
+.s-face1 { stop-color: var(--face1); } .s-face2 { stop-color: var(--face2); }
+.s-bezel1 { stop-color: var(--bezel1); } .s-bezel2 { stop-color: var(--bezel2); } .s-bezel3 { stop-color: var(--bezel3); }
+.s-arrow1 { stop-color: var(--arrow1); } .s-arrow2 { stop-color: var(--arrow2); }
+.s-mist1 { stop-color: #f4f7fb; stop-opacity: 0; } .s-mist2 { stop-color: #f4f7fb; stop-opacity: 0.95; }
+.streak { stroke: #e4f2ff; stroke-width: 2; stroke-linecap: round; }
+.snowdot { fill: #ffffff; }
+.fogstripe { stroke: var(--grey1); stroke-width: 2; opacity: 0.6; }
+
+.empty { color: var(--muted); text-align: center; margin: 32px 0; }
+.report { --c: var(--blue-500); margin-top: 8px; }
+.report h2 { margin-left: 4px; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card); border: 1px solid var(--line);
+        border-radius: 18px; overflow: hidden; box-shadow: 0 4px 16px rgba(20,50,100,0.07); }
+th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child th, tr:last-child td { border-bottom: none; }
+th { width: 30%; color: var(--blue-700); background: var(--blue-100); font-weight: 650; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) th { color: #a9c8ff; } }
+:root[data-theme="dark"] th { color: #a9c8ff; }
+tr:nth-child(even) td { background: rgba(47,123,230,0.04); }
+td div + div { margin-top: 2px; }
+'
+            }
+            body {
+                xsl:call-template(name = shared-defs)
+                main {
+                    xsl:call-template(name = hero)
+                    div(class = cards) {
+                        section(class = 'card wind') {
+                            h2 = Wind
+                            xsl:call-template(name = compass)
+                            p(class = caption) {
+                                xsl:call-template(name = wind-text)
+                            }
+                            xsl:if(test = '$wd and not($calm) and number($kt) = number($kt)')
+                            {
+                                p(class = sub) {
+                                    xsl:call-template(name = beaufort)
+                                }
+                            }
+                            xsl:if(test = $wv)
+                            {
+                                p(class = sub) {
+                                    'Varying between '
+                                    xsl:value-of(select = $wv/from_degrees)
+                                    '° and '
+                                    xsl:value-of(select = $wv/to_degrees)
+                                    '°'
+                                }
+                            }
+                        }
+                        section(class = 'card weather') {
+                            h2 = Weather
+                            div(class = icons) {
+                                xsl:choose {
+                                    xsl:when(test = '$now[self::weather]')
+                                    {
+                                        xsl:for-each(select = '$now[self::weather]/observation')
+                                        {
+                                            div(class = icon) {
+                                                xsl:call-template(name = weather-icon)
+                                                {
+                                                    xsl:with-param(name   = obs
+                                                                   select = .)
+                                                }
+                                                p {
+                                                    xsl:call-template(name = observation-text)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    xsl:otherwise {
+                                        div(class = icon) {
+                                            xsl:call-template(name = weather-icon)
+                                            {
+                                                xsl:with-param(name   = obs
+                                                               select = '/..')
+                                            }
+                                            p {
+                                                xsl:call-template(name = sky-text)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        section(class = 'card clouds') {
+                            h2 = 'Clouds and sky'
+                            xsl:call-template(name = cloud-scene)
+                        }
+                    }
+                    section(class = report) {
+                        h2 = 'Decoded report'
+                        xsl:call-template(name = details)
+                    }
+                }
+            }
+        }
+    }
+
+    // ================================================================ shared svg definitions
+
+    // The gradients and patterns used by all the drawings, the colors are set
+    // with css on the stops so that they follow the dark mode.
+    xsl:template(name = shared-defs)
+    {
+        svg(class       = defs
+            width       = 0
+            height      = 0
+            aria-hidden = true
+            focusable   = false)
+        {
+            defs {
+                radialGradient(id = g-sun cx = '40%' cy = '35%' r = '70%') {
+                    stop(offset = '0%' class = s-sun1)
+                    stop(offset = '100%' class = s-sun2)
+                }
+                linearGradient(id = g-cloud x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-cloud1)
+                    stop(offset = '100%' class = s-cloud2)
+                }
+                linearGradient(id = g-cloud-mid x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-mid1)
+                    stop(offset = '100%' class = s-mid2)
+                }
+                linearGradient(id = g-cloud-dark x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-dark1)
+                    stop(offset = '100%' class = s-dark2)
+                }
+                linearGradient(id = g-cb x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-mid1)
+                    stop(offset = '45%' class = s-dark1)
+                    stop(offset = '100%' class = s-dark2)
+                }
+                linearGradient(id = g-drop x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-drop1)
+                    stop(offset = '100%' class = s-drop2)
+                }
+                linearGradient(id = g-bolt x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-bolt1)
+                    stop(offset = '100%' class = s-bolt2)
+                }
+                linearGradient(id = g-tile x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-tile1)
+                    stop(offset = '100%' class = s-tile2)
+                }
+                linearGradient(id = g-storm x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-storm1)
+                    stop(offset = '100%' class = s-storm2)
+                }
+                linearGradient(id = g-sky x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-sky1)
+                    stop(offset = '60%' class = s-sky2)
+                    stop(offset = '100%' class = s-sky3)
+                }
+                linearGradient(id = g-sky-grey x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-grey1)
+                    stop(offset = '60%' class = s-grey2)
+                    stop(offset = '100%' class = s-grey3)
+                }
+                linearGradient(id = g-ground x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-ground1)
+                    stop(offset = '100%' class = s-ground2)
+                }
+                linearGradient(id = g-mist x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-mist1)
+                    stop(offset = '100%' class = s-mist2)
+                }
+                radialGradient(id = g-face cx = '50%' cy = '38%' r = '65%') {
+                    stop(offset = '0%' class = s-face1)
+                    stop(offset = '100%' class = s-face2)
+                }
+                radialGradient(id = g-bezel cx = '50%' cy = '50%' r = '50%') {
+                    stop(offset = '80%' class = s-bezel1)
+                    stop(offset = '91%' class = s-bezel2)
+                    stop(offset = '100%' class = s-bezel3)
+                }
+                linearGradient(id = g-arrow x1 = 0 y1 = 0 x2 = 0 y2 = 1) {
+                    stop(offset = '0%' class = s-arrow1)
+                    stop(offset = '100%' class = s-arrow2)
+                }
+                pattern(id           = p-rain
+                        width        = 12
+                        height       = 18
+                        patternUnits = userSpaceOnUse)
+                {
+                    line(class = streak x1 = 9 y1 = 1 x2 = 6 y2 = 10)
+                }
+                pattern(id           = p-snow
+                        width        = 16
+                        height       = 16
+                        patternUnits = userSpaceOnUse)
+                {
+                    circle(class = snowdot cx = 4 cy = 4 r = 1.8)
+                    circle(class = snowdot cx = 12 cy = 11 r = 1.4)
+                }
+                pattern(id               = p-fog
+                        width            = 8
+                        height           = 8
+                        patternUnits     = userSpaceOnUse
+                        patternTransform = 'rotate(45)')
+                {
+                    line(class = fogstripe x1 = 0 y1 = 0 x2 = 0 y2 = 8)
+                }
+                filter(id = f-soft x = '-20%' y = '-20%' width = '140%' height = '160%') {
+                    feDropShadow(dx = 0 dy = 2 stdDeviation = 1.6 flood-color = '#0a2856' flood-opacity = 0.25)
+                }
+            }
+        }
+    }
+
+    // ================================================================ header
+
+    xsl:template(name = hero)
+    {
+        xsl:variable(name = r
+                     select = /weather_report)
+        header(class = hero) {
+            div(class = hero-top) {
+                div {
+                    p(class = kicker) {
+                        xsl:value-of(select = '$r/report_type')
+                        xsl:if(test = 'not($r/report_type)') = METAR
+                        xsl:if(test = $r/observation_type)
+                        {
+                            ' · '
+                            xsl:value-of(select = 'translate($r/observation_type, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")')
+                        }
+                        xsl:if(test = $r/correction) = ' · corrected'
+                    }
+                    h1 {
+                        xsl:value-of(select = $r/icao_airport_code)
+                    }
+                    xsl:for-each(select = $r/time_of_observation)
+                    {
+                        p(class = when) {
+                            'Observed day '
+                            xsl:value-of(select = day)
+                            ' at '
+                            xsl:value-of(select = time/hour)
+                            ':'
+                            xsl:value-of(select = time/minute)
+                            xsl:text = ' '
+                            xsl:value-of(select = time_zone)
+                        }
+                    }
+                }
+                xsl:call-template(name = flight-category)
+            }
+            div(class = chips) {
+                xsl:for-each(select = '$now[self::temperature][1]')
+                {
+                    div {
+                        xsl:attribute(name = class)
+                        {
+                            'chip '
+                            xsl:choose {
+                                xsl:when(test = 'air_c <= 0') = cold
+                                xsl:when(test = 'air_c < 20') = mild
+                                xsl:when(test = 'air_c < 30') = warm
+                                xsl:otherwise = hot
+                            }
+                        }
+                        span(class = label) = Temperature
+                        span(class = value) {
+                            xsl:value-of(select = air_c)
+                            ' °C'
+                        }
+                        xsl:if(test = 'number(dewpoint_c) = number(dewpoint_c)')
+                        {
+                            span(class = note) {
+                                'Dew point '
+                                xsl:value-of(select = dewpoint_c)
+                                ' °C'
+                            }
+                        }
+                    }
+                }
+                xsl:for-each(select = '$now[self::air_pressure][1]')
+                {
+                    div(class = chip) {
+                        span(class = label) = Pressure
+                        span(class = value) {
+                            xsl:if(test = pressure_hpa)
+                            {
+                                xsl:value-of(select = pressure_hpa)
+                                ' hPa'
+                            }
+                            xsl:if(test = 'pressure_inhg and not(pressure_hpa)')
+                            {
+                                xsl:value-of(select = pressure_inhg)
+                                ' inHg'
+                            }
+                        }
+                        span(class = note) {
+                            xsl:choose {
+                                xsl:when(test = 'pressure_hpa < 1000') = 'Low pressure'
+                                xsl:when(test = 'pressure_hpa > 1025') = 'High pressure'
+                                xsl:when(test = pressure_hpa) = 'Normal pressure'
+                                xsl:otherwise = Altimeter
+                            }
+                        }
+                    }
+                }
+                xsl:if(test = '$vis or $now[self::cavok]')
+                {
+                    div(class = chip) {
+                        span(class = label) = Visibility
+                        span(class = value) {
+                            xsl:choose {
+                                xsl:when(test = '$vis_m >= 10000') = '10+ km'
+                                xsl:when(test = '$vis/meters')
+                                {
+                                    xsl:value-of(select = 'format-number($vis/meters, "#,##0")')
+                                    ' m'
+                                }
+                                xsl:when(test = '$vis/miles')
+                                {
+                                    xsl:value-of(select = '$vis/miles')
+                                    ' SM'
+                                }
+                                xsl:otherwise = n/a
+                            }
+                        }
+                        span(class = note) {
+                            xsl:choose {
+                                xsl:when(test = '$now[self::cavok]') = 'Ceiling and visibility OK'
+                                xsl:when(test = '$vis_m >= 10000') = Excellent
+                                xsl:when(test = '$vis_m >= 5000') = Good
+                                xsl:when(test = '$vis_m >= 1000') = Reduced
+                                xsl:when(test = '$vis_m != ""') = Poor
+                                xsl:otherwise = 'Not available'
+                            }
+                        }
+                    }
+                }
+                div(class = chip) {
+                    span(class = label) = Ceiling
+                    span(class = value) {
+                        xsl:choose {
+                            xsl:when(test = '$ceiling != ""')
+                            {
+                                xsl:value-of(select = 'format-number($ceiling, "#,##0")')
+                                ' ft'
+                            }
+                            xsl:otherwise = None
+                        }
+                    }
+                    span(class = note) {
+                        xsl:choose {
+                            xsl:when(test = '$vv') = 'Sky obscured'
+                            xsl:when(test = '$ceiling != ""') = 'Lowest broken or overcast'
+                            xsl:otherwise = 'No broken or overcast layer'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // VFR, MVFR, IFR or LIFR from the ceiling and the visibility.
+    xsl:template(name = flight-category)
+    {
+        xsl:variable(name   = c
+                     select = 'number($ceiling)')
+        xsl:variable(name   = v
+                     select = 'number($vis_m)')
+        xsl:variable(name = cat)
+        {
+            xsl:choose {
+                xsl:when(test = '$ceiling = "" and $vis_m = ""')
+                xsl:when(test = '$c < 500 or $v < 1600') = LIFR
+                xsl:when(test = '$c < 1000 or $v < 4800') = IFR
+                xsl:when(test = '$c <= 3000 or $v <= 8000') = MVFR
+                xsl:otherwise = VFR
+            }
+        }
+        xsl:if(test = '$cat != ""')
+        {
+            div(class = 'badge {$cat}') {
+                small = 'Flight category'
+                b {
+                    xsl:value-of(select = $cat)
+                }
+                small {
+                    xsl:choose {
+                        xsl:when(test = '$cat = "VFR"') = 'Visual flight rules'
+                        xsl:when(test = '$cat = "MVFR"') = 'Marginal VFR'
+                        xsl:when(test = '$cat = "IFR"') = 'Instrument flight rules'
+                        xsl:otherwise = 'Low IFR'
+                    }
+                }
+            }
+        }
+    }
+
+    // ================================================================ compass
+
+    xsl:template(name = compass)
+    {
+        svg(class   = compass
+            viewBox = '0 0 240 240'
+            role    = img)
+        {
+            title {
+                xsl:call-template(name = wind-text)
+            }
+            circle(class = bezel cx = 120 cy = 120 r = 119)
+            circle(class = bezel-ring cx = 120 cy = 120 r = 116)
+            circle(class = face cx = 120 cy = 120 r = 99)
+
+            // The letters on the bezel turn with the dial.
+            text(class = 'cardinal n' x = 120 y = 11) = N
+            text(class = cardinal x = 120 y = 11 transform = 'rotate(90 120 120)') = E
+            text(class = cardinal x = 120 y = 11 transform = 'rotate(180 120 120)') = S
+            text(class = cardinal x = 120 y = 11 transform = 'rotate(270 120 120)') = W
+            text(class = intercardinal x = 120 y = 11 transform = 'rotate(45 120 120)') = NE
+            text(class = intercardinal x = 120 y = 11 transform = 'rotate(135 120 120)') = SE
+            text(class = intercardinal x = 120 y = 11 transform = 'rotate(225 120 120)') = SW
+            text(class = intercardinal x = 120 y = 11 transform = 'rotate(315 120 120)') = NW
+
+            xsl:call-template(name = ticks)
+            circle(class = face-ring cx = 120 cy = 120 r = 74)
+
+            // The compass rose, every point has a light and a dark half.
+            g {
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 45)
+                    xsl:with-param(name = len select = 46)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 135)
+                    xsl:with-param(name = len select = 46)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 225)
+                    xsl:with-param(name = len select = 46)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 315)
+                    xsl:with-param(name = len select = 46)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 90)
+                    xsl:with-param(name = len select = 70)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 180)
+                    xsl:with-param(name = len select = 70)
+                }
+                xsl:call-template(name = rose-point)
+                {
+                    xsl:with-param(name = deg select = 270)
+                    xsl:with-param(name = len select = 70)
+                }
+                polygon(class = rose-n points = '120,50 120,120 111,111')
+                polygon(class = rose-nb points = '120,50 120,120 129,111')
+            }
+
+            // The variation, a wedge from from_degrees clockwise to to_degrees.
+            // The circle stroke starts at 3 o'clock, ie at 90°, hence the -90.
+            // A circle with r=44 and a stroke of 88 fills from the center to 88.
+            xsl:if(test = $wv)
+            {
+                xsl:variable(name   = span
+                             select = '(($wv/to_degrees - $wv/from_degrees) + 360) mod 360')
+                xsl:variable(name   = inner
+                             select = '2 * 3.14159265 * 44')
+                xsl:variable(name   = outer
+                             select = '2 * 3.14159265 * 94')
+                circle(class            = varc
+                       cx               = 120
+                       cy               = 120
+                       r                = 44
+                       stroke-width     = 88
+                       stroke-dasharray = '{$span * $inner div 360} {$inner}'
+                       transform        = 'rotate({$wv/from_degrees - 90} 120 120)')
+                circle(class            = varc-rim
+                       cx               = 120
+                       cy               = 120
+                       r                = 94
+                       stroke-dasharray = '{$span * $outer div 360} {$outer}'
+                       transform        = 'rotate({$wv/from_degrees - 90} 120 120)')
+            }
+
+            xsl:variable(name = band)
+            {
+                xsl:choose {
+                    xsl:when(test = '$kt < 11') = light
+                    xsl:when(test = '$kt < 22') = moderate
+                    xsl:when(test = '$kt < 34') = strong
+                    xsl:otherwise = gale
+                }
+            }
+            xsl:choose {
+                xsl:when(test = '$calm')
+                {
+                    circle(class = 'hub light' cx = 120 cy = 120 r = 32)
+                    text(class = center-text x = 120 y = 120) = CALM
+                }
+                xsl:when(test = '$wd/variable')
+                {
+                    circle(class = vrb-ring cx = 120 cy = 120 r = 52)
+                    circle(class = 'hub {$band}' cx = 120 cy = 120 r = 32)
+                    text(class = hub-speed x = 120 y = 112) {
+                        xsl:value-of(select = $wd/speed/value)
+                    }
+                    text(class = hub-unit x = 120 y = 132) {
+                        'VRB '
+                        xsl:call-template(name = unit-short)
+                    }
+                    xsl:if(test = $wd/speed/gust)
+                    {
+                        text(class = gust x = 120 y = 164) {
+                            'gusts '
+                            xsl:value-of(select = $wd/speed/gust)
+                        }
+                    }
+                }
+                xsl:when(test = '$wd/degrees')
+                {
+                    // The arrow starts at the edge the wind comes from and
+                    // points to where the wind blows.
+                    g(transform = 'rotate({$wd/degrees} 120 120)'
+                      filter    = 'url(#f-soft)')
+                    {
+                        // Tail feathers, a second pair when it gusts.
+                        polygon(class = arrow points = '120,40 104,26 104,36 120,52')
+                        polygon(class = arrow points = '120,40 136,26 136,36 120,52')
+                        xsl:if(test = $wd/speed/gust)
+                        {
+                            polygon(class = arrow points = '120,56 104,42 104,52 120,68')
+                            polygon(class = arrow points = '120,56 136,42 136,52 120,68')
+                        }
+                        polygon(class  = arrow
+                                points = '117,30 123,30 124.5,184 115.5,184')
+                        polygon(class  = arrow
+                                points = '120,216 104,178 120,186 136,178')
+                    }
+                    circle(class = 'hub {$band}' cx = 120 cy = 120 r = 30)
+                    text(class = hub-speed x = 120 y = 115) {
+                        xsl:value-of(select = $wd/speed/value)
+                    }
+                    text(class = hub-unit x = 120 y = 135) {
+                        xsl:call-template(name = unit-short)
+                    }
+                    xsl:if(test = $wd/speed/gust)
+                    {
+                        text(class = gust x = 120 y = 164) {
+                            'gusts '
+                            xsl:value-of(select = $wd/speed/gust)
+                        }
+                    }
+                }
+                xsl:otherwise {
+                    text(class = center-text x = 120 y = 120 style = 'font-size:14px') = 'no wind'
+                }
+            }
+        }
+    }
+
+    // One point of the compass rose, len long, pointing at deg.
+    xsl:template(name = rose-point)
+    {
+        xsl:param(name = deg)
+        xsl:param(name = len)
+        xsl:variable(name   = w
+                     select = '$len * 0.13')
+        g(transform = 'rotate({$deg} 120 120)') {
+            polygon(class = rose-a points = '120,{120 - $len} 120,120 {120 - $w},{120 - $w}')
+            polygon(class = rose-b points = '120,{120 - $len} 120,120 {120 + $w},{120 - $w}')
+        }
+    }
+
+    xsl:template(name = unit-short)
+    {
+        xsl:choose {
+            xsl:when(test = '$wd/speed/unit/code = "KT"') = kt
+            xsl:when(test = '$wd/speed/unit/code = "MPS"') = m/s
+            xsl:when(test = '$wd/speed/unit/code = "KMH"') = km/h
+            xsl:otherwise {
+                xsl:value-of(select = '$wd/speed/unit/code')
+            }
+        }
+    }
+
+    // The Beaufort force from the speed in knots.
+    xsl:template(name = beaufort)
+    {
+        xsl:variable(name = b)
+        {
+            xsl:choose {
+                xsl:when(test = '$kt < 1') = 0
+                xsl:when(test = '$kt < 4') = 1
+                xsl:when(test = '$kt < 7') = 2
+                xsl:when(test = '$kt < 11') = 3
+                xsl:when(test = '$kt < 17') = 4
+                xsl:when(test = '$kt < 22') = 5
+                xsl:when(test = '$kt < 28') = 6
+                xsl:when(test = '$kt < 34') = 7
+                xsl:when(test = '$kt < 41') = 8
+                xsl:when(test = '$kt < 48') = 9
+                xsl:when(test = '$kt < 56') = 10
+                xsl:when(test = '$kt < 64') = 11
+                xsl:otherwise = 12
+            }
+        }
+        'Beaufort '
+        xsl:value-of(select = $b)
+        ', '
+        xsl:choose {
+            xsl:when(test = '$b = 0') = calm
+            xsl:when(test = '$b = 1') = 'light air'
+            xsl:when(test = '$b = 2') = 'light breeze'
+            xsl:when(test = '$b = 3') = 'gentle breeze'
+            xsl:when(test = '$b = 4') = 'moderate breeze'
+            xsl:when(test = '$b = 5') = 'fresh breeze'
+            xsl:when(test = '$b = 6') = 'strong breeze'
+            xsl:when(test = '$b = 7') = 'near gale'
+            xsl:when(test = '$b = 8') = gale
+            xsl:when(test = '$b = 9') = 'strong gale'
+            xsl:when(test = '$b = 10') = storm
+            xsl:when(test = '$b = 11') = 'violent storm'
+            xsl:otherwise = 'hurricane force'
+        }
+    }
+
+    // A tick every 5°, longer every 10° and 30°, the degrees every 30°.
+    xsl:template(name = ticks)
+    {
+        xsl:param(name   = deg
+                  select = 0)
+        xsl:if(test = '$deg < 360')
+        {
+            line(x1 = 120 y1 = 22 x2 = 120)
+            {
+                xsl:attribute(name = class)
+                {
+                    xsl:choose {
+                        xsl:when(test = '$deg mod 30 = 0') = 'tick major'
+                        xsl:when(test = '$deg mod 10 = 0') = 'tick mid'
+                        xsl:otherwise = tick
+                    }
+                }
+                xsl:attribute(name = y2)
+                {
+                    xsl:choose {
+                        xsl:when(test = '$deg mod 30 = 0') = 34
+                        xsl:when(test = '$deg mod 10 = 0') = 30
+                        xsl:otherwise = 27
+                    }
+                }
+                xsl:attribute(name = transform)
+                {
+                    'rotate('
+                    xsl:value-of(select = $deg)
+                    ' 120 120)'
+                }
+            }
+            xsl:if(test = '$deg mod 30 = 0')
+            {
+                text(class     = degree
+                     x         = 120
+                     y         = 43
+                     transform = 'rotate({$deg} 120 120)')
+                {
+                    xsl:value-of(select = $deg)
+                }
+            }
+            xsl:call-template(name = ticks)
+            {
+                xsl:with-param(name   = deg
+                               select = '$deg + 5')
+            }
+        }
+    }
+
+    // ================================================================ weather icons
+
+    // An icon for one weather observation, or for the sky alone when obs is empty.
+    xsl:template(name = weather-icon)
+    {
+        xsl:param(name = obs)
+
+        xsl:variable(name   = rain
+                     select = '$obs/type = "RA" or $obs/type = "UP"')
+        xsl:variable(name   = drizzle
+                     select = '$obs/type = "DZ"')
+        xsl:variable(name   = snow
+                     select = '$obs/type = "SN" or $obs/type = "SG"')
+        xsl:variable(name   = ice
+                     select = '$obs/type = "GR" or $obs/type = "GS" or $obs/type = "PL" or $obs/type = "PE" or $obs/type = "IC"')
+        xsl:variable(name   = thunder
+                     select = '$obs/chrct = "TS"')
+        xsl:variable(name   = fog
+                     select = '$obs/type = "FG" or $obs/type = "BR" or $obs/type = "HZ" or $obs/type = "FU" or $obs/type = "DU" or $obs/type = "SA" or $obs/type = "VA"')
+        xsl:variable(name   = precip
+                     select = '$rain or $drizzle or $snow or $ice or ($obs/chrct = "SH")')
+
+        // The kinds of precipitation, one letter each, the slots below the
+        // cloud take turns among them: R rain, D drizzle, S snow, I ice.
+        xsl:variable(name = kinds)
+        {
+            xsl:if(test = $rain) = R
+            xsl:if(test = '$drizzle and not($rain)') = D
+            xsl:if(test = $snow) = S
+            xsl:if(test = $ice) = I
+            xsl:if(test = '$obs/chrct = "SH" and not($rain or $drizzle or $snow or $ice)') = R
+        }
+        xsl:variable(name   = freezing
+                     select = '$obs/chrct = "FZ"')
+
+        xsl:variable(name   = show_cloud
+                     select = '$precip or $thunder or $cover = "FEW" or $cover = "SCT" or $cover = "BKN" or $cover = "OVC" or $cover = "VV"')
+        xsl:variable(name   = show_sun
+                     select = 'not($precip or $thunder) and not($cover = "BKN" or $cover = "OVC" or $cover = "VV")')
+        xsl:variable(name   = dark
+                     select = '$precip or $thunder or $cover = "OVC" or $cb')
+        xsl:variable(name   = cloudpath
+                     select = '"M-36,0 a12,12 0 0 1 4,-20 a16,16 0 0 1 22,-12 a18,18 0 0 1 30,4 a12,12 0 0 1 16,16 a8,8 0 0 1 0,12 z"')
+
+        svg(viewBox = '0 0 120 110'
+            role    = img)
+        {
+            xsl:if(test = '$obs/intensity = "in the vicinity"')
+            {
+                xsl:attribute(name = class) = vicinity
+            }
+            title {
+                xsl:choose {
+                    xsl:when(test = $obs)
+                    {
+                        xsl:for-each(select = $obs)
+                        {
+                            xsl:call-template(name = observation-text)
+                        }
+                    }
+                    xsl:otherwise {
+                        xsl:call-template(name = sky-text)
+                    }
+                }
+            }
+            rect(x = 0 y = 0 width = 120 height = 110 rx = 20)
+            {
+                xsl:attribute(name = class)
+                {
+                    xsl:choose {
+                        xsl:when(test = '$dark or $fog or $cover = "VV"') = 'tile storm'
+                        xsl:otherwise = tile
+                    }
+                }
+            }
+            xsl:if(test = $show_sun)
+            {
+                g(transform = 'translate(42 36)') {
+                    xsl:if(test = 'not($show_cloud)')
+                    {
+                        xsl:attribute(name = transform) = 'translate(60 55)'
+                    }
+                    circle(class = glow cx = 0 cy = 0 r = 27)
+                    line(class = ray x1 = 0 y1 = -28 x2 = 0 y2 = -21)
+                    line(class = ray x1 = 0 y1 = 28 x2 = 0 y2 = 21)
+                    line(class = ray x1 = -28 y1 = 0 x2 = -21 y2 = 0)
+                    line(class = ray x1 = 28 y1 = 0 x2 = 21 y2 = 0)
+                    line(class = ray x1 = -20 y1 = -20 x2 = -15 y2 = -15)
+                    line(class = ray x1 = 20 y1 = 20 x2 = 15 y2 = 15)
+                    line(class = ray x1 = -20 y1 = 20 x2 = -15 y2 = 15)
+                    line(class = ray x1 = 20 y1 = -20 x2 = 15 y2 = -15)
+                    circle(class = sun cx = 0 cy = 0 r = 15)
+                }
+            }
+            xsl:if(test = $show_cloud)
+            {
+                xsl:variable(name = shade)
+                {
+                    xsl:choose {
+                        xsl:when(test = $dark) = 'cloud dark'
+                        xsl:when(test = '$cover = "BKN" or $cover = "VV"') = 'cloud mid'
+                        xsl:otherwise = cloud
+                    }
+                }
+                // A cloud behind for depth when the sky is not clear.
+                xsl:if(test = '$dark or $cover = "BKN" or $cover = "VV"')
+                {
+                    path(class = '{$shade} back' transform = 'translate(80 40) scale(0.7)' d = '{$cloudpath}')
+                }
+                path(class = '{$shade}' transform = 'translate(62 66) scale(1.15)' d = '{$cloudpath}')
+            }
+            xsl:if(test = $thunder)
+            {
+                polygon(class  = bolt
+                        points = '66,58 52,82 62,82 56,104 78,74 67,74 74,58')
+            }
+            xsl:if(test = 'string-length($kinds) > 0')
+            {
+                xsl:variable(name = slots)
+                {
+                    xsl:choose {
+                        xsl:when(test = '$obs/intensity = "light"') = 3
+                        xsl:otherwise = 4
+                    }
+                }
+                xsl:call-template(name = precip-row)
+                {
+                    xsl:with-param(name   = kinds
+                                   select = $kinds)
+                    xsl:with-param(name   = n
+                                   select = $slots)
+                    xsl:with-param(name   = y
+                                   select = 80)
+                    xsl:with-param(name   = freezing
+                                   select = $freezing)
+                }
+                xsl:if(test = '$obs/intensity = "heavy"')
+                {
+                    xsl:call-template(name = precip-row)
+                    {
+                        xsl:with-param(name   = kinds
+                                       select = $kinds)
+                        xsl:with-param(name   = n
+                                       select = 3)
+                        xsl:with-param(name   = y
+                                       select = 98)
+                        xsl:with-param(name   = shift
+                                       select = 1)
+                        xsl:with-param(name   = freezing
+                                       select = $freezing)
+                    }
+                }
+            }
+            xsl:if(test = $fog)
+            {
+                line(class = fogline x1 = 24 y1 = 84 x2 = 96 y2 = 84)
+                line(class = fogline x1 = 16 y1 = 94 x2 = 88 y2 = 94)
+                line(class = fogline x1 = 30 y1 = 104 x2 = 104 y2 = 104)
+            }
+        }
+    }
+
+    // A row of n precipitation symbols, slot i uses kind i mod the number of kinds.
+    xsl:template(name = precip-row)
+    {
+        xsl:param(name = kinds)
+        xsl:param(name = n)
+        xsl:param(name = y)
+        xsl:param(name   = shift
+                  select = 0)
+        xsl:param(name   = freezing
+                  select = 'false()')
+        xsl:param(name   = i
+                  select = 0)
+        xsl:if(test = '$i < $n')
+        {
+            xsl:variable(name   = kind
+                         select = 'substring($kinds, (($i + $shift) mod string-length($kinds)) + 1, 1)')
+            // Center the row under the cloud.
+            xsl:variable(name   = x
+                         select = '62 - ($n - 1) * 10 + $i * 20')
+            g(transform = 'translate({$x} {$y})') {
+                xsl:choose {
+                    xsl:when(test = '$kind = "R"')
+                    {
+                        path(transform = 'rotate(18)'
+                             d         = 'M0,-8 C2,-4 5,-1 5,3 A5,5 0 0 1 -5,3 C-5,-1 -2,-4 0,-8 Z')
+                        {
+                            xsl:attribute(name = class)
+                            {
+                                'drop'
+                                xsl:if(test = $freezing) = ' freezing'
+                            }
+                        }
+                    }
+                    xsl:when(test = '$kind = "D"')
+                    {
+                        circle(class = dot cx = 1 cy = -3 r = 2.2)
+                        circle(class = dot cx = -2 cy = 5 r = 2.2)
+                    }
+                    xsl:when(test = '$kind = "S"')
+                    {
+                        g(class = flake) {
+                            line(x1 = 0 y1 = -7 x2 = 0 y2 = 7)
+                            line(x1 = -6 y1 = -3.5 x2 = 6 y2 = 3.5)
+                            line(x1 = -6 y1 = 3.5 x2 = 6 y2 = -3.5)
+                            line(x1 = -2 y1 = -7 x2 = 0 y2 = -5)
+                            line(x1 = 2 y1 = -7 x2 = 0 y2 = -5)
+                            line(x1 = -2 y1 = 7 x2 = 0 y2 = 5)
+                            line(x1 = 2 y1 = 7 x2 = 0 y2 = 5)
+                        }
+                    }
+                    xsl:when(test = '$kind = "I"')
+                    {
+                        circle(class = ice cx = 0 cy = 0 r = 4.5)
+                    }
+                }
+            }
+            xsl:call-template(name = precip-row)
+            {
+                xsl:with-param(name   = kinds
+                               select = $kinds)
+                xsl:with-param(name   = n
+                               select = $n)
+                xsl:with-param(name   = y
+                               select = $y)
+                xsl:with-param(name   = shift
+                               select = $shift)
+                xsl:with-param(name   = freezing
+                               select = $freezing)
+                xsl:with-param(name   = i
+                               select = '$i + 1')
+            }
+        }
+    }
+
+    // ================================================================ cloud cross section
+
+    // The sky is 520 wide, the ground at y=262 and the top altitude at y=22.
+    // The labels with the okta symbols are to the right of the sky.
+    xsl:template(name = cloud-scene)
+    {
+        xsl:variable(name   = rows
+                     select = 'count($layers) + count($vv)')
+        xsl:variable(name = maxalt)
+        {
+            xsl:for-each(select = '$layers/altitude_ft[number(.) = number(.)] | $vv/altitude_ft[number(.) = number(.)]')
+            {
+                xsl:sort(select    = .
+                         data-type = number
+                         order     = descending)
+                xsl:if(test = 'position() = 1')
+                {
+                    xsl:value-of(select = .)
+                }
+            }
+        }
+        xsl:variable(name = top)
+        {
+            xsl:choose {
+                xsl:when(test = 'not(number($maxalt) > 4000)') = 5000
+                xsl:when(test = 'not(number($maxalt) > 8000)') = 10000
+                xsl:when(test = 'not(number($maxalt) > 12000)') = 15000
+                xsl:when(test = 'not(number($maxalt) > 16000)') = 20000
+                xsl:when(test = 'not(number($maxalt) > 24000)') = 30000
+                xsl:otherwise = 50000
+            }
+        }
+        xsl:variable(name   = clear
+                     select = 'not($cover = "BKN" or $cover = "OVC" or $cover = "VV")')
+
+        svg(class   = scene
+            viewBox = '0 0 760 300'
+            role    = img)
+        {
+            title {
+                'Cross section of the sky: '
+                xsl:call-template(name = sky-text)
+            }
+            defs {
+                clipPath(id = cp-sky) {
+                    rect(x = 0 y = 0 width = 520 height = 300 rx = 14)
+                }
+            }
+            g(clip-path = 'url(#cp-sky)') {
+                rect(x = 0 y = 0 width = 520 height = 300)
+                {
+                    xsl:attribute(name = class)
+                    {
+                        xsl:choose {
+                            xsl:when(test = '$clear and not($rainy or $snowy or $foggy or $stormy)') = sky
+                            xsl:otherwise = 'sky grey'
+                        }
+                    }
+                }
+                xsl:if(test = '$clear and not($rainy or $snowy or $stormy)')
+                {
+                    g(transform = 'translate(450 62)') {
+                        circle(class = glow cx = 0 cy = 0 r = 40)
+                        circle(class = glow cx = 0 cy = 0 r = 30)
+                        circle(class = sun cx = 0 cy = 0 r = 20)
+                    }
+                }
+                xsl:call-template(name = alt-grid)
+                {
+                    xsl:with-param(name   = top
+                                   select = $top)
+                }
+
+                // The vertical visibility, a hatched fog from the ground up.
+                xsl:for-each(select = $vv)
+                {
+                    xsl:variable(name = a)
+                    {
+                        xsl:call-template(name = alt-or-mid)
+                        {
+                            xsl:with-param(name   = top
+                                           select = $top)
+                        }
+                    }
+                    xsl:variable(name   = y
+                                 select = '262 - $a * 240 div $top')
+                    rect(class = vvfog-bg x = 0 y = '{$y}' width = 520 height = '{262 - $y}')
+                    rect(class = vvfog x = 0 y = '{$y}' width = 520 height = '{262 - $y}')
+                }
+
+                // The precipitation falls to the ground as a shaft below a
+                // cumulonimbus, or else from the lowest broken or overcast
+                // layer, or else from the lowest layer.
+                xsl:if(test = '($rainy or $snowy) and ($layers or $vv)')
+                {
+                    xsl:variable(name   = cbl
+                                 select = '$layers[cloud_type/code = "CB"][1]')
+                    xsl:variable(name   = bkn
+                                 select = '$layers[cloud_cover/code = "BKN" or cloud_cover/code = "OVC"][1]')
+                    xsl:variable(name = a)
+                    {
+                        xsl:choose {
+                            xsl:when(test = $cbl)
+                            {
+                                xsl:for-each(select = $cbl)
+                                {
+                                    xsl:call-template(name = alt-or-mid)
+                                    {
+                                        xsl:with-param(name   = top
+                                                       select = $top)
+                                    }
+                                }
+                            }
+                            xsl:when(test = $bkn)
+                            {
+                                xsl:for-each(select = $bkn)
+                                {
+                                    xsl:call-template(name = alt-or-mid)
+                                    {
+                                        xsl:with-param(name   = top
+                                                       select = $top)
+                                    }
+                                }
+                            }
+                            xsl:otherwise {
+                                xsl:for-each(select = '($layers | $vv)[1]')
+                                {
+                                    xsl:call-template(name = alt-or-mid)
+                                    {
+                                        xsl:with-param(name   = top
+                                                       select = $top)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    xsl:variable(name   = y
+                                 select = '262 - $a * 240 div $top - 6')
+                    xsl:variable(name = x)
+                    {
+                        xsl:choose {
+                            xsl:when(test = '$cbl/cloud_cover/code = "FEW"') = 141.5
+                            xsl:when(test = $cbl) = 196.5
+                            xsl:otherwise = 40
+                        }
+                    }
+                    xsl:variable(name = w)
+                    {
+                        xsl:choose {
+                            xsl:when(test = $cbl) = 120
+                            xsl:otherwise = 440
+                        }
+                    }
+                    xsl:if(test = $rainy)
+                    {
+                        rect(class = rain x = '{$x}' y = '{$y}' width = '{$w}' height = '{268 - $y}')
+                    }
+                    xsl:if(test = $snowy)
+                    {
+                        rect(class = snowfall x = '{$x}' y = '{$y}' width = '{$w}' height = '{268 - $y}')
+                    }
+                }
+
+                // The layers, the highest first so that the lower ones are in front.
+                xsl:for-each(select = $layers)
+                {
+                    xsl:sort(select    = 'position()'
+                             data-type = number
+                             order     = descending)
+                    xsl:variable(name = a)
+                    {
+                        xsl:call-template(name = alt-or-mid)
+                        {
+                            xsl:with-param(name   = top
+                                           select = $top)
+                        }
+                    }
+                    xsl:variable(name   = y
+                                 select = '262 - $a * 240 div $top')
+                    xsl:variable(name = pattern)
+                    {
+                        xsl:choose {
+                            xsl:when(test = 'cloud_cover/code = "FEW"') = 00100100
+                            xsl:when(test = 'cloud_cover/code = "SCT"') = 01011010
+                            xsl:when(test = 'cloud_cover/code = "BKN"') = 11110111
+                            xsl:otherwise = 11111111
+                        }
+                    }
+                    xsl:call-template(name = blobs)
+                    {
+                        xsl:with-param(name   = pattern
+                                       select = $pattern)
+                        xsl:with-param(name   = y
+                                       select = $y)
+                        xsl:with-param(name = cls)
+                        {
+                            xsl:choose {
+                                xsl:when(test = 'cloud_type/code = "CB"') = 'blob dark'
+                                xsl:when(test = 'cloud_cover/code = "BKN" or cloud_cover/code = "OVC"') = 'blob mid'
+                                xsl:otherwise = blob
+                            }
+                        }
+                    }
+                    xsl:variable(name = tx)
+                    {
+                        xsl:choose {
+                            xsl:when(test = 'cloud_cover/code = "FEW"') = 201.5
+                            xsl:otherwise = 256.5
+                        }
+                    }
+                    xsl:if(test = 'cloud_type/code = "CB"')
+                    {
+                        // The anvil reaches up to the top of the sky at most.
+                        xsl:variable(name = s)
+                        {
+                            xsl:choose {
+                                xsl:when(test = '$y - 150 < 12')
+                                {
+                                    xsl:value-of(select = '($y - 12) div 150')
+                                }
+                                xsl:otherwise = 1
+                            }
+                        }
+                        path(class     = cb-tower
+                             transform = 'translate({$tx} {$y}) scale(1 {$s})'
+                             d         = 'M-56,0 C-62,-20 -50,-40 -38,-50 C-46,-72 -32,-94 -20,-104 C-30,-114 -22,-124 -10,-127 L-72,-136 C-64,-150 62,-153 84,-139 L14,-127 C28,-121 32,-110 24,-103 C38,-90 46,-70 40,-52 C52,-42 62,-20 56,0 Z')
+                        xsl:if(test = $stormy)
+                        {
+                            polygon(class     = bolt
+                                    transform = 'translate({$tx} {$y})'
+                                    points    = '4,-8 -10,18 -1,18 -7,40 14,10 4,10 10,-8')
+                        }
+                    }
+                    xsl:if(test = 'cloud_type/code = "TCU"')
+                    {
+                        xsl:variable(name = s)
+                        {
+                            xsl:choose {
+                                xsl:when(test = '$y - 86 < 12')
+                                {
+                                    xsl:value-of(select = '($y - 12) div 86')
+                                }
+                                xsl:otherwise = 1
+                            }
+                        }
+                        path(class     = tcu-tower
+                             transform = 'translate({$tx} {$y}) scale(1 {$s})'
+                             d         = 'M-42,0 C-48,-16 -38,-30 -27,-36 C-35,-52 -21,-70 -7,-72 C3,-87 27,-81 27,-64 C39,-58 41,-40 31,-34 C43,-26 47,-12 42,0 Z')
+                    }
+                }
+
+                xsl:if(test = $foggy)
+                {
+                    rect(class = mist x = 0 y = 180 width = 520 height = 86)
+                }
+
+                // The ground with the runway and the tower.
+                path(class = ground
+                     d     = 'M0,262 C70,252 130,258 200,259 C290,261 350,251 430,255 C470,257 500,253 520,254 L520,300 L0,300 Z')
+                polygon(class = runway points = '150,290 470,290 446,276 174,276')
+                line(class = runway-mark x1 = 182 y1 = 283 x2 = 438 y2 = 283)
+                rect(class = tower x = 96 y = 242 width = 9 height = 30)
+                polygon(class = tower-cab points = '90,243 111,243 108,234 93,234')
+                xsl:if(test = '$rows = 0')
+                {
+                    text(class = scene-text x = 260 y = 150) {
+                        xsl:call-template(name = sky-text)
+                    }
+                }
+            }
+
+            // The labels, the highest at the top.
+            xsl:for-each(select = $layers)
+            {
+                xsl:sort(select    = 'position()'
+                         data-type = number
+                         order     = descending)
+                xsl:variable(name = a)
+                {
+                    xsl:call-template(name = alt-or-mid)
+                    {
+                        xsl:with-param(name   = top
+                                       select = $top)
+                    }
+                }
+                xsl:call-template(name = layer-label)
+                {
+                    xsl:with-param(name   = y
+                                   select = '262 - $a * 240 div $top')
+                    xsl:with-param(name   = p
+                                   select = 'position()')
+                    xsl:with-param(name   = rows
+                                   select = $rows)
+                    xsl:with-param(name   = code
+                                   select = 'cloud_cover/code')
+                }
+            }
+            xsl:for-each(select = $vv)
+            {
+                xsl:variable(name = a)
+                {
+                    xsl:call-template(name = alt-or-mid)
+                    {
+                        xsl:with-param(name   = top
+                                       select = $top)
+                    }
+                }
+                xsl:call-template(name = layer-label)
+                {
+                    xsl:with-param(name   = y
+                                   select = '262 - $a * 240 div $top')
+                    xsl:with-param(name   = p
+                                   select = $rows)
+                    xsl:with-param(name   = rows
+                                   select = $rows)
+                    xsl:with-param(name   = code
+                                   select = '"VV"')
+                }
+            }
+            xsl:if(test = '$rows = 0')
+            {
+                text(class = layer-label x = 540 y = 140) = 'No cloud layers'
+                text(class = layer-info x = 540 y = 160) {
+                    xsl:choose {
+                        xsl:when(test = '$now[self::cavok]') = 'None below 5,000 ft, no CB'
+                        xsl:otherwise {
+                            xsl:call-template(name = sky-text)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // The altitude of the current layer, or half the top when it is not given.
+    xsl:template(name = alt-or-mid)
+    {
+        xsl:param(name = top)
+        xsl:choose {
+            xsl:when(test = 'number(altitude_ft) = number(altitude_ft)')
+            {
+                xsl:value-of(select = 'number(altitude_ft)')
+            }
+            xsl:otherwise {
+                xsl:value-of(select = '$top div 2')
+            }
+        }
+    }
+
+    // Grid lines and altitudes, five steps up to the top.
+    xsl:template(name = alt-grid)
+    {
+        xsl:param(name = top)
+        xsl:param(name   = i
+                  select = 1)
+        xsl:if(test = '$i <= 5')
+        {
+            xsl:variable(name   = y
+                         select = '262 - $i * 48')
+            line(class = grid x1 = 0 y1 = '{$y}' x2 = 520 y2 = '{$y}')
+            text(class = alt-label x = 10 y = '{$y - 5}') {
+                xsl:value-of(select = 'format-number($i * $top div 5, "#,##0")')
+                ' ft'
+            }
+            xsl:call-template(name = alt-grid)
+            {
+                xsl:with-param(name   = top
+                               select = $top)
+                xsl:with-param(name   = i
+                               select = '$i + 1')
+            }
+        }
+    }
+
+    // A cloud in every slot of the pattern that is 1, the slots are 55 wide
+    // and the clouds 72 wide so that a full pattern makes an overcast band.
+    xsl:template(name = blobs)
+    {
+        xsl:param(name = pattern)
+        xsl:param(name = y)
+        xsl:param(name = cls)
+        xsl:param(name   = i
+                  select = 1)
+        xsl:if(test = '$i <= 8')
+        {
+            xsl:if(test = 'substring($pattern, $i, 1) = "1"')
+            {
+                path(class     = '{$cls}'
+                     transform = 'translate({64 + ($i - 0.5) * 55} {$y}) scale({1.1 - ($i mod 3) * 0.12})'
+                     d         = 'M-36,0 a12,12 0 0 1 4,-20 a16,16 0 0 1 22,-12 a18,18 0 0 1 30,4 a12,12 0 0 1 16,16 a8,8 0 0 1 0,12 z')
+            }
+            xsl:call-template(name = blobs)
+            {
+                xsl:with-param(name   = pattern
+                               select = $pattern)
+                xsl:with-param(name   = y
+                               select = $y)
+                xsl:with-param(name   = cls
+                               select = $cls)
+                xsl:with-param(name   = i
+                               select = '$i + 1')
+            }
+        }
+    }
+
+    // The label of a layer at row p of rows, with a leader line to the
+    // layer at y and the okta symbol of its cover.
+    xsl:template(name = layer-label)
+    {
+        xsl:param(name = y)
+        xsl:param(name = p)
+        xsl:param(name = rows)
+        xsl:param(name = code)
+        xsl:variable(name = ly)
+        {
+            xsl:choose {
+                xsl:when(test = '$rows = 1 and $y < 34') = 34
+                xsl:when(test = '$rows = 1 and $y > 248') = 248
+                xsl:when(test = '$rows = 1')
+                {
+                    xsl:value-of(select = $y)
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = '22 + ($p - 0.5) * 240 div $rows')
+                }
+            }
+        }
+        polyline(class = leader points = '512,{$y} 524,{$y} 536,{$ly} 540,{$ly}')
+        circle(class = leader-dot cx = 512 cy = '{$y}' r = 3)
+        g(transform = 'translate(554 {$ly})') {
+            circle(class = okta cx = 0 cy = 0 r = 9)
+            xsl:choose {
+                xsl:when(test = '$code = "FEW"')
+                {
+                    path(class = okta-fill d = 'M0,0 L0,-9 A9,9 0 0 1 9,0 Z')
+                }
+                xsl:when(test = '$code = "SCT"')
+                {
+                    path(class = okta-fill d = 'M0,-9 A9,9 0 0 1 0,9 Z')
+                }
+                xsl:when(test = '$code = "BKN"')
+                {
+                    path(class = okta-fill d = 'M0,0 L0,-9 A9,9 0 1 1 -9,0 Z')
+                }
+                xsl:when(test = '$code = "OVC"')
+                {
+                    circle(class = okta-fill cx = 0 cy = 0 r = 9)
+                }
+                xsl:otherwise {
+                    line(class = okta x1 = -6.4 y1 = -6.4 x2 = 6.4 y2 = 6.4)
+                    line(class = okta x1 = -6.4 y1 = 6.4 x2 = 6.4 y2 = -6.4)
+                }
+            }
+        }
+        text(class = layer-label x = 572 y = '{$ly - 1}') {
+            xsl:value-of(select = $code)
+            ' · '
+            xsl:call-template(name = altitude-text)
+        }
+        text(class = layer-info x = 572 y = '{$ly + 14}') {
+            xsl:choose {
+                xsl:when(test = '$code = "VV"') = 'sky obscured, vertical visibility'
+                xsl:otherwise {
+                    xsl:value-of(select = cloud_cover/info)
+                }
+            }
+        }
+        xsl:if(test = 'cloud_type/code = "CB" or cloud_type/code = "TCU"')
+        {
+            g(transform = 'translate(734 {$ly - 6})') {
+                rect(x = -20 y = -9 width = 40 height = 18 rx = 9)
+                {
+                    xsl:attribute(name = class)
+                    {
+                        'pill'
+                        xsl:if(test = 'cloud_type/code = "TCU"') = ' tcu'
+                    }
+                }
+                text(class = pill-text x = 0 y = 0) {
+                    xsl:value-of(select = cloud_type/code)
+                }
+            }
+        }
+    }
+
+    // ================================================================ details table
+
+    xsl:template(name = details)
+    {
+        xsl:variable(name = r
+                     select = /weather_report)
+        table {
+            tr {
+                th = Station
+                td {
+                    xsl:value-of(select = $r/icao_airport_code)
+                }
+            }
+            tr {
+                th = Report
+                td {
+                    xsl:value-of(select = '$r/report_type')
+                    xsl:if(test = 'not($r/report_type)') = METAR
+                    xsl:if(test = $r/observation_type)
+                    {
+                        ', '
+                        xsl:value-of(select = 'translate($r/observation_type, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")')
+                    }
+                    xsl:if(test = $r/correction)
+                    {
+                        ', correction '
+                        xsl:value-of(select = $r/correction)
+                    }
+                }
+            }
+            xsl:for-each(select = $r/time_of_observation)
+            {
+                tr {
+                    th = Observed
+                    td {
+                        'Day '
+                        xsl:value-of(select = day)
+                        ' of the month at '
+                        xsl:value-of(select = time/hour)
+                        ':'
+                        xsl:value-of(select = time/minute)
+                        xsl:text = ' '
+                        xsl:value-of(select = time_zone)
+                    }
+                }
+            }
+            tr {
+                th = Wind
+                td {
+                    div {
+                        xsl:call-template(name = wind-text)
+                    }
+                    xsl:if(test = $wv)
+                    {
+                        div {
+                            'Varying between '
+                            xsl:value-of(select = $wv/from_degrees)
+                            '° and '
+                            xsl:value-of(select = $wv/to_degrees)
+                            '°'
+                        }
+                    }
+                }
+            }
+            xsl:if(test = '$now[self::visibility or self::directional_visibility or self::cavok]')
+            {
+                tr {
+                    th = Visibility
+                    td {
+                        xsl:for-each(select = '$now[self::visibility or self::directional_visibility]')
+                        {
+                            div {
+                                xsl:apply-templates(select = .
+                                                    mode   = text)
+                            }
+                        }
+                        xsl:if(test = '$now[self::cavok]')
+                        {
+                            div = '10 km or more (CAVOK)'
+                        }
+                    }
+                }
+            }
+            xsl:if(test = '$now[self::runway_visual_range]')
+            {
+                tr {
+                    th = 'Runway visual range'
+                    td {
+                        xsl:for-each(select = '$now[self::runway_visual_range]')
+                        {
+                            div {
+                                xsl:apply-templates(select = .
+                                                    mode   = text)
+                            }
+                        }
+                    }
+                }
+            }
+            tr {
+                th = Weather
+                td {
+                    xsl:for-each(select = '$now[self::weather]/observation')
+                    {
+                        div {
+                            xsl:call-template(name = observation-text)
+                        }
+                    }
+                    xsl:if(test = '$now[self::no_significant_weather]')
+                    {
+                        div = 'No significant weather'
+                    }
+                    xsl:if(test = 'not($now[self::weather or self::no_significant_weather])')
+                    {
+                        div = 'No weather reported'
+                    }
+                }
+            }
+            xsl:if(test = '$now[self::recent_weather]')
+            {
+                tr {
+                    th = 'Recent weather'
+                    td {
+                        xsl:for-each(select = '$now[self::recent_weather]/observation')
+                        {
+                            div {
+                                xsl:call-template(name = observation-text)
+                            }
+                        }
+                    }
+                }
+            }
+            tr {
+                th = Clouds
+                td {
+                    xsl:for-each(select = '$now[self::clouds]/observation')
+                    {
+                        div {
+                            xsl:apply-templates(select = .
+                                                mode   = text)
+                        }
+                    }
+                    xsl:for-each(select = $vv)
+                    {
+                        div {
+                            'Sky obscured, vertical visibility '
+                            xsl:call-template(name = altitude-text)
+                        }
+                    }
+                    xsl:if(test = '$now[self::cavok]')
+                    {
+                        div = 'No clouds below 5000 ft and no cumulonimbus (CAVOK)'
+                    }
+                    xsl:if(test = 'not($now[self::clouds or self::vertical_visibility or self::cavok])')
+                    {
+                        div = 'No clouds reported'
+                    }
+                }
+            }
+            xsl:for-each(select = '$now[self::temperature][1]')
+            {
+                tr {
+                    th = Temperature
+                    td {
+                        xsl:value-of(select = air_c)
+                        ' °C'
+                    }
+                }
+                tr {
+                    th = 'Dew point'
+                    td {
+                        xsl:value-of(select = dewpoint_c)
+                        xsl:if(test = 'number(dewpoint_c) = number(dewpoint_c)') = ' °C'
+                        xsl:if(test = 'number(dewpoint_c) = number(dewpoint_c)')
+                        {
+                            ', spread '
+                            xsl:value-of(select = 'air_c - dewpoint_c')
+                            ' °C'
+                            xsl:if(test = 'air_c - dewpoint_c <= 2') = ', near saturation, fog or low clouds are likely'
+                        }
+                    }
+                }
+            }
+            xsl:for-each(select = '$now[self::air_pressure][1]')
+            {
+                tr {
+                    th = 'Air pressure'
+                    td {
+                        xsl:if(test = pressure_hpa)
+                        {
+                            xsl:value-of(select = pressure_hpa)
+                            ' hPa (QNH)'
+                        }
+                        xsl:if(test = pressure_inhg)
+                        {
+                            xsl:value-of(select = pressure_inhg)
+                            ' inHg (altimeter)'
+                        }
+                    }
+                }
+            }
+            xsl:for-each(select = $r/trend)
+            {
+                xsl:variable(name   = id
+                             select = 'generate-id(.)')
+                tr {
+                    th {
+                        'Trend '
+                        xsl:value-of(select = code)
+                    }
+                    td {
+                        div {
+                            xsl:value-of(select = 'concat(translate(substring(info, 1, 1), "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), substring(info, 2))')
+                        }
+                        xsl:for-each(select = 'following-sibling::*[not(self::trend or self::remark)][generate-id(preceding-sibling::trend[1]) = $id]')
+                        {
+                            div {
+                                xsl:if(test = 'self::visibility') = 'Visibility '
+                                xsl:apply-templates(select = .
+                                                    mode   = text)
+                            }
+                        }
+                    }
+                }
+            }
+            xsl:for-each(select = $r/remark)
+            {
+                tr {
+                    th = Remarks
+                    td {
+                        xsl:value-of(select = .)
+                    }
+                }
+            }
+        }
+    }
+
+    // ================================================================ text
+
+    xsl:template(name = wind-text)
+    {
+        xsl:choose {
+            xsl:when(test = 'not($wd)') = 'No wind reported'
+            xsl:when(test = $calm) = Calm
+            xsl:otherwise {
+                xsl:for-each(select = $wd)
+                {
+                    xsl:choose {
+                        xsl:when(test = variable) = 'Variable'
+                        xsl:otherwise {
+                            'From '
+                            xsl:value-of(select = degrees)
+                            '° ('
+                            xsl:call-template(name = compass-point)
+                            {
+                                xsl:with-param(name   = deg
+                                               select = degrees)
+                            }
+                            ')'
+                        }
+                    }
+                    ' at '
+                    xsl:value-of(select = speed/value)
+                    xsl:text = ' '
+                    xsl:value-of(select = speed/unit/info)
+                    xsl:if(test = speed/gust)
+                    {
+                        ', gusting '
+                        xsl:value-of(select = speed/gust)
+                    }
+                }
+            }
+        }
+    }
+
+    // N, NNE, NE ... from degrees, 16 points of 22.5° each.
+    xsl:template(name = compass-point)
+    {
+        xsl:param(name = deg)
+        xsl:variable(name   = i
+                     select = 'floor(($deg + 11.25) div 22.5) mod 16')
+        xsl:value-of(select = 'normalize-space(substring("N  NNENE ENEE  ESESE SSES  SSWSW WSWW  WNWNW NNW", $i * 3 + 1, 3))')
+    }
+
+    // The words for an observation, eg light showers rain, capitalized.
+    xsl:template(name = observation-text)
+    {
+        xsl:variable(name = words)
+        {
+            xsl:for-each(select = 'intensity | chrct-info | type-info')
+            {
+                xsl:if(test = 'position() > 1')
+                {
+                    xsl:text = ' '
+                }
+                xsl:value-of(select = .)
+            }
+        }
+        xsl:value-of(select = 'concat(translate(substring($words, 1, 1), "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), substring($words, 2))')
+        ' ('
+        xsl:for-each(select = 'chrct | type')
+        {
+            xsl:value-of(select = .)
+        }
+        ')'
+    }
+
+    xsl:template(name = sky-text)
+    {
+        xsl:choose {
+            xsl:when(test = '$now[self::cavok]') = 'Ceiling and visibility OK'
+            xsl:when(test = '$cover = "VV"') = 'Sky obscured'
+            xsl:when(test = '$cover = "OVC"') = Overcast
+            xsl:when(test = '$cover = "BKN"') = 'Mostly cloudy'
+            xsl:when(test = '$cover = "SCT"') = 'Partly cloudy'
+            xsl:when(test = '$cover = "FEW"') = 'Mostly clear'
+            xsl:when(test = '$now[self::clouds]')
+            {
+                xsl:variable(name   = info
+                             select = '$now[self::clouds][1]/observation/cloud_cover/info')
+                xsl:value-of(select = 'concat(translate(substring($info, 1, 1), "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), substring($info, 2))')
+            }
+            xsl:otherwise = 'No significant weather'
+        }
+    }
+
+    xsl:template(name = altitude-text)
+    {
+        xsl:choose {
+            xsl:when(test = 'number(altitude_ft) = number(altitude_ft)')
+            {
+                xsl:value-of(select = 'format-number(altitude_ft, "#,##0")')
+                ' ft'
+            }
+            xsl:when(test = altitude_ft)
+            {
+                'height '
+                xsl:value-of(select = altitude_ft)
+            }
+            xsl:otherwise = 'height not given'
+        }
+    }
+
+    xsl:template(match = visibility
+                 mode  = text)
+    {
+        xsl:choose {
+            xsl:when(test = 'meters = 9999') = '10 km or more'
+            xsl:when(test = meters)
+            {
+                xsl:value-of(select = 'format-number(meters, "#,##0")')
+                ' m'
+            }
+            xsl:when(test = miles)
+            {
+                xsl:value-of(select = miles)
+                ' statute miles'
+            }
+            xsl:when(test = not_available) = 'Not available'
+        }
+    }
+
+    xsl:template(match = directional_visibility
+                 mode  = text)
+    {
+        'Lowest '
+        xsl:value-of(select = 'format-number(meters, "#,##0")')
+        ' m towards '
+        xsl:value-of(select = direction)
+    }
+
+    xsl:template(match = runway_visual_range
+                 mode  = text)
+    {
+        'Runway '
+        xsl:value-of(select = runway)
+        xsl:if(test = runway_side)
+        {
+            xsl:text = ' '
+            xsl:value-of(select = runway_side)
+        }
+        ': '
+        xsl:for-each(select = 'range_qualifier[following-sibling::range]')
+        {
+            xsl:value-of(select = .)
+            xsl:text = ' '
+        }
+        xsl:value-of(select = range)
+        xsl:if(test = max_range)
+        {
+            ' to '
+            xsl:for-each(select = 'range_qualifier[preceding-sibling::range]')
+            {
+                xsl:value-of(select = .)
+                xsl:text = ' '
+            }
+            xsl:value-of(select = max_range)
+        }
+        xsl:choose {
+            xsl:when(test = range_unit) = ' ft'
+            xsl:otherwise = ' m'
+        }
+        xsl:if(test = status)
+        {
+            ', '
+            xsl:choose {
+                xsl:when(test = 'status = "nochange"') = 'no change'
+                xsl:otherwise {
+                    xsl:value-of(select = status)
+                }
+            }
+        }
+    }
+
+    xsl:template(match = clouds/observation
+                 mode  = text)
+    {
+        xsl:value-of(select = 'concat(translate(substring(cloud_cover/info, 1, 1), "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), substring(cloud_cover/info, 2))')
+        xsl:if(test = altitude_ft)
+        {
+            ' at '
+            xsl:call-template(name = altitude-text)
+        }
+        xsl:if(test = cloud_type)
+        {
+            ', '
+            xsl:value-of(select = cloud_type/info)
+        }
+    }
+
+    // The forecast groups after a trend.
+    xsl:template(match = weather
+                 mode  = text)
+    {
+        xsl:for-each(select = observation)
+        {
+            xsl:call-template(name = observation-text)
+        }
+    }
+
+    xsl:template(match = clouds
+                 mode  = text)
+    {
+        xsl:apply-templates(select = observation
+                            mode   = text)
+    }
+
+    xsl:template(match = wind
+                 mode  = text)
+    {
+        'Wind '
+        xsl:for-each(select = wind_direction)
+        {
+            xsl:choose {
+                xsl:when(test = variable) = 'variable'
+                xsl:otherwise {
+                    'from '
+                    xsl:value-of(select = degrees)
+                    '°'
+                }
+            }
+            ' at '
+            xsl:value-of(select = speed/value)
+            xsl:text = ' '
+            xsl:value-of(select = speed/unit/info)
+            xsl:if(test = speed/gust)
+            {
+                ', gusting '
+                xsl:value-of(select = speed/gust)
+            }
+        }
+        xsl:for-each(select = wind_variation)
+        {
+            'varying between '
+            xsl:value-of(select = from_degrees)
+            '° and '
+            xsl:value-of(select = to_degrees)
+            '°'
+        }
+    }
+
+    xsl:template(match = no_significant_weather
+                 mode  = text) = 'No significant weather'
+
+    xsl:template(match = cavok
+                 mode  = text) = 'Ceiling and visibility OK'
+
+    xsl:template(match = vertical_visibility
+                 mode  = text)
+    {
+        'Sky obscured, vertical visibility '
+        xsl:call-template(name = altitude-text)
+    }
+
+    // Anything else, print the text.
+    xsl:template(match = *
+                 mode  = text)
+    {
+        xsl:value-of(select = 'normalize-space(.)')
+    }
+}

@@ -1,0 +1,58 @@
+weather_report {
+    report_type       = METAR
+    icao_airport_code = EFJY
+    time_of_observation {
+        day = 20
+        time {
+            hour   = 10
+            minute = 50
+        }
+        time_zone = UTC
+    }
+    observation_type = AUTOMATIC
+    wind {
+        wind_direction {
+            degrees = 160
+            speed {
+                value = 7
+                unit {
+                    code = KT
+                    info = knots
+                }
+            }
+        }
+    }
+    visibility {
+        meters = 9999
+        info   = '10 km or more'
+    }
+    weather {
+        observation {
+            intensity  = light
+            chrct      = SH
+            chrct-info = showers
+            type       = RA
+            type-info  = rain
+        }
+    }
+    clouds {
+        observation {
+            cloud_cover {
+                code = OVC
+                info = 'overcast (8 oktas)'
+            }
+            altitude_ft = 6000
+            cloud_type {
+                code = CB
+                info = cumulonimbus
+            }
+        }
+    }
+    temperature {
+        air_c      = 15
+        dewpoint_c = 9
+    }
+    air_pressure {
+        pressure_hpa = 1017
+    }
+}

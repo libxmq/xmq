@@ -2,25 +2,28 @@ weather_report {
     report_type       = METAR
     icao_airport_code = LBBG
     time_of_observation {
-        month = 04
+        day = 04
         time {
             hour   = 16
             minute = 00
         }
-        time_zone = Z
+        time_zone = UTC
     }
     wind {
         wind_direction {
             degrees = 120
             speed {
                 value = 12
-                unit  = MPS
+                unit {
+                    code = MPS
+                    info = 'meters per second'
+                }
             }
         }
     }
     wind {
         wind_variation {
-            from_degrees = 090
+            from_degrees = 90
             to_degrees   = 150
         }
     }
@@ -28,14 +31,16 @@ weather_report {
         meters = 1400
     }
     runway_visual_range {
-        runway = 04
-        range  = 1500
-        status = nochange
+        runway          = 04
+        range_qualifier = 'more than'
+        range           = 1500
+        status          = nochange
     }
     runway_visual_range {
-        runway = 22
-        range  = 1500
-        status = rising
+        runway          = 22
+        range_qualifier = 'more than'
+        range           = 1500
+        status          = rising
     }
     weather {
         observation {
@@ -46,22 +51,31 @@ weather_report {
     }
     clouds {
         observation {
-            cloud_cover = BKN
-            cloud_base  = 022
+            cloud_cover {
+                code = BKN
+                info = 'broken (5-7 oktas)'
+            }
+            altitude_ft = 2200
         }
     }
     clouds {
         observation {
-            cloud_cover = OVC
-            cloud_base  = 050
+            cloud_cover {
+                code = OVC
+                info = 'overcast (8 oktas)'
+            }
+            altitude_ft = 5000
         }
     }
     temperature {
-        air_c      = -04
-        dewpoint_c = -07
+        air_c      = -4
+        dewpoint_c = -7
     }
     air_pressure {
         pressure_hpa = 1020
     }
-    trend = NOSIG
+    trend {
+        code = NOSIG
+        info = 'no significant change expected'
+    }
 }
