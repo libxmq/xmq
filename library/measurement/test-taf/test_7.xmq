@@ -1,0 +1,72 @@
+taf {
+    icao_airport_code = EDDF
+    time_of_issue {
+        day = 20
+        time {
+            hour   = 11
+            minute = 00
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 20
+            hour = 12
+        }
+        to {
+            day  = 21
+            hour = 18
+        }
+    }
+    base {
+        wind {
+            wind_direction {
+                degrees = 270
+                speed {
+                    value = 15
+                    unit {
+                        code = KMH
+                        info = 'kilometers per hour'
+                    }
+                }
+            }
+        }
+        cavok {
+            code = CAVOK
+            info = 'ceiling and visibility OK'
+        }
+        max_temperature {
+            air_c     = 15
+            day       = 20
+            hour      = 14
+            time_zone = UTC
+        }
+        min_temperature {
+            air_c     = -2
+            day       = 21
+            hour      = 06
+            time_zone = UTC
+        }
+    }
+    change {
+        code = BECMG
+        info = becoming
+        from {
+            day  = 21
+            hour = 00
+        }
+        to {
+            day  = 21
+            hour = 03
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 1200
+            }
+        }
+    }
+}

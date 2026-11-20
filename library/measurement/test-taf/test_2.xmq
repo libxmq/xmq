@@ -1,0 +1,151 @@
+taf {
+    report_type       = TAF
+    icao_airport_code = EGLL
+    time_of_issue {
+        day = 20
+        time {
+            hour   = 10
+            minute = 59
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 20
+            hour = 12
+        }
+        to {
+            day  = 21
+            hour = 18
+        }
+    }
+    base {
+        wind {
+            wind_direction {
+                degrees = 240
+                speed {
+                    value = 12
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            meters = 9999
+            info   = '10 km or more'
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = SCT
+                    info = 'scattered (3-4 oktas)'
+                }
+                altitude_ft = 3000
+            }
+        }
+    }
+    change {
+        code = TEMPO
+        info = temporarily
+        from {
+            day  = 20
+            hour = 12
+        }
+        to {
+            day  = 20
+            hour = 16
+        }
+        visibility {
+            meters = 4000
+        }
+        weather {
+            observation {
+                chrct      = SH
+                chrct-info = showers
+                type       = RA
+                type-info  = rain
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 1400
+                cloud_type {
+                    code = CB
+                    info = cumulonimbus
+                }
+            }
+        }
+    }
+    change {
+        code = BECMG
+        info = becoming
+        from {
+            day  = 20
+            hour = 20
+        }
+        to {
+            day  = 20
+            hour = 23
+        }
+        wind {
+            wind_direction {
+                variable = variable
+                speed {
+                    value = 3
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+    }
+    change {
+        probability = 30
+        code        = PROB
+        info        = 'with probability'
+        from {
+            day  = 21
+            hour = 03
+        }
+        to {
+            day  = 21
+            hour = 08
+        }
+        visibility {
+            meters = 800
+        }
+        weather {
+            observation {
+                type      = FG
+                type-info = fog
+            }
+        }
+        vertical_visibility {
+            altitude_ft = 200
+        }
+    }
+    change {
+        probability = 40
+        code        = TEMPO
+        info        = temporarily
+        from {
+            day  = 21
+            hour = 08
+        }
+        to {
+            day  = 21
+            hour = 12
+        }
+        cavok {
+            code = CAVOK
+            info = 'ceiling and visibility OK'
+        }
+    }
+}

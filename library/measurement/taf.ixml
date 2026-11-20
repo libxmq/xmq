@@ -1,0 +1,391 @@
+{
+    v1a A grammar for parsing TAF terminal aerodrome forecasts.
+
+    Public Domain LLM-generated code (spdx: CC0)
+
+    The forecast is split into the base forecast, the conditions expected
+    for the whole validity period, followed by a change element for every
+    change group, FM (from), BECMG (becoming), TEMPO (temporarily),
+    INTER (intermittently) and PROB30/PROB40, that holds the conditions
+    it changes. The groups may be written on several lines.
+
+    Codes are kept, and a sibling -info element explains them in plain words.
+    Numbers are normalized like in metar.ixml: leading zeros are removed, M
+    becomes a minus sign and cloud bases are given in feet.
+
+    Example forecasts:
+    TAF EGLL 201059Z 2012/2118 24012KT 9999 SCT030 TEMPO 2012/2016 4000 SHRA BKN014
+        BECMG 2020/2023 VRB03KT PROB30 2103/2108 0800 FG BKN002
+    TAF AMD KJFK 201745Z 2018/2124 24015G25KT P6SM SCT050
+        FM202200 30010KT P6SM FEW250 TX25/2019Z TN14/2110Z
+
+    Not supported: the old validity periods with 6 digits (eg 051212), the
+    military icing and turbulence groups and the QNH groups.
+}
+
+taf = (report_type, -sep)?, (status, -sep)?, icao_airport_code, -sep,
+      (time_of_issue, -sep)?,
+      (nil | validity, (-sep, (cancelled | base, (-sep, change)*, (-sep, temperature)*))?),
+      (-sep, remark)?,
+      (-[Zs; #9; #a; #d]*, -'=')?, -[Zs; #9; #a; #d]*.
+
+-sep = -[' '; #9; #a; #d]+.
+
+report_type = 'TAF'.
+
+status = code_amd, info_amd | code_cor, info_cor.
+code_amd>code = 'AMD'.
+info_amd>info = +"amended".
+code_cor>code = 'COR'.
+info_cor>info = +"corrected".
+
+{ An ICAO airport code has four letters, so TAF, AMD and COR are not codes. }
+icao_airport_code = !keyword, [Lu], [Lu], [Lu], [Lu].
+-keyword = 'TAF' | 'AMD' | 'COR'.
+
+nil = -'NIL', +"no forecast".
+cancelled = -'CNL', +"cancelled".
+
+{ ------------------------------------------------------------ time }
+
+-d = ["0"-"9"].
+-nz = ["1"-"9"].
+
+time_of_issue = day, time, time_zone.
+day = d, d.
+time = hour, minute.
+hour = d, d.
+minute = d, d.
+time_zone = -'Z', +"UTC".
+
+{ A period from a day and hour to a day and hour, eg 2012/2118. Hour 24
+  is the end of the day. }
+validity = period.
+-period = from, -'/', to.
+from = day, hour.
+to = day, hour.
+
+{ ------------------------------------------------------------ forecast }
+
+{ The conditions expected for the whole validity period. The temperature
+  groups are written after the base groups or at the end of the forecast. }
+base = group++-sep, (-sep, temperature)*.
+
+change = (fm | becmg | tempo | inter | prob), (-sep, group)*.
+
+{ FM202200, from day 20 at 22:00 everything changes to the following groups. }
+-fm = code_fm, info_fm, fm_time.
+code_fm>code = 'FM'.
+info_fm>info = +"from".
+fm_time>from = day, hour, minute.
+
+-becmg = code_becmg, info_becmg, -sep, period.
+code_becmg>code = 'BECMG'.
+info_becmg>info = +"becoming".
+
+-tempo = code_tempo, info_tempo, -sep, period.
+code_tempo>code = 'TEMPO'.
+info_tempo>info = +"temporarily".
+
+-inter = code_inter, info_inter, -sep, period.
+code_inter>code = 'INTER'.
+info_inter>info = +"intermittently".
+
+{ PROB30 0614/0617 or PROB40 TEMPO 0614/0617. }
+-prob = -'PROB', probability, -sep, (code_tempo, info_tempo, -sep | code_prob, info_prob), period.
+probability = '30' | '40'.
+code_prob>code = +"PROB".
+info_prob>info = +"with probability".
+
+-group = wind
+       | visibility
+       | directional_visibility
+       | weather
+       | no_significant_weather
+       | clouds
+       | vertical_visibility
+       | cavok
+       | wind_shear.
+
+-temperature = max_temperature | min_temperature.
+
+{ ------------------------------------------------------------ temperature }
+
+{ TX25/2019Z the maximum 25 °C on day 20 at 19 UTC, TN the minimum. }
+max_temperature = -'TX', air_c, -'/', day, hour, time_zone.
+min_temperature = -'TN', air_c, -'/', day, hour, time_zone.
+air_c = (-'M', +"-")?, num2.
+
+{ ------------------------------------------------------------ wind shear }
+
+{ WS020/27045KT, wind shear at 2000 ft with the wind from 270° at 45 kt. }
+wind_shear = -'WS', altitude_ft, -'/', wind_direction.
+
+{ ------------------------------------------------------------ numbers }
+
+
+{ Numbers with the leading zeros removed, 0 is kept as 0. }
+-num2 = -'0', d | nz, d.
+-num3 = -'00', d | -'0', nz, d | nz, d, d.
+-num4 = -'000', d | -'00', nz, d | -'0', nz, d, d | nz, d, d, d.
+
+{ Heights are reported in hundreds of feet, 060 is 6000 ft. }
+-hundreds_of_feet = -'00', nz, +"00"
+                  | -'0', nz, d, +"00"
+                  | nz, d, d, +"00"
+                  | -'00', '0'.
+
+{ ------------------------------------------------------------ wind }
+
+wind = wind_direction | wind_variation.
+
+wind_direction = (degrees | variable), speed.
+degrees = num3.
+variable = -'VRB', +"variable".
+speed = value, gust?, unit?.
+value = num2 | nz, d, d.
+gust = -'G', (num2 | nz, d, d).
+
+unit = unit_kt | unit_mps | unit_kmh | unit_kph.
+-unit_kt = code_kt, info_kt.
+code_kt>code = 'KT'.
+info_kt>info = +"knots".
+-unit_mps = code_mps, info_mps.
+code_mps>code = 'MPS'.
+info_mps>info = +"meters per second".
+{ KMH is the WMO code, KPH is kept for older forecasts. }
+-unit_kmh = code_kmh, info_kmh.
+code_kmh>code = 'KMH'.
+info_kmh>info = +"kilometers per hour".
+-unit_kph = code_kph, info_kph.
+code_kph>code = 'KPH'.
+info_kph>info = +"kilometers per hour".
+
+wind_variation = from_degrees, -'V', to_degrees.
+from_degrees = num3.
+to_degrees = num3.
+
+{ ------------------------------------------------------------ visibility }
+
+visibility = (meters | ten_km_or_more, ten_km_info | more_than?, miles | not_available), '+'?.
+meters = !'9999', num4.
+ten_km_or_more>meters = '9999'.
+ten_km_info>info = +"10 km or more".
+{ P6SM is more than 6 statute miles, 1 1/2SM is one and a half. }
+miles = (d+, (' ', d+, '/', d+)? | d+, '/', d+), -'SM'.
+more_than = -'P', +"more than".
+not_available = -'////', +"not available".
+
+{ The lowest visibility and its direction, e.g. 1200SW. }
+directional_visibility = meters, direction.
+direction = 'NE' | 'NW' | 'SE' | 'SW' | 'N' | 'E' | 'S' | 'W'.
+
+{ ------------------------------------------------------------ weather }
+
+{ Present weather, one group per part, e.g. -SHRA or TSRAGR or VCFG. }
+weather = observation.
+
+{ Recently observed weather, e.g. RERA. }
+recent_weather = -'RE', observation.
+
+no_significant_weather = -'NSW', +"no significant weather".
+
+observation = intensity?, (characteristic+, weather_type* | weather_type+).
+
+intensity = -'-', +"light" | -'+', +"heavy" | -'VC', +"in the vicinity".
+
+-characteristic = char_bc | char_bl | char_dr | char_fz | char_mi | char_pa | char_pr | char_sh | char_ts.
+
+-char_bc = code_bc, info_bc.
+code_bc>chrct = 'BC'.
+info_bc>chrct-info = +"patches of".
+
+-char_bl = code_bl, info_bl.
+code_bl>chrct = 'BL'.
+info_bl>chrct-info = +"blowing".
+
+-char_dr = code_dr, info_dr.
+code_dr>chrct = 'DR'.
+info_dr>chrct-info = +"low drifting".
+
+-char_fz = code_fz, info_fz.
+code_fz>chrct = 'FZ'.
+info_fz>chrct-info = +"freezing".
+
+-char_mi = code_mi, info_mi.
+code_mi>chrct = 'MI'.
+info_mi>chrct-info = +"shallow".
+
+{ PA is not a WMO code, PR is. PA is kept for older reports. }
+-char_pa = code_pa, info_pa.
+code_pa>chrct = 'PA'.
+info_pa>chrct-info = +"partial".
+
+-char_pr = code_pr, info_pr.
+code_pr>chrct = 'PR'.
+info_pr>chrct-info = +"partial".
+
+-char_sh = code_sh, info_sh.
+code_sh>chrct = 'SH'.
+info_sh>chrct-info = +"showers".
+
+-char_ts = code_ts, info_ts.
+code_ts>chrct = 'TS'.
+info_ts>chrct-info = +"thunderstorm".
+
+-weather_type = type_br | type_ds | type_du | type_dz | type_fc | type_fg | type_ra | type_va
+              | type_fu | type_gr | type_gs | type_hz | type_ic | type_pe | type_pl | type_po
+              | type_py | type_sa | type_sg | type_sn | type_sq | type_ss | type_up.
+
+-type_ra = code_ra, info_ra.
+code_ra>type = 'RA'.
+info_ra>type-info = +"rain".
+
+-type_br = code_br, info_br.
+code_br>type = 'BR'.
+info_br>type-info = +"mist".
+
+-type_ds = code_ds, info_ds.
+code_ds>type = 'DS'.
+info_ds>type-info = +"dust storm".
+
+-type_du = code_du, info_du.
+code_du>type = 'DU'.
+info_du>type-info = +"widespread dust".
+
+-type_dz = code_dz, info_dz.
+code_dz>type = 'DZ'.
+info_dz>type-info = +"drizzle".
+
+-type_fc = code_fc, info_fc.
+code_fc>type = 'FC'.
+info_fc>type-info = +"funnel cloud".
+
+-type_fg = code_fg, info_fg.
+code_fg>type = 'FG'.
+info_fg>type-info = +"fog".
+
+-type_va = code_va, info_va.
+code_va>type = 'VA'.
+info_va>type-info = +"volcanic ash".
+
+-type_fu = code_fu, info_fu.
+code_fu>type = 'FU'.
+info_fu>type-info = +"smoke".
+
+-type_gr = code_gr, info_gr.
+code_gr>type = 'GR'.
+info_gr>type-info = +"hail".
+
+-type_gs = code_gs, info_gs.
+code_gs>type = 'GS'.
+info_gs>type-info = +"small hail".
+
+-type_hz = code_hz, info_hz.
+code_hz>type = 'HZ'.
+info_hz>type-info = +"haze".
+
+-type_ic = code_ic, info_ic.
+code_ic>type = 'IC'.
+info_ic>type-info = +"ice crystals".
+
+{ PE is the old code for ice pellets, PL is the current one. }
+-type_pe = code_pe, info_pe.
+code_pe>type = 'PE'.
+info_pe>type-info = +"ice pellets".
+
+-type_pl = code_pl, info_pl.
+code_pl>type = 'PL'.
+info_pl>type-info = +"ice pellets".
+
+-type_po = code_po, info_po.
+code_po>type = 'PO'.
+info_po>type-info = +"dust or sand whirls".
+
+-type_py = code_py, info_py.
+code_py>type = 'PY'.
+info_py>type-info = +"spray".
+
+-type_sa = code_sa, info_sa.
+code_sa>type = 'SA'.
+info_sa>type-info = +"sand".
+
+-type_sg = code_sg, info_sg.
+code_sg>type = 'SG'.
+info_sg>type-info = +"snow grains".
+
+-type_sn = code_sn, info_sn.
+code_sn>type = 'SN'.
+info_sn>type-info = +"snow".
+
+-type_sq = code_sq, info_sq.
+code_sq>type = 'SQ'.
+info_sq>type-info = +"squalls".
+
+-type_ss = code_ss, info_ss.
+code_ss>type = 'SS'.
+info_ss>type-info = +"sand storm".
+
+-type_up = code_up, info_up.
+code_up>type = 'UP'.
+info_up>type-info = +"unknown precipitation".
+
+{ ------------------------------------------------------------ clouds }
+
+clouds = cloud_observation.
+
+cloud_observation>observation = cloud_cover, altitude_ft?, cloud_type?.
+
+cloud_cover = cover_skc | cover_ncd | cover_clr | cover_nsc | cover_few | cover_sct | cover_bkn | cover_ovc.
+
+-cover_skc = code_skc, info_skc.
+code_skc>code = 'SKC'.
+info_skc>info = +"sky clear".
+-cover_ncd = code_ncd, info_ncd.
+code_ncd>code = 'NCD'.
+info_ncd>info = +"no clouds detected".
+-cover_clr = code_clr, info_clr.
+code_clr>code = 'CLR'.
+info_clr>info = +"no clouds below 12000 ft".
+-cover_nsc = code_nsc, info_nsc.
+code_nsc>code = 'NSC'.
+info_nsc>info = +"no significant clouds".
+-cover_few = code_few, info_few.
+code_few>code = 'FEW'.
+info_few>info = +"few (1-2 oktas)".
+-cover_sct = code_sct, info_sct.
+code_sct>code = 'SCT'.
+info_sct>info = +"scattered (3-4 oktas)".
+-cover_bkn = code_bkn, info_bkn.
+code_bkn>code = 'BKN'.
+info_bkn>info = +"broken (5-7 oktas)".
+-cover_ovc = code_ovc, info_ovc.
+code_ovc>code = 'OVC'.
+info_ovc>info = +"overcast (8 oktas)".
+
+altitude_ft = hundreds_of_feet | -'///', +"unknown".
+
+cloud_type = type_cb | type_tcu | type_unknown.
+-type_cb = code_cb, info_cb.
+code_cb>code = 'CB'.
+info_cb>info = +"cumulonimbus".
+-type_tcu = code_tcu, info_tcu.
+code_tcu>code = 'TCU'.
+info_tcu>info = +"towering cumulus".
+-type_unknown = code_unknown, info_unknown.
+code_unknown>code = '///'.
+info_unknown>info = +"unknown".
+
+{ The sky is obscured, the vertical visibility is given instead, e.g. VV003. }
+vertical_visibility = -'VV', vertical_ft.
+vertical_ft>altitude_ft = hundreds_of_feet | -'///', +"unknown".
+
+
+cavok = code_cavok, info_cavok.
+code_cavok>code = 'CAVOK'.
+info_cavok>info = +"ceiling and visibility OK".
+
+{ ------------------------------------------------------------ remarks }
+
+remark = -'RMK ', rmkchar*, !rmkchar.
+-rmkchar = ~['='; #a; #d].

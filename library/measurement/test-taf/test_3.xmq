@@ -1,0 +1,114 @@
+taf {
+    report_type = TAF
+    status {
+        code = AMD
+        info = amended
+    }
+    icao_airport_code = ESSA
+    time_of_issue {
+        day = 20
+        time {
+            hour   = 08
+            minute = 20
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 20
+            hour = 09
+        }
+        to {
+            day  = 21
+            hour = 09
+        }
+    }
+    base {
+        wind {
+            wind_direction {
+                variable = variable
+                speed {
+                    value = 5
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            meters = 2000
+        }
+        weather {
+            observation {
+                intensity = light
+                type      = SN
+                type-info = snow
+            }
+        }
+        weather {
+            observation {
+                type      = BR
+                type-info = mist
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 400
+            }
+        }
+    }
+    change {
+        code = TEMPO
+        info = temporarily
+        from {
+            day  = 20
+            hour = 09
+        }
+        to {
+            day  = 20
+            hour = 12
+        }
+        visibility {
+            meters = 700
+        }
+        weather {
+            observation {
+                chrct      = FZ
+                chrct-info = freezing
+                type       = FG
+                type-info  = fog
+            }
+        }
+    }
+    change {
+        code = INTER
+        info = intermittently
+        from {
+            day  = 20
+            hour = 12
+        }
+        to {
+            day  = 20
+            hour = 15
+        }
+        visibility {
+            meters = 3000
+        }
+        weather {
+            observation {
+                intensity  = light
+                chrct      = SH
+                chrct-info = showers
+                type       = SN
+                type-info  = snow
+            }
+        }
+        no_significant_weather = 'no significant weather'
+    }
+    remark = 'NXT FCST BY 2015Z'
+}

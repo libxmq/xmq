@@ -1,0 +1,23 @@
+taf {
+    report_type       = TAF
+    icao_airport_code = EKCH
+    time_of_issue {
+        day = 20
+        time {
+            hour   = 11
+            minute = 00
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 20
+            hour = 12
+        }
+        to {
+            day  = 21
+            hour = 12
+        }
+    }
+    cancelled = cancelled
+}

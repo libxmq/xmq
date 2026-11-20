@@ -1031,7 +1031,7 @@ td div + div { margin-top: 2px; }
         xsl:variable(name   = show_cloud
                      select = '$precip or $thunder or $cover = "FEW" or $cover = "SCT" or $cover = "BKN" or $cover = "OVC" or $cover = "VV"')
         xsl:variable(name   = show_sun
-                     select = 'not($precip or $thunder) and not($cover = "BKN" or $cover = "OVC" or $cover = "VV")')
+                     select = 'not($precip or $thunder or $obs/type = "FG") and not($cover = "BKN" or $cover = "OVC" or $cover = "VV")')
         xsl:variable(name   = dark
                      select = '$precip or $thunder or $cover = "OVC" or $cb')
         xsl:variable(name   = cloudpath

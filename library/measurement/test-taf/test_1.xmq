@@ -1,0 +1,199 @@
+taf {
+    report_type       = TAF
+    icao_airport_code = KJFK
+    time_of_issue {
+        day = 20
+        time {
+            hour   = 17
+            minute = 20
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 20
+            hour = 18
+        }
+        to {
+            day  = 21
+            hour = 24
+        }
+    }
+    base {
+        wind {
+            wind_direction {
+                degrees = 240
+                speed {
+                    value = 15
+                    gust  = 25
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            more_than = 'more than'
+            miles     = 6
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = SCT
+                    info = 'scattered (3-4 oktas)'
+                }
+                altitude_ft = 5000
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 25000
+            }
+        }
+    }
+    change {
+        code = FM
+        info = from
+        from {
+            day    = 20
+            hour   = 22
+            minute = 00
+        }
+        wind {
+            wind_direction {
+                degrees = 300
+                speed {
+                    value = 10
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            more_than = 'more than'
+            miles     = 6
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = FEW
+                    info = 'few (1-2 oktas)'
+                }
+                altitude_ft = 25000
+            }
+        }
+    }
+    change {
+        code = FM
+        info = from
+        from {
+            day    = 21
+            hour   = 06
+            minute = 00
+        }
+        wind {
+            wind_direction {
+                variable = variable
+                speed {
+                    value = 3
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            miles = '1 1/2'
+        }
+        weather {
+            observation {
+                type      = BR
+                type-info = mist
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = OVC
+                    info = 'overcast (8 oktas)'
+                }
+                altitude_ft = 800
+            }
+        }
+    }
+    change {
+        code = FM
+        info = from
+        from {
+            day    = 21
+            hour   = 14
+            minute = 00
+        }
+        wind {
+            wind_direction {
+                degrees = 180
+                speed {
+                    value = 12
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            miles = 3
+        }
+        weather {
+            observation {
+                intensity  = light
+                chrct      = SH
+                chrct-info = showers
+                type       = RA
+                type-info  = rain
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 1500
+            }
+        }
+        wind_shear {
+            altitude_ft = 2000
+            wind_direction {
+                degrees = 270
+                speed {
+                    value = 45
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+    }
+    max_temperature {
+        air_c     = 25
+        day       = 20
+        hour      = 19
+        time_zone = UTC
+    }
+    min_temperature {
+        air_c     = 14
+        day       = 21
+        hour      = 10
+        time_zone = UTC
+    }
+}

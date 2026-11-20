@@ -1,0 +1,173 @@
+taf {
+    report_type       = TAF
+    icao_airport_code = KXYZ
+    time_of_issue {
+        day = 05
+        time {
+            hour   = 11
+            minute = 30
+        }
+        time_zone = UTC
+    }
+    validity {
+        from {
+            day  = 05
+            hour = 12
+        }
+        to {
+            day  = 06
+            hour = 18
+        }
+    }
+    base {
+        wind {
+            wind_direction {
+                degrees = 140
+                speed {
+                    value = 8
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            miles = 5
+        }
+        weather {
+            observation {
+                type      = BR
+                type-info = mist
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = BKN
+                    info = 'broken (5-7 oktas)'
+                }
+                altitude_ft = 2000
+            }
+        }
+    }
+    change {
+        code = FM
+        info = from
+        from {
+            day    = 05
+            hour   = 18
+            minute = 00
+        }
+        wind {
+            wind_direction {
+                degrees = 160
+                speed {
+                    value = 10
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            more_than = 'more than'
+            miles     = 6
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = SKC
+                    info = 'sky clear'
+                }
+            }
+        }
+    }
+    change {
+        code = BECMG
+        info = becoming
+        from {
+            day  = 06
+            hour = 03
+        }
+        to {
+            day  = 06
+            hour = 05
+        }
+        wind {
+            wind_direction {
+                degrees = 80
+                speed {
+                    value = 15
+                    gust  = 25
+                    unit {
+                        code = KT
+                        info = knots
+                    }
+                }
+            }
+        }
+        visibility {
+            miles = 3
+        }
+        weather {
+            observation {
+                chrct      = TS
+                chrct-info = thunderstorm
+                type       = RA
+                type-info  = rain
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = OVC
+                    info = 'overcast (8 oktas)'
+                }
+                altitude_ft = 1000
+                cloud_type {
+                    code = CB
+                    info = cumulonimbus
+                }
+            }
+        }
+    }
+    change {
+        code = TEMPO
+        info = temporarily
+        from {
+            day  = 06
+            hour = 07
+        }
+        to {
+            day  = 06
+            hour = 09
+        }
+        visibility {
+            miles = 1
+        }
+        weather {
+            observation {
+                intensity  = heavy
+                chrct      = TS
+                chrct-info = thunderstorm
+                type       = RA
+                type-info  = rain
+            }
+        }
+        clouds {
+            observation {
+                cloud_cover {
+                    code = OVC
+                    info = 'overcast (8 oktas)'
+                }
+                altitude_ft = 800
+                cloud_type {
+                    code = CB
+                    info = cumulonimbus
+                }
+            }
+        }
+    }
+}

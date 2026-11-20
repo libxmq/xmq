@@ -1,7 +1,7 @@
 {
     v1b A grammar for parsing METAR weather reports.
 
-    Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
+    Public Domain LLM-generated code (spdx: CC0)
 
     Codes are kept, and a sibling -info element explains them in plain words.
     Numbers are normalized: leading zeros are removed, M becomes a minus sign,
