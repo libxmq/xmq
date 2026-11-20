@@ -126,14 +126,24 @@ endif
 release:
 	@echo Building release for $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x release ; done
+	@mkdir -p build && cp scripts/build_xmq.sh build/xmq && chmod +x build/xmq
 
 debug:
 	@echo Building debug for $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x debug ; done
+	@mkdir -p build && cp scripts/build_xmq.sh build/xmq && chmod +x build/xmq
 
 asan:
 	@echo Building asan for $(words $(BUILDDIRS)) host\(s\).
 	@for x in $(BUILDDIRS); do echo; echo Bulding $$(basename $$x) ; $(MAKE) --no-print-directory -C $$x asan ; done
+	@mkdir -p build && cp scripts/build_xmq.sh build/xmq && chmod +x build/xmq
+
+# build/xmq runs the latest built xmq (release, debug or asan) with the library of the
+# source tree, eg build/xmq ixml:data/csv foo.csv, see scripts/build_xmq.sh.
+build/xmq: scripts/build_xmq.sh
+	@mkdir -p build
+	@cp scripts/build_xmq.sh build/xmq
+	@chmod +x build/xmq
 
 # AFL++ packages fetched and locally unpacked (no root, cmake or clang install needed)
 AFL_DEBS:=afl++ clang clang-19 libclang1-19 libclang-common-19-dev libclang-cpp19 libclang-rt-19-dev libllvm19 llvm-19-linker-tools
