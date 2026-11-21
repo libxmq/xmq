@@ -1,0 +1,291 @@
+// Generate library.html from the library index library/index.xmq, see scripts/build_web.sh
+// One row per name, where name.ixml and name.xslq are grouped together, since
+// xmq ixml:name input parses with name.ixml and then applies name.xslq.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = yes)
+    // The build date.
+    xsl:param(name = date)
+    xsl:template(match = library)
+    {
+        html(lang = en) {
+            head {
+                meta(charset = UTF-8)
+                title = 'Library · xmq'
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                // Apply a forced light/dark theme before the first paint.
+                script = '''try { var t = localStorage.getItem("xmq-theme"); if (t === "light" || t === "dark") document.documentElement.classList.add(t); } catch (e) {}'''
+                link(rel  = stylesheet
+                     href = resources/xmq.css)
+                link(rel  = stylesheet
+                     href = resources/site.css)
+                script(src = resources/code.js) = ''
+            }
+            body(onload = 'siteInit();')
+            {
+                a(class = skip
+                  href  = '#main') = 'Skip to content'
+                header(class = top)
+                {
+                    nav(class      = wrap
+                        aria-label = Main)
+                    {
+                        a(class = logo
+                          href  = index.html) {
+                            span = x
+                            'mq'
+                        }
+                        a(href = 'index.html#try') = Playground
+                        a(href = 'index.html#examples') = Examples
+                        a(href = library.html) = Library
+                        a(href = 'index.html#learn') = Learn
+                        a(href = https://github.com/libxmq/xmq) = GitHub
+                        button(id      = themebutton
+                               class   = theme
+                               type    = button
+                               onclick = 'siteCycleTheme();') = 'Theme: auto'
+                    }
+                }
+                main(id = main)
+                {
+                    section(class = 'band alt hero')
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = kicker) = 'ixml · xslq'
+                            h1(class = tagline) {
+                                'The xmq'
+                                br
+                                em = library
+                                '.'
+                            }
+                            p(class = lead) = 'Grammars and transforms that xmq downloads on demand from libxmq.org.
+                                               Parse with ixml:name, the stylesheet with the same name is then applied
+                                               to clean up the parse. Transform with xsl:name.'
+                            p(class = cmd) {
+                                span(class = code) = 'xmq ixml:data/csv table.csv to-json'
+                            }
+                            p(class = cmd) {
+                                span(class = code) = 'xmq list-library'
+                            }
+                            div(class = filter) {
+                                label(for = libfilter) = 'Filter'
+                                input(id          = libfilter
+                                      type        = search
+                                      placeholder = 'name or description...'
+                                      oninput     = "siteFilter('details.libentry', 'libcount', 'entries', this.value);")
+                                span(id        = libcount
+                                     aria-live = polite)
+                            }
+                        }
+                    }
+                    section(class = band)
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = foldtools)
+                            {
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', true);") = 'Open all'
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', false);") = 'Close all'
+                            }
+                            div(id = liblist)
+                            {
+                                xsl:for-each(select = 'file[@version][not(contains(@path, "_v"))]')
+                                {
+                                    xsl:sort(select = 'substring-before(@path, ".")')
+                                    xsl:variable(name   = stem
+                                                 select = 'substring-before(@path, ".")')
+                                    xsl:variable(name   = ixml
+                                                 select = '../file[@path = concat($stem, ".ixml")]')
+                                    xsl:variable(name   = xslq
+                                                 select = '../file[@path = concat($stem, ".xslq")]')
+                                    // An xslq with an ixml of the same name is shown in the row of the ixml.
+                                    xsl:if(test = 'substring-after(@path, ".") = "ixml" or not($ixml)')
+                                    {
+                                        xsl:call-template(name = entry) {
+                                            xsl:with-param(name   = stem
+                                                           select = $stem)
+                                            xsl:with-param(name   = ixml
+                                                           select = $ixml)
+                                            xsl:with-param(name   = xslq
+                                                           select = $xslq)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                footer {
+                    div(class = wrap)
+                    {
+                        p {
+                            'Generated from '
+                            a(href = library/index.xmq) = index.xmq
+                            ' with '
+                            a(href = resources/genlibrary.xslq) = genlibrary.xslq
+                            xsl:if(test = '$date') {
+                                ' · last updated '
+                                xsl:value-of(select = '$date')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // One row, expanded with the full descriptions when clicked.
+    xsl:template(name = entry)
+    {
+        xsl:param(name = stem)
+        xsl:param(name = ixml)
+        xsl:param(name = xslq)
+        details(class = 'fold libentry'
+                id    = '{translate($stem, "/", "-")}')
+        {
+            summary {
+                span(class = libname) {
+                    xsl:value-of(select = $stem)
+                }
+                span(class = libsum) {
+                    xsl:choose {
+                        xsl:when(test = '$ixml/@summary') {
+                            xsl:value-of(select = $ixml/@summary)
+                        }
+                        xsl:otherwise {
+                            xsl:value-of(select = $xslq/@summary)
+                        }
+                    }
+                }
+                span(class = liblinks) {
+                    xsl:if(test = $ixml) {
+                        a(href  = 'library-src/{$stem}.ixml.html'
+                          title = 'The grammar {$stem}.ixml') = ixml
+                    }
+                    xsl:if(test = $xslq) {
+                        a(href  = 'library-src/{$stem}.xslq.html'
+                          title = 'The stylesheet {$stem}.xslq') = xsl
+                    }
+                }
+                span(class = libver) {
+                    xsl:choose {
+                        xsl:when(test = '$ixml and $xslq and $ixml/@version != $xslq/@version') {
+                            'v'
+                            xsl:value-of(select = $ixml/@version)
+                            ' · v'
+                            xsl:value-of(select = $xslq/@version)
+                        }
+                        xsl:when(test = $ixml) {
+                            'v'
+                            xsl:value-of(select = $ixml/@version)
+                        }
+                        xsl:otherwise {
+                            'v'
+                            xsl:value-of(select = $xslq/@version)
+                        }
+                    }
+                }
+            }
+            div(class = body)
+            {
+                xsl:if(test = $ixml) {
+                    xsl:call-template(name = describe) {
+                        xsl:with-param(name   = file
+                                       select = $ixml)
+                        xsl:with-param(name   = stem
+                                       select = $stem)
+                        xsl:with-param(name   = kind
+                                       select = '"ixml"')
+                    }
+                }
+                xsl:if(test = $xslq) {
+                    xsl:call-template(name = describe) {
+                        xsl:with-param(name   = file
+                                       select = $xslq)
+                        xsl:with-param(name   = stem
+                                       select = $stem)
+                        xsl:with-param(name   = kind
+                                       select = '"xslq"')
+                    }
+                }
+                xsl:choose {
+                    xsl:when(test = '$ixml and $xslq') {
+                        p = 'Parse with the grammar, then the stylesheet is applied to the parse:'
+                        p(class = cmd) {
+                            span(class = code) {
+                                'xmq ixml:'
+                                xsl:value-of(select = $stem)
+                                ' input'
+                            }
+                        }
+                    }
+                    xsl:when(test = $ixml) {
+                        p = 'Parse with the grammar:'
+                        p(class = cmd) {
+                            span(class = code) {
+                                'xmq ixml:'
+                                xsl:value-of(select = $stem)
+                                ' input'
+                            }
+                        }
+                    }
+                    xsl:otherwise {
+                        p = 'Transform with the stylesheet:'
+                        p(class = cmd) {
+                            span(class = code) {
+                                'xmq input.xml xsl:'
+                                xsl:value-of(select = $stem)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // The full description of a grammar or stylesheet and its published versions.
+    xsl:template(name = describe)
+    {
+        xsl:param(name = file)
+        xsl:param(name = stem)
+        xsl:param(name = kind)
+        div(class = libdesc)
+        {
+            h3 {
+                a(href = 'library-src/{$file/@path}.html') {
+                    xsl:value-of(select = $file/@path)
+                }
+                span(class = year) {
+                    'v'
+                    xsl:value-of(select = $file/@version)
+                }
+            }
+            p(class = desc) {
+                xsl:value-of(select = $file/@description)
+            }
+            p(class = versions) {
+                'Versions: '
+                xsl:for-each(select = '$file/../file[starts-with(@path, concat($stem, "_v")) and substring-after(@path, ".") = $kind]')
+                {
+                    xsl:sort(select = @path)
+                    xsl:if(test = 'position() > 1') {
+                        xsl:text = ' '
+                    }
+                    code {
+                        xsl:value-of(select = 'substring-before(substring-after(@path, concat($stem, "_")), ".")')
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,4 +1,7 @@
-{ v1a Render an ixml grammar as html, from the ixml specification. }
+{ v1b Render an ixml grammar as html, from the ixml specification.
+  Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
+  =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+  The characters < and & are escaped. }
 {version 2022-06-07}
          ixml:  +"<HTML>", HEADER, +"<BODY><PRE>", s, prolog?, rule++RS, s, +"</PRE></BODY></HTML>".
 
@@ -8,14 +11,19 @@
          -tab: #9.
           -lf: #a.
           -cr: #d.
-     -comment: +'<SPAN CLASS="comment">', "{", (cchar; comment)*, "}", +'</SPAN CLASS="c">'.
-       -cchar: ~["{}"].
+     -comment: +'<SPAN CLASS="comment">', "{", (cchar; comment)*, "}", +'</SPAN>'.
+       -cchar: ~["{}<&"]; lt; amp.
+          -lt: -"<", +"&lt;".
+         -amp: -"&", +"&amp;".
 
       -prolog: version, s.
      -version: "ixml", RS, "version", RS, string, s, -'.' .
 
-        -rule: (mark, s)?, +'<SPAN CLASS="rule">', name, +"</SPAN>", s,  ["=:"], s, -alts, ".".
+        -rule: (rmark, s)?, +'<SPAN CLASS="rule">', name, +"</SPAN>", s, alias?, ["=:"], cost, s, -alts, ".".
         -mark: +'<SPAN CLASS="mark">', ["@^-"], +'</SPAN>'.
+       -rmark: +'<SPAN CLASS="mark">', ["@^-*"], +'</SPAN>'.
+       -alias: ">", s, +'<SPAN CLASS="rule">', name, +"</SPAN>", s.
+        -cost: (+'<SPAN CLASS="mark">', lt+, +'</SPAN>')?.
         -alts: alt++([";|"], s).
          -alt: term**(",", s).
         -term: factor;
@@ -25,12 +33,14 @@
       -factor: terminal;
                nonterminal;
                insertion;
-               "(", s, alts, ")", s.
+               "(", s, alts, ")", s;
+               +'<SPAN CLASS="mark">', "!", +'</SPAN>', s, factor.
      -repeat0: factor, ("*", s; "**", s, sep).
      -repeat1: factor, ("+", s; "++", s, sep).
       -option: factor, "?", s.
          -sep: factor.
- -nonterminal: (mark, s)?, +'<SPAN CLASS="ref">', name, +'</SPAN>', s.
+ -nonterminal: (mark, s)?, +'<SPAN CLASS="ref">', name, +'</SPAN>', s,
+               (">", s, +'<SPAN CLASS="ref">', name, +'</SPAN>', s)?.
 
         -name: namestart, namefollower*.
    -namestart: ["_"; L].
@@ -45,9 +55,9 @@
        -tmark: +'<SPAN CLASS="mark">', ["^-"], +'</SPAN>'.
       -string: '"', dchar+, '"';
                "'", schar+, "'".
-       -dchar: ~['"'; #a; #d];
+       -dchar: ~['"'; #a; #d; "<&"]; lt; amp;
                '"', -'"'. {all characters except line breaks; quotes must be doubled}
-       -schar: ~["'"; #a; #d];
+       -schar: ~["'"; #a; #d; "<&"]; lt; amp;
                "'", "'". {all characters except line breaks; quotes must be doubled}
      -encoded: (tmark, s)?, "#", hex, s.
          -hex: ["0"-"9"; "a"-"f"; "A"-"F"]+.
@@ -73,8 +83,9 @@
       -letter: ["a"-"z"].
    -insertion: +'<SPAN CLASS="insert">', "+", s, (string; "#", hex), +'</SPAN>', s.
 
--HEADER: +"<style>:root {",
-+"--bg: #FFFFFF;",
+-HEADER: +'<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">',
++"<style>:root {",
++"--bg: #fffcf2;",
 +"--fg: #000000;",
 +"--rule: #CC6921;",
 +"--ref: #5555AA;",

@@ -1,4 +1,5 @@
-// v1a Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT
+// v1a Cleanup after ixml parse of nix.
+// Fredrik Öhrström (c) 2026 spdx: MIT
 
 xsl:stylesheet(version = 1.0 xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
 {

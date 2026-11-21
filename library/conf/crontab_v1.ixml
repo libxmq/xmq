@@ -1,4 +1,5 @@
-{ v1a Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT }
+{ v1a Parse crontab.
+  by Fredrik Öhrström 2025-2026 spdx: MIT }
 
 crontab = (comment|line|variable)++-#a, ews.
 comment = -'#', ~[#a]*, !~[#a].

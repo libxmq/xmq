@@ -502,3 +502,41 @@ article.lang p.by { margin: 0.1rem 0 0; color: var(--muted); font-style: italic;
 
 /* Themed scrollbars, so wide code does not get a bright bar in dark mode. */
 pre, textarea, .demo { scrollbar-color: var(--border) transparent; scrollbar-width: thin; }
+
+/* The library page (library.html). One row per name, expands to the full description. */
+
+details.libentry { margin-bottom: 0.6rem; box-shadow: none; }
+details.libentry > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name ver" "sum sum" "links links";
+    gap: 0.2rem 1rem;
+    align-items: baseline;
+    padding: 0.7rem 3rem 0.7rem 1.1rem;
+}
+details.libentry > summary::after { top: 1.1rem; }
+details.libentry[open] > summary::after { top: 1.35rem; }
+@media (min-width: 860px) {
+    details.libentry > summary {
+        grid-template-columns: 14rem minmax(0, 1fr) auto 3.5rem;
+        grid-template-areas: "name sum links ver";
+    }
+}
+.libname { grid-area: name; font-family: var(--mono); font-weight: 700; color: var(--heading); }
+.libsum  { grid-area: sum; color: var(--muted); }
+.liblinks { grid-area: links; display: flex; gap: 0.5rem; }
+.liblinks a {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0 0.45rem;
+    background: var(--bg);
+}
+.liblinks a:hover { border-color: var(--link); }
+.libver { grid-area: ver; font-family: var(--mono); font-size: 0.85rem; color: var(--accent); text-align: right; }
+.libdesc h3 { display: flex; gap: 0.7rem; align-items: baseline; margin-top: 0.2rem; font-family: var(--mono); font-size: 1rem; }
+.libdesc p.desc { white-space: pre-line; }
+.libdesc p.versions { color: var(--muted); font-size: 0.9rem; }
+.libdesc p.versions code { white-space: nowrap; }

@@ -1,4 +1,5 @@
-{ v2a The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+{ v2a The xmq command line.
+  Fredrik Öhrström (c) 2026 spdx: MIT
 
   The command line arguments (argv) are joined into a single line, which is
   parsed with this grammar. The line starts with xmq, then every argument

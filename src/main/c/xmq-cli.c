@@ -3616,7 +3616,12 @@ XMQNode *replace_entity(XmlDom *doc, XMQNode *node, const char *entity, const ch
             }
             else
             {
-                assert(false);
+                // No content, eg --with-file of an empty file, the entity is replaced with nothing.
+                XMQNode *new_node = xml_node_new_text(doc, "");
+                xml_node_replace(node, new_node);
+                xml_node_free(node);
+                node = new_node;
+                next = xml_node_next(node);
             }
         }
         if (xml_node_prev(node) != NULL && is_content_node(xml_node_prev(node)) && is_content_node(node))
@@ -4190,7 +4195,7 @@ void print_command_help(XMQCliCmd c)
             "  ixml:data/csv   v2abcd v1abc\n"
             "A version is a major number and a minor letter, v2c is 2.3.0. ixml:data/csv is the\n"
             "latest version, ixml:data/csv_v2 the latest 2.x and ixml:data/csv_v2c exactly 2c.\n"
-            "A published version never changes, for example:\n"
+            "A published version only changes in its comments, for example:\n"
             "  xmq ixml:data/csv data.csv xsl:work/report_v2 to-text\n"
             "uses the latest csv grammar and the latest version 2 of the report.\n");
         break;

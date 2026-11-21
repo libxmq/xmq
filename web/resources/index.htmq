@@ -34,6 +34,7 @@ html(lang = en)
                 }
                 a(href = '#try') = Playground
                 a(href = '#examples') = Examples
+                a(href = library.html) = Library
                 a(href = '#learn') = Learn
                 a(href = xmq.pdf) = Grammar
                 a(href = https://github.com/libxmq/xmq) = GitHub
@@ -1010,6 +1011,7 @@ html(lang = en)
                         h2 = 'Further resources'
                         ul {
                             li { a(href = xmq.pdf) = 'The XMQ grammar (pdf)' }
+                            li { a(href = library.html) = 'The library of ixml grammars and xslq transforms' }
                             li { a(href = doxygen/html/index.html) = 'C api documentation' }
                             li { a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = Javadoc }
                             li { a(href = https://github.com/orgs/libxmq/discussions) = 'Forum and discussions' }

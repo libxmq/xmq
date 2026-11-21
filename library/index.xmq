@@ -1,177 +1,278 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-20T22:39:40Z)
+library(created = 2026-11-21T19:02:07Z)
 {
     file(path        = conf/crontab.ixml
-         size        = 725
-         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 728
+         sha256      = 6a2fc6cd95da17b99d1308dd51b51b30597d4d5cf6aefdf25b5686516b2da889
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+         summary     = 'Parse crontab.'
+         description = 'Parse crontab.
+                        by Fredrik Öhrström 2025-2026 spdx: MIT')
     file(path        = conf/crontab_v1.ixml
-         size        = 725
-         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 728
+         sha256      = 6a2fc6cd95da17b99d1308dd51b51b30597d4d5cf6aefdf25b5686516b2da889
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+         summary     = 'Parse crontab.'
+         description = 'Parse crontab.
+                        by Fredrik Öhrström 2025-2026 spdx: MIT')
     file(path        = conf/crontab_v1a.ixml
-         size        = 725
-         sha256      = 9802170b01b9d151bf647652b28fcf301f561d91b473eef917fade790e94334d
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 728
+         sha256      = 6a2fc6cd95da17b99d1308dd51b51b30597d4d5cf6aefdf25b5686516b2da889
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse crontab by Fredrik Öhrström 2025-2026 spdx: MIT')
+         summary     = 'Parse crontab.'
+         description = 'Parse crontab.
+                        by Fredrik Öhrström 2025-2026 spdx: MIT')
     file(path        = conf/nginx.ixml
          size        = 463
          sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse nginx config files.'
          description = 'Parse nginx config files.')
     file(path        = conf/nginx.xslq
-         size        = 870
-         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 873
+         sha256      = f216078a1078cbb15c65cf3aa4cda440bd04df624e11c50c370cc448ccd74fe2
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nginx.'
+         description = 'Cleanup after ixml parse of nginx.
+                        by Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nginx_v1.ixml
          size        = 463
          sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse nginx config files.'
          description = 'Parse nginx config files.')
     file(path        = conf/nginx_v1.xslq
-         size        = 870
-         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 873
+         sha256      = f216078a1078cbb15c65cf3aa4cda440bd04df624e11c50c370cc448ccd74fe2
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nginx.'
+         description = 'Cleanup after ixml parse of nginx.
+                        by Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nginx_v1a.ixml
          size        = 463
          sha256      = 3a709be7a92a43d73273f0066b75f70b97030932f56ee81a9e8ad5fab3eeb3ef
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse nginx config files.'
          description = 'Parse nginx config files.')
     file(path        = conf/nginx_v1a.xslq
-         size        = 870
-         sha256      = 978e209d572720eb9080cbfa8b9042d4580f3da0de1ff9ec8a3a2e94c45d8de4
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 873
+         sha256      = f216078a1078cbb15c65cf3aa4cda440bd04df624e11c50c370cc448ccd74fe2
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nginx. by Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nginx.'
+         description = 'Cleanup after ixml parse of nginx.
+                        by Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix.ixml
-         size        = 1295
-         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1297
+         sha256      = 558b46165c143861a1ca595f39583dba9a735ee35706d2d48b9627adf316e5f1
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Parse the declarative Nix configuration subset.'
+         description = 'Parse the declarative Nix configuration subset.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix.xslq
-         size        = 5551
-         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5554
+         sha256      = e74332922b40ab5ba82d867e7c0eb5f1484ed3dc46a7a1c50ea7fad1a82c8ea4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nix.'
+         description = 'Cleanup after ixml parse of nix.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix_v1.ixml
-         size        = 1295
-         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1297
+         sha256      = 558b46165c143861a1ca595f39583dba9a735ee35706d2d48b9627adf316e5f1
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Parse the declarative Nix configuration subset.'
+         description = 'Parse the declarative Nix configuration subset.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix_v1.xslq
-         size        = 5551
-         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5554
+         sha256      = e74332922b40ab5ba82d867e7c0eb5f1484ed3dc46a7a1c50ea7fad1a82c8ea4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nix.'
+         description = 'Cleanup after ixml parse of nix.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix_v1a.ixml
-         size        = 1295
-         sha256      = acfb9477d9ee6e736b81df839048c4a71a9d3685d39ca2ade3bb6e40261d2483
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1297
+         sha256      = 558b46165c143861a1ca595f39583dba9a735ee35706d2d48b9627adf316e5f1
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Parse the declarative Nix configuration subset. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Parse the declarative Nix configuration subset.'
+         description = 'Parse the declarative Nix configuration subset.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/nix_v1a.xslq
-         size        = 5551
-         sha256      = a474d92a4f7b9c42533e2fcd0e7efd6514edc43b7013987015726f90774d79dc
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5554
+         sha256      = e74332922b40ab5ba82d867e7c0eb5f1484ed3dc46a7a1c50ea7fad1a82c8ea4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Cleanup after ixml parse of nix. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Cleanup after ixml parse of nix.'
+         description = 'Cleanup after ixml parse of nix.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nginx.xslq
-         size        = 1700
-         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1703
+         sha256      = 567bd77f425dfbd082399832a680b9ca04287b126f3215875daac044aeaaa6f4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nginx configuration from xmq source.'
+         description = 'Write nginx configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nginx_v1.xslq
-         size        = 1700
-         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1703
+         sha256      = 567bd77f425dfbd082399832a680b9ca04287b126f3215875daac044aeaaa6f4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nginx configuration from xmq source.'
+         description = 'Write nginx configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nginx_v1a.xslq
-         size        = 1700
-         sha256      = 17c8643be33bb64fae3d2ddc0a9134d3a946bca51e3b3f4d96837449489f61b8
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 1703
+         sha256      = 567bd77f425dfbd082399832a680b9ca04287b126f3215875daac044aeaaa6f4
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nginx configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nginx configuration from xmq source.'
+         description = 'Write nginx configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nix.xslq
-         size        = 10157
-         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 10160
+         sha256      = f50fc96135d9a03cd8e4ab22084cba7e18578ab5a987b6a414553ba2861b0269
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nix configuration from xmq source.'
+         description = 'Write nix configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nix_v1.xslq
-         size        = 10157
-         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 10160
+         sha256      = f50fc96135d9a03cd8e4ab22084cba7e18578ab5a987b6a414553ba2861b0269
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nix configuration from xmq source.'
+         description = 'Write nix configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = conf/to-nix_v1a.xslq
-         size        = 10157
-         sha256      = 0a758591e9b087425045284ce240d0691c3a430dcedeb27bdaa83ab06cc9f96b
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 10160
+         sha256      = f50fc96135d9a03cd8e4ab22084cba7e18578ab5a987b6a414553ba2861b0269
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'Write nix configuration from xmq source. Fredrik Öhrström (c) 2026 spdx: MIT')
+         summary     = 'Write nix configuration from xmq source.'
+         description = 'Write nix configuration from xmq source.
+                        Fredrik Öhrström (c) 2026 spdx: MIT')
     file(path        = core/ixml.ixml
          size        = 2345
          sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'The ixml grammar for ixml, from the ixml specification.'
          description = 'The ixml grammar for ixml, from the ixml specification.')
     file(path        = core/ixml.xml
          size        = 13619
          sha256      = 31e7c9fd5fad0585fcf2d4ac50fe7830c252ab0a9fb2a64ac95c118e5a5046da
          mtime       = 2026-10-20T08:08:55Z)
     file(path        = core/ixml2html.ixml
-         size        = 3596
-         sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 1a
-         description = 'Render an ixml grammar as html, from the ixml specification.')
+         size        = 4362
+         sha256      = 7973ebea3b156ad1a6571d1d95d8124e88461d2a88682a443177bded0abc1ee7
+         mtime       = 2026-11-21T18:46:30Z
+         version     = 1b
+         summary     = 'Render an ixml grammar as html, from the ixml specification.'
+         description = 'Render an ixml grammar as html, from the ixml specification.
+                        Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
+                        =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+                        The characters < and & are escaped.')
     file(path        = core/ixml2html_v1.ixml
-         size        = 3596
-         sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 1a
-         description = 'Render an ixml grammar as html, from the ixml specification.')
+         size        = 4362
+         sha256      = 7973ebea3b156ad1a6571d1d95d8124e88461d2a88682a443177bded0abc1ee7
+         mtime       = 2026-11-21T18:46:30Z
+         version     = 1b
+         summary     = 'Render an ixml grammar as html, from the ixml specification.'
+         description = 'Render an ixml grammar as html, from the ixml specification.
+                        Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
+                        =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+                        The characters < and & are escaped.')
     file(path        = core/ixml2html_v1a.ixml
          size        = 3596
          sha256      = 6b890be25f6185f2bdc40e4d17e563481048bb1ab4c021fa1cb6a1ea7cc85746
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml grammar as html, from the ixml specification.'
          description = 'Render an ixml grammar as html, from the ixml specification.')
+    file(path        = core/ixml2html_v1b.ixml
+         size        = 4362
+         sha256      = 7973ebea3b156ad1a6571d1d95d8124e88461d2a88682a443177bded0abc1ee7
+         mtime       = 2026-11-21T18:46:30Z
+         version     = 1b
+         summary     = 'Render an ixml grammar as html, from the ixml specification.'
+         description = 'Render an ixml grammar as html, from the ixml specification.
+                        Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
+                        =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+                        The characters < and & are escaped.')
     file(path        = core/ixml_v1.ixml
          size        = 2345
          sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'The ixml grammar for ixml, from the ixml specification.'
          description = 'The ixml grammar for ixml, from the ixml specification.')
     file(path        = core/ixml_v1a.ixml
          size        = 2345
          sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'The ixml grammar for ixml, from the ixml specification.'
          description = 'The ixml grammar for ixml, from the ixml specification.')
+    file(path        = core/ixmlnotcost.ixml
+         size        = 3068
+         sha256      = 556aedebe641b55272c2e257a34a3f8cfdbe75b39cf4d250816b7b8c0cc84978
+         mtime       = 2026-11-21T19:01:26Z
+         version     = 1a
+         summary     = 'The ixml grammar for ixml with the xmq extensions.'
+         description = 'The ixml grammar for ixml with the xmq extensions.
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<,
+                        renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
+                        as comment elements, so that they can be deleted, eg to compare two versions of
+                        a grammar ignoring changes in the comments:
+                          xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
+                        Based on the ixml grammar for ixml from the ixml specification.')
+    file(path        = core/ixmlnotcost_v1.ixml
+         size        = 3068
+         sha256      = 556aedebe641b55272c2e257a34a3f8cfdbe75b39cf4d250816b7b8c0cc84978
+         mtime       = 2026-11-21T19:01:26Z
+         version     = 1a
+         summary     = 'The ixml grammar for ixml with the xmq extensions.'
+         description = 'The ixml grammar for ixml with the xmq extensions.
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<,
+                        renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
+                        as comment elements, so that they can be deleted, eg to compare two versions of
+                        a grammar ignoring changes in the comments:
+                          xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
+                        Based on the ixml grammar for ixml from the ixml specification.')
+    file(path        = core/ixmlnotcost_v1a.ixml
+         size        = 3068
+         sha256      = 556aedebe641b55272c2e257a34a3f8cfdbe75b39cf4d250816b7b8c0cc84978
+         mtime       = 2026-11-21T19:01:26Z
+         version     = 1a
+         summary     = 'The ixml grammar for ixml with the xmq extensions.'
+         description = 'The ixml grammar for ixml with the xmq extensions.
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<,
+                        renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
+                        as comment elements, so that they can be deleted, eg to compare two versions of
+                        a grammar ignoring changes in the comments:
+                          xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
+                        Based on the ixml grammar for ixml from the ixml specification.')
     file(path        = core/xmq.ixml
          size        = 6762
          sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'The xmq language in ixml.'
          description = 'The xmq language in ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -204,6 +305,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -223,6 +325,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'The xmq language in ixml.'
          description = 'The xmq language in ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -255,6 +358,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -274,6 +378,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = e4170038ed010eb9f7e2e1e3121fbed65d8991d76ffc2ff96a209b8c00f0b41a
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'The xmq language in ixml.'
          description = 'The xmq language in ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -306,6 +411,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
@@ -325,6 +431,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a csv file (comma separated values).'
          description = 'Create a table/tr/td from a csv file (comma separated values).
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/csv_v1.ixml
@@ -332,6 +439,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a csv file (comma separated values).'
          description = 'Create a table/tr/td from a csv file (comma separated values).
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/csv_v1a.ixml
@@ -339,6 +447,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 242304252c9b25ae494129783c7391aca8ef41c46d7bb4a3a30ea1b43658ad90
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a csv file (comma separated values).'
          description = 'Create a table/tr/td from a csv file (comma separated values).
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/scsv.ixml
@@ -346,24 +455,28 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a scsv file (semicolon separated values).'
          description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
     file(path        = data/scsv_v1.ixml
          size        = 297
          sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a scsv file (semicolon separated values).'
          description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
     file(path        = data/scsv_v1a.ixml
          size        = 297
          sha256      = 98fe3241b6b041cdcc7509a371d4c02f79d93cc96b93268e14179dee5f0a127e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a scsv file (semicolon separated values).'
          description = 'Create a table/tr/td from a scsv file (semicolon separated values).')
     file(path        = data/table-to-web.xslq
          size        = 1158
          sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.'
          description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/table-to-web_v1.xslq
@@ -371,6 +484,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.'
          description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/table-to-web_v1a.xslq
@@ -378,6 +492,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 3eb3a1b3b11aaf488f3e50503f08ff10a32690eb7f0088bd93c40b6fc39b0435
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.'
          description = 'Render a table/tr/td document (eg from ixml:data/csv) as a web page.
                         by Fredrik Öhrström spdx: CC0-1.0')
     file(path        = data/tsv.ixml
@@ -385,25 +500,29 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a file with lines containing tab separated values.'
          description = 'Create a table/tr/td from a file with lines containing tab separated values.')
     file(path        = data/tsv_v1.ixml
          size        = 212
          sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a file with lines containing tab separated values.'
          description = 'Create a table/tr/td from a file with lines containing tab separated values.')
     file(path        = data/tsv_v1a.ixml
          size        = 212
          sha256      = 1d2c505d344f4b5b7d609ec8fc6907f073c31541ae41b6dce74b62464769ad91
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Create a table/tr/td from a file with lines containing tab separated values.'
          description = 'Create a table/tr/td from a file with lines containing tab separated values.')
     file(path        = lang/c.ixml
-         size        = 19646
-         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 19619
+         sha256      = d8a875e91536fb3efe4b774aa80d7705bb2c6b7bf64339a113463d3f797f812e
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+         summary     = 'A C grammar written in IXML.'
+         description = 'A C grammar written in IXML.
 
                         Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -456,11 +575,12 @@ library(created = 2026-11-20T22:39:40Z)
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
     file(path        = lang/c_v1.ixml
-         size        = 19646
-         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 19619
+         sha256      = d8a875e91536fb3efe4b774aa80d7705bb2c6b7bf64339a113463d3f797f812e
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+         summary     = 'A C grammar written in IXML.'
+         description = 'A C grammar written in IXML.
 
                         Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -513,11 +633,12 @@ library(created = 2026-11-20T22:39:40Z)
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
     file(path        = lang/c_v1a.ixml
-         size        = 19646
-         sha256      = 56c52fd713d2040d1963e98797c35736d8623a0ae41d3a2913ce0cc92f2ddac5
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 19619
+         sha256      = d8a875e91536fb3efe4b774aa80d7705bb2c6b7bf64339a113463d3f797f812e
+         mtime       = 2026-11-21T19:00:22Z
          version     = 1a
-         description = 'A C grammar written in IXML by Fredrik Öhrström 2024.
+         summary     = 'A C grammar written in IXML.'
+         description = 'A C grammar written in IXML.
 
                         Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -570,11 +691,12 @@ library(created = 2026-11-20T22:39:40Z)
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
     file(path        = lang/java.ixml
-         size        = 27486
-         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 27459
+         sha256      = 101715c2aebf3d1a77788bb4f44277887fdeab7410e2e969589ea17db33133ca
+         mtime       = 2026-11-21T19:00:22Z
          version     = 0g
-         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+         summary     = 'A Java 17 grammar written in IXML.'
+         description = '''A Java 17 grammar written in IXML.
 
                           Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -661,6 +783,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
          mtime       = 2026-11-20T20:49:16Z
          version     = 0g
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.'
          description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
@@ -685,11 +808,12 @@ library(created = 2026-11-20T22:39:40Z)
                           xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
                           xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
     file(path        = lang/java_v0.ixml
-         size        = 27486
-         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 27459
+         sha256      = 101715c2aebf3d1a77788bb4f44277887fdeab7410e2e969589ea17db33133ca
+         mtime       = 2026-11-21T19:00:22Z
          version     = 0g
-         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+         summary     = 'A Java 17 grammar written in IXML.'
+         description = '''A Java 17 grammar written in IXML.
 
                           Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -776,6 +900,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
          mtime       = 2026-11-20T20:49:16Z
          version     = 0g
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.'
          description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
@@ -804,6 +929,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 14057ee8c9f0232ccd76ef83e6d09a139de99d9d658a890ce2eceb3718681469
          mtime       = 2026-11-20T20:49:16Z
          version     = 0a
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -857,6 +983,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 1aabff6d138690ac04a9da00b580deb3bfe3e8d7b44e9e8234a67e501271cb40
          mtime       = 2026-11-20T20:49:16Z
          version     = 0b
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -912,6 +1039,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 88fe1d963a96e021d319e2c9aac1538fc92f7741210e8c5397b51378ac379582
          mtime       = 2026-11-20T20:49:16Z
          version     = 0c
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -988,6 +1116,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8aa288911ea30522699c575bbbded76f6df7f654f0e336b9309c417ee5b6cb73
          mtime       = 2026-11-20T20:49:16Z
          version     = 0d
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1064,6 +1193,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 38047f6d42918bd1b6de7b725c1ee77cf5addbd68c10e919b574ad1ceaf54f65
          mtime       = 2026-11-20T20:49:16Z
          version     = 0e
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1144,6 +1274,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = d81e68cf8a5247eb14aa17f3c88893f4fdfa6c63104d59a9d5fe97391638d249
          mtime       = 2026-11-20T20:49:16Z
          version     = 0e
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0e as the grammar.'
          description = 'Cleanup after the ixml parse of Java with java.ixml, version v0e as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
@@ -1169,6 +1300,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = e9491d2e7bd80e48c4d38d3b68a8ef010dac7c601fda832d903d6758bfcc93f7
          mtime       = 2026-11-20T20:49:16Z
          version     = 0f
+         summary     = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.'
          description = 'A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1249,6 +1381,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = e653caa5bc3ca4bd0499bd171bd460e0b628c6bb33e21d121fe60a4f343aa28b
          mtime       = 2026-11-20T20:49:16Z
          version     = 0f
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0f as the grammar.'
          description = 'Cleanup after the ixml parse of Java with java.ixml, version v0f as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
@@ -1270,11 +1403,12 @@ library(created = 2026-11-20T22:39:40Z)
                           xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
                           xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
     file(path        = lang/java_v0g.ixml
-         size        = 27486
-         sha256      = bb2f96d6f9bf47b3894bb170bd3dc78e4bce9cbbbba56585304d02d0960cdae7
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 27459
+         sha256      = 101715c2aebf3d1a77788bb4f44277887fdeab7410e2e969589ea17db33133ca
+         mtime       = 2026-11-21T19:00:22Z
          version     = 0g
-         description = '''A Java 17 grammar written in IXML by Fredrik Öhrström 2026.
+         summary     = 'A Java 17 grammar written in IXML.'
+         description = '''A Java 17 grammar written in IXML.
 
                           Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -1361,6 +1495,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
          mtime       = 2026-11-20T20:49:16Z
          version     = 0g
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.'
          description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
@@ -1389,6 +1524,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
          mtime       = 2026-11-20T22:15:06Z
          version     = 1b
+         summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
                           xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
 
@@ -1414,6 +1550,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
          mtime       = 2026-11-20T22:15:06Z
          version     = 1b
+         summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
                           xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
 
@@ -1439,6 +1576,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = a361861148d1729d968cac00e3bb4e3df3ed304df5c9d3d723ba00dbe05fc3db
          mtime       = 2026-11-20T21:47:52Z
          version     = 1a
+         summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
                           xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
 
@@ -1455,6 +1593,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 8ed4a83ddae881839af5e3335e23fa192f46f5b9235cf642257ffc5ff152e0f8
          mtime       = 2026-11-20T22:15:06Z
          version     = 1b
+         summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
                           xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
 
@@ -1480,6 +1619,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
          mtime       = 2026-11-20T22:39:25Z
          version     = 1c
+         summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1500,6 +1640,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
          mtime       = 2026-11-20T22:39:25Z
          version     = 1c
+         summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1520,6 +1661,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = df742665ac809f52c3ef42d490758a35d4290b239d355e93d52bfa0f12e18651
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
 
                         Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1534,6 +1676,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = d1ce7403b1de12ce47fdfa8162f6f02b799efc27df1127fda35bbedcc0021e45
          mtime       = 2026-11-20T21:47:52Z
          version     = 1b
+         summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
 
                         Copyright (c) 2025-2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1554,6 +1697,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
          mtime       = 2026-11-20T22:39:25Z
          version     = 1c
+         summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1574,6 +1718,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
          mtime       = 2026-11-20T22:15:06Z
          version     = 1a
+         summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
                           xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
 
@@ -1594,6 +1739,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
          mtime       = 2026-11-20T22:15:06Z
          version     = 1a
+         summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
                           xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
 
@@ -1614,6 +1760,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 417ba924d90f7d49413d028e3e8865d6df9e18bfbb5301f04a9d8f4113c6ca9d
          mtime       = 2026-11-20T22:15:06Z
          version     = 1a
+         summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
                           xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
 
@@ -1634,6 +1781,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
          mtime       = 2026-11-20T22:39:38Z
          version     = 1b
+         summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1661,6 +1809,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
          mtime       = 2026-11-20T22:39:38Z
          version     = 1b
+         summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1688,6 +1837,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 98e9ef1bd4f77d03994e3807f9130699508a15a2245d90e7c4977c2d9a81df19
          mtime       = 2026-11-20T22:15:06Z
          version     = 1a
+         summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
 
                         Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
@@ -1715,6 +1865,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
          mtime       = 2026-11-20T22:39:38Z
          version     = 1b
+         summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
 
                         Public Domain LLM-generated code (spdx: CC0)
@@ -1742,42 +1893,49 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = misc/testmeter_v1.ixml
          size        = 1580
          sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = misc/testmeter_v1a.ixml
          size        = 1580
          sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = xmq-utils/parse-trace.ixml
          size        = 1283
          sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).'
          description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
     file(path        = xmq-utils/parse-trace_v1.ixml
          size        = 1283
          sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).'
          description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
     file(path        = xmq-utils/parse-trace_v1a.ixml
          size        = 1283
          sha256      = f06ea82e335678c0bfc763011e81ff2bbd655f20ca6d7fb1854c36fea4665c87
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).'
          description = 'Parse the ixml trace lines printed by xmq --trace (used by the OpenMike scripts).')
     file(path        = xmq-utils/render-trace-to-html.xslq
          size        = 14321
          sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
                           xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
                         Every Earley item is a row: a cell spans the input it matched, below the tokens,
@@ -1792,6 +1950,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
                           xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
                         Every Earley item is a row: a cell spans the input it matched, below the tokens,
@@ -1806,6 +1965,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = b6dea3a0eb9824f803348f2a08d9acbc981b9373843dbf5aea82b32f36c69329
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a web page:
                           xmq trace.xmq transform render-trace-to-html.xslq to-html > trace.html
                         Every Earley item is a row: a cell spans the input it matched, below the tokens,
@@ -1820,6 +1980,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal'
          description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
                         with ansi colors:
                           xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
@@ -1834,6 +1995,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal'
          description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
                         with ansi colors:
                           xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
@@ -1848,6 +2010,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = 2a57f0ffed2436c41dfe528a55ba8469e98206ac4a9baf28d1bd4f35174e756e
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal'
          description = 'Render an ixml trace, recorded with xmq --traceixml=parse.xmq (or xmqj), in the terminal
                         with ansi colors:
                           xmq parse.xmq transform library/xmq-utils/render-trace-to-terminal.xslq to-text
@@ -1862,6 +2025,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
                           xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
                           pdflatex trace.tex; pdflatex trace.tex
@@ -1877,6 +2041,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
                           xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
                           pdflatex trace.tex; pdflatex trace.tex
@@ -1892,6 +2057,7 @@ library(created = 2026-11-20T22:39:40Z)
          sha256      = fd1a7135f86528c57e9c214e6e9e5a8f0b94ba2e9089e5673bb26ef23ffe2c3f
          mtime       = 2026-11-20T20:49:16Z
          version     = 1a
+         summary     = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:'
          description = 'Render an ixml trace, recorded with xmq --traceixml=trace.xmq (or xmqj), as a LaTeX document:
                           xmq trace.xmq transform render-trace-to-tex.xslq to-text > trace.tex
                           pdflatex trace.tex; pdflatex trace.tex
@@ -1903,11 +2069,13 @@ library(created = 2026-11-20T22:39:40Z)
                         parent orange. When a choice is made by cost the alternatives are all built, the ones
                         not chosen are grey, and the last row shows the chosen tree.')
     file(path        = xmq-utils/xmqcli.ixml
-         size        = 5307
-         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5793
+         sha256      = 0446d1158fc3c8ebd4a7b9a92e4b7622b975827f3bd84d2da7470c47f28d4943
+         mtime       = 2026-11-21T19:00:22Z
          version     = 2a
-         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+         summary     = 'The xmq command line.'
+         description = '''The xmq command line.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
 
                           The command line arguments (argv) are joined into a single line, which is
                           parsed with this grammar. The line starts with xmq, then every argument
@@ -1925,11 +2093,13 @@ library(created = 2026-11-20T22:39:40Z)
                           An argument never starts with a minus, to give an argument starting with a
                           minus, use -- before it: select -x -- -x''')
     file(path        = xmq-utils/xmqcli_v2.ixml
-         size        = 5307
-         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5793
+         sha256      = 0446d1158fc3c8ebd4a7b9a92e4b7622b975827f3bd84d2da7470c47f28d4943
+         mtime       = 2026-11-21T19:00:22Z
          version     = 2a
-         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+         summary     = 'The xmq command line.'
+         description = '''The xmq command line.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
 
                           The command line arguments (argv) are joined into a single line, which is
                           parsed with this grammar. The line starts with xmq, then every argument
@@ -1947,11 +2117,13 @@ library(created = 2026-11-20T22:39:40Z)
                           An argument never starts with a minus, to give an argument starting with a
                           minus, use -- before it: select -x -- -x''')
     file(path        = xmq-utils/xmqcli_v2a.ixml
-         size        = 5307
-         sha256      = 94b26740f465417d9a3c57f27173b0f9e606f58af263293c4abce81428ac4ac9
-         mtime       = 2026-11-20T20:49:16Z
+         size        = 5793
+         sha256      = 0446d1158fc3c8ebd4a7b9a92e4b7622b975827f3bd84d2da7470c47f28d4943
+         mtime       = 2026-11-21T19:00:22Z
          version     = 2a
-         description = '''The xmq command line. Fredrik Öhrström (c) 2026 spdx: MIT
+         summary     = 'The xmq command line.'
+         description = '''The xmq command line.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
 
                           The command line arguments (argv) are joined into a single line, which is
                           parsed with this grammar. The line starts with xmq, then every argument

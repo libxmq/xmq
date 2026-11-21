@@ -28,6 +28,8 @@ fi
 rm -rf "$OUTPUT"
 mkdir -p "$OUTPUT/server" "$OUTPUT/home"
 cp -rp library/. "$OUTPUT/server/"
+# build_library_index.py uses xmq to compare grammars ignoring comments.
+if [ -x "$PROG" ]; then export XMQ="$PROG"; fi
 scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2>&1 || fail "no index"
 
 export HOME="$OUTPUT/home"
@@ -82,9 +84,15 @@ cmp -s "$OUTPUT/server/data/csv.ixml" "$CACHE/data/csv.ixml" || fail "csv.ixml w
 "$PROG" check-library > "$OUTPUT/check2.txt"
 grep -q "The library is up to date ($TOTAL files)" "$OUTPUT/check2.txt" || fail "not up to date after refresh-library"
 
+# A change in a comment only does not need a new version, it is copied to csv_v1a.ixml and csv_v1.ixml.
+echo '{a comment}' >> "$OUTPUT/server/data/csv.ixml"
+scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2> "$OUTPUT/comment.err" || fail "a change in a comment was refused: $(cat "$OUTPUT/comment.err")"
+cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1a.ixml" || fail "the comment was not copied to csv_v1a.ixml"
+cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1.ixml" || fail "the comment was not copied to csv_v1.ixml"
+
 # A file changed on the server, more recently than the local one, without a new version is
 # refused. With the new version 1b it is copied to csv_v1b.ixml and csv_v1.ixml.
-echo '{changed}' >> "$OUTPUT/server/data/csv.ixml"
+echo "changed = 'x'." >> "$OUTPUT/server/data/csv.ixml"
 scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2> "$OUTPUT/noversion.err" && fail "a change without a new version was accepted"
 grep -q 'give it a new version (eg v1b or v2a)' "$OUTPUT/noversion.err" || fail "no message for a change without a new version"
 replace_first '{ v1a ' '{ v1b ' "$OUTPUT/server/data/csv.ixml"
@@ -92,7 +100,7 @@ touch_later 3600 "$OUTPUT/server/data/csv.ixml"
 scripts/build_library_index.py "$OUTPUT/server" > /dev/null 2>&1 || fail "the index with csv v1b"
 cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1b.ixml" || fail "no csv_v1b.ixml"
 cmp -s "$OUTPUT/server/data/csv.ixml" "$OUTPUT/server/data/csv_v1.ixml" || fail "csv_v1.ixml is not the latest 1.x"
-grep -q '{changed}' "$OUTPUT/server/data/csv_v1a.ixml" && fail "csv_v1a.ixml was changed"
+grep -q "changed = 'x'" "$OUTPUT/server/data/csv_v1a.ixml" && fail "csv_v1a.ixml was changed"
 "$PROG" check-library > "$OUTPUT/check3.txt"
 grep -q '^updated data/csv.ixml' "$OUTPUT/check3.txt" || fail "the changed csv.ixml is not listed"
 grep -q '^new     data/csv_v1b.ixml' "$OUTPUT/check3.txt" || fail "the new csv_v1b.ixml is not listed"

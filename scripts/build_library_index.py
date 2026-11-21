@@ -16,11 +16,12 @@
 # again) and data/csv_v2.ixml (the latest 2.x). Then ixml:data/csv is always the latest,
 # ixml:data/csv_v2 the latest compatible with 2 and ixml:data/csv_v2c exactly 2c. The copies
 # are kept in the library forever. A grammar that has changed without a new version is an
-# error, since its copy for the version is already published.
+# error, since its copy for the version is already published. Changes in comments (and in
+# whitespace outside of quotes) are not changes, they are copied to the version copies.
 #
 # The index lists every file (also the copies and other xml/xmq files) with its size,
 # sha256 and modification time (UTC) and for the versioned ones the version and the first
-# comment, without the version, as description:
+# comment, without the version, as description and its first line as summary:
 #
 #   library(created = 2026-11-19T10:08:55Z)
 #   {
@@ -29,6 +30,7 @@
 #            sha256      = 9a2b...
 #            mtime       = 2026-10-20T10:08:55Z
 #            version     = 2c
+#            summary     = 'Create a table/tr/td from a csv file (comma separated values).'
 #            description = 'Create a table/tr/td from a csv file (comma separated values).')
 #       ...
 #   }
@@ -46,6 +48,7 @@ import hashlib
 import os
 import re
 import shutil
+import subprocess
 import sys
 import textwrap
 
@@ -118,6 +121,45 @@ def library_files(library):
     return sorted(found)
 
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def find_xmq():
+    """The xmq used to normalize grammars and stylesheets: $XMQ, the built xmq or xmq in PATH."""
+    if os.environ.get('XMQ'):
+        return os.environ['XMQ']
+    built = os.path.join(SCRIPT_DIR, '..', 'build', 'default', 'release', 'xmq')
+    if os.access(built, os.X_OK):
+        return built
+    return shutil.which('xmq')
+
+
+def normalized(library, file, ext):
+    """The grammar or stylesheet without comments, pretty printed by xmq, or None if it could
+    not be normalized. An ixml grammar is parsed with core/ixmlnotcost.ixml (the ixml grammar
+    with the xmq extensions, which keeps the comments as comment elements)."""
+    xmq = find_xmq()
+    if not xmq:
+        return None
+    if ext == '.ixml':
+        grammar = os.path.join(library, 'core', 'ixmlnotcost.ixml')
+        if not os.path.exists(grammar):
+            grammar = os.path.join(SCRIPT_DIR, '..', 'library', 'core', 'ixmlnotcost.ixml')
+        cmd = [xmq, grammar, file, 'delete', '//comment', 'to-xmq']
+    else:
+        cmd = [xmq, file, 'delete', '//comment()', 'to-xmq']
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0 or 'ixml:state' in r.stdout:
+        return None
+    return r.stdout
+
+
+def same_except_comments(library, a, b, ext):
+    """True if the grammars or stylesheets a and b only differ in comments and whitespace."""
+    na = normalized(library, a, ext)
+    return na is not None and na == normalized(library, b, ext)
+
+
 def split_copy(path):
     """For data/csv_v2c.ixml (data/csv.ixml, 2, 'c'), for data/csv_v2.ixml
     (data/csv.ixml, 2, ''), else None."""
@@ -155,11 +197,15 @@ def make_copies(library, paths, errors):
         exact = os.path.join(library, f'{stem}_v{name}{ext}')
         if os.path.exists(exact):
             if not filecmp.cmp(file, exact, shallow=False):
-                nxt = chr(ord(letter) + 1) if letter < 'z' else 'z'
-                errors.append(f'{p} differs from {stem}_v{name}{ext} but has the same version {name}, '
-                              f'a published version never changes, give it a new version (eg v{major}{nxt} '
-                              f'or v{major + 1}a)')
-                continue
+                if not same_except_comments(library, file, exact, ext):
+                    nxt = chr(ord(letter) + 1) if letter < 'z' else 'z'
+                    errors.append(f'{p} differs from {stem}_v{name}{ext} but has the same version {name}, '
+                                  f'a published version only changes in its comments, give it a new version '
+                                  f'(eg v{major}{nxt} or v{major + 1}a)')
+                    continue
+                # Only the comments changed, update the copy.
+                shutil.copy2(file, exact)
+                print(f'Updated {library}/{stem}_v{name}{ext} (comments)')
         else:
             shutil.copy2(file, exact)
             print(f'Added {library}/{stem}_v{name}{ext}')
@@ -217,7 +263,7 @@ def main():
            f'library(created = {utc(datetime.datetime.now(datetime.timezone.utc).timestamp())})',
            '{']
     prefix = '    file('
-    keys = ['path', 'size', 'sha256', 'mtime', 'version', 'description']
+    keys = ['path', 'size', 'sha256', 'mtime', 'version', 'summary', 'description']
     width = max(len(k) for k in keys)
     for p in library_files(library):
         file = os.path.join(library, p)
@@ -229,6 +275,7 @@ def main():
             (major, letter), description = vd
             attrs.append(('version', f'{major}{letter}'))
             if description:
+                attrs.append(('summary', description.split('\n')[0].strip()))
                 attrs.append(('description', description))
         lines = []
         for i, (k, v) in enumerate(attrs):

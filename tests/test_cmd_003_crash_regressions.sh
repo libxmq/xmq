@@ -126,6 +126,13 @@ $PROG --xmq $OUTPUT/empty.xmq replace-entity E 'x' to-text > $OUTPUT/out 2> $OUT
 RC=$?
 check "replace-entity with value empty doc" 0 "" ""
 
+# replace-entity --with-file of an empty file replaces the entity with nothing (was an assert).
+printf "p { 'a' &E; 'b' }\\n" > $OUTPUT/ent.xmq
+: > $OUTPUT/empty_content.xmq
+$PROG $OUTPUT/ent.xmq replace-entity E --with-file=$OUTPUT/empty_content.xmq to-text > $OUTPUT/out 2> $OUTPUT/err
+RC=$?
+check "replace-entity with empty file" 0 "ab" ""
+
 # 6. load without argument, stdin already consumed, must report an error, not crash.
 $PROG load < /dev/null > $OUTPUT/out 2> $OUTPUT/err
 RC=$?

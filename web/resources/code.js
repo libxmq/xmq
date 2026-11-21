@@ -184,17 +184,24 @@ function siteInit()
     window.addEventListener("hashchange", siteOpenHash);
 }
 
-// Filter the language cards of languages.html on any text in the card.
-function siteFilterLangs(q)
+// Show only the elements matching selector that contain the text q, and print
+// "N of M noun" in the element with id countId.
+function siteFilter(selector, countId, noun, q)
 {
     q = q.trim().toLowerCase();
     let shown = 0;
-    const all = document.querySelectorAll("article.lang");
+    const all = document.querySelectorAll(selector);
     all.forEach(a => {
         const hit = q === "" || a.textContent.toLowerCase().includes(q);
         a.hidden = !hit;
         if (hit) shown++;
     });
-    const c = document.getElementById("langcount");
-    if (c) c.textContent = q === "" ? "" : shown + " of " + all.length + " languages";
+    const c = document.getElementById(countId);
+    if (c) c.textContent = q === "" ? "" : shown + " of " + all.length + " " + noun;
+}
+
+// Filter the language cards of languages.html on any text in the card.
+function siteFilterLangs(q)
+{
+    siteFilter("article.lang", "langcount", "languages", q);
 }
