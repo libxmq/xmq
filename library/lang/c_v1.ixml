@@ -1,4 +1,4 @@
-{ v1a A C grammar written in IXML.
+{ v1b A C grammar written in IXML.
 
 Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -32,6 +32,10 @@ No rule may start with ws, otherwise whitespace can be split ambiguously.
 
 The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
 The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+With gcc -E -C -dD the comments and the macro definitions are kept, they are
+parsed as whitespace too, but are kept as comment and define elements, e.g. to
+generate api documentation (see scripts/generate_xmq_h_api_doc.sh). Since the
+whitespace follows each token, a comment is found inside the token before it.
 
 Tokens use the not operator ! to implement maximal munch, e.g. an
 IDENTIFIER cannot be followed by another identifier character (!idchar) and
@@ -53,8 +57,16 @@ are used to reduce such ambiguities:
 
 translation_unit = ws, external_declaration*.
 
--ws = (-[Zs;#a;#d;#9] | -line_marker)*.
--line_marker = -'#', -~[#a]*, -#a.
+-ws = (-[Zs;#a;#d;#9] | -line_marker | comment | define)*.
+-line_marker = -'#', !'define ', -~[#a]*, -#a.
+
+{ A comment (kept by gcc -C) and a macro definition (kept by gcc -dD). }
+comment = -'/*', (~['*'] | '*', !'/')*, -'*/'
+        | -'//', ~[#a]*, !~[#a]. {to the end of the line, so //// is one comment}
+define = -'#define ', @dname>name, dparams>params?, (-' ', @dvalue>value)?, -#a.
+-dname = ['_'; L], ['_'; L; Nd]*.
+@dparams = '(', ~[')'; #a]*, ')'.
+-dvalue = ~[#a]*.
 
 { Constants }
 
@@ -95,7 +107,7 @@ ELLIPSIS = '...', ws.
 
 EQUAL_SIGN = '=', !'=', ws.
 ASTERISK = '*', !'=', ws.
-SLASH = '/', !'=', ws.
+SLASH = '/', !['=*/'], ws.
 PERCENT = '%', !'=', ws.
 PLUS = '+', !['+='], ws.
 MINUS = '-', !['-=>'], ws.

@@ -322,10 +322,11 @@ typedef enum
 } XMQProceed;
 
 /**
-    XMQNodeCallback: The function type which is called by foreach functions.
-    @doc: The document being processed.
-    @node: The node triggering the callback.
-    @user_data: The user data supplied to for_each.
+    The function type which is called by foreach functions.
+
+    @param doc The document being processed.
+    @param node The node triggering the callback.
+    @param user_data The user data supplied to for_each.
 */
 typedef XMQProceed (*XMQNodeCallback)(XMQDoc *doc, XMQNode *node, void *user_data);
 
@@ -574,42 +575,33 @@ xmqAttrs(std::initializer_list<XMQAddAttr> attrs)
 XMQContentType xmqDetectContentType(const char *start, const char *stop);
 
 /**
-   xmqParseErrorToString:
-   @e: Translate this error to a human readable string.
+   Translate an error code to a human readable string.
+
+   @param e the error code.
 */
 const char *xmqParseErrorToString(XMQStatus e);
 
 /**
-    xmqNewParseCallbacks:
-
     Allocate an empty XMQParseCallback structure. All callbacks are NULL and none will be called.
 */
 XMQParseCallbacks *xmqNewParseCallbacks();
 
 /**
-    xmqFreeParseCallbacks:
-
     Free the XMQParseCallback structure.
 */
 void xmqFreeParseCallbacks(XMQParseCallbacks *cb);
 
 /**
-    xmqSetupParseCallbacksColorizeTokens:
-
     Used to colorize xmq input, without building a parse tree.
 */
 void xmqSetupParseCallbacksColorizeTokens(XMQParseCallbacks *state, XMQRenderFormat render_format);
 
 /**
-    xmqSetupParseCallbacksDebugTokens:
-
     Used to debug location, type of tokens.
 */
 void xmqSetupParseCallbacksDebugTokens(XMQParseCallbacks *state);
 
 /**
-    xmqSetupParseCallbacksDebugContent:
-
     Used debug the decoded content.
 */
 void xmqSetupParseCallbacksDebugContent(XMQParseCallbacks *state);
@@ -624,63 +616,55 @@ bool xmqTokenizeFile(XMQParseState *state, const char *file);
 bool xmqTokenizeFileDescriptor(XMQParseState *state, int fd);
 
 /**
-    xmqNewParseState:
-    @callbacks: these callbacks will be invoked for each token.
-    @settings: these settings are available to the callbacks.
-
     Now prepare a parse state that is used to actually parse an xmq file.
     The print settings can be referenced from the callbacks for example when tokenizing.
+
+    @param callbacks these callbacks will be invoked for each token.
+    @param settings these settings are available to the callbacks.
 */
 XMQParseState *xmqNewParseState(XMQParseCallbacks *callbacks, XMQOutputSettings *settings);
 
 /**
-    xmqFreeParseState:
-
     Free the memory allocated for the state.
 */
 void xmqFreeParseState(XMQParseState *state);
 
 /**
-    xmqSetStateSourceName:
-    @doq: Parser which source file name should be set.
-    @source_name: The document source location.
-
     Set the source name to make error message more readable when parsing fails.
     The source name is often the file name, but can be "-" for stdin or anything you like.
+
+    @param doq Parser which source file name should be set.
+    @param source_name The document source location.
 */
 void xmqSetStateSourceName(XMQParseState *state, const char *source_name);
 
 /**
-    xmqStateErrno:
-    @state: the parse state.
-
     If the parse fails then use this function to get the integer value of XMQStatus.
+
+    @param state the parse state.
 */
 int xmqStateErrno(XMQParseState *state);
 
 /**
-    xmqStateErrorMsg:
-    @state: the parse state.
-
     If the parse fails then use this function to get a string explaining the error.
+
+    @param state the parse state.
 */
 const char *xmqStateErrorMsg(XMQParseState *state);
 
 /**
-   xmqSetPrintAllParsesIXML:
-   @state: the parse state.
-   @all_parses: if true then generate all possible trees.
-
    If the parse is ambiguous generate all possible trees.
+
+   @param state the parse state.
+   @param all_parses if true then generate all possible trees.
 */
 void xmqSetPrintAllParsesIXML(XMQParseState *state, bool all_parses);
 
 /**
-   xmqSetTryToRecoverIXML:
-   @state: the parse state.
-   @try_recover: if true then try to recover a failed parse.
-
    If the parse fails then try to recover. Default is to fail.
+
+   @param state the parse state.
+   @param try_recover if true then try to recover a failed parse.
 */
 void xmqSetTryToRecoverIXML(XMQParseState *state, bool try_recover);
 
@@ -703,38 +687,29 @@ XMQReturnDoc xmqNewDoc();
 void xmqSetDocSourceName(XMQDoc *doq, const char *source_name);
 
 /**
-    xmqGetDocSourceName:
-    @doq: Document which source file name should be gotten.
-
     Returns the source name used to make error message more readable when parsing fails.
     The source name is often the file name, but can be "-" for stdin or anything you like.
+
+    @param doq Document which source file name should be gotten.
 */
 const char *xmqGetDocSourceName(XMQDoc *doq);
 
 /**
-    xmqGetOriginalContentType:
-
     If available, return the original content type (xmq/htmq/xml/html/json/text) of this document.
 */
 XMQContentType xmqGetOriginalContentType(XMQDoc *doq);
 
 /**
-    xmqGetOriginalSize:
-
     If available, return the size of the original content, ie the loaded file size.
 */
 size_t xmqGetOriginalSize(XMQDoc *doq);
 
 /**
-    xmqSetOriginalSize:
-
     Override the original size of the document.
 */
 void xmqSetOriginalSize(XMQDoc *doq, size_t size);
 
 /**
-    xmqGetRootNode:
-
     Get root node suitable for xmqForeach.
 */
 XMQNode *xmqGetRootNode(XMQDoc *doq);
@@ -1016,38 +991,32 @@ XMQReturnString xmqChangePrefix(XMQDoc *doq,
 
 
 /**
-    xmqClearDoc:
-
     Clear out, make the document empty.
 */
 void xmqClearDoc(XMQDoc *doc);
 
 /**
-    xmqFreeDoc:
-
     Free the document object and all associated memory.
 */
 void xmqFreeDoc(XMQDoc *doc);
 
 /**
-    xmqParseFile:
-    @doc: the xmq doc object
-    @file: file to load from file syste, or stdin if file is NULL
-    @implicit_root: the implicit root
-
     Parse a file, or if file is NULL, read from stdin.
+
+    @param doc the xmq doc object
+    @param file file to load from file syste, or stdin if file is NULL
+    @param implicit_root the implicit root
 */
 bool xmqParseFile(XMQDoc *doc, const char *file, const char *implicit_root, int flags);
 
 /**
-    xmqParseBuffer:
-    @doc: the xmq doc object
-    @start: start of buffer to parse
-    @stop: points to byte after last byte in buffer
-    @implicit_root: the implicit root
-
     Parse a buffer or a file and create a document.
     The xmq format permits multiple root nodes if an implicit root is supplied.
+
+    @param doc the xmq doc object
+    @param start start of buffer to parse
+    @param stop points to byte after last byte in buffer
+    @param implicit_root the implicit root
 */
 bool xmqParseBuffer(XMQDoc *doc, const char *start, const char *stop, const char *implicit_root, int flags);
 
@@ -1158,18 +1127,20 @@ const char *xmqDocError(XMQDoc *doc);
 XMQStatus xmqDocErrno(XMQDoc *doc);
 
 /**
-    xmqGetName: get name of node
-    @node: Node
+    get name of node
+
+    @param node Node
 */
 const char *xmqGetName(XMQNode *node);
 
 /**
-    xmqGetContent: get content of a node.
-    @node: Node
+    get content of a node.
 
     For an element, the content of its first child (the value of a key=value).
     For a text, cdata, comment or processing instruction node, its own text.
     Otherwise NULL.
+
+    @param node Node
 */
 const char *xmqGetContent(XMQNode *node);
 
@@ -1193,46 +1164,58 @@ typedef enum
 } XMQNodeType;
 
 /**
-    xmqGetNodeType: get the kind of node.
-    @node: Node
+    get the kind of node.
+
+    @param node Node
 */
 XMQNodeType xmqGetNodeType(XMQNode *node);
 
 /**
-    xmqGetDocNode: get the document node, whose children are the top level
+    get the document node, whose children are the top level
     nodes (the root element, comments, processing instructions and the doctype).
-    @doq: the xmq document
+
+    @param doq the xmq document
 */
 XMQNode *xmqGetDocNode(XMQDoc *doq);
 
-/** xmqGetParent: the parent node, the document node for top level nodes, NULL for the document node. */
+/**
+   the parent node, the document node for top level nodes, NULL for the document node.
+*/
 XMQNode *xmqGetParent(XMQNode *node);
-/** xmqFirstChild: the first child node or NULL. Attributes are not children, see xmqFirstAttr. */
+/**
+   the first child node or NULL. Attributes are not children, see xmqFirstAttr.
+*/
 XMQNode *xmqFirstChild(XMQNode *node);
-/** xmqLastChild: the last child node or NULL. */
+/**
+   the last child node or NULL.
+*/
 XMQNode *xmqLastChild(XMQNode *node);
-/** xmqNextSibling: the next sibling node or NULL. */
+/**
+   the next sibling node or NULL.
+*/
 XMQNode *xmqNextSibling(XMQNode *node);
-/** xmqPrevSibling: the previous sibling node or NULL. */
+/**
+   the previous sibling node or NULL.
+*/
 XMQNode *xmqPrevSibling(XMQNode *node);
 
 /**
-    xmqGetNamespaceUri: the namespace uri of an element, or NULL if it has no namespace.
+    the namespace uri of an element, or NULL if it has no namespace.
 */
 const char *xmqGetNamespaceUri(XMQNode *node);
 
 /**
-    xmqGetNamespacePrefix: the prefix of an element, or NULL if it has no prefix.
+    the prefix of an element, or NULL if it has no prefix.
 */
 const char *xmqGetNamespacePrefix(XMQNode *node);
 
 /**
-    xmqGetLine: the line number in the source where the node was found, or 0 if unknown.
+    the line number in the source where the node was found, or 0 if unknown.
 */
 int xmqGetLine(XMQNode *node);
 
 /**
-    xmqFirstAttr: the first attribute of an element, or NULL.
+    the first attribute of an element, or NULL.
 
     @code
     for (XMQAttr *a = xmqFirstAttr(node); a; a = xmqNextAttr(a))
@@ -1245,157 +1228,162 @@ int xmqGetLine(XMQNode *node);
 */
 XMQAttr *xmqFirstAttr(XMQNode *node);
 
-/** xmqNextAttr: the next attribute of the same element, or NULL. */
+/**
+   the next attribute of the same element, or NULL.
+*/
 XMQAttr *xmqNextAttr(XMQAttr *attr);
 
 /**
-    xmqGetAttr: find an attribute by its name (without prefix), regardless of namespace,
+    find an attribute by its name (without prefix), regardless of namespace,
     like xmqHasAttribute. Returns the first match or NULL.
 */
 XMQAttr *xmqGetAttr(XMQNode *node, const char *name);
 
-/** xmqGetAttrName: the attribute name without prefix. */
+/**
+   the attribute name without prefix.
+*/
 const char *xmqGetAttrName(XMQAttr *attr);
 
 /**
-    xmqGetAttrValue: the attribute value.
+    the attribute value.
 
     Returns NULL if the value contains entity references that have not been expanded
     (only possible when xml with a DTD was parsed), use xmqExpandEntities first.
 */
 const char *xmqGetAttrValue(XMQAttr *attr);
 
-/** xmqGetAttrNamespaceUri: the namespace uri of the attribute, or NULL if it has no namespace. */
+/**
+   the namespace uri of the attribute, or NULL if it has no namespace.
+*/
 const char *xmqGetAttrNamespaceUri(XMQAttr *attr);
 
-/** xmqGetAttrNamespacePrefix: the prefix of the attribute, or NULL if it has no prefix. */
+/**
+   the prefix of the attribute, or NULL if it has no prefix.
+*/
 const char *xmqGetAttrNamespacePrefix(XMQAttr *attr);
 
-/** xmqGetAttrOwner: the element the attribute belongs to. */
+/**
+   the element the attribute belongs to.
+*/
 XMQNode *xmqGetAttrOwner(XMQAttr *attr);
 
 /**
-    xmqSetContent: set the raw content of element node
-    @node: Node
+    set the raw content of element node
+
+    @param node Node
 */
 void xmqSetContent(XMQNode *node, const char *raw_content);
 
 /**
-    xmqGetNode:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be returned as a node ptr.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be returned as a node ptr.
 */
 XMQNode *xmqGetNode(XMQDoc *doc, const char *xpath);
 
 /**
-    xmqGetNodeRel:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be returned as a node ptr.
-    @relative: the xpath is search using this node as the starting point.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be returned as a node ptr.
+    @param relative the xpath is search using this node as the starting point.
 */
 XMQNode *xmqGetNodeRel(XMQDoc *doc, const char *xpath, XMQNode *relative);
 
 /**
-    xmqGetInt:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as an 32 bit signed integer.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as an 32 bit signed integer.
 */
 int32_t xmqGetInt(XMQDoc *doc, const char *xpath);
 
 /**
-    xmqGetIntRel:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as an 32 bit signed integer.
-    @relative: the xpath is search using this node as the starting point.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as an 32 bit signed integer.
+    @param relative the xpath is search using this node as the starting point.
 */
 int32_t xmqGetIntRel(XMQDoc *doc, const char *xpath, XMQNode *relative);
 
 /**
-    xmqGetLong:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as an 64 bit signed integer.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as an 64 bit signed integer.
 */
 int64_t xmqGetLong(XMQDoc *doc, const char *xpath);
 
 /**
-    xmqGetLongRel:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as an 64 bit signed integer.
-    @relative: the xpath is search using this node as the starting point.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as an 64 bit signed integer.
+    @param relative the xpath is search using this node as the starting point.
 */
 int64_t xmqGetLongRel(XMQDoc *doc, const char *xpath, XMQNode *relative);
 
 /**
-    xmqGetDouble:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as double float.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as double float.
 */
 double xmqGetDouble(XMQDoc *doc, const char *xpath);
 
 /**
-    xmqGetDoubleRel:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as double float.
-    @relative: the xpath is search using this node as the starting point.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as double float.
+    @param relative the xpath is search using this node as the starting point.
 */
 double xmqGetDoubleRel(XMQDoc *doc, const char *xpath, XMQNode *relative);
 
 /**
-    xmqGetString:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as string.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as string.
 */
 const char *xmqGetString(XMQDoc *doc, const char *xpath);
 
 /**
-    xmqGetStringRel:
-    @doc: the xmq doc object
-    @xpath: the location of the content to be parsed as string.
-    @relative: the xpath is search using this node as the starting point.
+    @param doc the xmq doc object
+    @param xpath the location of the content to be parsed as string.
+    @param relative the xpath is search using this node as the starting point.
 */
 const char *xmqGetStringRel(XMQDoc *doc, const char *xpath, XMQNode *relative);
 
 /**
-   xmqForeach: Find all locations matching the xpath.
-   @xpath: the xpath pattern.
-   @cb: the function to call for each found node. Can be NULL.
-   @user_data: the user_data supplied to the function.
+   Find all locations matching the xpath.
 
    Returns the number of hits.
+
+   @param xpath the xpath pattern.
+   @param cb the function to call for each found node. Can be NULL.
+   @param user_data the user_data supplied to the function.
 */
 int xmqForeach(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data);
 
 /**
-   xmqForeachRel: Find all locations matching the xpath.
-   @xpath: the xpath pattern.
-   @cb: the function to call for each found node. Can be NULL.
-   @user_data: the user_data supplied to the function.
-   @relative: find nodes relative to this node.
+   Find all locations matching the xpath.
 
    Returns the number of hits.
+
+   @param xpath the xpath pattern.
+   @param cb the function to call for each found node. Can be NULL.
+   @param user_data the user_data supplied to the function.
+   @param relative find nodes relative to this node.
 */
 int xmqForeachRel(XMQDoc *doq, const char *xpath, XMQNodeCallback cb, void *user_data, XMQNode *relative);
 
 /**
-   xmqReplaceEntity: Replace the selected entity with the supplied content.
-   @entity: the entity
-   @content: the string content to be inserted
+   Replace the selected entity with the supplied content.
 
    Returns the number of replacements.
+
+   @param entity the entity
+   @param content the string content to be inserted
 */
 int xmqReplaceEntity(XMQDoc *doq, const char *entity, const char *content);
 
 /**
-   xmqReplaceEntity: Replace the selected entity with the supplied content node.
-   @entity: the entity
-   @content: the string content to be inserted
+   Replace the selected entity with the supplied content node.
 
    Returns the number of replacements.
+
+   @param entity the entity
+   @param content the string content to be inserted
 */
 int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQNode *inode);
 
 /**
-   xmqExpandEntities: Expand the entities declared in the doctype.
+   Expand the entities declared in the doctype.
 
    Entities are never expanded when parsing, a reference &name; to a declared entity
    stays as an entity node (and contributes nothing to xpath string values) until this
@@ -1413,15 +1401,11 @@ int xmqReplaceEntityWithNode(XMQDoc *doq, const char *entity, XMQDoc *idoq, XMQN
 XMQStatus xmqExpandEntities(XMQDoc *doq);
 
 /**
-    xmqVersion:
-
     Return the current xmq version in this library.
 */
 const char *xmqVersion();
 
 /**
-    xmqFeatures:
-
     Return the optional parts compiled into this library, space separated, from
     "xmq-printing json yaml xslt xsd ixml html". A part is missing when it was excluded with
     XMQ_NO_XMQ_PRINTING, XMQ_NO_JSON, XMQ_NO_YAML, XMQ_NO_LIBXSLT, XMQ_NO_XSD, XMQ_NO_IXML or
@@ -1430,29 +1414,21 @@ const char *xmqVersion();
 const char *xmqFeatures();
 
 /**
-    xmqSetVerbose:
-
     Enable/Disable verbose logging.
 */
 void xmqSetVerbose(bool e);
 
 /**
-    xmqSetProgress:
-
     Enable/Disable printing of progress on stderr, e.g. while parsing a large input using ixml.
 */
 void xmqSetProgress(bool e);
 
 /**
-    xmqSetDebug:
-
     Enable/Disable debugging.
 */
 void xmqSetDebug(bool e);
 
 /**
-    xmqSetTrace:
-
     Enable/Disable tracing.
 */
 void xmqSetTrace(bool e);
@@ -1465,37 +1441,27 @@ void xmqSetTrace(bool e);
 void xmqLogFilter(const char *log_filter);
 
 /**
-   xmqDebugging:
-
    Return whether debugging is enabled or not.
 */
 bool xmqDebugging();
 
 /**
-   xmqTracing:
-
    Return whether tracing is enabled or not.
 */
 bool xmqTracing();
 
 /**
-    xmqSetLogHumanReadable:
-
     Enable/Disable verbose/debug/tracing output as human readable.
     The default is in xmq format.
 */
 void xmqSetLogHumanReadable(bool e);
 
 /**
-   xmqLogXMQ:
-
    Return whether logging in pure xmq is enabled or not.
 */
 bool xmqLoggingXMQ();
 
 /**
-    xmqParseBufferWithType:
-
     Parse buffer.
 */
 bool xmqParseBufferWithType(XMQDoc *doc,
@@ -1506,8 +1472,6 @@ bool xmqParseBufferWithType(XMQDoc *doc,
                             int flags);
 
 /**
-    xmqParseFileWithType:
-
     Load and parse file. If file is NULL read from stdin.
 */
 bool xmqParseFileWithType(XMQDoc *doc,
@@ -1517,8 +1481,6 @@ bool xmqParseFileWithType(XMQDoc *doc,
                           int flags);
 
 /**
-    xmqParseBufferWithIXML:
-
     Parse buffer using the supplied IXML grammar.
 */
 bool xmqParseBufferWithIXML(XMQDoc *doc,
@@ -1528,8 +1490,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
                             int flags);
 
 /**
-    xmqTakeIXMLTrace:
-
     Returns the trace of the last parse of doc with xmqParseBufferWithIXML and the flag
     XMQ_FLAG_IXML_TRACE, or NULL. The caller owns the returned document and frees it with
     xmqFreeDoc. The trace is:
@@ -1543,8 +1503,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc,
 XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc);
 
 /**
-    xmqIXMLFromDoc:
-
     Returns the ixml text of a grammar in xml form, ie the parse tree of the grammar with
     the ixml grammar, eg ixml{rule(name=S){alt{literal(string=a)}}}, read from xml, xmq
     or json. Parse the text with xmqParseBufferWithType(..., XMQ_CONTENT_IXML, ...).
@@ -1554,8 +1512,6 @@ XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc);
 char *xmqIXMLFromDoc(XMQDoc *grammar, char **error);
 
 /**
-    xmqTakeIXMLCompletions:
-
     Returns what could follow the input of the last parse of doc with xmqParseBufferWithIXML
     and the flag XMQ_FLAG_IXML_COMPLETE, or NULL if the input could not be parsed up to its end.
     The caller owns the returned string and frees it. One line for each, sorted by rule:
@@ -1570,8 +1526,6 @@ char *xmqIXMLFromDoc(XMQDoc *grammar, char **error);
 char *xmqTakeIXMLCompletions(XMQDoc *doc);
 
 /**
-    xmqParseFileWithIXML:
-
     Load a file and parse it using the supplied IXML grammar. If file is NULL read from stdin.
 */
 bool xmqParseFileWithIXML(XMQDoc *doc,
@@ -1580,22 +1534,21 @@ bool xmqParseFileWithIXML(XMQDoc *doc,
                           int flags);
 
 /**
-   xmqSetupDefaultColors:
-
    Set the default colors for settings based on the theme and background color.
 */
 void xmqSetupDefaultColors(XMQOutputSettings *settings);
 
 /**
-   xmqOverrideSetting: Change the default strings for spaces etc.
-   @settings: The output settings to modify.
-   @indentation_space: If NULL use " ".
-   @explicit_space: If NULL use " ".
-   @explicit_tab: If NULL use "\t"
-   @explicit_cr: If NULL use "\r".
-   @explicit_nl: If NULL use "\n".
-   @prefix_line: If NULL do not print any prefix.
-   @postfix_line: If NULL do not print any postfix.
+   Change the default strings for spaces etc.
+
+   @param settings The output settings to modify.
+   @param indentation_space If NULL use " ".
+   @param explicit_space If NULL use " ".
+   @param explicit_tab If NULL use "\t"
+   @param explicit_cr If NULL use "\r".
+   @param explicit_nl If NULL use "\n".
+   @param prefix_line If NULL do not print any prefix.
+   @param postfix_line If NULL do not print any postfix.
 */
 void xmqOverrideSettings(XMQOutputSettings *settings,
                          const char *indentation_space,
@@ -1605,22 +1558,22 @@ void xmqOverrideSettings(XMQOutputSettings *settings,
                          const char *explicit_nl);
 
 /**
-   xmqRenderHtmlSettings: Change the id or clas for the rendered html.
-   @settings: The output settings to modify.
-   @use_id: Mark the pre tag with this id.
-   @use_class: Mark the pre tag with this class.
+   Change the id or clas for the rendered html.
+
+   @param settings The output settings to modify.
+   @param use_id Mark the pre tag with this id.
+   @param use_class Mark the pre tag with this class.
 */
 void xmqRenderHtmlSettings(XMQOutputSettings *settings,
                            const char *use_id,
                            const char *use_class);
 
 /**
-   xmqOverrideColor:
-   @settings:
-   @render_style: Use "" for the default render_style
-   @sc: The syntax element you want to change the color for.
-
    Change the color strings for the given color type. You have to run xmqSetupDefaultColors first.
+
+   @param settings
+   @param render_style Use "" for the default render_style
+   @param sc The syntax element you want to change the color for.
 */
 void xmqOverrideColor(XMQOutputSettings *settings,
                       const char *render_style,
@@ -1631,15 +1584,11 @@ void xmqOverrideColor(XMQOutputSettings *settings,
 
 
 /**
-    xmqNewLineConfig:
-
     Allocate a default XMQLineConfig.
 */
 XMQLineConfig *xmqNewLineConfig();
 
 /**
-    xmqFreeLineConfig:
-
     Free the XMQLineConfig structure.
 */
 void xmqFreeLineConfig(XMQLineConfig *lc);
@@ -1652,15 +1601,11 @@ void xmqFreeLineConfig(XMQLineConfig *lc);
 void xmqSetLineHumanReadable(XMQLineConfig *lc, bool enable);
 
 /**
-   xmqLineDoc:
-
    Generate from the doc a compact single line xmq string containing no newlines at all, for logging.
 */
 char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc);
 
 /**
-   xmqLinePrintf:
-
    Generate a compact single line xmq string containing no newlines at all, for logging.
    The content is constructed from printf formatted strings:
    xmqLinePrintf(&lc,
@@ -1707,8 +1652,6 @@ struct XMQXsltSettings
 typedef struct XMQXsltSettings XMQXsltSettings;
 
 /**
-    xmqCompileXslt:
-
     Compile the stylesheet (a copy of it, the document is not changed). settings may be NULL.
     On failure the status is XMQ_ERROR_XSLT_COMPILE and the messages are also available
     with xmqDocError(stylesheet).
@@ -1716,16 +1659,12 @@ typedef struct XMQXsltSettings XMQXsltSettings;
 XMQReturnXslt xmqCompileXslt(XMQDoc *stylesheet, XMQXsltSettings *settings);
 
 /**
-    xmqSetXsltParam:
-
     Set a top level parameter of the stylesheet, value is an xpath expression if is_xpath
     (like --param) otherwise a string (like --stringparam).
 */
 void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is_xpath);
 
 /**
-    xmqTransform:
-
     Apply the stylesheet to doc (whitespace may be stripped from doc by xsl:strip-space).
     The result gets the xsl:output method as its original content type (XMQ_CONTENT_XML,
     XMQ_CONTENT_HTML or XMQ_CONTENT_TEXT). On failure the status is XMQ_ERROR_XSLT_TRANSFORM
@@ -1734,15 +1673,15 @@ void xmqSetXsltParam(XMQXslt *xslt, const char *name, const char *value, bool is
 XMQReturnDoc xmqTransform(XMQXslt *xslt, XMQDoc *doc);
 
 /**
-    xmqSaveXsltResult:
-
     Serialize a result of xmqTransform as the stylesheet's xsl:output asks for (method,
     encoding, indent, doctype, xml declaration), like libxslt xsltSaveResultToString.
     The string is malloced, its length (it may contain zeros for UTF-16) in *len.
 */
 char *xmqSaveXsltResult(XMQXslt *xslt, XMQDoc *result, size_t *len);
 
-/** xmqFreeXslt: free the compiled stylesheet. */
+/**
+   free the compiled stylesheet.
+*/
 void xmqFreeXslt(XMQXslt *xslt);
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1778,8 +1717,6 @@ struct XMQXsdSettings
 typedef struct XMQXsdSettings XMQXsdSettings;
 
 /**
-    xmqCompileXsd:
-
     Compile the schema (a copy of it, the document is not changed). settings may be NULL, the
     message callback is also used by xmqValidate. On failure the status is XMQ_ERROR_XSD_COMPILE
     and the messages are also available with xmqDocError(schema).
@@ -1787,22 +1724,20 @@ typedef struct XMQXsdSettings XMQXsdSettings;
 XMQReturnXsd xmqCompileXsd(XMQDoc *schema, XMQXsdSettings *settings);
 
 /**
-    xmqSetXsdMessageCallback:
-
     Change where the messages of xmqValidate go (NULL prints them on stderr).
 */
 void xmqSetXsdMessageCallback(XMQXsd *xsd, XMQXsdMessageCallback callback, void *user_data);
 
 /**
-    xmqValidate:
-
     Validate doc against the schema. Returns XMQ_OK if it is valid, XMQ_ERROR_XSD_INVALID if
     it is not (the messages are also available with xmqDocError(doc)) and XMQ_ERROR_XSD_COMPILE
     if the schema cannot be used.
 */
 XMQStatus xmqValidate(XMQXsd *xsd, XMQDoc *doc);
 
-/** xmqFreeXsd: free the compiled schema. */
+/**
+   free the compiled schema.
+*/
 void xmqFreeXsd(XMQXsd *xsd);
 
 #ifdef __cplusplus

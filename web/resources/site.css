@@ -555,3 +555,40 @@ details.libdir > summary .teaser { display: flex; flex-wrap: wrap; gap: 0.3rem 0
 details.libdir > .body { padding: 1rem 1rem 0.4rem; }
 details.libdir details.libentry { background: var(--bg); }
 details.libdir details.libentry > summary:hover { background: var(--bg-alt); }
+
+/* The C api page (api.html). */
+pre.apisig {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    white-space: pre-wrap;
+    margin: 0 0 1rem;
+}
+pre.apisig b { color: var(--t-en); font-weight: 700; }
+pre.apisig a { color: var(--t-ek); text-decoration: none; }
+pre.apisig a:hover { text-decoration: underline; }
+.apidesc { margin-bottom: 1rem; }
+.apibreak { display: block; height: 0.7rem; }
+.apicode {
+    display: block;
+    white-space: pre;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    padding: 0.6rem 0.9rem;
+    margin: 0.6rem 0;
+}
+.apiteaser { color: var(--muted); font-size: 0.95rem; }
+dl.apiparams { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0 0 1rem; }
+dl.apiparams dd { margin: 0; }
+table.apitable { border-collapse: collapse; width: 100%; margin-bottom: 1rem; font-size: 0.95rem; }
+table.apitable td { border-top: 1px solid var(--border); padding: 0.35rem 0.6rem 0.35rem 0; vertical-align: top; }
+table.apitable td.num { font-family: var(--mono); color: var(--accent); white-space: nowrap; }
+table.apitable code { white-space: nowrap; border: none; background: none; padding: 0; }
+.libname { overflow-wrap: anywhere; }
+@media (min-width: 860px) {
+    details.apientry > summary { grid-template-columns: 22rem minmax(0, 1fr) auto 0; }
+}

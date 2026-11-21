@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-21T20:21:14Z)
+library(created = 2026-11-21T21:30:26Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -517,10 +517,10 @@ library(created = 2026-11-21T20:21:14Z)
          summary     = 'Create a table/tr/td from a file with lines containing tab separated values.'
          description = 'Create a table/tr/td from a file with lines containing tab separated values.')
     file(path        = lang/c.ixml
-         size        = 19619
-         sha256      = d8a875e91536fb3efe4b774aa80d7705bb2c6b7bf64339a113463d3f797f812e
-         mtime       = 2026-11-21T19:07:40Z
-         version     = 1a
+         size        = 20335
+         sha256      = 5e9c21aa93ddede7d62e3c5428e23a1f444f7c16257e60437b349dfb38c808d5
+         mtime       = 2026-11-21T21:22:56Z
+         version     = 1b
          summary     = 'A C grammar written in IXML.'
          description = 'A C grammar written in IXML.
 
@@ -556,6 +556,10 @@ library(created = 2026-11-21T20:21:14Z)
 
                         The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
                         The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+                        With gcc -E -C -dD the comments and the macro definitions are kept, they are
+                        parsed as whitespace too, but are kept as comment and define elements, e.g. to
+                        generate api documentation (see scripts/generate_xmq_h_api_doc.sh). Since the
+                        whitespace follows each token, a comment is found inside the token before it.
 
                         Tokens use the not operator ! to implement maximal munch, e.g. an
                         IDENTIFIER cannot be followed by another identifier character (!idchar) and
@@ -575,10 +579,10 @@ library(created = 2026-11-21T20:21:14Z)
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
     file(path        = lang/c_v1.ixml
-         size        = 19619
-         sha256      = d8a875e91536fb3efe4b774aa80d7705bb2c6b7bf64339a113463d3f797f812e
-         mtime       = 2026-11-21T19:07:40Z
-         version     = 1a
+         size        = 20335
+         sha256      = 5e9c21aa93ddede7d62e3c5428e23a1f444f7c16257e60437b349dfb38c808d5
+         mtime       = 2026-11-21T21:22:56Z
+         version     = 1b
          summary     = 'A C grammar written in IXML.'
          description = 'A C grammar written in IXML.
 
@@ -614,6 +618,10 @@ library(created = 2026-11-21T20:21:14Z)
 
                         The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
                         The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+                        With gcc -E -C -dD the comments and the macro definitions are kept, they are
+                        parsed as whitespace too, but are kept as comment and define elements, e.g. to
+                        generate api documentation (see scripts/generate_xmq_h_api_doc.sh). Since the
+                        whitespace follows each token, a comment is found inside the token before it.
 
                         Tokens use the not operator ! to implement maximal munch, e.g. an
                         IDENTIFIER cannot be followed by another identifier character (!idchar) and
@@ -672,6 +680,68 @@ library(created = 2026-11-21T20:21:14Z)
 
                         The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
                         The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+
+                        Tokens use the not operator ! to implement maximal munch, e.g. an
+                        IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                        the token + cannot be followed by + or =. Keywords cannot be identifiers
+                        (!keyword).
+
+                        C is not context free, since x * y; is either a declaration or
+                        an expression depending on whether x is a typedef name. Some heuristics
+                        are used to reduce such ambiguities:
+                          - Declaration specifiers can contain at most one typedef name (type_identifier).
+                          - A parenthesized declarator must start with a pointer and be
+                            followed by a function or array suffix, e.g. (*fp)(int).
+                          - A cast to a lone typedef name, (T)x, cannot be followed by + - * &
+                            since (x)+1 is then parsed as an expression. A function call has a cost
+                            so (T)(x) is a cast and not a call of (T).
+                          - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
+                          - An expression statement has a cost, so T *p; in a block is a declaration.
+                          - The dangling else binds to the closest if, using !kw_else.')
+    file(path        = lang/c_v1b.ixml
+         size        = 20335
+         sha256      = 5e9c21aa93ddede7d62e3c5428e23a1f444f7c16257e60437b349dfb38c808d5
+         mtime       = 2026-11-21T21:22:56Z
+         version     = 1b
+         summary     = 'A C grammar written in IXML.'
+         description = 'A C grammar written in IXML.
+
+                        Copyright (c) 2024-2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                        Permission is hereby granted, free of charge, to any person obtaining a copy
+                        of this software and associated documentation files (the "Software"), to deal
+                        in the Software without restriction, including without limitation the rights
+                        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                        copies of the Software, and to permit persons to whom the Software is
+                        furnished to do so, subject to the following conditions:
+
+                        The above copyright notice and this permission notice shall be included in all
+                        copies or substantial portions of the Software.
+
+                        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                        SOFTWARE.
+
+                        The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                        as well as the ixml engine: alternatives that share a long prefix are left
+                        factored and the dangling else is bound with !kw_else, so that most decisions
+                        need a short lookahead. Lists are flat, one element per item.
+
+                        In general we place whitespace ws at the end of each token.
+                        Except for the first rule, where we need to accept leading white space.
+                        No rule may start with ws, otherwise whitespace can be split ambiguously.
+
+
+                        The grammar parses the output from the C preprocessor, e.g. gcc -E foo.c
+                        The line markers (# 12 "foo.h" 1 3 4) are treated as whitespace.
+                        With gcc -E -C -dD the comments and the macro definitions are kept, they are
+                        parsed as whitespace too, but are kept as comment and define elements, e.g. to
+                        generate api documentation (see scripts/generate_xmq_h_api_doc.sh). Since the
+                        whitespace follows each token, a comment is found inside the token before it.
 
                         Tokens use the not operator ! to implement maximal munch, e.g. an
                         IDENTIFIER cannot be followed by another identifier character (!idchar) and
@@ -1522,7 +1592,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar-to-html.xslq
          size        = 96098
          sha256      = bb01042466131b12a9526537a21714eb33c9f580209c6dd151a61eb83e0ced94
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
@@ -1548,7 +1618,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar-to-html_v1.xslq
          size        = 96098
          sha256      = bb01042466131b12a9526537a21714eb33c9f580209c6dd151a61eb83e0ced94
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
@@ -1574,7 +1644,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar-to-html_v1a.xslq
          size        = 47871
          sha256      = 4b01c811dd3a26f82ef80a82a99947b5f95f1ba427f91c82205146aada5b505b
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
@@ -1591,7 +1661,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar-to-html_v1b.xslq
          size        = 96098
          sha256      = bb01042466131b12a9526537a21714eb33c9f580209c6dd151a61eb83e0ced94
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'Render a METAR report, parsed with metar.ixml, as a web page:'
          description = 'Render a METAR report, parsed with metar.ixml, as a web page:
@@ -1617,7 +1687,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar.ixml
          size        = 10488
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
-         mtime       = 2026-11-20T22:39:25Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1c
          summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
@@ -1638,7 +1708,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar_v1.ixml
          size        = 10488
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
-         mtime       = 2026-11-20T22:39:25Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1c
          summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
@@ -1659,7 +1729,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar_v1a.ixml
          size        = 5754
          sha256      = df742665ac809f52c3ef42d490758a35d4290b239d355e93d52bfa0f12e18651
-         mtime       = 2026-11-20T20:49:16Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
@@ -1674,7 +1744,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar_v1b.ixml
          size        = 10505
          sha256      = d1ce7403b1de12ce47fdfa8162f6f02b799efc27df1127fda35bbedcc0021e45
-         mtime       = 2026-11-20T21:47:52Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
@@ -1695,7 +1765,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/metar_v1c.ixml
          size        = 10488
          sha256      = def9b5313c770d5dd8f9d5c848882b58a5789a260c6f3f0ec7f943600c39f468
-         mtime       = 2026-11-20T22:39:25Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1c
          summary     = 'A grammar for parsing METAR weather reports.'
          description = 'A grammar for parsing METAR weather reports.
@@ -1716,7 +1786,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf-to-html.xslq
          size        = 71785
          sha256      = e12b812c54e25b1340c6e1f865b5e816a2cd62c0382038f57ff52de9f063385e
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
@@ -1737,7 +1807,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf-to-html_v1.xslq
          size        = 71785
          sha256      = e12b812c54e25b1340c6e1f865b5e816a2cd62c0382038f57ff52de9f063385e
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
@@ -1758,7 +1828,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf-to-html_v1a.xslq
          size        = 71785
          sha256      = e12b812c54e25b1340c6e1f865b5e816a2cd62c0382038f57ff52de9f063385e
-         mtime       = 2026-11-21T20:21:07Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'Render a TAF forecast, parsed with taf.ixml, as a web page:'
          description = 'Render a TAF forecast, parsed with taf.ixml, as a web page:
@@ -1779,7 +1849,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf.ixml
          size        = 11588
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
-         mtime       = 2026-11-20T22:39:38Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
@@ -1807,7 +1877,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf_v1.ixml
          size        = 11588
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
-         mtime       = 2026-11-20T22:39:38Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
@@ -1835,7 +1905,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf_v1a.ixml
          size        = 11600
          sha256      = 98e9ef1bd4f77d03994e3807f9130699508a15a2245d90e7c4977c2d9a81df19
-         mtime       = 2026-11-20T22:15:06Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1a
          summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.
@@ -1863,7 +1933,7 @@ library(created = 2026-11-21T20:21:14Z)
     file(path        = meas/taf_v1b.ixml
          size        = 11588
          sha256      = 736cf47a900f7f7b8f34a8379610f91944c6379350b5ab9a06fd98c0b2164162
-         mtime       = 2026-11-20T22:39:38Z
+         mtime       = 2026-11-21T21:05:04Z
          version     = 1b
          summary     = 'A grammar for parsing TAF terminal aerodrome forecasts.'
          description = 'A grammar for parsing TAF terminal aerodrome forecasts.

@@ -1,0 +1,681 @@
+// Generate api.html, the documentation of the C api in xmq.h, from xmq.h parsed with
+// ixml:lang/c (gcc -E -C -dD output, so the comments and defines are kept), see
+// scripts/generate_xmq_h_api_doc.sh. The doc comments are doxygen style:
+//   /** Summary sentence. More text.
+//       @param name description
+//       @return description */
+// A doc comment is found inside the token before the declaration, it is the
+// nearest comment before the declaration, with no token in between.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = no)
+    xsl:param(name = date)
+
+    // A token is an element with text, a comment is not a token.
+    xsl:variable(name = nl) {
+        xsl:text = &#10;
+    }
+
+    xsl:template(match = translation_unit)
+    {
+        xsl:variable(name   = functions
+                     select = 'external_declaration[declaration[not(declaration_specifiers/storage_class_specifier/TYPEDEF)]/init_declarator_list/init_declarator/declarator/descendant::function_suffix][starts-with(declaration/init_declarator_list/init_declarator/declarator/descendant::IDENTIFIER[1], "xmq") or starts-with(declaration/init_declarator_list/init_declarator/declarator/descendant::IDENTIFIER[1], "XMQ")]')
+        xsl:variable(name   = enums
+                     select = 'external_declaration[declaration/declaration_specifiers/storage_class_specifier/TYPEDEF][declaration/declaration_specifiers/enum_specifier][starts-with(declaration/init_declarator_list/init_declarator/declarator/descendant::IDENTIFIER[1], "XMQ")]')
+        xsl:variable(name   = types
+                     select = 'external_declaration[declaration/declaration_specifiers/storage_class_specifier/TYPEDEF][not(declaration/declaration_specifiers/enum_specifier)][starts-with(declaration/init_declarator_list/init_declarator/declarator/descendant::IDENTIFIER[1], "XMQ")]')
+        xsl:variable(name   = defines
+                     select = '//define[(starts-with(@name, "XMQ") or starts-with(@name, "xmq")) and @name != "XMQ_H"]')
+        html(lang = en) {
+            head {
+                meta(charset = UTF-8)
+                title = 'xmq.h · C api · xmq'
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                script = '''try { var t = localStorage.getItem("xmq-theme"); if (t === "light" || t === "dark") document.documentElement.classList.add(t); } catch (e) {}'''
+                link(rel  = stylesheet
+                     href = resources/xmq.css)
+                link(rel  = stylesheet
+                     href = resources/site.css)
+                script(src = resources/code.js) = ''
+            }
+            body(onload = 'siteInit();')
+            {
+                a(class = skip
+                  href  = '#main') = 'Skip to content'
+                header(class = top)
+                {
+                    nav(class      = wrap
+                        aria-label = Main)
+                    {
+                        a(class = logo
+                          href  = index.html) {
+                            span = x
+                            'mq'
+                        }
+                        a(href = 'index.html#try') = Playground
+                        a(href = library.html) = Library
+                        a(href = api.html) = 'C api'
+                        a(href = 'index.html#learn') = Learn
+                        a(href = https://github.com/libxmq/xmq) = GitHub
+                        button(id      = themebutton
+                               class   = theme
+                               type    = button
+                               onclick = 'siteCycleTheme();') = 'Theme: auto'
+                    }
+                }
+                main(id = main)
+                {
+                    section(class = 'band alt hero')
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = kicker) = 'libxmq · xmq.h'
+                            h1(class = tagline) {
+                                'The C'
+                                br
+                                em = api
+                                '.'
+                            }
+                            p(class = lead) = 'Include xmq.h and compile xmq.c into your program, to parse, query,
+                                               transform and print xmq, xml, html and json. This page is generated from
+                                               xmq.h itself: the header is parsed with the ixml grammar ixml:lang/c and
+                                               transformed with an xslq stylesheet.'
+                            p(class = cmd) {
+                                span(class = code) = 'scripts/generate_xmq_h_api_doc.sh'
+                            }
+                            div(class = filter) {
+                                label(for = libfilter) = 'Filter'
+                                input(id          = libfilter
+                                      type        = search
+                                      placeholder = 'name or description...'
+                                      oninput     = 'siteFilterLibrary(this.value);')
+                                span(id        = libcount
+                                     aria-live = polite)
+                            }
+                        }
+                    }
+                    section(class = band)
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = foldtools)
+                            {
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', true);") = 'Open all'
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', false);") = 'Close all'
+                            }
+                            div(id = liblist)
+                            {
+                                xsl:call-template(name = section) {
+                                    xsl:with-param(name = id select = '"functions"')
+                                    xsl:with-param(name = title select = '"Functions"')
+                                    xsl:with-param(name = items select = $functions)
+                                    xsl:with-param(name = teaser select = '"Parse, navigate, modify, transform and print documents."')
+                                }
+                                xsl:call-template(name = section) {
+                                    xsl:with-param(name = id select = '"types"')
+                                    xsl:with-param(name = title select = '"Types"')
+                                    xsl:with-param(name = items select = $types)
+                                    xsl:with-param(name = teaser select = '"Opaque structures, structures and callbacks."')
+                                }
+                                xsl:call-template(name = section) {
+                                    xsl:with-param(name = id select = '"enums"')
+                                    xsl:with-param(name = title select = '"Enums"')
+                                    xsl:with-param(name = items select = $enums)
+                                    xsl:with-param(name = teaser select = '"Content types, flags, colors and status codes."')
+                                }
+                                details(class = 'fold libdir'
+                                        id    = dir-defines)
+                                {
+                                    summary {
+                                        h2 = Defines
+                                        span(class = teaser) {
+                                            span(class = libitem) {
+                                                xsl:value-of(select = 'count($defines)')
+                                                ' macros'
+                                            }
+                                        }
+                                    }
+                                    div(class = body) {
+                                        xsl:apply-templates(select = $defines
+                                                            mode   = entry)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                footer {
+                    div(class = wrap)
+                    {
+                        p {
+                            'Generated from xmq.h with '
+                            a(href = resources/genapi.xslq) = genapi.xslq
+                            xsl:if(test = '$date') {
+                                ' · last updated '
+                                xsl:value-of(select = '$date')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // A folded section of the api.
+    xsl:template(name = section)
+    {
+        xsl:param(name = id)
+        xsl:param(name = title)
+        xsl:param(name = items)
+        xsl:param(name = teaser)
+        details(class = 'fold libdir'
+                id    = 'dir-{$id}')
+        {
+            summary {
+                h2 {
+                    xsl:value-of(select = $title)
+                }
+                span(class = teaser) {
+                    span(class = libitem) {
+                        xsl:value-of(select = 'count($items)')
+                    }
+                    span(class = apiteaser) {
+                        xsl:value-of(select = $teaser)
+                    }
+                }
+            }
+            div(class = body) {
+                xsl:apply-templates(select = $items
+                                    mode   = entry)
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Entries
+
+    // A function, a typedef or an enum.
+    xsl:template(match = external_declaration
+                 mode  = entry)
+    {
+        xsl:variable(name   = d
+                     select = 'declaration/init_declarator_list/init_declarator/declarator')
+        xsl:variable(name   = name
+                     select = 'string($d/descendant::IDENTIFIER[1]/text())')
+        // A typedef of a struct with members, the members are in the struct definition.
+        xsl:variable(name   = tag
+                     select = 'declaration/declaration_specifiers/struct_or_union_specifier/IDENTIFIER/text()')
+        xsl:variable(name   = struct
+                     select = '../external_declaration/declaration[not(declaration_specifiers/storage_class_specifier)]/declaration_specifiers/struct_or_union_specifier[IDENTIFIER/text() = $tag][struct_declaration]')
+        xsl:variable(name = doc) {
+            xsl:call-template(name = doc-of) {
+                xsl:with-param(name = node select = '.')
+            }
+            xsl:if(test = '$struct') {
+                xsl:call-template(name = doc-of) {
+                    xsl:with-param(name = node select = '$struct/ancestor::external_declaration')
+                }
+            }
+        }
+        xsl:call-template(name = row) {
+            xsl:with-param(name = name select = $name)
+            xsl:with-param(name = doc select = 'string($doc)')
+            xsl:with-param(name = signature) {
+                xsl:apply-templates(select = declaration
+                                    mode   = signature)
+            }
+            xsl:with-param(name = extra) {
+                xsl:if(test = 'declaration/declaration_specifiers/enum_specifier') {
+                    xsl:call-template(name = enum-values) {
+                        xsl:with-param(name = enum select = 'declaration/declaration_specifiers/enum_specifier')
+                    }
+                }
+                xsl:if(test = '$struct') {
+                    xsl:call-template(name = struct-members) {
+                        xsl:with-param(name = struct select = '$struct')
+                    }
+                }
+            }
+        }
+    }
+
+    // A macro.
+    xsl:template(match = define
+                 mode  = entry)
+    {
+        xsl:variable(name = c select = 'preceding::comment[1]')
+        xsl:variable(name = doc) {
+            xsl:if(test = 'starts-with($c, "*") and generate-id($c/following::define[1]) = generate-id(current()) and count($c/following::*[not(self::comment)][text()][1] | following::*) = count(following::*)') {
+                xsl:value-of(select = 'substring($c, 2)')
+            }
+        }
+        xsl:call-template(name = row) {
+            xsl:with-param(name = name select = '@name')
+            xsl:with-param(name = doc select = 'string($doc)')
+            xsl:with-param(name = signature) {
+                '#define '
+                xsl:value-of(select = '@name')
+                xsl:value-of(select = '@params')
+                xsl:text = ' '
+                xsl:value-of(select = '@value')
+            }
+        }
+    }
+
+    // One row, expanded to the signature and the full documentation.
+    xsl:template(name = row)
+    {
+        xsl:param(name = name)
+        xsl:param(name = doc)
+        xsl:param(name = signature)
+        xsl:param(name = extra)
+        xsl:variable(name = text) {
+            xsl:call-template(name = description-text) {
+                xsl:with-param(name = doc select = $doc)
+            }
+        }
+        details(class = 'fold libentry apientry'
+                id    = '{$name}')
+        {
+            summary {
+                span(class = libname) {
+                    xsl:value-of(select = $name)
+                }
+                span(class = libsum) {
+                    xsl:call-template(name = summary) {
+                        xsl:with-param(name = text select = 'normalize-space($text)')
+                    }
+                }
+            }
+            div(class = body)
+            {
+                pre(class = apisig) {
+                    xsl:copy-of(select = $signature)
+                }
+                xsl:if(test = 'normalize-space($text)') {
+                    div(class = apidesc) {
+                        xsl:call-template(name = description) {
+                            xsl:with-param(name = doc select = $doc)
+                        }
+                    }
+                }
+                xsl:if(test = 'contains($doc, "@param")') {
+                    h3 = Parameters
+                    dl(class = apiparams) {
+                        xsl:call-template(name = params) {
+                            xsl:with-param(name = text select = $doc)
+                        }
+                    }
+                }
+                xsl:if(test = 'contains($doc, "@return")') {
+                    h3 = Returns
+                    p {
+                        xsl:call-template(name = returns) {
+                            xsl:with-param(name = text select = $doc)
+                        }
+                    }
+                }
+                xsl:copy-of(select = $extra)
+            }
+        }
+    }
+
+    // The values of an enum with their docs.
+    xsl:template(name = enum-values)
+    {
+        xsl:param(name = enum)
+        h3 = Values
+        table(class = apitable) {
+            xsl:for-each(select = '$enum//enumerator')
+            {
+                xsl:variable(name = doc) {
+                    xsl:call-template(name = doc-of) {
+                        xsl:with-param(name = node select = '.')
+                    }
+                }
+                tr(id = '{IDENTIFIER/text()}') {
+                    td {
+                        code {
+                            xsl:value-of(select = 'IDENTIFIER/text()')
+                        }
+                    }
+                    td(class = num) {
+                        xsl:for-each(select = 'constant_expression//*[not(self::comment)][text()]') {
+                            xsl:value-of(select = 'text()')
+                        }
+                    }
+                    td {
+                        xsl:value-of(select = 'normalize-space(translate($doc, "*", " "))')
+                    }
+                }
+            }
+        }
+    }
+
+    // The members of a struct with their docs.
+    xsl:template(name = struct-members)
+    {
+        xsl:param(name = struct)
+        h3 = Members
+        table(class = apitable) {
+            xsl:for-each(select = '$struct/struct_declaration')
+            {
+                xsl:variable(name = doc) {
+                    xsl:call-template(name = doc-of) {
+                        xsl:with-param(name = node select = '.')
+                    }
+                }
+                tr {
+                    td {
+                        code {
+                            xsl:apply-templates(select = specifier_qualifier_list
+                                                mode   = tokens)
+                            xsl:text = ' '
+                            xsl:apply-templates(select = 'struct_declarator_list/struct_declarator/declarator'
+                                                mode   = declarator)
+                        }
+                    }
+                    td {
+                        xsl:value-of(select = 'normalize-space($doc)')
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Doc comments
+
+    // The doc comment of a node: the nearest comment before it, if the first token after
+    // the comment is inside the node. Without the leading * of /**.
+    xsl:template(name = doc-of)
+    {
+        xsl:param(name = node)
+        xsl:variable(name = c select = '$node/preceding::comment[1]')
+        xsl:variable(name = tok select = '$c/following::*[not(self::comment)][text()][1]')
+        xsl:if(test = 'starts-with($c, "*") and count($tok | $node/descendant::*) = count($node/descendant::*)') {
+            xsl:value-of(select = 'substring($c, 2)')
+        }
+    }
+
+    // The first sentence of a text.
+    xsl:template(name = summary)
+    {
+        xsl:param(name = text)
+        xsl:choose {
+            xsl:when(test = 'contains($text, ". ")') {
+                xsl:value-of(select = 'substring-before($text, ". ")')
+                '.'
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $text)
+            }
+        }
+    }
+
+    // The description as plain text (without the @param and @return lines), for the summary.
+    xsl:template(name = description-text)
+    {
+        xsl:param(name = doc)
+        xsl:param(name = code select = 'false()')
+        xsl:if(test = 'string-length($doc) > 0') {
+            xsl:variable(name = line select = 'normalize-space(substring-before(concat($doc, $nl), $nl))')
+            xsl:variable(name = rest select = 'substring-after($doc, $nl)')
+            xsl:variable(name = incode select = '($code and not(starts-with($line, "@endcode"))) or starts-with($line, "@code")')
+            xsl:if(test = 'not($incode) and not(starts-with($line, "@")) and not($code)') {
+                xsl:value-of(select = $line)
+                xsl:text = ' '
+            }
+            xsl:if(test = 'starts-with($line, "@brief ")') {
+                xsl:value-of(select = 'substring-after($line, "@brief ")')
+                xsl:text = ' '
+            }
+            xsl:call-template(name = description-text) {
+                xsl:with-param(name = doc select = $rest)
+                xsl:with-param(name = code select = $incode)
+            }
+        }
+    }
+
+    // The description as html: paragraphs at empty lines, @code ... @endcode as a code
+    // block, the @param and @return lines are skipped (they are listed separately).
+    xsl:template(name = description)
+    {
+        xsl:param(name = doc)
+        xsl:param(name = code select = 'false()')
+        xsl:if(test = 'string-length($doc) > 0') {
+            xsl:variable(name = raw select = 'substring-before(concat($doc, $nl), $nl)')
+            xsl:variable(name = line select = 'normalize-space($raw)')
+            xsl:variable(name = rest select = 'substring-after($doc, $nl)')
+            xsl:choose {
+                xsl:when(test = 'starts-with($line, "@code")') {
+                    span(class = apicode) {
+                        xsl:call-template(name = code-lines) {
+                            xsl:with-param(name = doc select = $rest)
+                        }
+                    }
+                    xsl:call-template(name = description) {
+                        xsl:with-param(name = doc select = 'substring-after($rest, "@endcode")')
+                    }
+                }
+                xsl:otherwise {
+                    xsl:choose {
+                        xsl:when(test = '$line = ""') {
+                            span(class = apibreak)
+                        }
+                        xsl:when(test = 'starts-with($line, "@brief ")') {
+                            xsl:value-of(select = 'substring-after($line, "@brief ")')
+                            xsl:text = ' '
+                        }
+                        xsl:when(test = 'starts-with($line, "@param") or starts-with($line, "@return") or starts-with($line, "@mainpage") or starts-with($line, "@section") or starts-with($line, "@ref")') {
+                        }
+                        xsl:otherwise {
+                            xsl:value-of(select = $line)
+                            xsl:text = ' '
+                        }
+                    }
+                    xsl:call-template(name = description) {
+                        xsl:with-param(name = doc select = $rest)
+                    }
+                }
+            }
+        }
+    }
+
+    // The lines of a @code block until @endcode, with the indentation kept.
+    xsl:template(name = code-lines)
+    {
+        xsl:param(name = doc)
+        xsl:variable(name = raw select = 'substring-before(concat($doc, $nl), $nl)')
+        xsl:if(test = 'string-length($doc) > 0 and not(starts-with(normalize-space($raw), "@endcode"))') {
+            xsl:value-of(select = $raw)
+            xsl:value-of(select = $nl)
+            xsl:call-template(name = code-lines) {
+                xsl:with-param(name = doc select = 'substring-after($doc, $nl)')
+            }
+        }
+    }
+
+    // The @param lines as dt/dd.
+    xsl:template(name = params)
+    {
+        xsl:param(name = text)
+        xsl:if(test = 'contains($text, "@param ")') {
+            xsl:variable(name = after select = 'substring-after($text, "@param ")')
+            xsl:variable(name = line select = 'normalize-space(substring-before(concat($after, $nl), $nl))')
+            dt {
+                code {
+                    xsl:value-of(select = 'substring-before(concat($line, " "), " ")')
+                }
+            }
+            dd {
+                xsl:value-of(select = 'substring-after($line, " ")')
+            }
+            xsl:call-template(name = params) {
+                xsl:with-param(name = text select = $after)
+            }
+        }
+    }
+
+    // The text of the @return (or @returns) line.
+    xsl:template(name = returns)
+    {
+        xsl:param(name = text)
+        xsl:variable(name = after select = 'substring-after($text, "@return")')
+        xsl:variable(name = line select = 'substring-before(concat($after, $nl), $nl)')
+        xsl:choose {
+            xsl:when(test = 'starts-with($line, "s ")') {
+                xsl:value-of(select = 'normalize-space(substring($line, 2))')
+            }
+            xsl:otherwise {
+                xsl:value-of(select = 'normalize-space($line)')
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Signatures
+
+    // A declaration: the specifiers and the declarators.
+    xsl:template(match = declaration
+                 mode  = signature)
+    {
+        xsl:apply-templates(select = declaration_specifiers
+                            mode   = tokens)
+        xsl:for-each(select = 'init_declarator_list/init_declarator/declarator')
+        {
+            xsl:text = ' '
+            xsl:apply-templates(select = '.'
+                                mode   = declarator)
+        }
+        ';'
+    }
+
+    // The tokens of specifiers separated by spaces, the members of a struct are skipped
+    // (they are listed below the signature) as are the values of an enum.
+    xsl:template(match = '*'
+                 mode  = tokens)
+    {
+        xsl:for-each(select = 'descendant::*[not(self::comment)][text()][not(ancestor::struct_declaration[count(ancestor::*) > count(current()/ancestor::*)])][not(ancestor::enumerator_list[count(ancestor::*) > count(current()/ancestor::*)])]')
+        {
+            xsl:if(test = 'position() > 1') {
+                xsl:text = ' '
+            }
+            xsl:call-template(name = token)
+        }
+    }
+
+    // A token, an XMQ type name links to its entry.
+    xsl:template(name = token)
+    {
+        xsl:variable(name = t select = 'string(text())')
+        xsl:choose {
+            // stdbool.h defines bool as _Bool.
+            xsl:when(test = '$t = "_Bool"') {
+                'bool'
+            }
+            // The values of an enum are listed below the signature.
+            xsl:when(test = 'self::ENUM and ../enumerator_list') {
+                'enum { … }'
+            }
+            xsl:when(test = 'self::IDENTIFIER and parent::type_identifier and starts-with($t, "XMQ")') {
+                a(href = '#{$t}') {
+                    xsl:value-of(select = $t)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $t)
+            }
+        }
+    }
+
+    // A declarator: pointer, name and suffixes. A pointer next to a function suffix is a
+    // parenthesized pointer to a function, eg (*XMQWrite)(...).
+    xsl:template(match = '*'
+                 mode  = declarator)
+    {
+        xsl:choose {
+            xsl:when(test = 'pointer and function_suffix') {
+                '('
+                xsl:apply-templates(select = pointer
+                                    mode   = pointer)
+                xsl:apply-templates(select = direct_declarator
+                                    mode   = declarator)
+                ')'
+            }
+            xsl:otherwise {
+                xsl:apply-templates(select = pointer
+                                    mode   = pointer)
+                xsl:apply-templates(select = 'IDENTIFIER'
+                                    mode   = name)
+                xsl:apply-templates(select = direct_declarator
+                                    mode   = declarator)
+            }
+        }
+        xsl:apply-templates(select = 'function_suffix | array_suffix'
+                            mode   = suffix)
+    }
+
+    xsl:template(match = IDENTIFIER
+                 mode  = name)
+    {
+        b {
+            xsl:value-of(select = 'text()')
+        }
+    }
+
+    xsl:template(match = pointer
+                 mode  = pointer)
+    {
+        xsl:for-each(select = 'descendant::*[not(self::comment)][text()]')
+        {
+            xsl:value-of(select = 'text()')
+            xsl:if(test = 'not(self::ASTERISK)') {
+                xsl:text = ' '
+            }
+        }
+    }
+
+    xsl:template(match = function_suffix
+                 mode  = suffix)
+    {
+        '('
+        xsl:for-each(select = 'parameter_type_list/parameter_list/parameter_declaration | parameter_type_list/ELLIPSIS')
+        {
+            xsl:if(test = 'position() > 1') {
+                ', '
+            }
+            xsl:choose {
+                xsl:when(test = 'self::ELLIPSIS') {
+                    '...'
+                }
+                xsl:otherwise {
+                    xsl:apply-templates(select = declaration_specifiers
+                                        mode   = tokens)
+                    xsl:if(test = 'declarator | abstract_declarator') {
+                        xsl:text = ' '
+                        xsl:apply-templates(select = 'declarator | abstract_declarator'
+                                            mode   = declarator)
+                    }
+                }
+            }
+        }
+        ')'
+    }
+
+    xsl:template(match = array_suffix
+                 mode  = suffix)
+    {
+        '['
+        xsl:for-each(select = 'descendant::*[not(self::comment)][text()]') {
+            xsl:value-of(select = 'text()')
+        }
+        ']'
+    }
+}

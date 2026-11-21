@@ -188,6 +188,10 @@ done
 cp web/resources/genlibrary.xslq build/web/resources/genlibrary.xslq
 $XMQ library/index.xmq transform --stringparam=date="$TODAY" web/resources/genlibrary.xslq to-html > build/web/library.html
 
+# The C api page for xmq.h, made from xmq.h parsed with ixml:lang/c.
+cp web/resources/genapi.xslq build/web/resources/genapi.xslq
+scripts/generate_xmq_h_api_doc.sh build/web/api.html "$XMQ" > /dev/null
+
 $XMQ web/upload.htmq to-html > build/web/upload.html
 
 echo Updated build/web/index.html
