@@ -130,3 +130,9 @@ body.dark span.code {
         font-size: 1rem;
     }
 }
+
+/* The Show as XML / Show as XMQ buttons above the examples. */
+div.switch {
+    text-align: center;
+    margin: 0 0 1em;
+}

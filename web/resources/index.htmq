@@ -66,7 +66,7 @@ html(lang = en)
                                            of XML and HTML, and maps to JSON. It can always be pretty printed
                                            safely, because all intended whitespace is quoted.'
                         p = 'Use it as a configuration language, for data storage, for logging, or simply
-                             to read that huge pom.xml. The xmq tool can also parse any text with IXML.'
+                             to read that pom.xml or deconstruct a huge html page. The xmq tool can also parse any text with IXML.'
                         div(class = actions)
                         {
                             a(class = 'btn primary'

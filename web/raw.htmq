@@ -21,14 +21,16 @@ html {
     }
     body(class = xmq_auto)
     {
-        button(type = button
-               title = 'Show as original xml'
-               onClick = 'goXML();') = 'Show as XML'
-        ' '
-        button(type = button
-               title = 'Show as xmq'
-               onClick = 'goXMQ();') = 'Show as XMQ'
-        br
+        div(class = switch)
+        {
+            button(type = button
+                   title = 'Show as original xml'
+                   onClick = 'goXML();') = 'Show as XML'
+            ' '
+            button(type = button
+                   title = 'Show as xmq'
+                   onClick = 'goXMQ();') = 'Show as XMQ'
+        }
         pre(class = 'xmq xmq_auto w80')
         {
             &RAW;
