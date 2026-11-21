@@ -310,53 +310,53 @@ static const int xmqcli_set_33[] = {
 };
 static const unsigned char xmqcli_ascii_33[16] = {0,0,0,0,0,0,0,0,0,0,0,0,16,0,0,0};
 static const int xmqcli_set_34[] = {
-    114,114,
-};
-static const unsigned char xmqcli_ascii_34[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0};
-static const int xmqcli_set_35[] = {
-    116,116,
-};
-static const unsigned char xmqcli_ascii_35[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0};
-static const int xmqcli_set_36[] = {
-    105,105,
-};
-static const unsigned char xmqcli_ascii_36[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0};
-static const int xmqcli_set_37[] = {
-    121,121,
-};
-static const unsigned char xmqcli_ascii_37[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2};
-static const int xmqcli_set_38[] = {
-    98,98,
-};
-static const unsigned char xmqcli_ascii_38[16] = {0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0};
-static const int xmqcli_set_39[] = {
-    117,117,
-};
-static const unsigned char xmqcli_ascii_39[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,32,0};
-static const int xmqcli_set_40[] = {
-    118,118,
-};
-static const unsigned char xmqcli_ascii_40[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,0};
-static const int xmqcli_set_41[] = {
-    102,102,
-};
-static const unsigned char xmqcli_ascii_41[16] = {0,0,0,0,0,0,0,0,0,0,0,0,64,0,0,0};
-static const int xmqcli_set_42[] = {
-    109,109,
-};
-static const unsigned char xmqcli_ascii_42[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,32,0,0};
-static const int xmqcli_set_43[] = {
-    107,107,
-};
-static const unsigned char xmqcli_ascii_43[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0};
-static const int xmqcli_set_44[] = {
-    113,113,
-};
-static const unsigned char xmqcli_ascii_44[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0};
-static const int xmqcli_set_45[] = {
     119,119,
 };
-static const unsigned char xmqcli_ascii_45[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0};
+static const unsigned char xmqcli_ascii_34[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0};
+static const int xmqcli_set_35[] = {
+    105,105,
+};
+static const unsigned char xmqcli_ascii_35[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0};
+static const int xmqcli_set_36[] = {
+    116,116,
+};
+static const unsigned char xmqcli_ascii_36[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,0};
+static const int xmqcli_set_37[] = {
+    102,102,
+};
+static const unsigned char xmqcli_ascii_37[16] = {0,0,0,0,0,0,0,0,0,0,0,0,64,0,0,0};
+static const int xmqcli_set_38[] = {
+    114,114,
+};
+static const unsigned char xmqcli_ascii_38[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0};
+static const int xmqcli_set_39[] = {
+    121,121,
+};
+static const unsigned char xmqcli_ascii_39[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2};
+static const int xmqcli_set_40[] = {
+    98,98,
+};
+static const unsigned char xmqcli_ascii_40[16] = {0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0};
+static const int xmqcli_set_41[] = {
+    117,117,
+};
+static const unsigned char xmqcli_ascii_41[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,32,0};
+static const int xmqcli_set_42[] = {
+    118,118,
+};
+static const unsigned char xmqcli_ascii_42[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,0};
+static const int xmqcli_set_43[] = {
+    109,109,
+};
+static const unsigned char xmqcli_ascii_43[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,32,0,0};
+static const int xmqcli_set_44[] = {
+    107,107,
+};
+static const unsigned char xmqcli_ascii_44[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0};
+static const int xmqcli_set_45[] = {
+    113,113,
+};
+static const unsigned char xmqcli_ascii_45[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0};
 static const int xmqcli_set_46[] = {
     103,103,
 };
@@ -389,58 +389,58 @@ static const unsigned char xmqcli_ascii_52[16] = {0,0,0,0,0,64,0,0,0,0,0,0,0,0,0
 
 static bool xmqcli_eat_xmq(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xmq
 static bool xmqcli_eat_ws(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ws
-static bool xmqcli_eat_103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /103
+static bool xmqcli_eat_111(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /111
 static bool xmqcli_eat_5(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /5
 static bool xmqcli_eat_4(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /4
 static bool xmqcli_eat_help(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // help
+static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /39
 static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /38
-static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /37
 static bool xmqcli_eat_arg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // arg
 static bool xmqcli_eat_rawvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // rawvalue
-static bool xmqcli_eat_96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /96
+static bool xmqcli_eat_104(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /104
 static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // qvalue
-static bool xmqcli_eat_100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /100
-static bool xmqcli_eat_99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /99
-static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /98
+static bool xmqcli_eat_108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /108
+static bool xmqcli_eat_107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /107
+static bool xmqcli_eat_106(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /106
 static bool xmqcli_eat_s(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // s
-static bool xmqcli_eat_102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /102
+static bool xmqcli_eat_110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /110
+static bool xmqcli_eat_109(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /109
 static bool xmqcli_eat_101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /101
-static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /93
 static bool xmqcli_eat_value(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // value
 static bool xmqcli_eat_bare(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // bare
-static bool xmqcli_eat_97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /97
+static bool xmqcli_eat_105(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /105
 static bool xmqcli_eat_helpname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // helpname
-static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /81
+static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /82
 static bool xmqcli_eat_3(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /3
 static bool xmqcli_eat_2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /2
 static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // command
 static bool xmqcli_eat_xslcommand(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslcommand
 static bool xmqcli_eat_xslarg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xslarg
+static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /84
 static bool xmqcli_eat_83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /83
-static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /82
 static bool xmqcli_eat_fchar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // fchar
 static bool xmqcli_eat_xsl(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // xsl
-static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /80
+static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /81
+static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /37
 static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /36
-static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /35
 static bool xmqcli_eat_copts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // copts
+static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /86
 static bool xmqcli_eat_85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /85
-static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /84
 static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // coption
 static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cother
+static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /93
 static bool xmqcli_eat_92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /92
-static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /91
 static bool xmqcli_eat_schar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // schar
-static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /90
+static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /91
 static bool xmqcli_eat_cshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // cshort
+static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /90
 static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /89
 static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /88
-static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /87
 static bool xmqcli_eat_optvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // optvalue
-static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /95
+static bool xmqcli_eat_103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /103
 static bool xmqcli_eat_name(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name
-static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /94
-static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /86
+static bool xmqcli_eat_102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /102
+static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /87
 static bool xmqcli_eat_file(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // file
 static bool xmqcli_eat_34(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /34
 static bool xmqcli_eat_33(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /33
@@ -449,10 +449,20 @@ static bool xmqcli_eat_32(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /3
 static bool xmqcli_eat_plain(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // plain
 static bool xmqcli_eat_first(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // first
 static bool xmqcli_eat_load(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // load
-static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /79
+static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /80
+static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /35
+static bool xmqcli_eat_ecopts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // ecopts
+static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /95
+static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /94
+static bool xmqcli_eat_withopt(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // withopt
+static bool xmqcli_eat_withname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // withname
+static bool xmqcli_eat_100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /100
+static bool xmqcli_eat_99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /99
+static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /98
 static bool xmqcli_eat_name2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name2
-static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /78
+static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /79
 static bool xmqcli_eat_name1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name1
+static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /78
 static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /77
 static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /76
 static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /75
@@ -464,8 +474,8 @@ static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /7
 static bool xmqcli_eat_69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /69
 static bool xmqcli_eat_68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /68
 static bool xmqcli_eat_67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /67
-static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /66
 static bool xmqcli_eat_name0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // name0
+static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /66
 static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /65
 static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /64
 static bool xmqcli_eat_63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /63
@@ -492,7 +502,6 @@ static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /4
 static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /42
 static bool xmqcli_eat_41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /41
 static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /40
-static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /39
 static bool xmqcli_eat_sources(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // sources
 static bool xmqcli_eat_7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /7
 static bool xmqcli_eat_6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /6
@@ -533,7 +542,7 @@ static bool xmqcli_eat_1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr); // /1
 static const int xmqcli_d2_0[] = {
     9,10,1,13,13,1,32,32,1,120,120,2,1114112,1114112,2,
 };
-// Predict the alternative of /103, 0 based, -1 if none matches.
+// Predict the alternative of /111, 0 based, -1 if none matches.
 static int xmqcli_predict2(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -585,7 +594,7 @@ static const int xmqcli_d6_1[] = {
     0,8,3,9,10,1,11,12,3,13,13,1,14,31,3,32,32,1,
     33,55295,3,57344,1114111,3,1114112,1114112,2,
 };
-// Predict the alternative of /38, 0 based, -1 if none matches.
+// Predict the alternative of /39, 0 based, -1 if none matches.
 static int xmqcli_predict6(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -655,7 +664,7 @@ static const int xmqcli_d10_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /96, 0 based, -1 if none matches.
+// Predict the alternative of /104, 0 based, -1 if none matches.
 static int xmqcli_predict10(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -699,7 +708,7 @@ static int xmqcli_predict11(xmqcli_Parser *p)
 static const int xmqcli_d12_0[] = {
     0,38,1,39,39,2,40,55295,1,57344,1114111,1,
 };
-// Predict the alternative of /100, 0 based, -1 if none matches.
+// Predict the alternative of /108, 0 based, -1 if none matches.
 static int xmqcli_predict12(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -721,7 +730,7 @@ static int xmqcli_predict12(xmqcli_Parser *p)
 static const int xmqcli_d13_0[] = {
     0,33,1,34,34,2,35,55295,1,57344,1114111,1,
 };
-// Predict the alternative of /99, 0 based, -1 if none matches.
+// Predict the alternative of /107, 0 based, -1 if none matches.
 static int xmqcli_predict13(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -743,7 +752,7 @@ static int xmqcli_predict13(xmqcli_Parser *p)
 static const int xmqcli_d14_0[] = {
     0,33,1,35,91,1,92,92,2,93,55295,1,57344,1114111,1,
 };
-// Predict the alternative of /98, 0 based, -1 if none matches.
+// Predict the alternative of /106, 0 based, -1 if none matches.
 static int xmqcli_predict14(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -766,7 +775,7 @@ static const int xmqcli_d17_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,
 };
-// Predict the alternative of /101, 0 based, -1 if none matches.
+// Predict the alternative of /109, 0 based, -1 if none matches.
 static int xmqcli_predict17(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -812,7 +821,7 @@ static const int xmqcli_d21_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /97, 0 based, -1 if none matches.
+// Predict the alternative of /105, 0 based, -1 if none matches.
 static int xmqcli_predict21(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -981,7 +990,7 @@ static const int xmqcli_d30_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /82, 0 based, -1 if none matches.
+// Predict the alternative of /83, 0 based, -1 if none matches.
 static int xmqcli_predict30(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2040,7 +2049,7 @@ static const int xmqcli_d34_259[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,54,116,55295,3,
     57344,1114111,3,
 };
-// Predict the alternative of /36, 0 based, -1 if none matches.
+// Predict the alternative of /37, 0 based, -1 if none matches.
 static int xmqcli_predict34(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2330,7 +2339,7 @@ static const int xmqcli_d37_3[] = {
 static const int xmqcli_d37_5[] = {
     9,10,2,13,13,2,32,32,2,65,90,4,97,122,4,
 };
-// Predict the alternative of /85, 0 based, -1 if none matches.
+// Predict the alternative of /86, 0 based, -1 if none matches.
 static int xmqcli_predict37(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2413,7 +2422,7 @@ static const int xmqcli_d42_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /91, 0 based, -1 if none matches.
+// Predict the alternative of /92, 0 based, -1 if none matches.
 static int xmqcli_predict42(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2436,7 +2445,7 @@ static const int xmqcli_d44_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /90, 0 based, -1 if none matches.
+// Predict the alternative of /91, 0 based, -1 if none matches.
 static int xmqcli_predict44(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2458,7 +2467,7 @@ static int xmqcli_predict44(xmqcli_Parser *p)
 static const int xmqcli_d46_0[] = {
     99,99,1,110,110,2,111,111,3,112,112,4,
 };
-// Predict the alternative of /89, 0 based, -1 if none matches.
+// Predict the alternative of /90, 0 based, -1 if none matches.
 static int xmqcli_predict46(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2482,7 +2491,7 @@ static int xmqcli_predict46(xmqcli_Parser *p)
 static const int xmqcli_d47_0[] = {
     9,10,1,13,13,1,32,32,1,61,61,2,120,120,1,1114112,1114112,1,
 };
-// Predict the alternative of /88, 0 based, -1 if none matches.
+// Predict the alternative of /89, 0 based, -1 if none matches.
 static int xmqcli_predict47(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2527,7 +2536,7 @@ static const int xmqcli_d50_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,33,1,35,38,1,40,55295,1,57344,1114111,1,1114112,1114112,2,
 };
-// Predict the alternative of /95, 0 based, -1 if none matches.
+// Predict the alternative of /103, 0 based, -1 if none matches.
 static int xmqcli_predict50(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2550,7 +2559,7 @@ static const int xmqcli_d52_0[] = {
     9,10,1,13,13,1,32,32,1,45,45,2,48,57,2,61,61,1,
     65,90,2,95,95,2,97,122,2,1114112,1114112,1,
 };
-// Predict the alternative of /94, 0 based, -1 if none matches.
+// Predict the alternative of /102, 0 based, -1 if none matches.
 static int xmqcli_predict52(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2662,41 +2671,130 @@ static int xmqcli_predict58(xmqcli_Parser *p)
     }
 }
 
+static const int xmqcli_d63_0[] = {
+    9,10,1,13,13,1,32,32,1,
+};
+static const int xmqcli_d63_1[] = {
+    0,8,2,9,10,1,11,12,2,13,13,1,14,31,2,32,32,1,
+    33,44,2,45,45,3,46,55295,2,57344,1114111,2,
+};
+static const int xmqcli_d63_3[] = {
+    45,45,4,
+};
+static const int xmqcli_d63_4[] = {
+    9,10,2,13,13,2,32,32,2,119,119,5,
+};
+// Predict the alternative of /35, 0 based, -1 if none matches.
+static int xmqcli_predict63(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d63_0, 3, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d63_1, 10, xmqcli_peek(p, i)); break;
+        case 2: return 0;
+        case 3: s = xmqcli_step(xmqcli_d63_3, 1, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d63_4, 4, xmqcli_peek(p, i)); break;
+        case 5: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
 static const int xmqcli_d65_0[] = {
-    97,97,1,100,100,2,102,102,3,114,114,4,115,115,5,116,116,6,
-    118,118,7,
+    9,10,1,13,13,1,32,32,1,120,120,2,1114112,1114112,2,
 };
 static const int xmqcli_d65_1[] = {
-    100,100,8,
+    0,8,2,9,10,1,11,12,2,13,13,1,14,31,2,32,32,1,
+    33,44,2,45,45,3,46,55295,2,57344,1114112,2,
 };
-static const int xmqcli_d65_2[] = {
-    101,101,9,
+static const int xmqcli_d65_3[] = {
+    0,8,4,11,12,4,14,31,4,33,44,4,45,45,5,46,55295,4,
+    57344,1114111,4,
 };
 static const int xmqcli_d65_5[] = {
-    97,97,10,101,101,11,117,117,12,
+    9,10,2,13,13,2,32,32,2,65,90,4,97,118,4,119,119,6,
+    120,122,4,
+};
+static const int xmqcli_d65_6[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,104,4,105,105,7,106,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_7[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,115,4,116,116,8,117,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_8[] = {
-    100,100,13,
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,103,4,104,104,9,105,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_9[] = {
-    108,108,14,115,115,15,
+    9,10,4,13,13,4,32,32,4,45,45,10,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_10[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,101,4,102,102,11,103,115,4,116,116,12,
+    117,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_11[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,104,4,105,105,13,106,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_12[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,100,4,101,101,14,102,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_13[] = {
-    9,10,16,13,13,16,32,32,16,45,45,17,
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,107,4,108,108,15,109,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_14[] = {
-    101,101,18,
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,119,4,120,120,16,121,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_15[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,100,4,101,101,17,102,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_16[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,115,4,116,116,18,117,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_17[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,2,
+    65,90,4,95,95,4,97,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_18[] = {
-    116,116,19,
+    9,10,4,13,13,4,32,32,4,45,45,19,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_19[] = {
-    101,101,20,
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,101,4,102,102,20,103,122,4,1114112,1114112,4,
 };
 static const int xmqcli_d65_20[] = {
-    9,10,21,13,13,21,32,32,21,45,45,22,
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,104,4,105,105,21,106,122,4,1114112,1114112,4,
 };
-// Predict the alternative of name1, 0 based, -1 if none matches.
+static const int xmqcli_d65_21[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,107,4,108,108,22,109,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_22[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,4,
+    65,90,4,95,95,4,97,100,4,101,101,23,102,122,4,1114112,1114112,4,
+};
+static const int xmqcli_d65_23[] = {
+    9,10,4,13,13,4,32,32,4,45,45,4,48,57,4,61,61,2,
+    65,90,4,95,95,4,97,122,4,1114112,1114112,4,
+};
+// Predict the alternative of /95, 0 based, -1 if none matches.
 static int xmqcli_predict65(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -2705,27 +2803,143 @@ static int xmqcli_predict65(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d65_0, 7, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d65_1, 1, xmqcli_peek(p, i)); break;
-        case 2: s = xmqcli_step(xmqcli_d65_2, 1, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d65_0, 5, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d65_1, 10, xmqcli_peek(p, i)); break;
+        case 2: return 1;
+        case 3: s = xmqcli_step(xmqcli_d65_3, 7, xmqcli_peek(p, i)); break;
+        case 4: return 0;
+        case 5: s = xmqcli_step(xmqcli_d65_5, 7, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d65_6, 12, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d65_7, 12, xmqcli_peek(p, i)); break;
+        case 8: s = xmqcli_step(xmqcli_d65_8, 12, xmqcli_peek(p, i)); break;
+        case 9: s = xmqcli_step(xmqcli_d65_9, 10, xmqcli_peek(p, i)); break;
+        case 10: s = xmqcli_step(xmqcli_d65_10, 14, xmqcli_peek(p, i)); break;
+        case 11: s = xmqcli_step(xmqcli_d65_11, 12, xmqcli_peek(p, i)); break;
+        case 12: s = xmqcli_step(xmqcli_d65_12, 12, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d65_13, 12, xmqcli_peek(p, i)); break;
+        case 14: s = xmqcli_step(xmqcli_d65_14, 12, xmqcli_peek(p, i)); break;
+        case 15: s = xmqcli_step(xmqcli_d65_15, 12, xmqcli_peek(p, i)); break;
+        case 16: s = xmqcli_step(xmqcli_d65_16, 12, xmqcli_peek(p, i)); break;
+        case 17: s = xmqcli_step(xmqcli_d65_17, 10, xmqcli_peek(p, i)); break;
+        case 18: s = xmqcli_step(xmqcli_d65_18, 10, xmqcli_peek(p, i)); break;
+        case 19: s = xmqcli_step(xmqcli_d65_19, 12, xmqcli_peek(p, i)); break;
+        case 20: s = xmqcli_step(xmqcli_d65_20, 12, xmqcli_peek(p, i)); break;
+        case 21: s = xmqcli_step(xmqcli_d65_21, 12, xmqcli_peek(p, i)); break;
+        case 22: s = xmqcli_step(xmqcli_d65_22, 12, xmqcli_peek(p, i)); break;
+        case 23: s = xmqcli_step(xmqcli_d65_23, 10, xmqcli_peek(p, i)); break;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d68_0[] = {
+    119,119,1,
+};
+static const int xmqcli_d68_1[] = {
+    105,105,2,
+};
+static const int xmqcli_d68_2[] = {
+    116,116,3,
+};
+static const int xmqcli_d68_3[] = {
+    104,104,4,
+};
+static const int xmqcli_d68_4[] = {
+    45,45,5,
+};
+static const int xmqcli_d68_5[] = {
+    102,102,6,116,116,7,
+};
+// Predict the alternative of withname, 0 based, -1 if none matches.
+static int xmqcli_predict68(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d68_0, 1, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d68_1, 1, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d68_2, 1, xmqcli_peek(p, i)); break;
+        case 3: s = xmqcli_step(xmqcli_d68_3, 1, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d68_4, 1, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d68_5, 2, xmqcli_peek(p, i)); break;
+        case 6: return 0;
+        case 7: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d74_0[] = {
+    97,97,1,100,100,2,102,102,3,114,114,4,115,115,5,116,116,6,
+    118,118,7,
+};
+static const int xmqcli_d74_1[] = {
+    100,100,8,
+};
+static const int xmqcli_d74_2[] = {
+    101,101,9,
+};
+static const int xmqcli_d74_5[] = {
+    97,97,10,101,101,11,117,117,12,
+};
+static const int xmqcli_d74_8[] = {
+    100,100,13,
+};
+static const int xmqcli_d74_9[] = {
+    108,108,14,115,115,15,
+};
+static const int xmqcli_d74_13[] = {
+    9,10,16,13,13,16,32,32,16,45,45,17,
+};
+static const int xmqcli_d74_14[] = {
+    101,101,18,
+};
+static const int xmqcli_d74_18[] = {
+    116,116,19,
+};
+static const int xmqcli_d74_19[] = {
+    101,101,20,
+};
+static const int xmqcli_d74_20[] = {
+    9,10,21,13,13,21,32,32,21,45,45,22,
+};
+// Predict the alternative of name1, 0 based, -1 if none matches.
+static int xmqcli_predict74(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d74_0, 7, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d74_1, 1, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d74_2, 1, xmqcli_peek(p, i)); break;
         case 3: return 5;
         case 4: return 9;
-        case 5: s = xmqcli_step(xmqcli_d65_5, 3, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d74_5, 3, xmqcli_peek(p, i)); break;
         case 6: return 6;
         case 7: return 7;
-        case 8: s = xmqcli_step(xmqcli_d65_8, 1, xmqcli_peek(p, i)); break;
-        case 9: s = xmqcli_step(xmqcli_d65_9, 2, xmqcli_peek(p, i)); break;
+        case 8: s = xmqcli_step(xmqcli_d74_8, 1, xmqcli_peek(p, i)); break;
+        case 9: s = xmqcli_step(xmqcli_d74_9, 2, xmqcli_peek(p, i)); break;
         case 10: return 8;
         case 11: return 4;
         case 12: return 10;
-        case 13: s = xmqcli_step(xmqcli_d65_13, 4, xmqcli_peek(p, i)); break;
-        case 14: s = xmqcli_step(xmqcli_d65_14, 1, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d74_13, 4, xmqcli_peek(p, i)); break;
+        case 14: s = xmqcli_step(xmqcli_d74_14, 1, xmqcli_peek(p, i)); break;
         case 15: return 11;
         case 16: return 0;
         case 17: return 1;
-        case 18: s = xmqcli_step(xmqcli_d65_18, 1, xmqcli_peek(p, i)); break;
-        case 19: s = xmqcli_step(xmqcli_d65_19, 1, xmqcli_peek(p, i)); break;
-        case 20: s = xmqcli_step(xmqcli_d65_20, 4, xmqcli_peek(p, i)); break;
+        case 18: s = xmqcli_step(xmqcli_d74_18, 1, xmqcli_peek(p, i)); break;
+        case 19: s = xmqcli_step(xmqcli_d74_19, 1, xmqcli_peek(p, i)); break;
+        case 20: s = xmqcli_step(xmqcli_d74_20, 4, xmqcli_peek(p, i)); break;
         case 21: return 2;
         case 22: return 3;
         default: return -1;
@@ -2735,78 +2949,78 @@ static int xmqcli_predict65(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d78_0[] = {
+static const int xmqcli_d87_0[] = {
     98,98,1,99,99,2,101,101,3,104,104,4,108,108,5,110,110,6,
     112,112,7,113,113,8,114,114,9,115,115,10,116,116,11,117,117,12,
 };
-static const int xmqcli_d78_1[] = {
+static const int xmqcli_d87_1[] = {
     114,114,13,
 };
-static const int xmqcli_d78_7[] = {
+static const int xmqcli_d87_7[] = {
     97,97,14,114,114,15,
 };
-static const int xmqcli_d78_9[] = {
+static const int xmqcli_d87_9[] = {
     101,101,16,
 };
-static const int xmqcli_d78_10[] = {
+static const int xmqcli_d87_10[] = {
     116,116,17,117,117,18,
 };
-static const int xmqcli_d78_11[] = {
+static const int xmqcli_d87_11[] = {
     111,111,19,
 };
-static const int xmqcli_d78_13[] = {
+static const int xmqcli_d87_13[] = {
     9,10,20,13,13,20,32,32,20,111,111,21,120,120,20,1114112,1114112,20,
 };
-static const int xmqcli_d78_14[] = {
+static const int xmqcli_d87_14[] = {
     9,10,22,13,13,22,32,32,22,103,103,23,120,120,22,1114112,1114112,22,
 };
-static const int xmqcli_d78_16[] = {
+static const int xmqcli_d87_16[] = {
     102,102,24,110,110,25,
 };
-static const int xmqcli_d78_19[] = {
+static const int xmqcli_d87_19[] = {
     45,45,26,107,107,27,
 };
-static const int xmqcli_d78_25[] = {
+static const int xmqcli_d87_25[] = {
     100,100,28,
 };
-static const int xmqcli_d78_26[] = {
+static const int xmqcli_d87_26[] = {
     99,99,29,104,104,30,106,106,31,116,116,32,120,120,33,121,121,34,
 };
-static const int xmqcli_d78_28[] = {
+static const int xmqcli_d87_28[] = {
     101,101,35,
 };
-static const int xmqcli_d78_30[] = {
+static const int xmqcli_d87_30[] = {
     116,116,36,
 };
-static const int xmqcli_d78_33[] = {
+static const int xmqcli_d87_33[] = {
     109,109,37,
 };
-static const int xmqcli_d78_35[] = {
+static const int xmqcli_d87_35[] = {
     114,114,38,
 };
-static const int xmqcli_d78_36[] = {
+static const int xmqcli_d87_36[] = {
     109,109,39,
 };
-static const int xmqcli_d78_37[] = {
+static const int xmqcli_d87_37[] = {
     108,108,40,113,113,41,
 };
-static const int xmqcli_d78_38[] = {
+static const int xmqcli_d87_38[] = {
     45,45,42,
 };
-static const int xmqcli_d78_39[] = {
+static const int xmqcli_d87_39[] = {
     108,108,43,113,113,44,
 };
-static const int xmqcli_d78_42[] = {
+static const int xmqcli_d87_42[] = {
     104,104,45,116,116,46,
 };
-static const int xmqcli_d78_46[] = {
+static const int xmqcli_d87_46[] = {
     101,101,47,
 };
-static const int xmqcli_d78_47[] = {
+static const int xmqcli_d87_47[] = {
     114,114,48,120,120,49,
 };
 // Predict the alternative of name0, 0 based, -1 if none matches.
-static int xmqcli_predict78(xmqcli_Parser *p)
+static int xmqcli_predict87(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -2814,54 +3028,54 @@ static int xmqcli_predict78(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d78_0, 12, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d78_1, 1, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d87_0, 12, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d87_1, 1, xmqcli_peek(p, i)); break;
         case 2: return 24;
         case 3: return 23;
         case 4: return 19;
         case 5: return 26;
         case 6: return 12;
-        case 7: s = xmqcli_step(xmqcli_d78_7, 2, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d87_7, 2, xmqcli_peek(p, i)); break;
         case 8: return 20;
-        case 9: s = xmqcli_step(xmqcli_d78_9, 1, xmqcli_peek(p, i)); break;
-        case 10: s = xmqcli_step(xmqcli_d78_10, 2, xmqcli_peek(p, i)); break;
-        case 11: s = xmqcli_step(xmqcli_d78_11, 1, xmqcli_peek(p, i)); break;
+        case 9: s = xmqcli_step(xmqcli_d87_9, 1, xmqcli_peek(p, i)); break;
+        case 10: s = xmqcli_step(xmqcli_d87_10, 2, xmqcli_peek(p, i)); break;
+        case 11: s = xmqcli_step(xmqcli_d87_11, 1, xmqcli_peek(p, i)); break;
         case 12: return 21;
-        case 13: s = xmqcli_step(xmqcli_d78_13, 6, xmqcli_peek(p, i)); break;
-        case 14: s = xmqcli_step(xmqcli_d78_14, 6, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d87_13, 6, xmqcli_peek(p, i)); break;
+        case 14: s = xmqcli_step(xmqcli_d87_14, 6, xmqcli_peek(p, i)); break;
         case 15: return 13;
-        case 16: s = xmqcli_step(xmqcli_d78_16, 2, xmqcli_peek(p, i)); break;
+        case 16: s = xmqcli_step(xmqcli_d87_16, 2, xmqcli_peek(p, i)); break;
         case 17: return 18;
         case 18: return 22;
-        case 19: s = xmqcli_step(xmqcli_d78_19, 2, xmqcli_peek(p, i)); break;
+        case 19: s = xmqcli_step(xmqcli_d87_19, 2, xmqcli_peek(p, i)); break;
         case 20: return 17;
         case 21: return 16;
         case 22: return 15;
         case 23: return 14;
         case 24: return 25;
-        case 25: s = xmqcli_step(xmqcli_d78_25, 1, xmqcli_peek(p, i)); break;
-        case 26: s = xmqcli_step(xmqcli_d78_26, 6, xmqcli_peek(p, i)); break;
+        case 25: s = xmqcli_step(xmqcli_d87_25, 1, xmqcli_peek(p, i)); break;
+        case 26: s = xmqcli_step(xmqcli_d87_26, 6, xmqcli_peek(p, i)); break;
         case 27: return 11;
-        case 28: s = xmqcli_step(xmqcli_d78_28, 1, xmqcli_peek(p, i)); break;
+        case 28: s = xmqcli_step(xmqcli_d87_28, 1, xmqcli_peek(p, i)); break;
         case 29: return 7;
-        case 30: s = xmqcli_step(xmqcli_d78_30, 1, xmqcli_peek(p, i)); break;
+        case 30: s = xmqcli_step(xmqcli_d87_30, 1, xmqcli_peek(p, i)); break;
         case 31: return 4;
         case 32: return 6;
-        case 33: s = xmqcli_step(xmqcli_d78_33, 1, xmqcli_peek(p, i)); break;
+        case 33: s = xmqcli_step(xmqcli_d87_33, 1, xmqcli_peek(p, i)); break;
         case 34: return 5;
-        case 35: s = xmqcli_step(xmqcli_d78_35, 1, xmqcli_peek(p, i)); break;
-        case 36: s = xmqcli_step(xmqcli_d78_36, 1, xmqcli_peek(p, i)); break;
-        case 37: s = xmqcli_step(xmqcli_d78_37, 2, xmqcli_peek(p, i)); break;
-        case 38: s = xmqcli_step(xmqcli_d78_38, 1, xmqcli_peek(p, i)); break;
-        case 39: s = xmqcli_step(xmqcli_d78_39, 2, xmqcli_peek(p, i)); break;
+        case 35: s = xmqcli_step(xmqcli_d87_35, 1, xmqcli_peek(p, i)); break;
+        case 36: s = xmqcli_step(xmqcli_d87_36, 1, xmqcli_peek(p, i)); break;
+        case 37: s = xmqcli_step(xmqcli_d87_37, 2, xmqcli_peek(p, i)); break;
+        case 38: s = xmqcli_step(xmqcli_d87_38, 1, xmqcli_peek(p, i)); break;
+        case 39: s = xmqcli_step(xmqcli_d87_39, 2, xmqcli_peek(p, i)); break;
         case 40: return 1;
         case 41: return 0;
-        case 42: s = xmqcli_step(xmqcli_d78_42, 2, xmqcli_peek(p, i)); break;
+        case 42: s = xmqcli_step(xmqcli_d87_42, 2, xmqcli_peek(p, i)); break;
         case 43: return 3;
         case 44: return 2;
         case 45: return 8;
-        case 46: s = xmqcli_step(xmqcli_d78_46, 1, xmqcli_peek(p, i)); break;
-        case 47: s = xmqcli_step(xmqcli_d78_47, 2, xmqcli_peek(p, i)); break;
+        case 46: s = xmqcli_step(xmqcli_d87_46, 1, xmqcli_peek(p, i)); break;
+        case 47: s = xmqcli_step(xmqcli_d87_47, 2, xmqcli_peek(p, i)); break;
         case 48: return 9;
         case 49: return 10;
         default: return -1;
@@ -2871,10 +3085,10 @@ static int xmqcli_predict78(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d107_0[] = {
+static const int xmqcli_d116_0[] = {
     9,10,1,13,13,1,32,32,1,120,120,2,1114112,1114112,2,
 };
-static const int xmqcli_d107_1[] = {
+static const int xmqcli_d116_1[] = {
     0,8,3,9,10,1,11,12,3,13,13,1,14,31,3,32,32,1,
     33,96,3,97,97,4,98,98,5,99,99,6,100,100,7,101,101,8,
     102,102,9,103,103,3,104,104,10,105,107,3,108,108,11,109,109,3,
@@ -2882,1065 +3096,1065 @@ static const int xmqcli_d107_1[] = {
     116,116,17,117,117,18,118,118,19,119,119,3,120,120,20,121,55295,3,
     57344,1114111,3,1114112,1114112,2,
 };
-static const int xmqcli_d107_4[] = {
+static const int xmqcli_d116_4[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,21,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_5[] = {
+static const int xmqcli_d116_5[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,22,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_6[] = {
+static const int xmqcli_d116_6[] = {
     0,8,3,11,12,3,14,31,3,33,103,3,104,104,23,105,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_7[] = {
+static const int xmqcli_d116_7[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,24,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_8[] = {
+static const int xmqcli_d116_8[] = {
     0,8,3,11,12,3,14,31,3,33,119,3,120,120,25,121,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_9[] = {
+static const int xmqcli_d116_9[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,26,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_10[] = {
+static const int xmqcli_d116_10[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,27,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_11[] = {
+static const int xmqcli_d116_11[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,28,106,110,3,
     111,111,29,112,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_12[] = {
+static const int xmqcli_d116_12[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,30,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_13[] = {
+static const int xmqcli_d116_13[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,31,98,113,3,
     114,114,32,115,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_14[] = {
+static const int xmqcli_d116_14[] = {
     0,8,3,11,12,3,14,31,3,33,116,3,117,117,33,118,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_15[] = {
+static const int xmqcli_d116_15[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,34,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_16[] = {
+static const int xmqcli_d116_16[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,35,98,100,3,
     101,101,36,102,115,3,116,116,37,117,117,38,118,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_17[] = {
+static const int xmqcli_d116_17[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,39,112,113,3,
     114,114,40,115,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_18[] = {
+static const int xmqcli_d116_18[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,41,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_19[] = {
+static const int xmqcli_d116_19[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,42,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_20[] = {
+static const int xmqcli_d116_20[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,43,110,114,3,
     115,115,44,116,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_21[] = {
+static const int xmqcli_d116_21[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,45,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_22[] = {
+static const int xmqcli_d116_22[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,110,3,111,111,46,112,119,3,120,120,47,121,55295,3,57344,1114111,3,
     1114112,1114112,2,
 };
-static const int xmqcli_d107_23[] = {
+static const int xmqcli_d116_23[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,48,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_24[] = {
+static const int xmqcli_d116_24[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,49,109,114,3,
     115,115,50,116,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_25[] = {
+static const int xmqcli_d116_25[] = {
     0,8,3,11,12,3,14,31,3,33,111,3,112,112,51,113,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_26[] = {
+static const int xmqcli_d116_26[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,52,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_27[] = {
+static const int xmqcli_d116_27[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,53,109,116,3,
     117,117,54,118,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_28[] = {
+static const int xmqcli_d116_28[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,55,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_29[] = {
+static const int xmqcli_d116_29[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,56,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_30[] = {
+static const int xmqcli_d116_30[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,57,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_31[] = {
+static const int xmqcli_d116_31[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,102,3,103,103,58,104,119,3,120,120,47,121,55295,3,57344,1114111,3,
     1114112,1114112,2,
 };
-static const int xmqcli_d107_32[] = {
+static const int xmqcli_d116_32[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,59,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_33[] = {
+static const int xmqcli_d116_33[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,60,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_34[] = {
+static const int xmqcli_d116_34[] = {
     0,8,3,11,12,3,14,31,3,33,101,3,102,102,61,103,109,3,
     110,110,62,111,111,3,112,112,63,113,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_35[] = {
+static const int xmqcli_d116_35[] = {
     0,8,3,11,12,3,14,31,3,33,117,3,118,118,64,119,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_36[] = {
+static const int xmqcli_d116_36[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,65,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_37[] = {
+static const int xmqcli_d116_37[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,66,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_38[] = {
+static const int xmqcli_d116_38[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,67,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_39[] = {
+static const int xmqcli_d116_39[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,68,46,106,3,
     107,107,69,108,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_40[] = {
+static const int xmqcli_d116_40[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,70,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_41[] = {
+static const int xmqcli_d116_41[] = {
     0,8,3,11,12,3,14,31,3,33,112,3,113,113,71,114,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_42[] = {
+static const int xmqcli_d116_42[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,72,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_43[] = {
+static const int xmqcli_d116_43[] = {
     0,8,3,11,12,3,14,31,3,33,112,3,113,113,73,114,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_44[] = {
+static const int xmqcli_d116_44[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,74,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_45[] = {
+static const int xmqcli_d116_45[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,44,3,45,45,75,46,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_46[] = {
+static const int xmqcli_d116_46[] = {
     0,8,3,11,12,3,14,31,3,33,118,3,119,119,76,120,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_47[] = {
+static const int xmqcli_d116_47[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,43,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_48[] = {
+static const int xmqcli_d116_48[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,77,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_49[] = {
+static const int xmqcli_d116_49[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,78,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_50[] = {
+static const int xmqcli_d116_50[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,79,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_51[] = {
+static const int xmqcli_d116_51[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,80,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_52[] = {
+static const int xmqcli_d116_52[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,81,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_53[] = {
+static const int xmqcli_d116_53[] = {
     0,8,3,11,12,3,14,31,3,33,111,3,112,112,82,113,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_54[] = {
+static const int xmqcli_d116_54[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,119,3,120,120,47,121,55295,3,57344,1114111,3,1114112,1114112,2,
 };
-static const int xmqcli_d107_55[] = {
+static const int xmqcli_d116_55[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,83,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_56[] = {
+static const int xmqcli_d116_56[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,84,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_57[] = {
+static const int xmqcli_d116_57[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,85,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_58[] = {
+static const int xmqcli_d116_58[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,54,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_59[] = {
+static const int xmqcli_d116_59[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,86,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_60[] = {
+static const int xmqcli_d116_60[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,87,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_61[] = {
+static const int xmqcli_d116_61[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,88,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_62[] = {
+static const int xmqcli_d116_62[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,89,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_63[] = {
+static const int xmqcli_d116_63[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,90,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_64[] = {
+static const int xmqcli_d116_64[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,91,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_65[] = {
+static const int xmqcli_d116_65[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,92,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_66[] = {
+static const int xmqcli_d116_66[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,93,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_67[] = {
+static const int xmqcli_d116_67[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,94,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_68[] = {
+static const int xmqcli_d116_68[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,95,100,103,3,
     104,104,96,105,105,3,106,106,97,107,115,3,116,116,98,117,119,3,
     120,120,99,121,121,100,122,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_69[] = {
+static const int xmqcli_d116_69[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,101,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_70[] = {
+static const int xmqcli_d116_70[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,102,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_71[] = {
+static const int xmqcli_d116_71[] = {
     0,8,3,11,12,3,14,31,3,33,116,3,117,117,103,118,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_72[] = {
+static const int xmqcli_d116_72[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,104,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_73[] = {
+static const int xmqcli_d116_73[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,119,3,120,120,47,121,55295,3,57344,1114111,3,1114112,1114112,2,
 };
-static const int xmqcli_d107_74[] = {
+static const int xmqcli_d116_74[] = {
     0,8,3,11,12,3,14,31,3,33,57,3,58,58,105,59,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_75[] = {
+static const int xmqcli_d116_75[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,106,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_76[] = {
+static const int xmqcli_d116_76[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,107,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_77[] = {
+static const int xmqcli_d116_77[] = {
     0,8,3,11,12,3,14,31,3,33,106,3,107,107,108,108,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_78[] = {
+static const int xmqcli_d116_78[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,109,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_79[] = {
+static const int xmqcli_d116_79[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,110,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_80[] = {
+static const int xmqcli_d116_80[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,111,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_81[] = {
+static const int xmqcli_d116_81[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,112,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_82[] = {
+static const int xmqcli_d116_82[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,119,3,120,120,47,121,55295,3,57344,1114111,3,1114112,1114112,2,
 };
-static const int xmqcli_d107_83[] = {
+static const int xmqcli_d116_83[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,113,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_84[] = {
+static const int xmqcli_d116_84[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,119,3,120,120,47,121,55295,3,57344,1114111,3,1114112,1114112,2,
 };
-static const int xmqcli_d107_85[] = {
+static const int xmqcli_d116_85[] = {
     0,8,3,11,12,3,14,31,3,33,116,3,117,117,114,118,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_86[] = {
+static const int xmqcli_d116_86[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,54,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_87[] = {
+static const int xmqcli_d116_87[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,115,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_88[] = {
+static const int xmqcli_d116_88[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,116,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_89[] = {
+static const int xmqcli_d116_89[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,117,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_90[] = {
+static const int xmqcli_d116_90[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,118,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_91[] = {
+static const int xmqcli_d116_91[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,119,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_92[] = {
+static const int xmqcli_d116_92[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,120,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_93[] = {
+static const int xmqcli_d116_93[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,121,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_94[] = {
+static const int xmqcli_d116_94[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,122,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_95[] = {
+static const int xmqcli_d116_95[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,123,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_96[] = {
+static const int xmqcli_d116_96[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,124,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_97[] = {
+static const int xmqcli_d116_97[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,125,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_98[] = {
+static const int xmqcli_d116_98[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,126,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_99[] = {
+static const int xmqcli_d116_99[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,127,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_100[] = {
+static const int xmqcli_d116_100[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,128,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_101[] = {
+static const int xmqcli_d116_101[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,129,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_102[] = {
+static const int xmqcli_d116_102[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,130,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_103[] = {
+static const int xmqcli_d116_103[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,131,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_104[] = {
+static const int xmqcli_d116_104[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,132,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_105[] = {
+static const int xmqcli_d116_105[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,119,133,120,120,135,121,55295,133,57344,1114111,133,
     1114112,1114112,3,
 };
-static const int xmqcli_d107_106[] = {
+static const int xmqcli_d116_106[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,136,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_107[] = {
+static const int xmqcli_d116_107[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,54,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_108[] = {
+static const int xmqcli_d116_108[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,137,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_109[] = {
+static const int xmqcli_d116_109[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,138,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_110[] = {
+static const int xmqcli_d116_110[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,139,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_111[] = {
+static const int xmqcli_d116_111[] = {
     0,8,3,11,12,3,14,31,3,33,99,3,100,100,140,101,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_112[] = {
+static const int xmqcli_d116_112[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,141,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_113[] = {
+static const int xmqcli_d116_113[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,142,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_114[] = {
+static const int xmqcli_d116_114[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,143,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_115[] = {
+static const int xmqcli_d116_115[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,144,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_116[] = {
+static const int xmqcli_d116_116[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,145,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_117[] = {
+static const int xmqcli_d116_117[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,146,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_118[] = {
+static const int xmqcli_d116_118[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,147,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_119[] = {
+static const int xmqcli_d116_119[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,148,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_120[] = {
+static const int xmqcli_d116_120[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,149,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_121[] = {
+static const int xmqcli_d116_121[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,150,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_122[] = {
+static const int xmqcli_d116_122[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,151,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_123[] = {
+static const int xmqcli_d116_123[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,152,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_124[] = {
+static const int xmqcli_d116_124[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,153,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_125[] = {
+static const int xmqcli_d116_125[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,154,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_126[] = {
+static const int xmqcli_d116_126[] = {
     0,8,3,11,12,3,14,31,3,33,119,3,120,120,155,121,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_127[] = {
+static const int xmqcli_d116_127[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,54,109,112,3,
     113,113,54,114,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_128[] = {
+static const int xmqcli_d116_128[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,156,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_129[] = {
+static const int xmqcli_d116_129[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,157,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_130[] = {
+static const int xmqcli_d116_130[] = {
     0,8,3,11,12,3,14,31,3,33,101,3,102,102,158,103,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_131[] = {
+static const int xmqcli_d116_131[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,159,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_132[] = {
+static const int xmqcli_d116_132[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,160,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_133[] = {
+static const int xmqcli_d116_133[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,119,133,120,120,135,121,55295,133,57344,1114111,133,
     1114112,1114112,3,
 };
-static const int xmqcli_d107_134[] = {
+static const int xmqcli_d116_134[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,104,133,105,105,161,106,119,133,120,120,135,
     121,55295,133,57344,1114111,133,1114112,1114112,3,
 };
-static const int xmqcli_d107_135[] = {
+static const int xmqcli_d116_135[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,108,133,109,109,162,110,119,133,120,120,135,
     121,55295,133,57344,1114111,133,1114112,1114112,3,
 };
-static const int xmqcli_d107_136[] = {
+static const int xmqcli_d116_136[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,163,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_137[] = {
+static const int xmqcli_d116_137[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,164,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_138[] = {
+static const int xmqcli_d116_138[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,44,3,45,45,165,46,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_139[] = {
+static const int xmqcli_d116_139[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,166,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_140[] = {
+static const int xmqcli_d116_140[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,167,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_141[] = {
+static const int xmqcli_d116_141[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,168,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_142[] = {
+static const int xmqcli_d116_142[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,169,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_143[] = {
+static const int xmqcli_d116_143[] = {
     0,8,3,11,12,3,14,31,3,33,111,3,112,112,170,113,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_144[] = {
+static const int xmqcli_d116_144[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,54,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_145[] = {
+static const int xmqcli_d116_145[] = {
     0,8,3,11,12,3,14,31,3,33,103,3,104,104,171,105,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_146[] = {
+static const int xmqcli_d116_146[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,172,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_147[] = {
+static const int xmqcli_d116_147[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,173,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_148[] = {
+static const int xmqcli_d116_148[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,149,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_149[] = {
+static const int xmqcli_d116_149[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_150[] = {
+static const int xmqcli_d116_150[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,174,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_151[] = {
+static const int xmqcli_d116_151[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,175,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_152[] = {
+static const int xmqcli_d116_152[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,176,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_153[] = {
+static const int xmqcli_d116_153[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,54,109,112,3,
     113,113,54,114,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_154[] = {
+static const int xmqcli_d116_154[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,54,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_155[] = {
+static const int xmqcli_d116_155[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,54,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_156[] = {
+static const int xmqcli_d116_156[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,54,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_157[] = {
+static const int xmqcli_d116_157[] = {
     0,8,3,11,12,3,14,31,3,33,121,3,122,122,177,123,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_158[] = {
+static const int xmqcli_d116_158[] = {
     0,8,3,11,12,3,14,31,3,33,110,3,111,111,178,112,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_159[] = {
+static const int xmqcli_d116_159[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,179,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_160[] = {
+static const int xmqcli_d116_160[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,180,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_161[] = {
+static const int xmqcli_d116_161[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,119,133,120,120,181,121,55295,133,57344,1114111,133,
     1114112,1114112,3,
 };
-static const int xmqcli_d107_162[] = {
+static const int xmqcli_d116_162[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,112,133,113,113,182,114,119,133,120,120,135,
     121,55295,133,57344,1114111,133,1114112,1114112,3,
 };
-static const int xmqcli_d107_163[] = {
+static const int xmqcli_d116_163[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,149,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_164[] = {
+static const int xmqcli_d116_164[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,183,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_165[] = {
+static const int xmqcli_d116_165[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,184,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_166[] = {
+static const int xmqcli_d116_166[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,185,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_167[] = {
+static const int xmqcli_d116_167[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,186,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_168[] = {
+static const int xmqcli_d116_168[] = {
     0,8,3,11,12,3,14,31,3,33,103,3,104,104,149,105,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_169[] = {
+static const int xmqcli_d116_169[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,187,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_170[] = {
+static const int xmqcli_d116_170[] = {
     0,8,3,11,12,3,14,31,3,33,116,3,117,117,188,118,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_171[] = {
+static const int xmqcli_d116_171[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,189,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_172[] = {
+static const int xmqcli_d116_172[] = {
     0,8,3,11,12,3,14,31,3,33,103,3,104,104,190,105,115,3,
     116,116,191,117,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_173[] = {
+static const int xmqcli_d116_173[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,44,3,45,45,192,46,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_174[] = {
+static const int xmqcli_d116_174[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,193,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_175[] = {
+static const int xmqcli_d116_175[] = {
     0,8,3,11,12,3,14,31,3,33,116,3,117,117,194,118,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_176[] = {
+static const int xmqcli_d116_176[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,195,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_177[] = {
+static const int xmqcli_d116_177[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,54,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_178[] = {
+static const int xmqcli_d116_178[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,196,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_179[] = {
+static const int xmqcli_d116_179[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,197,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_180[] = {
+static const int xmqcli_d116_180[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,149,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_181[] = {
+static const int xmqcli_d116_181[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,108,133,109,109,198,110,119,133,120,120,135,
     121,55295,133,57344,1114111,133,1114112,1114112,3,
 };
-static const int xmqcli_d107_182[] = {
+static const int xmqcli_d116_182[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,119,133,120,120,135,121,55295,133,57344,1114111,133,
     1114112,1114112,3,
 };
-static const int xmqcli_d107_183[] = {
+static const int xmqcli_d116_183[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,199,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_184[] = {
+static const int xmqcli_d116_184[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,200,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_185[] = {
+static const int xmqcli_d116_185[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,201,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_186[] = {
+static const int xmqcli_d116_186[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,202,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_187[] = {
+static const int xmqcli_d116_187[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,203,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_188[] = {
+static const int xmqcli_d116_188[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,54,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_189[] = {
+static const int xmqcli_d116_189[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,204,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_190[] = {
+static const int xmqcli_d116_190[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,205,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_191[] = {
+static const int xmqcli_d116_191[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,206,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_192[] = {
+static const int xmqcli_d116_192[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,207,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_193[] = {
+static const int xmqcli_d116_193[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,208,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_194[] = {
+static const int xmqcli_d116_194[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,209,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_195[] = {
+static const int xmqcli_d116_195[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,54,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_196[] = {
+static const int xmqcli_d116_196[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,149,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_197[] = {
+static const int xmqcli_d116_197[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,54,100,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_198[] = {
+static const int xmqcli_d116_198[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,107,133,108,108,210,109,112,133,113,113,182,
     114,119,133,120,120,135,121,55295,133,57344,1114111,133,1114112,1114112,3,
 };
-static const int xmqcli_d107_199[] = {
+static const int xmqcli_d116_199[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,211,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_200[] = {
+static const int xmqcli_d116_200[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,212,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_201[] = {
+static const int xmqcli_d116_201[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,213,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_202[] = {
+static const int xmqcli_d116_202[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,214,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_203[] = {
+static const int xmqcli_d116_203[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,215,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_204[] = {
+static const int xmqcli_d116_204[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,216,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_205[] = {
+static const int xmqcli_d116_205[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,217,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_206[] = {
+static const int xmqcli_d116_206[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,218,115,119,3,
     120,120,54,121,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_207[] = {
+static const int xmqcli_d116_207[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,219,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_208[] = {
+static const int xmqcli_d116_208[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,54,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_209[] = {
+static const int xmqcli_d116_209[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,220,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_210[] = {
+static const int xmqcli_d116_210[] = {
     0,8,133,9,10,3,11,12,133,13,13,3,14,31,133,32,32,3,
     33,45,133,46,46,134,47,119,133,120,120,135,121,55295,133,57344,1114111,133,
     1114112,1114112,3,
 };
-static const int xmqcli_d107_211[] = {
+static const int xmqcli_d116_211[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,221,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_212[] = {
+static const int xmqcli_d116_212[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,222,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_213[] = {
+static const int xmqcli_d116_213[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,223,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_214[] = {
+static const int xmqcli_d116_214[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,224,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_215[] = {
+static const int xmqcli_d116_215[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,225,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_216[] = {
+static const int xmqcli_d116_216[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,226,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_217[] = {
+static const int xmqcli_d116_217[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,54,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_218[] = {
+static const int xmqcli_d116_218[] = {
     0,8,3,11,12,3,14,31,3,33,108,3,109,109,227,110,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_219[] = {
+static const int xmqcli_d116_219[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,228,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_220[] = {
+static const int xmqcli_d116_220[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,229,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_221[] = {
+static const int xmqcli_d116_221[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,230,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_222[] = {
+static const int xmqcli_d116_222[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,231,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_223[] = {
+static const int xmqcli_d116_223[] = {
     0,8,3,11,12,3,14,31,3,33,97,3,98,98,232,99,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_224[] = {
+static const int xmqcli_d116_224[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,233,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_225[] = {
+static const int xmqcli_d116_225[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,54,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_226[] = {
+static const int xmqcli_d116_226[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,234,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_227[] = {
+static const int xmqcli_d116_227[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,235,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_228[] = {
+static const int xmqcli_d116_228[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,236,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_229[] = {
+static const int xmqcli_d116_229[] = {
     0,8,3,11,12,3,14,31,3,33,98,3,99,99,237,100,100,3,
     101,101,238,102,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_230[] = {
+static const int xmqcli_d116_230[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,54,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_231[] = {
+static const int xmqcli_d116_231[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,149,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_232[] = {
+static const int xmqcli_d116_232[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,239,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_233[] = {
+static const int xmqcli_d116_233[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,240,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_234[] = {
+static const int xmqcli_d116_234[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,241,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_235[] = {
+static const int xmqcli_d116_235[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,242,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_236[] = {
+static const int xmqcli_d116_236[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,243,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_237[] = {
+static const int xmqcli_d116_237[] = {
     0,8,3,11,12,3,14,31,3,33,103,3,104,104,244,105,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_238[] = {
+static const int xmqcli_d116_238[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,245,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_239[] = {
+static const int xmqcli_d116_239[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,246,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_240[] = {
+static const int xmqcli_d116_240[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,247,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_241[] = {
+static const int xmqcli_d116_241[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,248,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_242[] = {
+static const int xmqcli_d116_242[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,249,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_243[] = {
+static const int xmqcli_d116_243[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,250,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_244[] = {
+static const int xmqcli_d116_244[] = {
     0,8,3,11,12,3,14,31,3,33,96,3,97,97,251,98,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_245[] = {
+static const int xmqcli_d116_245[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,252,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_246[] = {
+static const int xmqcli_d116_246[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,253,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_247[] = {
+static const int xmqcli_d116_247[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,54,116,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_248[] = {
+static const int xmqcli_d116_248[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,54,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_249[] = {
+static const int xmqcli_d116_249[] = {
     0,8,3,11,12,3,14,31,3,33,107,3,108,108,54,109,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_250[] = {
+static const int xmqcli_d116_250[] = {
     0,8,3,9,10,2,11,12,3,13,13,2,14,31,3,32,32,2,
     33,55295,3,57344,1114111,3,
 };
-static const int xmqcli_d107_251[] = {
+static const int xmqcli_d116_251[] = {
     0,8,3,11,12,3,14,31,3,33,113,3,114,114,254,115,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_252[] = {
+static const int xmqcli_d116_252[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,255,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_253[] = {
+static const int xmqcli_d116_253[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,149,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_254[] = {
+static const int xmqcli_d116_254[] = {
     0,8,3,11,12,3,14,31,3,33,44,3,45,45,256,46,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_255[] = {
+static const int xmqcli_d116_255[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,257,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_256[] = {
+static const int xmqcli_d116_256[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,258,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_257[] = {
+static const int xmqcli_d116_257[] = {
     0,8,3,11,12,3,14,31,3,33,120,3,121,121,149,122,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_258[] = {
+static const int xmqcli_d116_258[] = {
     0,8,3,11,12,3,14,31,3,33,109,3,110,110,259,111,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_259[] = {
+static const int xmqcli_d116_259[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,260,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_260[] = {
+static const int xmqcli_d116_260[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,261,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_261[] = {
+static const int xmqcli_d116_261[] = {
     0,8,3,11,12,3,14,31,3,33,115,3,116,116,262,117,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_262[] = {
+static const int xmqcli_d116_262[] = {
     0,8,3,11,12,3,14,31,3,33,104,3,105,105,263,106,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_263[] = {
+static const int xmqcli_d116_263[] = {
     0,8,3,11,12,3,14,31,3,33,100,3,101,101,264,102,55295,3,
     57344,1114111,3,
 };
-static const int xmqcli_d107_264[] = {
+static const int xmqcli_d116_264[] = {
     0,8,3,11,12,3,14,31,3,33,114,3,115,115,54,116,55295,3,
     57344,1114111,3,
 };
 // Predict the alternative of /7, 0 based, -1 if none matches.
-static int xmqcli_predict107(xmqcli_Parser *p)
+static int xmqcli_predict116(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -3948,271 +4162,271 @@ static int xmqcli_predict107(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d107_0, 5, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d107_1, 32, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d116_0, 5, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d116_1, 32, xmqcli_peek(p, i)); break;
         case 2: return 1;
         case 3: return 0;
-        case 4: s = xmqcli_step(xmqcli_d107_4, 7, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d107_5, 7, xmqcli_peek(p, i)); break;
-        case 6: s = xmqcli_step(xmqcli_d107_6, 7, xmqcli_peek(p, i)); break;
-        case 7: s = xmqcli_step(xmqcli_d107_7, 7, xmqcli_peek(p, i)); break;
-        case 8: s = xmqcli_step(xmqcli_d107_8, 7, xmqcli_peek(p, i)); break;
-        case 9: s = xmqcli_step(xmqcli_d107_9, 7, xmqcli_peek(p, i)); break;
-        case 10: s = xmqcli_step(xmqcli_d107_10, 7, xmqcli_peek(p, i)); break;
-        case 11: s = xmqcli_step(xmqcli_d107_11, 9, xmqcli_peek(p, i)); break;
-        case 12: s = xmqcli_step(xmqcli_d107_12, 7, xmqcli_peek(p, i)); break;
-        case 13: s = xmqcli_step(xmqcli_d107_13, 9, xmqcli_peek(p, i)); break;
-        case 14: s = xmqcli_step(xmqcli_d107_14, 7, xmqcli_peek(p, i)); break;
-        case 15: s = xmqcli_step(xmqcli_d107_15, 7, xmqcli_peek(p, i)); break;
-        case 16: s = xmqcli_step(xmqcli_d107_16, 12, xmqcli_peek(p, i)); break;
-        case 17: s = xmqcli_step(xmqcli_d107_17, 9, xmqcli_peek(p, i)); break;
-        case 18: s = xmqcli_step(xmqcli_d107_18, 7, xmqcli_peek(p, i)); break;
-        case 19: s = xmqcli_step(xmqcli_d107_19, 7, xmqcli_peek(p, i)); break;
-        case 20: s = xmqcli_step(xmqcli_d107_20, 9, xmqcli_peek(p, i)); break;
-        case 21: s = xmqcli_step(xmqcli_d107_21, 7, xmqcli_peek(p, i)); break;
-        case 22: s = xmqcli_step(xmqcli_d107_22, 13, xmqcli_peek(p, i)); break;
-        case 23: s = xmqcli_step(xmqcli_d107_23, 7, xmqcli_peek(p, i)); break;
-        case 24: s = xmqcli_step(xmqcli_d107_24, 9, xmqcli_peek(p, i)); break;
-        case 25: s = xmqcli_step(xmqcli_d107_25, 7, xmqcli_peek(p, i)); break;
-        case 26: s = xmqcli_step(xmqcli_d107_26, 7, xmqcli_peek(p, i)); break;
-        case 27: s = xmqcli_step(xmqcli_d107_27, 9, xmqcli_peek(p, i)); break;
-        case 28: s = xmqcli_step(xmqcli_d107_28, 7, xmqcli_peek(p, i)); break;
-        case 29: s = xmqcli_step(xmqcli_d107_29, 7, xmqcli_peek(p, i)); break;
-        case 30: s = xmqcli_step(xmqcli_d107_30, 7, xmqcli_peek(p, i)); break;
-        case 31: s = xmqcli_step(xmqcli_d107_31, 13, xmqcli_peek(p, i)); break;
-        case 32: s = xmqcli_step(xmqcli_d107_32, 7, xmqcli_peek(p, i)); break;
-        case 33: s = xmqcli_step(xmqcli_d107_33, 7, xmqcli_peek(p, i)); break;
-        case 34: s = xmqcli_step(xmqcli_d107_34, 11, xmqcli_peek(p, i)); break;
-        case 35: s = xmqcli_step(xmqcli_d107_35, 7, xmqcli_peek(p, i)); break;
-        case 36: s = xmqcli_step(xmqcli_d107_36, 7, xmqcli_peek(p, i)); break;
-        case 37: s = xmqcli_step(xmqcli_d107_37, 7, xmqcli_peek(p, i)); break;
-        case 38: s = xmqcli_step(xmqcli_d107_38, 7, xmqcli_peek(p, i)); break;
-        case 39: s = xmqcli_step(xmqcli_d107_39, 9, xmqcli_peek(p, i)); break;
-        case 40: s = xmqcli_step(xmqcli_d107_40, 7, xmqcli_peek(p, i)); break;
-        case 41: s = xmqcli_step(xmqcli_d107_41, 7, xmqcli_peek(p, i)); break;
-        case 42: s = xmqcli_step(xmqcli_d107_42, 7, xmqcli_peek(p, i)); break;
-        case 43: s = xmqcli_step(xmqcli_d107_43, 7, xmqcli_peek(p, i)); break;
-        case 44: s = xmqcli_step(xmqcli_d107_44, 7, xmqcli_peek(p, i)); break;
-        case 45: s = xmqcli_step(xmqcli_d107_45, 10, xmqcli_peek(p, i)); break;
-        case 46: s = xmqcli_step(xmqcli_d107_46, 7, xmqcli_peek(p, i)); break;
-        case 47: s = xmqcli_step(xmqcli_d107_47, 7, xmqcli_peek(p, i)); break;
-        case 48: s = xmqcli_step(xmqcli_d107_48, 7, xmqcli_peek(p, i)); break;
-        case 49: s = xmqcli_step(xmqcli_d107_49, 7, xmqcli_peek(p, i)); break;
-        case 50: s = xmqcli_step(xmqcli_d107_50, 7, xmqcli_peek(p, i)); break;
-        case 51: s = xmqcli_step(xmqcli_d107_51, 7, xmqcli_peek(p, i)); break;
-        case 52: s = xmqcli_step(xmqcli_d107_52, 7, xmqcli_peek(p, i)); break;
-        case 53: s = xmqcli_step(xmqcli_d107_53, 7, xmqcli_peek(p, i)); break;
-        case 54: s = xmqcli_step(xmqcli_d107_54, 11, xmqcli_peek(p, i)); break;
-        case 55: s = xmqcli_step(xmqcli_d107_55, 7, xmqcli_peek(p, i)); break;
-        case 56: s = xmqcli_step(xmqcli_d107_56, 7, xmqcli_peek(p, i)); break;
-        case 57: s = xmqcli_step(xmqcli_d107_57, 7, xmqcli_peek(p, i)); break;
-        case 58: s = xmqcli_step(xmqcli_d107_58, 7, xmqcli_peek(p, i)); break;
-        case 59: s = xmqcli_step(xmqcli_d107_59, 7, xmqcli_peek(p, i)); break;
-        case 60: s = xmqcli_step(xmqcli_d107_60, 7, xmqcli_peek(p, i)); break;
-        case 61: s = xmqcli_step(xmqcli_d107_61, 7, xmqcli_peek(p, i)); break;
-        case 62: s = xmqcli_step(xmqcli_d107_62, 7, xmqcli_peek(p, i)); break;
-        case 63: s = xmqcli_step(xmqcli_d107_63, 7, xmqcli_peek(p, i)); break;
-        case 64: s = xmqcli_step(xmqcli_d107_64, 7, xmqcli_peek(p, i)); break;
-        case 65: s = xmqcli_step(xmqcli_d107_65, 7, xmqcli_peek(p, i)); break;
-        case 66: s = xmqcli_step(xmqcli_d107_66, 7, xmqcli_peek(p, i)); break;
-        case 67: s = xmqcli_step(xmqcli_d107_67, 7, xmqcli_peek(p, i)); break;
-        case 68: s = xmqcli_step(xmqcli_d107_68, 16, xmqcli_peek(p, i)); break;
-        case 69: s = xmqcli_step(xmqcli_d107_69, 7, xmqcli_peek(p, i)); break;
-        case 70: s = xmqcli_step(xmqcli_d107_70, 7, xmqcli_peek(p, i)); break;
-        case 71: s = xmqcli_step(xmqcli_d107_71, 7, xmqcli_peek(p, i)); break;
-        case 72: s = xmqcli_step(xmqcli_d107_72, 7, xmqcli_peek(p, i)); break;
-        case 73: s = xmqcli_step(xmqcli_d107_73, 11, xmqcli_peek(p, i)); break;
-        case 74: s = xmqcli_step(xmqcli_d107_74, 7, xmqcli_peek(p, i)); break;
-        case 75: s = xmqcli_step(xmqcli_d107_75, 7, xmqcli_peek(p, i)); break;
-        case 76: s = xmqcli_step(xmqcli_d107_76, 7, xmqcli_peek(p, i)); break;
-        case 77: s = xmqcli_step(xmqcli_d107_77, 7, xmqcli_peek(p, i)); break;
-        case 78: s = xmqcli_step(xmqcli_d107_78, 7, xmqcli_peek(p, i)); break;
-        case 79: s = xmqcli_step(xmqcli_d107_79, 7, xmqcli_peek(p, i)); break;
-        case 80: s = xmqcli_step(xmqcli_d107_80, 7, xmqcli_peek(p, i)); break;
-        case 81: s = xmqcli_step(xmqcli_d107_81, 7, xmqcli_peek(p, i)); break;
-        case 82: s = xmqcli_step(xmqcli_d107_82, 11, xmqcli_peek(p, i)); break;
-        case 83: s = xmqcli_step(xmqcli_d107_83, 7, xmqcli_peek(p, i)); break;
-        case 84: s = xmqcli_step(xmqcli_d107_84, 11, xmqcli_peek(p, i)); break;
-        case 85: s = xmqcli_step(xmqcli_d107_85, 7, xmqcli_peek(p, i)); break;
-        case 86: s = xmqcli_step(xmqcli_d107_86, 7, xmqcli_peek(p, i)); break;
-        case 87: s = xmqcli_step(xmqcli_d107_87, 7, xmqcli_peek(p, i)); break;
-        case 88: s = xmqcli_step(xmqcli_d107_88, 7, xmqcli_peek(p, i)); break;
-        case 89: s = xmqcli_step(xmqcli_d107_89, 7, xmqcli_peek(p, i)); break;
-        case 90: s = xmqcli_step(xmqcli_d107_90, 7, xmqcli_peek(p, i)); break;
-        case 91: s = xmqcli_step(xmqcli_d107_91, 7, xmqcli_peek(p, i)); break;
-        case 92: s = xmqcli_step(xmqcli_d107_92, 7, xmqcli_peek(p, i)); break;
-        case 93: s = xmqcli_step(xmqcli_d107_93, 7, xmqcli_peek(p, i)); break;
-        case 94: s = xmqcli_step(xmqcli_d107_94, 7, xmqcli_peek(p, i)); break;
-        case 95: s = xmqcli_step(xmqcli_d107_95, 7, xmqcli_peek(p, i)); break;
-        case 96: s = xmqcli_step(xmqcli_d107_96, 7, xmqcli_peek(p, i)); break;
-        case 97: s = xmqcli_step(xmqcli_d107_97, 7, xmqcli_peek(p, i)); break;
-        case 98: s = xmqcli_step(xmqcli_d107_98, 7, xmqcli_peek(p, i)); break;
-        case 99: s = xmqcli_step(xmqcli_d107_99, 7, xmqcli_peek(p, i)); break;
-        case 100: s = xmqcli_step(xmqcli_d107_100, 7, xmqcli_peek(p, i)); break;
-        case 101: s = xmqcli_step(xmqcli_d107_101, 7, xmqcli_peek(p, i)); break;
-        case 102: s = xmqcli_step(xmqcli_d107_102, 7, xmqcli_peek(p, i)); break;
-        case 103: s = xmqcli_step(xmqcli_d107_103, 7, xmqcli_peek(p, i)); break;
-        case 104: s = xmqcli_step(xmqcli_d107_104, 7, xmqcli_peek(p, i)); break;
-        case 105: s = xmqcli_step(xmqcli_d107_105, 13, xmqcli_peek(p, i)); break;
-        case 106: s = xmqcli_step(xmqcli_d107_106, 7, xmqcli_peek(p, i)); break;
-        case 107: s = xmqcli_step(xmqcli_d107_107, 7, xmqcli_peek(p, i)); break;
-        case 108: s = xmqcli_step(xmqcli_d107_108, 7, xmqcli_peek(p, i)); break;
-        case 109: s = xmqcli_step(xmqcli_d107_109, 7, xmqcli_peek(p, i)); break;
-        case 110: s = xmqcli_step(xmqcli_d107_110, 7, xmqcli_peek(p, i)); break;
-        case 111: s = xmqcli_step(xmqcli_d107_111, 7, xmqcli_peek(p, i)); break;
-        case 112: s = xmqcli_step(xmqcli_d107_112, 7, xmqcli_peek(p, i)); break;
-        case 113: s = xmqcli_step(xmqcli_d107_113, 7, xmqcli_peek(p, i)); break;
-        case 114: s = xmqcli_step(xmqcli_d107_114, 7, xmqcli_peek(p, i)); break;
-        case 115: s = xmqcli_step(xmqcli_d107_115, 7, xmqcli_peek(p, i)); break;
-        case 116: s = xmqcli_step(xmqcli_d107_116, 7, xmqcli_peek(p, i)); break;
-        case 117: s = xmqcli_step(xmqcli_d107_117, 7, xmqcli_peek(p, i)); break;
-        case 118: s = xmqcli_step(xmqcli_d107_118, 7, xmqcli_peek(p, i)); break;
-        case 119: s = xmqcli_step(xmqcli_d107_119, 7, xmqcli_peek(p, i)); break;
-        case 120: s = xmqcli_step(xmqcli_d107_120, 7, xmqcli_peek(p, i)); break;
-        case 121: s = xmqcli_step(xmqcli_d107_121, 7, xmqcli_peek(p, i)); break;
-        case 122: s = xmqcli_step(xmqcli_d107_122, 7, xmqcli_peek(p, i)); break;
-        case 123: s = xmqcli_step(xmqcli_d107_123, 7, xmqcli_peek(p, i)); break;
-        case 124: s = xmqcli_step(xmqcli_d107_124, 7, xmqcli_peek(p, i)); break;
-        case 125: s = xmqcli_step(xmqcli_d107_125, 7, xmqcli_peek(p, i)); break;
-        case 126: s = xmqcli_step(xmqcli_d107_126, 7, xmqcli_peek(p, i)); break;
-        case 127: s = xmqcli_step(xmqcli_d107_127, 9, xmqcli_peek(p, i)); break;
-        case 128: s = xmqcli_step(xmqcli_d107_128, 7, xmqcli_peek(p, i)); break;
-        case 129: s = xmqcli_step(xmqcli_d107_129, 7, xmqcli_peek(p, i)); break;
-        case 130: s = xmqcli_step(xmqcli_d107_130, 7, xmqcli_peek(p, i)); break;
-        case 131: s = xmqcli_step(xmqcli_d107_131, 7, xmqcli_peek(p, i)); break;
-        case 132: s = xmqcli_step(xmqcli_d107_132, 7, xmqcli_peek(p, i)); break;
-        case 133: s = xmqcli_step(xmqcli_d107_133, 13, xmqcli_peek(p, i)); break;
-        case 134: s = xmqcli_step(xmqcli_d107_134, 15, xmqcli_peek(p, i)); break;
-        case 135: s = xmqcli_step(xmqcli_d107_135, 15, xmqcli_peek(p, i)); break;
-        case 136: s = xmqcli_step(xmqcli_d107_136, 7, xmqcli_peek(p, i)); break;
-        case 137: s = xmqcli_step(xmqcli_d107_137, 7, xmqcli_peek(p, i)); break;
-        case 138: s = xmqcli_step(xmqcli_d107_138, 10, xmqcli_peek(p, i)); break;
-        case 139: s = xmqcli_step(xmqcli_d107_139, 7, xmqcli_peek(p, i)); break;
-        case 140: s = xmqcli_step(xmqcli_d107_140, 7, xmqcli_peek(p, i)); break;
-        case 141: s = xmqcli_step(xmqcli_d107_141, 7, xmqcli_peek(p, i)); break;
-        case 142: s = xmqcli_step(xmqcli_d107_142, 7, xmqcli_peek(p, i)); break;
-        case 143: s = xmqcli_step(xmqcli_d107_143, 7, xmqcli_peek(p, i)); break;
-        case 144: s = xmqcli_step(xmqcli_d107_144, 7, xmqcli_peek(p, i)); break;
-        case 145: s = xmqcli_step(xmqcli_d107_145, 7, xmqcli_peek(p, i)); break;
-        case 146: s = xmqcli_step(xmqcli_d107_146, 7, xmqcli_peek(p, i)); break;
-        case 147: s = xmqcli_step(xmqcli_d107_147, 7, xmqcli_peek(p, i)); break;
-        case 148: s = xmqcli_step(xmqcli_d107_148, 7, xmqcli_peek(p, i)); break;
-        case 149: s = xmqcli_step(xmqcli_d107_149, 8, xmqcli_peek(p, i)); break;
-        case 150: s = xmqcli_step(xmqcli_d107_150, 7, xmqcli_peek(p, i)); break;
-        case 151: s = xmqcli_step(xmqcli_d107_151, 7, xmqcli_peek(p, i)); break;
-        case 152: s = xmqcli_step(xmqcli_d107_152, 7, xmqcli_peek(p, i)); break;
-        case 153: s = xmqcli_step(xmqcli_d107_153, 9, xmqcli_peek(p, i)); break;
-        case 154: s = xmqcli_step(xmqcli_d107_154, 7, xmqcli_peek(p, i)); break;
-        case 155: s = xmqcli_step(xmqcli_d107_155, 7, xmqcli_peek(p, i)); break;
-        case 156: s = xmqcli_step(xmqcli_d107_156, 7, xmqcli_peek(p, i)); break;
-        case 157: s = xmqcli_step(xmqcli_d107_157, 7, xmqcli_peek(p, i)); break;
-        case 158: s = xmqcli_step(xmqcli_d107_158, 7, xmqcli_peek(p, i)); break;
-        case 159: s = xmqcli_step(xmqcli_d107_159, 7, xmqcli_peek(p, i)); break;
-        case 160: s = xmqcli_step(xmqcli_d107_160, 7, xmqcli_peek(p, i)); break;
-        case 161: s = xmqcli_step(xmqcli_d107_161, 13, xmqcli_peek(p, i)); break;
-        case 162: s = xmqcli_step(xmqcli_d107_162, 15, xmqcli_peek(p, i)); break;
-        case 163: s = xmqcli_step(xmqcli_d107_163, 7, xmqcli_peek(p, i)); break;
-        case 164: s = xmqcli_step(xmqcli_d107_164, 7, xmqcli_peek(p, i)); break;
-        case 165: s = xmqcli_step(xmqcli_d107_165, 7, xmqcli_peek(p, i)); break;
-        case 166: s = xmqcli_step(xmqcli_d107_166, 7, xmqcli_peek(p, i)); break;
-        case 167: s = xmqcli_step(xmqcli_d107_167, 7, xmqcli_peek(p, i)); break;
-        case 168: s = xmqcli_step(xmqcli_d107_168, 7, xmqcli_peek(p, i)); break;
-        case 169: s = xmqcli_step(xmqcli_d107_169, 7, xmqcli_peek(p, i)); break;
-        case 170: s = xmqcli_step(xmqcli_d107_170, 7, xmqcli_peek(p, i)); break;
-        case 171: s = xmqcli_step(xmqcli_d107_171, 7, xmqcli_peek(p, i)); break;
-        case 172: s = xmqcli_step(xmqcli_d107_172, 9, xmqcli_peek(p, i)); break;
-        case 173: s = xmqcli_step(xmqcli_d107_173, 10, xmqcli_peek(p, i)); break;
-        case 174: s = xmqcli_step(xmqcli_d107_174, 7, xmqcli_peek(p, i)); break;
-        case 175: s = xmqcli_step(xmqcli_d107_175, 7, xmqcli_peek(p, i)); break;
-        case 176: s = xmqcli_step(xmqcli_d107_176, 7, xmqcli_peek(p, i)); break;
-        case 177: s = xmqcli_step(xmqcli_d107_177, 7, xmqcli_peek(p, i)); break;
-        case 178: s = xmqcli_step(xmqcli_d107_178, 7, xmqcli_peek(p, i)); break;
-        case 179: s = xmqcli_step(xmqcli_d107_179, 7, xmqcli_peek(p, i)); break;
-        case 180: s = xmqcli_step(xmqcli_d107_180, 7, xmqcli_peek(p, i)); break;
-        case 181: s = xmqcli_step(xmqcli_d107_181, 15, xmqcli_peek(p, i)); break;
-        case 182: s = xmqcli_step(xmqcli_d107_182, 13, xmqcli_peek(p, i)); break;
-        case 183: s = xmqcli_step(xmqcli_d107_183, 7, xmqcli_peek(p, i)); break;
-        case 184: s = xmqcli_step(xmqcli_d107_184, 7, xmqcli_peek(p, i)); break;
-        case 185: s = xmqcli_step(xmqcli_d107_185, 7, xmqcli_peek(p, i)); break;
-        case 186: s = xmqcli_step(xmqcli_d107_186, 7, xmqcli_peek(p, i)); break;
-        case 187: s = xmqcli_step(xmqcli_d107_187, 7, xmqcli_peek(p, i)); break;
-        case 188: s = xmqcli_step(xmqcli_d107_188, 7, xmqcli_peek(p, i)); break;
-        case 189: s = xmqcli_step(xmqcli_d107_189, 7, xmqcli_peek(p, i)); break;
-        case 190: s = xmqcli_step(xmqcli_d107_190, 7, xmqcli_peek(p, i)); break;
-        case 191: s = xmqcli_step(xmqcli_d107_191, 7, xmqcli_peek(p, i)); break;
-        case 192: s = xmqcli_step(xmqcli_d107_192, 7, xmqcli_peek(p, i)); break;
-        case 193: s = xmqcli_step(xmqcli_d107_193, 7, xmqcli_peek(p, i)); break;
-        case 194: s = xmqcli_step(xmqcli_d107_194, 7, xmqcli_peek(p, i)); break;
-        case 195: s = xmqcli_step(xmqcli_d107_195, 7, xmqcli_peek(p, i)); break;
-        case 196: s = xmqcli_step(xmqcli_d107_196, 7, xmqcli_peek(p, i)); break;
-        case 197: s = xmqcli_step(xmqcli_d107_197, 7, xmqcli_peek(p, i)); break;
-        case 198: s = xmqcli_step(xmqcli_d107_198, 17, xmqcli_peek(p, i)); break;
-        case 199: s = xmqcli_step(xmqcli_d107_199, 7, xmqcli_peek(p, i)); break;
-        case 200: s = xmqcli_step(xmqcli_d107_200, 7, xmqcli_peek(p, i)); break;
-        case 201: s = xmqcli_step(xmqcli_d107_201, 7, xmqcli_peek(p, i)); break;
-        case 202: s = xmqcli_step(xmqcli_d107_202, 7, xmqcli_peek(p, i)); break;
-        case 203: s = xmqcli_step(xmqcli_d107_203, 7, xmqcli_peek(p, i)); break;
-        case 204: s = xmqcli_step(xmqcli_d107_204, 7, xmqcli_peek(p, i)); break;
-        case 205: s = xmqcli_step(xmqcli_d107_205, 7, xmqcli_peek(p, i)); break;
-        case 206: s = xmqcli_step(xmqcli_d107_206, 9, xmqcli_peek(p, i)); break;
-        case 207: s = xmqcli_step(xmqcli_d107_207, 7, xmqcli_peek(p, i)); break;
-        case 208: s = xmqcli_step(xmqcli_d107_208, 7, xmqcli_peek(p, i)); break;
-        case 209: s = xmqcli_step(xmqcli_d107_209, 7, xmqcli_peek(p, i)); break;
-        case 210: s = xmqcli_step(xmqcli_d107_210, 13, xmqcli_peek(p, i)); break;
-        case 211: s = xmqcli_step(xmqcli_d107_211, 7, xmqcli_peek(p, i)); break;
-        case 212: s = xmqcli_step(xmqcli_d107_212, 7, xmqcli_peek(p, i)); break;
-        case 213: s = xmqcli_step(xmqcli_d107_213, 7, xmqcli_peek(p, i)); break;
-        case 214: s = xmqcli_step(xmqcli_d107_214, 7, xmqcli_peek(p, i)); break;
-        case 215: s = xmqcli_step(xmqcli_d107_215, 7, xmqcli_peek(p, i)); break;
-        case 216: s = xmqcli_step(xmqcli_d107_216, 7, xmqcli_peek(p, i)); break;
-        case 217: s = xmqcli_step(xmqcli_d107_217, 7, xmqcli_peek(p, i)); break;
-        case 218: s = xmqcli_step(xmqcli_d107_218, 7, xmqcli_peek(p, i)); break;
-        case 219: s = xmqcli_step(xmqcli_d107_219, 7, xmqcli_peek(p, i)); break;
-        case 220: s = xmqcli_step(xmqcli_d107_220, 7, xmqcli_peek(p, i)); break;
-        case 221: s = xmqcli_step(xmqcli_d107_221, 7, xmqcli_peek(p, i)); break;
-        case 222: s = xmqcli_step(xmqcli_d107_222, 7, xmqcli_peek(p, i)); break;
-        case 223: s = xmqcli_step(xmqcli_d107_223, 7, xmqcli_peek(p, i)); break;
-        case 224: s = xmqcli_step(xmqcli_d107_224, 7, xmqcli_peek(p, i)); break;
-        case 225: s = xmqcli_step(xmqcli_d107_225, 7, xmqcli_peek(p, i)); break;
-        case 226: s = xmqcli_step(xmqcli_d107_226, 7, xmqcli_peek(p, i)); break;
-        case 227: s = xmqcli_step(xmqcli_d107_227, 7, xmqcli_peek(p, i)); break;
-        case 228: s = xmqcli_step(xmqcli_d107_228, 7, xmqcli_peek(p, i)); break;
-        case 229: s = xmqcli_step(xmqcli_d107_229, 9, xmqcli_peek(p, i)); break;
-        case 230: s = xmqcli_step(xmqcli_d107_230, 7, xmqcli_peek(p, i)); break;
-        case 231: s = xmqcli_step(xmqcli_d107_231, 7, xmqcli_peek(p, i)); break;
-        case 232: s = xmqcli_step(xmqcli_d107_232, 7, xmqcli_peek(p, i)); break;
-        case 233: s = xmqcli_step(xmqcli_d107_233, 7, xmqcli_peek(p, i)); break;
-        case 234: s = xmqcli_step(xmqcli_d107_234, 7, xmqcli_peek(p, i)); break;
-        case 235: s = xmqcli_step(xmqcli_d107_235, 7, xmqcli_peek(p, i)); break;
-        case 236: s = xmqcli_step(xmqcli_d107_236, 7, xmqcli_peek(p, i)); break;
-        case 237: s = xmqcli_step(xmqcli_d107_237, 7, xmqcli_peek(p, i)); break;
-        case 238: s = xmqcli_step(xmqcli_d107_238, 7, xmqcli_peek(p, i)); break;
-        case 239: s = xmqcli_step(xmqcli_d107_239, 7, xmqcli_peek(p, i)); break;
-        case 240: s = xmqcli_step(xmqcli_d107_240, 7, xmqcli_peek(p, i)); break;
-        case 241: s = xmqcli_step(xmqcli_d107_241, 7, xmqcli_peek(p, i)); break;
-        case 242: s = xmqcli_step(xmqcli_d107_242, 7, xmqcli_peek(p, i)); break;
-        case 243: s = xmqcli_step(xmqcli_d107_243, 7, xmqcli_peek(p, i)); break;
-        case 244: s = xmqcli_step(xmqcli_d107_244, 7, xmqcli_peek(p, i)); break;
-        case 245: s = xmqcli_step(xmqcli_d107_245, 7, xmqcli_peek(p, i)); break;
-        case 246: s = xmqcli_step(xmqcli_d107_246, 7, xmqcli_peek(p, i)); break;
-        case 247: s = xmqcli_step(xmqcli_d107_247, 7, xmqcli_peek(p, i)); break;
-        case 248: s = xmqcli_step(xmqcli_d107_248, 7, xmqcli_peek(p, i)); break;
-        case 249: s = xmqcli_step(xmqcli_d107_249, 7, xmqcli_peek(p, i)); break;
-        case 250: s = xmqcli_step(xmqcli_d107_250, 8, xmqcli_peek(p, i)); break;
-        case 251: s = xmqcli_step(xmqcli_d107_251, 7, xmqcli_peek(p, i)); break;
-        case 252: s = xmqcli_step(xmqcli_d107_252, 7, xmqcli_peek(p, i)); break;
-        case 253: s = xmqcli_step(xmqcli_d107_253, 7, xmqcli_peek(p, i)); break;
-        case 254: s = xmqcli_step(xmqcli_d107_254, 7, xmqcli_peek(p, i)); break;
-        case 255: s = xmqcli_step(xmqcli_d107_255, 7, xmqcli_peek(p, i)); break;
-        case 256: s = xmqcli_step(xmqcli_d107_256, 7, xmqcli_peek(p, i)); break;
-        case 257: s = xmqcli_step(xmqcli_d107_257, 7, xmqcli_peek(p, i)); break;
-        case 258: s = xmqcli_step(xmqcli_d107_258, 7, xmqcli_peek(p, i)); break;
-        case 259: s = xmqcli_step(xmqcli_d107_259, 7, xmqcli_peek(p, i)); break;
-        case 260: s = xmqcli_step(xmqcli_d107_260, 7, xmqcli_peek(p, i)); break;
-        case 261: s = xmqcli_step(xmqcli_d107_261, 7, xmqcli_peek(p, i)); break;
-        case 262: s = xmqcli_step(xmqcli_d107_262, 7, xmqcli_peek(p, i)); break;
-        case 263: s = xmqcli_step(xmqcli_d107_263, 7, xmqcli_peek(p, i)); break;
-        case 264: s = xmqcli_step(xmqcli_d107_264, 7, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d116_4, 7, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d116_5, 7, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d116_6, 7, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d116_7, 7, xmqcli_peek(p, i)); break;
+        case 8: s = xmqcli_step(xmqcli_d116_8, 7, xmqcli_peek(p, i)); break;
+        case 9: s = xmqcli_step(xmqcli_d116_9, 7, xmqcli_peek(p, i)); break;
+        case 10: s = xmqcli_step(xmqcli_d116_10, 7, xmqcli_peek(p, i)); break;
+        case 11: s = xmqcli_step(xmqcli_d116_11, 9, xmqcli_peek(p, i)); break;
+        case 12: s = xmqcli_step(xmqcli_d116_12, 7, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d116_13, 9, xmqcli_peek(p, i)); break;
+        case 14: s = xmqcli_step(xmqcli_d116_14, 7, xmqcli_peek(p, i)); break;
+        case 15: s = xmqcli_step(xmqcli_d116_15, 7, xmqcli_peek(p, i)); break;
+        case 16: s = xmqcli_step(xmqcli_d116_16, 12, xmqcli_peek(p, i)); break;
+        case 17: s = xmqcli_step(xmqcli_d116_17, 9, xmqcli_peek(p, i)); break;
+        case 18: s = xmqcli_step(xmqcli_d116_18, 7, xmqcli_peek(p, i)); break;
+        case 19: s = xmqcli_step(xmqcli_d116_19, 7, xmqcli_peek(p, i)); break;
+        case 20: s = xmqcli_step(xmqcli_d116_20, 9, xmqcli_peek(p, i)); break;
+        case 21: s = xmqcli_step(xmqcli_d116_21, 7, xmqcli_peek(p, i)); break;
+        case 22: s = xmqcli_step(xmqcli_d116_22, 13, xmqcli_peek(p, i)); break;
+        case 23: s = xmqcli_step(xmqcli_d116_23, 7, xmqcli_peek(p, i)); break;
+        case 24: s = xmqcli_step(xmqcli_d116_24, 9, xmqcli_peek(p, i)); break;
+        case 25: s = xmqcli_step(xmqcli_d116_25, 7, xmqcli_peek(p, i)); break;
+        case 26: s = xmqcli_step(xmqcli_d116_26, 7, xmqcli_peek(p, i)); break;
+        case 27: s = xmqcli_step(xmqcli_d116_27, 9, xmqcli_peek(p, i)); break;
+        case 28: s = xmqcli_step(xmqcli_d116_28, 7, xmqcli_peek(p, i)); break;
+        case 29: s = xmqcli_step(xmqcli_d116_29, 7, xmqcli_peek(p, i)); break;
+        case 30: s = xmqcli_step(xmqcli_d116_30, 7, xmqcli_peek(p, i)); break;
+        case 31: s = xmqcli_step(xmqcli_d116_31, 13, xmqcli_peek(p, i)); break;
+        case 32: s = xmqcli_step(xmqcli_d116_32, 7, xmqcli_peek(p, i)); break;
+        case 33: s = xmqcli_step(xmqcli_d116_33, 7, xmqcli_peek(p, i)); break;
+        case 34: s = xmqcli_step(xmqcli_d116_34, 11, xmqcli_peek(p, i)); break;
+        case 35: s = xmqcli_step(xmqcli_d116_35, 7, xmqcli_peek(p, i)); break;
+        case 36: s = xmqcli_step(xmqcli_d116_36, 7, xmqcli_peek(p, i)); break;
+        case 37: s = xmqcli_step(xmqcli_d116_37, 7, xmqcli_peek(p, i)); break;
+        case 38: s = xmqcli_step(xmqcli_d116_38, 7, xmqcli_peek(p, i)); break;
+        case 39: s = xmqcli_step(xmqcli_d116_39, 9, xmqcli_peek(p, i)); break;
+        case 40: s = xmqcli_step(xmqcli_d116_40, 7, xmqcli_peek(p, i)); break;
+        case 41: s = xmqcli_step(xmqcli_d116_41, 7, xmqcli_peek(p, i)); break;
+        case 42: s = xmqcli_step(xmqcli_d116_42, 7, xmqcli_peek(p, i)); break;
+        case 43: s = xmqcli_step(xmqcli_d116_43, 7, xmqcli_peek(p, i)); break;
+        case 44: s = xmqcli_step(xmqcli_d116_44, 7, xmqcli_peek(p, i)); break;
+        case 45: s = xmqcli_step(xmqcli_d116_45, 10, xmqcli_peek(p, i)); break;
+        case 46: s = xmqcli_step(xmqcli_d116_46, 7, xmqcli_peek(p, i)); break;
+        case 47: s = xmqcli_step(xmqcli_d116_47, 7, xmqcli_peek(p, i)); break;
+        case 48: s = xmqcli_step(xmqcli_d116_48, 7, xmqcli_peek(p, i)); break;
+        case 49: s = xmqcli_step(xmqcli_d116_49, 7, xmqcli_peek(p, i)); break;
+        case 50: s = xmqcli_step(xmqcli_d116_50, 7, xmqcli_peek(p, i)); break;
+        case 51: s = xmqcli_step(xmqcli_d116_51, 7, xmqcli_peek(p, i)); break;
+        case 52: s = xmqcli_step(xmqcli_d116_52, 7, xmqcli_peek(p, i)); break;
+        case 53: s = xmqcli_step(xmqcli_d116_53, 7, xmqcli_peek(p, i)); break;
+        case 54: s = xmqcli_step(xmqcli_d116_54, 11, xmqcli_peek(p, i)); break;
+        case 55: s = xmqcli_step(xmqcli_d116_55, 7, xmqcli_peek(p, i)); break;
+        case 56: s = xmqcli_step(xmqcli_d116_56, 7, xmqcli_peek(p, i)); break;
+        case 57: s = xmqcli_step(xmqcli_d116_57, 7, xmqcli_peek(p, i)); break;
+        case 58: s = xmqcli_step(xmqcli_d116_58, 7, xmqcli_peek(p, i)); break;
+        case 59: s = xmqcli_step(xmqcli_d116_59, 7, xmqcli_peek(p, i)); break;
+        case 60: s = xmqcli_step(xmqcli_d116_60, 7, xmqcli_peek(p, i)); break;
+        case 61: s = xmqcli_step(xmqcli_d116_61, 7, xmqcli_peek(p, i)); break;
+        case 62: s = xmqcli_step(xmqcli_d116_62, 7, xmqcli_peek(p, i)); break;
+        case 63: s = xmqcli_step(xmqcli_d116_63, 7, xmqcli_peek(p, i)); break;
+        case 64: s = xmqcli_step(xmqcli_d116_64, 7, xmqcli_peek(p, i)); break;
+        case 65: s = xmqcli_step(xmqcli_d116_65, 7, xmqcli_peek(p, i)); break;
+        case 66: s = xmqcli_step(xmqcli_d116_66, 7, xmqcli_peek(p, i)); break;
+        case 67: s = xmqcli_step(xmqcli_d116_67, 7, xmqcli_peek(p, i)); break;
+        case 68: s = xmqcli_step(xmqcli_d116_68, 16, xmqcli_peek(p, i)); break;
+        case 69: s = xmqcli_step(xmqcli_d116_69, 7, xmqcli_peek(p, i)); break;
+        case 70: s = xmqcli_step(xmqcli_d116_70, 7, xmqcli_peek(p, i)); break;
+        case 71: s = xmqcli_step(xmqcli_d116_71, 7, xmqcli_peek(p, i)); break;
+        case 72: s = xmqcli_step(xmqcli_d116_72, 7, xmqcli_peek(p, i)); break;
+        case 73: s = xmqcli_step(xmqcli_d116_73, 11, xmqcli_peek(p, i)); break;
+        case 74: s = xmqcli_step(xmqcli_d116_74, 7, xmqcli_peek(p, i)); break;
+        case 75: s = xmqcli_step(xmqcli_d116_75, 7, xmqcli_peek(p, i)); break;
+        case 76: s = xmqcli_step(xmqcli_d116_76, 7, xmqcli_peek(p, i)); break;
+        case 77: s = xmqcli_step(xmqcli_d116_77, 7, xmqcli_peek(p, i)); break;
+        case 78: s = xmqcli_step(xmqcli_d116_78, 7, xmqcli_peek(p, i)); break;
+        case 79: s = xmqcli_step(xmqcli_d116_79, 7, xmqcli_peek(p, i)); break;
+        case 80: s = xmqcli_step(xmqcli_d116_80, 7, xmqcli_peek(p, i)); break;
+        case 81: s = xmqcli_step(xmqcli_d116_81, 7, xmqcli_peek(p, i)); break;
+        case 82: s = xmqcli_step(xmqcli_d116_82, 11, xmqcli_peek(p, i)); break;
+        case 83: s = xmqcli_step(xmqcli_d116_83, 7, xmqcli_peek(p, i)); break;
+        case 84: s = xmqcli_step(xmqcli_d116_84, 11, xmqcli_peek(p, i)); break;
+        case 85: s = xmqcli_step(xmqcli_d116_85, 7, xmqcli_peek(p, i)); break;
+        case 86: s = xmqcli_step(xmqcli_d116_86, 7, xmqcli_peek(p, i)); break;
+        case 87: s = xmqcli_step(xmqcli_d116_87, 7, xmqcli_peek(p, i)); break;
+        case 88: s = xmqcli_step(xmqcli_d116_88, 7, xmqcli_peek(p, i)); break;
+        case 89: s = xmqcli_step(xmqcli_d116_89, 7, xmqcli_peek(p, i)); break;
+        case 90: s = xmqcli_step(xmqcli_d116_90, 7, xmqcli_peek(p, i)); break;
+        case 91: s = xmqcli_step(xmqcli_d116_91, 7, xmqcli_peek(p, i)); break;
+        case 92: s = xmqcli_step(xmqcli_d116_92, 7, xmqcli_peek(p, i)); break;
+        case 93: s = xmqcli_step(xmqcli_d116_93, 7, xmqcli_peek(p, i)); break;
+        case 94: s = xmqcli_step(xmqcli_d116_94, 7, xmqcli_peek(p, i)); break;
+        case 95: s = xmqcli_step(xmqcli_d116_95, 7, xmqcli_peek(p, i)); break;
+        case 96: s = xmqcli_step(xmqcli_d116_96, 7, xmqcli_peek(p, i)); break;
+        case 97: s = xmqcli_step(xmqcli_d116_97, 7, xmqcli_peek(p, i)); break;
+        case 98: s = xmqcli_step(xmqcli_d116_98, 7, xmqcli_peek(p, i)); break;
+        case 99: s = xmqcli_step(xmqcli_d116_99, 7, xmqcli_peek(p, i)); break;
+        case 100: s = xmqcli_step(xmqcli_d116_100, 7, xmqcli_peek(p, i)); break;
+        case 101: s = xmqcli_step(xmqcli_d116_101, 7, xmqcli_peek(p, i)); break;
+        case 102: s = xmqcli_step(xmqcli_d116_102, 7, xmqcli_peek(p, i)); break;
+        case 103: s = xmqcli_step(xmqcli_d116_103, 7, xmqcli_peek(p, i)); break;
+        case 104: s = xmqcli_step(xmqcli_d116_104, 7, xmqcli_peek(p, i)); break;
+        case 105: s = xmqcli_step(xmqcli_d116_105, 13, xmqcli_peek(p, i)); break;
+        case 106: s = xmqcli_step(xmqcli_d116_106, 7, xmqcli_peek(p, i)); break;
+        case 107: s = xmqcli_step(xmqcli_d116_107, 7, xmqcli_peek(p, i)); break;
+        case 108: s = xmqcli_step(xmqcli_d116_108, 7, xmqcli_peek(p, i)); break;
+        case 109: s = xmqcli_step(xmqcli_d116_109, 7, xmqcli_peek(p, i)); break;
+        case 110: s = xmqcli_step(xmqcli_d116_110, 7, xmqcli_peek(p, i)); break;
+        case 111: s = xmqcli_step(xmqcli_d116_111, 7, xmqcli_peek(p, i)); break;
+        case 112: s = xmqcli_step(xmqcli_d116_112, 7, xmqcli_peek(p, i)); break;
+        case 113: s = xmqcli_step(xmqcli_d116_113, 7, xmqcli_peek(p, i)); break;
+        case 114: s = xmqcli_step(xmqcli_d116_114, 7, xmqcli_peek(p, i)); break;
+        case 115: s = xmqcli_step(xmqcli_d116_115, 7, xmqcli_peek(p, i)); break;
+        case 116: s = xmqcli_step(xmqcli_d116_116, 7, xmqcli_peek(p, i)); break;
+        case 117: s = xmqcli_step(xmqcli_d116_117, 7, xmqcli_peek(p, i)); break;
+        case 118: s = xmqcli_step(xmqcli_d116_118, 7, xmqcli_peek(p, i)); break;
+        case 119: s = xmqcli_step(xmqcli_d116_119, 7, xmqcli_peek(p, i)); break;
+        case 120: s = xmqcli_step(xmqcli_d116_120, 7, xmqcli_peek(p, i)); break;
+        case 121: s = xmqcli_step(xmqcli_d116_121, 7, xmqcli_peek(p, i)); break;
+        case 122: s = xmqcli_step(xmqcli_d116_122, 7, xmqcli_peek(p, i)); break;
+        case 123: s = xmqcli_step(xmqcli_d116_123, 7, xmqcli_peek(p, i)); break;
+        case 124: s = xmqcli_step(xmqcli_d116_124, 7, xmqcli_peek(p, i)); break;
+        case 125: s = xmqcli_step(xmqcli_d116_125, 7, xmqcli_peek(p, i)); break;
+        case 126: s = xmqcli_step(xmqcli_d116_126, 7, xmqcli_peek(p, i)); break;
+        case 127: s = xmqcli_step(xmqcli_d116_127, 9, xmqcli_peek(p, i)); break;
+        case 128: s = xmqcli_step(xmqcli_d116_128, 7, xmqcli_peek(p, i)); break;
+        case 129: s = xmqcli_step(xmqcli_d116_129, 7, xmqcli_peek(p, i)); break;
+        case 130: s = xmqcli_step(xmqcli_d116_130, 7, xmqcli_peek(p, i)); break;
+        case 131: s = xmqcli_step(xmqcli_d116_131, 7, xmqcli_peek(p, i)); break;
+        case 132: s = xmqcli_step(xmqcli_d116_132, 7, xmqcli_peek(p, i)); break;
+        case 133: s = xmqcli_step(xmqcli_d116_133, 13, xmqcli_peek(p, i)); break;
+        case 134: s = xmqcli_step(xmqcli_d116_134, 15, xmqcli_peek(p, i)); break;
+        case 135: s = xmqcli_step(xmqcli_d116_135, 15, xmqcli_peek(p, i)); break;
+        case 136: s = xmqcli_step(xmqcli_d116_136, 7, xmqcli_peek(p, i)); break;
+        case 137: s = xmqcli_step(xmqcli_d116_137, 7, xmqcli_peek(p, i)); break;
+        case 138: s = xmqcli_step(xmqcli_d116_138, 10, xmqcli_peek(p, i)); break;
+        case 139: s = xmqcli_step(xmqcli_d116_139, 7, xmqcli_peek(p, i)); break;
+        case 140: s = xmqcli_step(xmqcli_d116_140, 7, xmqcli_peek(p, i)); break;
+        case 141: s = xmqcli_step(xmqcli_d116_141, 7, xmqcli_peek(p, i)); break;
+        case 142: s = xmqcli_step(xmqcli_d116_142, 7, xmqcli_peek(p, i)); break;
+        case 143: s = xmqcli_step(xmqcli_d116_143, 7, xmqcli_peek(p, i)); break;
+        case 144: s = xmqcli_step(xmqcli_d116_144, 7, xmqcli_peek(p, i)); break;
+        case 145: s = xmqcli_step(xmqcli_d116_145, 7, xmqcli_peek(p, i)); break;
+        case 146: s = xmqcli_step(xmqcli_d116_146, 7, xmqcli_peek(p, i)); break;
+        case 147: s = xmqcli_step(xmqcli_d116_147, 7, xmqcli_peek(p, i)); break;
+        case 148: s = xmqcli_step(xmqcli_d116_148, 7, xmqcli_peek(p, i)); break;
+        case 149: s = xmqcli_step(xmqcli_d116_149, 8, xmqcli_peek(p, i)); break;
+        case 150: s = xmqcli_step(xmqcli_d116_150, 7, xmqcli_peek(p, i)); break;
+        case 151: s = xmqcli_step(xmqcli_d116_151, 7, xmqcli_peek(p, i)); break;
+        case 152: s = xmqcli_step(xmqcli_d116_152, 7, xmqcli_peek(p, i)); break;
+        case 153: s = xmqcli_step(xmqcli_d116_153, 9, xmqcli_peek(p, i)); break;
+        case 154: s = xmqcli_step(xmqcli_d116_154, 7, xmqcli_peek(p, i)); break;
+        case 155: s = xmqcli_step(xmqcli_d116_155, 7, xmqcli_peek(p, i)); break;
+        case 156: s = xmqcli_step(xmqcli_d116_156, 7, xmqcli_peek(p, i)); break;
+        case 157: s = xmqcli_step(xmqcli_d116_157, 7, xmqcli_peek(p, i)); break;
+        case 158: s = xmqcli_step(xmqcli_d116_158, 7, xmqcli_peek(p, i)); break;
+        case 159: s = xmqcli_step(xmqcli_d116_159, 7, xmqcli_peek(p, i)); break;
+        case 160: s = xmqcli_step(xmqcli_d116_160, 7, xmqcli_peek(p, i)); break;
+        case 161: s = xmqcli_step(xmqcli_d116_161, 13, xmqcli_peek(p, i)); break;
+        case 162: s = xmqcli_step(xmqcli_d116_162, 15, xmqcli_peek(p, i)); break;
+        case 163: s = xmqcli_step(xmqcli_d116_163, 7, xmqcli_peek(p, i)); break;
+        case 164: s = xmqcli_step(xmqcli_d116_164, 7, xmqcli_peek(p, i)); break;
+        case 165: s = xmqcli_step(xmqcli_d116_165, 7, xmqcli_peek(p, i)); break;
+        case 166: s = xmqcli_step(xmqcli_d116_166, 7, xmqcli_peek(p, i)); break;
+        case 167: s = xmqcli_step(xmqcli_d116_167, 7, xmqcli_peek(p, i)); break;
+        case 168: s = xmqcli_step(xmqcli_d116_168, 7, xmqcli_peek(p, i)); break;
+        case 169: s = xmqcli_step(xmqcli_d116_169, 7, xmqcli_peek(p, i)); break;
+        case 170: s = xmqcli_step(xmqcli_d116_170, 7, xmqcli_peek(p, i)); break;
+        case 171: s = xmqcli_step(xmqcli_d116_171, 7, xmqcli_peek(p, i)); break;
+        case 172: s = xmqcli_step(xmqcli_d116_172, 9, xmqcli_peek(p, i)); break;
+        case 173: s = xmqcli_step(xmqcli_d116_173, 10, xmqcli_peek(p, i)); break;
+        case 174: s = xmqcli_step(xmqcli_d116_174, 7, xmqcli_peek(p, i)); break;
+        case 175: s = xmqcli_step(xmqcli_d116_175, 7, xmqcli_peek(p, i)); break;
+        case 176: s = xmqcli_step(xmqcli_d116_176, 7, xmqcli_peek(p, i)); break;
+        case 177: s = xmqcli_step(xmqcli_d116_177, 7, xmqcli_peek(p, i)); break;
+        case 178: s = xmqcli_step(xmqcli_d116_178, 7, xmqcli_peek(p, i)); break;
+        case 179: s = xmqcli_step(xmqcli_d116_179, 7, xmqcli_peek(p, i)); break;
+        case 180: s = xmqcli_step(xmqcli_d116_180, 7, xmqcli_peek(p, i)); break;
+        case 181: s = xmqcli_step(xmqcli_d116_181, 15, xmqcli_peek(p, i)); break;
+        case 182: s = xmqcli_step(xmqcli_d116_182, 13, xmqcli_peek(p, i)); break;
+        case 183: s = xmqcli_step(xmqcli_d116_183, 7, xmqcli_peek(p, i)); break;
+        case 184: s = xmqcli_step(xmqcli_d116_184, 7, xmqcli_peek(p, i)); break;
+        case 185: s = xmqcli_step(xmqcli_d116_185, 7, xmqcli_peek(p, i)); break;
+        case 186: s = xmqcli_step(xmqcli_d116_186, 7, xmqcli_peek(p, i)); break;
+        case 187: s = xmqcli_step(xmqcli_d116_187, 7, xmqcli_peek(p, i)); break;
+        case 188: s = xmqcli_step(xmqcli_d116_188, 7, xmqcli_peek(p, i)); break;
+        case 189: s = xmqcli_step(xmqcli_d116_189, 7, xmqcli_peek(p, i)); break;
+        case 190: s = xmqcli_step(xmqcli_d116_190, 7, xmqcli_peek(p, i)); break;
+        case 191: s = xmqcli_step(xmqcli_d116_191, 7, xmqcli_peek(p, i)); break;
+        case 192: s = xmqcli_step(xmqcli_d116_192, 7, xmqcli_peek(p, i)); break;
+        case 193: s = xmqcli_step(xmqcli_d116_193, 7, xmqcli_peek(p, i)); break;
+        case 194: s = xmqcli_step(xmqcli_d116_194, 7, xmqcli_peek(p, i)); break;
+        case 195: s = xmqcli_step(xmqcli_d116_195, 7, xmqcli_peek(p, i)); break;
+        case 196: s = xmqcli_step(xmqcli_d116_196, 7, xmqcli_peek(p, i)); break;
+        case 197: s = xmqcli_step(xmqcli_d116_197, 7, xmqcli_peek(p, i)); break;
+        case 198: s = xmqcli_step(xmqcli_d116_198, 17, xmqcli_peek(p, i)); break;
+        case 199: s = xmqcli_step(xmqcli_d116_199, 7, xmqcli_peek(p, i)); break;
+        case 200: s = xmqcli_step(xmqcli_d116_200, 7, xmqcli_peek(p, i)); break;
+        case 201: s = xmqcli_step(xmqcli_d116_201, 7, xmqcli_peek(p, i)); break;
+        case 202: s = xmqcli_step(xmqcli_d116_202, 7, xmqcli_peek(p, i)); break;
+        case 203: s = xmqcli_step(xmqcli_d116_203, 7, xmqcli_peek(p, i)); break;
+        case 204: s = xmqcli_step(xmqcli_d116_204, 7, xmqcli_peek(p, i)); break;
+        case 205: s = xmqcli_step(xmqcli_d116_205, 7, xmqcli_peek(p, i)); break;
+        case 206: s = xmqcli_step(xmqcli_d116_206, 9, xmqcli_peek(p, i)); break;
+        case 207: s = xmqcli_step(xmqcli_d116_207, 7, xmqcli_peek(p, i)); break;
+        case 208: s = xmqcli_step(xmqcli_d116_208, 7, xmqcli_peek(p, i)); break;
+        case 209: s = xmqcli_step(xmqcli_d116_209, 7, xmqcli_peek(p, i)); break;
+        case 210: s = xmqcli_step(xmqcli_d116_210, 13, xmqcli_peek(p, i)); break;
+        case 211: s = xmqcli_step(xmqcli_d116_211, 7, xmqcli_peek(p, i)); break;
+        case 212: s = xmqcli_step(xmqcli_d116_212, 7, xmqcli_peek(p, i)); break;
+        case 213: s = xmqcli_step(xmqcli_d116_213, 7, xmqcli_peek(p, i)); break;
+        case 214: s = xmqcli_step(xmqcli_d116_214, 7, xmqcli_peek(p, i)); break;
+        case 215: s = xmqcli_step(xmqcli_d116_215, 7, xmqcli_peek(p, i)); break;
+        case 216: s = xmqcli_step(xmqcli_d116_216, 7, xmqcli_peek(p, i)); break;
+        case 217: s = xmqcli_step(xmqcli_d116_217, 7, xmqcli_peek(p, i)); break;
+        case 218: s = xmqcli_step(xmqcli_d116_218, 7, xmqcli_peek(p, i)); break;
+        case 219: s = xmqcli_step(xmqcli_d116_219, 7, xmqcli_peek(p, i)); break;
+        case 220: s = xmqcli_step(xmqcli_d116_220, 7, xmqcli_peek(p, i)); break;
+        case 221: s = xmqcli_step(xmqcli_d116_221, 7, xmqcli_peek(p, i)); break;
+        case 222: s = xmqcli_step(xmqcli_d116_222, 7, xmqcli_peek(p, i)); break;
+        case 223: s = xmqcli_step(xmqcli_d116_223, 7, xmqcli_peek(p, i)); break;
+        case 224: s = xmqcli_step(xmqcli_d116_224, 7, xmqcli_peek(p, i)); break;
+        case 225: s = xmqcli_step(xmqcli_d116_225, 7, xmqcli_peek(p, i)); break;
+        case 226: s = xmqcli_step(xmqcli_d116_226, 7, xmqcli_peek(p, i)); break;
+        case 227: s = xmqcli_step(xmqcli_d116_227, 7, xmqcli_peek(p, i)); break;
+        case 228: s = xmqcli_step(xmqcli_d116_228, 7, xmqcli_peek(p, i)); break;
+        case 229: s = xmqcli_step(xmqcli_d116_229, 9, xmqcli_peek(p, i)); break;
+        case 230: s = xmqcli_step(xmqcli_d116_230, 7, xmqcli_peek(p, i)); break;
+        case 231: s = xmqcli_step(xmqcli_d116_231, 7, xmqcli_peek(p, i)); break;
+        case 232: s = xmqcli_step(xmqcli_d116_232, 7, xmqcli_peek(p, i)); break;
+        case 233: s = xmqcli_step(xmqcli_d116_233, 7, xmqcli_peek(p, i)); break;
+        case 234: s = xmqcli_step(xmqcli_d116_234, 7, xmqcli_peek(p, i)); break;
+        case 235: s = xmqcli_step(xmqcli_d116_235, 7, xmqcli_peek(p, i)); break;
+        case 236: s = xmqcli_step(xmqcli_d116_236, 7, xmqcli_peek(p, i)); break;
+        case 237: s = xmqcli_step(xmqcli_d116_237, 7, xmqcli_peek(p, i)); break;
+        case 238: s = xmqcli_step(xmqcli_d116_238, 7, xmqcli_peek(p, i)); break;
+        case 239: s = xmqcli_step(xmqcli_d116_239, 7, xmqcli_peek(p, i)); break;
+        case 240: s = xmqcli_step(xmqcli_d116_240, 7, xmqcli_peek(p, i)); break;
+        case 241: s = xmqcli_step(xmqcli_d116_241, 7, xmqcli_peek(p, i)); break;
+        case 242: s = xmqcli_step(xmqcli_d116_242, 7, xmqcli_peek(p, i)); break;
+        case 243: s = xmqcli_step(xmqcli_d116_243, 7, xmqcli_peek(p, i)); break;
+        case 244: s = xmqcli_step(xmqcli_d116_244, 7, xmqcli_peek(p, i)); break;
+        case 245: s = xmqcli_step(xmqcli_d116_245, 7, xmqcli_peek(p, i)); break;
+        case 246: s = xmqcli_step(xmqcli_d116_246, 7, xmqcli_peek(p, i)); break;
+        case 247: s = xmqcli_step(xmqcli_d116_247, 7, xmqcli_peek(p, i)); break;
+        case 248: s = xmqcli_step(xmqcli_d116_248, 7, xmqcli_peek(p, i)); break;
+        case 249: s = xmqcli_step(xmqcli_d116_249, 7, xmqcli_peek(p, i)); break;
+        case 250: s = xmqcli_step(xmqcli_d116_250, 8, xmqcli_peek(p, i)); break;
+        case 251: s = xmqcli_step(xmqcli_d116_251, 7, xmqcli_peek(p, i)); break;
+        case 252: s = xmqcli_step(xmqcli_d116_252, 7, xmqcli_peek(p, i)); break;
+        case 253: s = xmqcli_step(xmqcli_d116_253, 7, xmqcli_peek(p, i)); break;
+        case 254: s = xmqcli_step(xmqcli_d116_254, 7, xmqcli_peek(p, i)); break;
+        case 255: s = xmqcli_step(xmqcli_d116_255, 7, xmqcli_peek(p, i)); break;
+        case 256: s = xmqcli_step(xmqcli_d116_256, 7, xmqcli_peek(p, i)); break;
+        case 257: s = xmqcli_step(xmqcli_d116_257, 7, xmqcli_peek(p, i)); break;
+        case 258: s = xmqcli_step(xmqcli_d116_258, 7, xmqcli_peek(p, i)); break;
+        case 259: s = xmqcli_step(xmqcli_d116_259, 7, xmqcli_peek(p, i)); break;
+        case 260: s = xmqcli_step(xmqcli_d116_260, 7, xmqcli_peek(p, i)); break;
+        case 261: s = xmqcli_step(xmqcli_d116_261, 7, xmqcli_peek(p, i)); break;
+        case 262: s = xmqcli_step(xmqcli_d116_262, 7, xmqcli_peek(p, i)); break;
+        case 263: s = xmqcli_step(xmqcli_d116_263, 7, xmqcli_peek(p, i)); break;
+        case 264: s = xmqcli_step(xmqcli_d116_264, 7, xmqcli_peek(p, i)); break;
         default: return -1;
         }
         if (s < 0) return -1;
@@ -4220,68 +4434,68 @@ static int xmqcli_predict107(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d108_0[] = {
+static const int xmqcli_d117_0[] = {
     9,10,1,13,13,1,32,32,1,
 };
-static const int xmqcli_d108_1[] = {
+static const int xmqcli_d117_1[] = {
     0,8,2,9,10,1,11,12,2,13,13,1,14,31,2,32,32,1,
     33,33,2,34,34,3,35,38,2,39,39,3,40,44,2,45,45,3,
     46,46,4,47,47,5,48,57,2,58,58,5,59,104,2,105,105,6,
     106,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_2[] = {
+static const int xmqcli_d117_2[] = {
     0,8,2,11,12,2,14,31,2,33,45,2,46,46,4,47,47,5,
     48,57,2,58,58,5,59,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_4[] = {
+static const int xmqcli_d117_4[] = {
     0,8,5,9,10,3,11,12,5,13,13,3,14,31,5,32,32,3,
     33,45,5,46,46,4,47,104,5,105,105,7,106,55295,5,57344,1114111,5,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_5[] = {
+static const int xmqcli_d117_5[] = {
     0,8,5,9,10,3,11,12,5,13,13,3,14,31,5,32,32,3,
     33,45,5,46,46,4,47,55295,5,57344,1114111,5,1114112,1114112,3,
 };
-static const int xmqcli_d108_6[] = {
+static const int xmqcli_d117_6[] = {
     0,8,2,11,12,2,14,31,2,33,45,2,46,46,4,47,47,5,
     48,57,2,58,58,5,59,119,2,120,120,8,121,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_7[] = {
+static const int xmqcli_d117_7[] = {
     0,8,5,9,10,3,11,12,5,13,13,3,14,31,5,32,32,3,
     33,45,5,46,46,4,47,119,5,120,120,9,121,55295,5,57344,1114111,5,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_8[] = {
+static const int xmqcli_d117_8[] = {
     0,8,2,11,12,2,14,31,2,33,45,2,46,46,4,47,47,5,
     48,57,2,58,58,5,59,108,2,109,109,10,110,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_9[] = {
+static const int xmqcli_d117_9[] = {
     0,8,5,9,10,3,11,12,5,13,13,3,14,31,5,32,32,3,
     33,45,5,46,46,4,47,108,5,109,109,11,110,55295,5,57344,1114111,5,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_10[] = {
+static const int xmqcli_d117_10[] = {
     0,8,2,11,12,2,14,31,2,33,45,2,46,46,4,47,47,5,
     48,57,2,58,58,5,59,107,2,108,108,12,109,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_11[] = {
+static const int xmqcli_d117_11[] = {
     0,8,5,9,10,3,11,12,5,13,13,3,14,31,5,32,32,3,
     33,45,5,46,46,4,47,107,5,108,108,13,109,55295,5,57344,1114111,5,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_12[] = {
+static const int xmqcli_d117_12[] = {
     0,8,2,11,12,2,14,31,2,33,45,2,46,46,4,47,47,5,
     48,57,2,58,58,14,59,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d108_13[] = {
+static const int xmqcli_d117_13[] = {
     0,8,5,9,10,15,11,12,5,13,13,15,14,31,5,32,32,15,
     33,45,5,46,46,4,47,55295,5,57344,1114111,5,1114112,1114112,3,
 };
-static const int xmqcli_d108_14[] = {
+static const int xmqcli_d117_14[] = {
     0,8,16,9,10,3,11,12,16,13,13,3,14,31,16,32,32,3,
     33,45,16,46,46,17,47,55295,16,57344,1114111,16,1114112,1114112,3,
 };
-static const int xmqcli_d108_15[] = {
+static const int xmqcli_d117_15[] = {
     0,8,18,9,10,15,11,12,18,13,13,15,14,31,18,32,32,15,
     33,44,18,45,45,19,46,96,18,97,97,20,98,98,21,99,99,22,
     100,100,23,101,101,24,102,102,25,103,103,18,104,104,26,105,107,18,
@@ -4289,90 +4503,90 @@ static const int xmqcli_d108_15[] = {
     114,114,31,115,115,32,116,116,33,117,117,34,118,118,35,119,119,18,
     120,120,36,121,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_16[] = {
+static const int xmqcli_d117_16[] = {
     0,8,16,9,10,37,11,12,16,13,13,37,14,31,16,32,32,37,
     33,45,16,46,46,17,47,55295,16,57344,1114111,16,1114112,1114112,3,
 };
-static const int xmqcli_d108_17[] = {
+static const int xmqcli_d117_17[] = {
     0,8,16,9,10,37,11,12,16,13,13,37,14,31,16,32,32,37,
     33,45,16,46,46,17,47,104,16,105,105,38,106,55295,16,57344,1114111,16,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_19[] = {
+static const int xmqcli_d117_19[] = {
     0,8,39,9,10,18,11,12,39,13,13,18,14,31,39,32,32,18,
     33,44,39,45,45,40,46,103,39,104,104,41,105,105,42,106,107,39,
     108,108,43,109,120,39,121,121,41,122,122,41,123,55295,39,57344,1114111,39,
     1114112,1114112,18,
 };
-static const int xmqcli_d108_20[] = {
+static const int xmqcli_d117_20[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,44,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_21[] = {
+static const int xmqcli_d117_21[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,45,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_22[] = {
+static const int xmqcli_d117_22[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,46,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_23[] = {
+static const int xmqcli_d117_23[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,47,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_24[] = {
+static const int xmqcli_d117_24[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,48,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_25[] = {
+static const int xmqcli_d117_25[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,49,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_26[] = {
+static const int xmqcli_d117_26[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,50,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_27[] = {
+static const int xmqcli_d117_27[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,51,106,110,18,
     111,111,52,112,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_28[] = {
+static const int xmqcli_d117_28[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,53,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_29[] = {
+static const int xmqcli_d117_29[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,54,98,113,18,
     114,114,55,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_30[] = {
+static const int xmqcli_d117_30[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,56,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_31[] = {
+static const int xmqcli_d117_31[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,57,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_32[] = {
+static const int xmqcli_d117_32[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,58,98,100,18,
     101,101,59,102,115,18,116,116,60,117,117,61,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_33[] = {
+static const int xmqcli_d117_33[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,62,112,113,18,
     114,114,63,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_34[] = {
+static const int xmqcli_d117_34[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,64,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_35[] = {
+static const int xmqcli_d117_35[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,65,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_36[] = {
+static const int xmqcli_d117_36[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,66,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_37[] = {
+static const int xmqcli_d117_37[] = {
     0,8,18,9,10,37,11,12,18,13,13,37,14,31,18,32,32,37,
     33,44,18,45,45,67,46,96,18,97,97,68,98,98,69,99,99,70,
     100,100,71,101,101,72,102,102,73,103,103,18,104,104,74,105,107,18,
@@ -4380,968 +4594,968 @@ static const int xmqcli_d108_37[] = {
     114,114,79,115,115,80,116,116,81,117,117,82,118,118,83,119,119,18,
     120,120,84,121,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_38[] = {
+static const int xmqcli_d117_38[] = {
     0,8,16,9,10,37,11,12,16,13,13,37,14,31,16,32,32,37,
     33,45,16,46,46,17,47,119,16,120,120,85,121,55295,16,57344,1114111,16,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_39[] = {
+static const int xmqcli_d117_39[] = {
     0,8,39,9,10,15,11,12,39,13,13,15,14,31,39,32,32,15,
     33,55295,39,57344,1114111,39,1114112,1114112,3,
 };
-static const int xmqcli_d108_40[] = {
+static const int xmqcli_d117_40[] = {
     65,90,86,97,122,86,
 };
-static const int xmqcli_d108_41[] = {
+static const int xmqcli_d117_41[] = {
     0,8,87,9,10,15,11,12,87,13,13,15,14,31,87,32,32,15,
     33,55295,87,57344,1114111,87,1114112,1114112,3,
 };
-static const int xmqcli_d108_42[] = {
+static const int xmqcli_d117_42[] = {
     0,8,87,9,10,18,11,12,87,13,13,18,14,31,87,32,32,18,
     33,55295,87,57344,1114111,87,
 };
-static const int xmqcli_d108_43[] = {
+static const int xmqcli_d117_43[] = {
     0,8,88,9,10,15,11,12,88,13,13,15,14,31,88,32,32,15,
     33,119,88,120,120,89,121,55295,88,57344,1114111,88,1114112,1114112,3,
 };
-static const int xmqcli_d108_44[] = {
+static const int xmqcli_d117_44[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,90,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_45[] = {
+static const int xmqcli_d117_45[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,110,18,111,111,91,112,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_46[] = {
+static const int xmqcli_d117_46[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,92,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_47[] = {
+static const int xmqcli_d117_47[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,93,109,114,18,
     115,115,94,116,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_48[] = {
+static const int xmqcli_d117_48[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,95,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_49[] = {
+static const int xmqcli_d117_49[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,96,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_50[] = {
+static const int xmqcli_d117_50[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,97,109,116,18,
     117,117,98,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_51[] = {
+static const int xmqcli_d117_51[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,99,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_52[] = {
+static const int xmqcli_d117_52[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,100,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_53[] = {
+static const int xmqcli_d117_53[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,101,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_54[] = {
+static const int xmqcli_d117_54[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,102,18,103,103,102,104,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_55[] = {
+static const int xmqcli_d117_55[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,103,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_56[] = {
+static const int xmqcli_d117_56[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,104,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_57[] = {
+static const int xmqcli_d117_57[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,105,103,109,18,
     110,110,106,111,111,18,112,112,107,113,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_58[] = {
+static const int xmqcli_d117_58[] = {
     0,8,18,11,12,18,14,31,18,33,117,18,118,118,108,119,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_59[] = {
+static const int xmqcli_d117_59[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,109,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_60[] = {
+static const int xmqcli_d117_60[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,110,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_61[] = {
+static const int xmqcli_d117_61[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,111,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_62[] = {
+static const int xmqcli_d117_62[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,112,46,106,18,
     107,107,113,108,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_63[] = {
+static const int xmqcli_d117_63[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,114,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_64[] = {
+static const int xmqcli_d117_64[] = {
     0,8,18,11,12,18,14,31,18,33,112,18,113,113,115,114,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_65[] = {
+static const int xmqcli_d117_65[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,116,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_66[] = {
+static const int xmqcli_d117_66[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,117,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_67[] = {
+static const int xmqcli_d117_67[] = {
     0,8,118,9,10,18,11,12,118,13,13,18,14,31,118,32,32,18,
     33,44,118,45,45,119,46,103,118,104,104,120,105,105,121,106,107,118,
     108,108,122,109,120,118,121,121,120,122,122,120,123,55295,118,57344,1114111,118,
     1114112,1114112,18,
 };
-static const int xmqcli_d108_68[] = {
+static const int xmqcli_d117_68[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,123,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_69[] = {
+static const int xmqcli_d117_69[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,124,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_70[] = {
+static const int xmqcli_d117_70[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,125,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_71[] = {
+static const int xmqcli_d117_71[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,126,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_72[] = {
+static const int xmqcli_d117_72[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,127,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_73[] = {
+static const int xmqcli_d117_73[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,128,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_74[] = {
+static const int xmqcli_d117_74[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,129,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_75[] = {
+static const int xmqcli_d117_75[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,130,106,110,18,
     111,111,131,112,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_76[] = {
+static const int xmqcli_d117_76[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,132,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_77[] = {
+static const int xmqcli_d117_77[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,133,98,113,18,
     114,114,134,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_78[] = {
+static const int xmqcli_d117_78[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,135,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_79[] = {
+static const int xmqcli_d117_79[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,136,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_80[] = {
+static const int xmqcli_d117_80[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,137,98,100,18,
     101,101,138,102,115,18,116,116,139,117,117,140,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_81[] = {
+static const int xmqcli_d117_81[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,141,112,113,18,
     114,114,142,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_82[] = {
+static const int xmqcli_d117_82[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,143,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_83[] = {
+static const int xmqcli_d117_83[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,144,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_84[] = {
+static const int xmqcli_d117_84[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,145,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_85[] = {
+static const int xmqcli_d117_85[] = {
     0,8,16,9,10,37,11,12,16,13,13,37,14,31,16,32,32,37,
     33,45,16,46,46,17,47,108,16,109,109,146,110,55295,16,57344,1114111,16,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_86[] = {
+static const int xmqcli_d117_86[] = {
     9,10,15,13,13,15,32,32,15,45,45,86,48,57,86,61,61,147,
     65,90,86,95,95,86,97,122,86,1114112,1114112,3,
 };
-static const int xmqcli_d108_87[] = {
+static const int xmqcli_d117_87[] = {
     0,8,87,9,10,15,11,12,87,13,13,15,14,31,87,32,32,15,
     33,55295,87,57344,1114111,87,1114112,1114112,3,
 };
-static const int xmqcli_d108_88[] = {
+static const int xmqcli_d117_88[] = {
     0,8,88,9,10,15,11,12,88,13,13,15,14,31,88,32,32,15,
     33,55295,88,57344,1114111,88,1114112,1114112,3,
 };
-static const int xmqcli_d108_89[] = {
+static const int xmqcli_d117_89[] = {
     0,8,148,9,10,15,11,12,148,13,13,15,14,31,148,32,32,15,
     33,55295,148,57344,1114111,148,1114112,1114112,3,
 };
-static const int xmqcli_d108_90[] = {
+static const int xmqcli_d117_90[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,149,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_91[] = {
+static const int xmqcli_d117_91[] = {
     0,8,18,11,12,18,14,31,18,33,118,18,119,119,150,120,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_92[] = {
+static const int xmqcli_d117_92[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,151,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_93[] = {
+static const int xmqcli_d117_93[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,152,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_94[] = {
+static const int xmqcli_d117_94[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,153,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_95[] = {
+static const int xmqcli_d117_95[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,154,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_96[] = {
+static const int xmqcli_d117_96[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,155,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_97[] = {
+static const int xmqcli_d117_97[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,156,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_98[] = {
+static const int xmqcli_d117_98[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_99[] = {
+static const int xmqcli_d117_99[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,157,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_100[] = {
+static const int xmqcli_d117_100[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,158,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_101[] = {
+static const int xmqcli_d117_101[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,159,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_102[] = {
+static const int xmqcli_d117_102[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,98,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_103[] = {
+static const int xmqcli_d117_103[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,160,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_104[] = {
+static const int xmqcli_d117_104[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,161,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_105[] = {
+static const int xmqcli_d117_105[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,162,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_106[] = {
+static const int xmqcli_d117_106[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,163,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_107[] = {
+static const int xmqcli_d117_107[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,164,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_108[] = {
+static const int xmqcli_d117_108[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,165,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_109[] = {
+static const int xmqcli_d117_109[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,166,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_110[] = {
+static const int xmqcli_d117_110[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,167,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_111[] = {
+static const int xmqcli_d117_111[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,168,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_112[] = {
+static const int xmqcli_d117_112[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,169,100,103,18,
     104,104,170,105,105,18,106,106,171,107,115,18,116,116,172,117,119,18,
     120,120,173,121,121,174,122,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_113[] = {
+static const int xmqcli_d117_113[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,175,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_114[] = {
+static const int xmqcli_d117_114[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,176,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_115[] = {
+static const int xmqcli_d117_115[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,177,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_116[] = {
+static const int xmqcli_d117_116[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,178,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_117[] = {
+static const int xmqcli_d117_117[] = {
     0,8,18,11,12,18,14,31,18,33,57,18,58,58,179,59,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_118[] = {
+static const int xmqcli_d117_118[] = {
     0,8,118,9,10,37,11,12,118,13,13,37,14,31,118,32,32,37,
     33,55295,118,57344,1114111,118,1114112,1114112,3,
 };
-static const int xmqcli_d108_119[] = {
+static const int xmqcli_d117_119[] = {
     65,90,180,97,122,180,
 };
-static const int xmqcli_d108_120[] = {
+static const int xmqcli_d117_120[] = {
     0,8,181,9,10,37,11,12,181,13,13,37,14,31,181,32,32,37,
     33,55295,181,57344,1114111,181,1114112,1114112,3,
 };
-static const int xmqcli_d108_121[] = {
+static const int xmqcli_d117_121[] = {
     0,8,181,9,10,18,11,12,181,13,13,18,14,31,181,32,32,18,
     33,55295,181,57344,1114111,181,
 };
-static const int xmqcli_d108_122[] = {
+static const int xmqcli_d117_122[] = {
     0,8,182,9,10,37,11,12,182,13,13,37,14,31,182,32,32,37,
     33,119,182,120,120,183,121,55295,182,57344,1114111,182,1114112,1114112,3,
 };
-static const int xmqcli_d108_123[] = {
+static const int xmqcli_d117_123[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,184,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_124[] = {
+static const int xmqcli_d117_124[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,110,18,111,111,185,112,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_125[] = {
+static const int xmqcli_d117_125[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,186,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_126[] = {
+static const int xmqcli_d117_126[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,187,109,114,18,
     115,115,188,116,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_127[] = {
+static const int xmqcli_d117_127[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,189,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_128[] = {
+static const int xmqcli_d117_128[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,190,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_129[] = {
+static const int xmqcli_d117_129[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,191,109,116,18,
     117,117,192,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_130[] = {
+static const int xmqcli_d117_130[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,193,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_131[] = {
+static const int xmqcli_d117_131[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,194,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_132[] = {
+static const int xmqcli_d117_132[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,195,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_133[] = {
+static const int xmqcli_d117_133[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,102,18,103,103,196,104,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_134[] = {
+static const int xmqcli_d117_134[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,197,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_135[] = {
+static const int xmqcli_d117_135[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,198,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_136[] = {
+static const int xmqcli_d117_136[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,199,103,109,18,
     110,110,200,111,111,18,112,112,201,113,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_137[] = {
+static const int xmqcli_d117_137[] = {
     0,8,18,11,12,18,14,31,18,33,117,18,118,118,202,119,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_138[] = {
+static const int xmqcli_d117_138[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,203,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_139[] = {
+static const int xmqcli_d117_139[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,204,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_140[] = {
+static const int xmqcli_d117_140[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,205,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_141[] = {
+static const int xmqcli_d117_141[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,206,46,106,18,
     107,107,207,108,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_142[] = {
+static const int xmqcli_d117_142[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,208,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_143[] = {
+static const int xmqcli_d117_143[] = {
     0,8,18,11,12,18,14,31,18,33,112,18,113,113,209,114,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_144[] = {
+static const int xmqcli_d117_144[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,210,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_145[] = {
+static const int xmqcli_d117_145[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,211,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_146[] = {
+static const int xmqcli_d117_146[] = {
     0,8,16,9,10,37,11,12,16,13,13,37,14,31,16,32,32,37,
     33,45,16,46,46,17,47,107,16,108,108,212,109,55295,16,57344,1114111,16,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_147[] = {
+static const int xmqcli_d117_147[] = {
     0,8,213,9,10,15,11,12,213,13,13,15,14,31,213,32,32,15,
     33,33,213,34,34,214,35,38,213,39,39,215,40,55295,213,57344,1114111,213,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_148[] = {
+static const int xmqcli_d117_148[] = {
     0,8,148,9,10,15,11,12,148,13,13,15,14,31,148,32,32,15,
     33,55295,148,57344,1114111,148,1114112,1114112,3,
 };
-static const int xmqcli_d108_149[] = {
+static const int xmqcli_d117_149[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,216,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_150[] = {
+static const int xmqcli_d117_150[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,217,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_151[] = {
+static const int xmqcli_d117_151[] = {
     0,8,18,11,12,18,14,31,18,33,106,18,107,107,218,108,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_152[] = {
+static const int xmqcli_d117_152[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,219,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_153[] = {
+static const int xmqcli_d117_153[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,220,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_154[] = {
+static const int xmqcli_d117_154[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,221,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_155[] = {
+static const int xmqcli_d117_155[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,222,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_156[] = {
+static const int xmqcli_d117_156[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_157[] = {
+static const int xmqcli_d117_157[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,223,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_158[] = {
+static const int xmqcli_d117_158[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_159[] = {
+static const int xmqcli_d117_159[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,224,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_160[] = {
+static const int xmqcli_d117_160[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,98,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_161[] = {
+static const int xmqcli_d117_161[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,225,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_162[] = {
+static const int xmqcli_d117_162[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,226,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_163[] = {
+static const int xmqcli_d117_163[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,227,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_164[] = {
+static const int xmqcli_d117_164[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,228,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_165[] = {
+static const int xmqcli_d117_165[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,229,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_166[] = {
+static const int xmqcli_d117_166[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,230,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_167[] = {
+static const int xmqcli_d117_167[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,231,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_168[] = {
+static const int xmqcli_d117_168[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,232,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_169[] = {
+static const int xmqcli_d117_169[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,233,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_170[] = {
+static const int xmqcli_d117_170[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,234,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_171[] = {
+static const int xmqcli_d117_171[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,235,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_172[] = {
+static const int xmqcli_d117_172[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,236,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_173[] = {
+static const int xmqcli_d117_173[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,237,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_174[] = {
+static const int xmqcli_d117_174[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,238,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_175[] = {
+static const int xmqcli_d117_175[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,239,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_176[] = {
+static const int xmqcli_d117_176[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,240,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_177[] = {
+static const int xmqcli_d117_177[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,241,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_178[] = {
+static const int xmqcli_d117_178[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,242,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_179[] = {
+static const int xmqcli_d117_179[] = {
     0,8,243,9,10,18,11,12,243,13,13,18,14,31,243,32,32,18,
     33,55295,243,57344,1114111,243,1114112,1114112,18,
 };
-static const int xmqcli_d108_180[] = {
+static const int xmqcli_d117_180[] = {
     9,10,37,13,13,37,32,32,37,45,45,180,48,57,180,61,61,244,
     65,90,180,95,95,180,97,122,180,1114112,1114112,3,
 };
-static const int xmqcli_d108_181[] = {
+static const int xmqcli_d117_181[] = {
     0,8,181,9,10,37,11,12,181,13,13,37,14,31,181,32,32,37,
     33,55295,181,57344,1114111,181,1114112,1114112,3,
 };
-static const int xmqcli_d108_182[] = {
+static const int xmqcli_d117_182[] = {
     0,8,182,9,10,37,11,12,182,13,13,37,14,31,182,32,32,37,
     33,55295,182,57344,1114111,182,1114112,1114112,3,
 };
-static const int xmqcli_d108_183[] = {
+static const int xmqcli_d117_183[] = {
     0,8,245,9,10,37,11,12,245,13,13,37,14,31,245,32,32,37,
     33,55295,245,57344,1114111,245,1114112,1114112,3,
 };
-static const int xmqcli_d108_184[] = {
+static const int xmqcli_d117_184[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,246,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_185[] = {
+static const int xmqcli_d117_185[] = {
     0,8,18,11,12,18,14,31,18,33,118,18,119,119,247,120,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_186[] = {
+static const int xmqcli_d117_186[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,248,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_187[] = {
+static const int xmqcli_d117_187[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,249,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_188[] = {
+static const int xmqcli_d117_188[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,250,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_189[] = {
+static const int xmqcli_d117_189[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,251,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_190[] = {
+static const int xmqcli_d117_190[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,252,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_191[] = {
+static const int xmqcli_d117_191[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,253,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_192[] = {
+static const int xmqcli_d117_192[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_193[] = {
+static const int xmqcli_d117_193[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,254,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_194[] = {
+static const int xmqcli_d117_194[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,255,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_195[] = {
+static const int xmqcli_d117_195[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,256,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_196[] = {
+static const int xmqcli_d117_196[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,192,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_197[] = {
+static const int xmqcli_d117_197[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,257,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_198[] = {
+static const int xmqcli_d117_198[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,258,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_199[] = {
+static const int xmqcli_d117_199[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,259,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_200[] = {
+static const int xmqcli_d117_200[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,260,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_201[] = {
+static const int xmqcli_d117_201[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,261,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_202[] = {
+static const int xmqcli_d117_202[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,262,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_203[] = {
+static const int xmqcli_d117_203[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,263,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_204[] = {
+static const int xmqcli_d117_204[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,264,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_205[] = {
+static const int xmqcli_d117_205[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,265,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_206[] = {
+static const int xmqcli_d117_206[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,266,100,103,18,
     104,104,267,105,105,18,106,106,268,107,115,18,116,116,269,117,119,18,
     120,120,270,121,121,271,122,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_207[] = {
+static const int xmqcli_d117_207[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,272,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_208[] = {
+static const int xmqcli_d117_208[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,273,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_209[] = {
+static const int xmqcli_d117_209[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,274,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_210[] = {
+static const int xmqcli_d117_210[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,275,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_211[] = {
+static const int xmqcli_d117_211[] = {
     0,8,18,11,12,18,14,31,18,33,57,18,58,58,276,59,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_212[] = {
+static const int xmqcli_d117_212[] = {
     0,8,16,9,10,277,11,12,16,13,13,277,14,31,16,32,32,277,
     33,45,16,46,46,17,47,55295,16,57344,1114111,16,1114112,1114112,3,
 };
-static const int xmqcli_d108_213[] = {
+static const int xmqcli_d117_213[] = {
     0,8,213,9,10,15,11,12,213,13,13,15,14,31,213,32,32,15,
     33,33,213,35,38,213,40,55295,213,57344,1114111,213,1114112,1114112,3,
 };
-static const int xmqcli_d108_214[] = {
+static const int xmqcli_d117_214[] = {
     0,33,214,34,34,278,35,91,214,92,92,279,93,55295,214,57344,1114111,214,
 };
-static const int xmqcli_d108_215[] = {
+static const int xmqcli_d117_215[] = {
     0,38,215,39,39,278,40,55295,215,57344,1114111,215,
 };
-static const int xmqcli_d108_216[] = {
+static const int xmqcli_d117_216[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,280,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_217[] = {
+static const int xmqcli_d117_217[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,98,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_218[] = {
+static const int xmqcli_d117_218[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,281,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_219[] = {
+static const int xmqcli_d117_219[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,282,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_220[] = {
+static const int xmqcli_d117_220[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,283,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_221[] = {
+static const int xmqcli_d117_221[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,284,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_222[] = {
+static const int xmqcli_d117_222[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,285,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_223[] = {
+static const int xmqcli_d117_223[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,286,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_224[] = {
+static const int xmqcli_d117_224[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,287,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_225[] = {
+static const int xmqcli_d117_225[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,288,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_226[] = {
+static const int xmqcli_d117_226[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,289,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_227[] = {
+static const int xmqcli_d117_227[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,290,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_228[] = {
+static const int xmqcli_d117_228[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,291,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_229[] = {
+static const int xmqcli_d117_229[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,292,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_230[] = {
+static const int xmqcli_d117_230[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,293,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_231[] = {
+static const int xmqcli_d117_231[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,294,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_232[] = {
+static const int xmqcli_d117_232[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,295,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_233[] = {
+static const int xmqcli_d117_233[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,296,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_234[] = {
+static const int xmqcli_d117_234[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,297,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_235[] = {
+static const int xmqcli_d117_235[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,298,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_236[] = {
+static const int xmqcli_d117_236[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,299,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_237[] = {
+static const int xmqcli_d117_237[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,98,109,112,18,
     113,113,98,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_238[] = {
+static const int xmqcli_d117_238[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,300,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_239[] = {
+static const int xmqcli_d117_239[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,301,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_240[] = {
+static const int xmqcli_d117_240[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,302,103,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_241[] = {
+static const int xmqcli_d117_241[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,303,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_242[] = {
+static const int xmqcli_d117_242[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,304,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_243[] = {
+static const int xmqcli_d117_243[] = {
     0,8,243,9,10,18,11,12,243,13,13,18,14,31,243,32,32,18,
     33,55295,243,57344,1114111,243,1114112,1114112,18,
 };
-static const int xmqcli_d108_244[] = {
+static const int xmqcli_d117_244[] = {
     0,8,305,9,10,37,11,12,305,13,13,37,14,31,305,32,32,37,
     33,33,305,34,34,306,35,38,305,39,39,307,40,55295,305,57344,1114111,305,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_245[] = {
+static const int xmqcli_d117_245[] = {
     0,8,245,9,10,37,11,12,245,13,13,37,14,31,245,32,32,37,
     33,55295,245,57344,1114111,245,1114112,1114112,3,
 };
-static const int xmqcli_d108_246[] = {
+static const int xmqcli_d117_246[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,308,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_247[] = {
+static const int xmqcli_d117_247[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,309,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_248[] = {
+static const int xmqcli_d117_248[] = {
     0,8,18,11,12,18,14,31,18,33,106,18,107,107,310,108,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_249[] = {
+static const int xmqcli_d117_249[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,311,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_250[] = {
+static const int xmqcli_d117_250[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,312,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_251[] = {
+static const int xmqcli_d117_251[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,313,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_252[] = {
+static const int xmqcli_d117_252[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,314,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_253[] = {
+static const int xmqcli_d117_253[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_254[] = {
+static const int xmqcli_d117_254[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,315,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_255[] = {
+static const int xmqcli_d117_255[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_256[] = {
+static const int xmqcli_d117_256[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,316,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_257[] = {
+static const int xmqcli_d117_257[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,192,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_258[] = {
+static const int xmqcli_d117_258[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,317,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_259[] = {
+static const int xmqcli_d117_259[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,318,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_260[] = {
+static const int xmqcli_d117_260[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,319,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_261[] = {
+static const int xmqcli_d117_261[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,320,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_262[] = {
+static const int xmqcli_d117_262[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,321,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_263[] = {
+static const int xmqcli_d117_263[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,322,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_264[] = {
+static const int xmqcli_d117_264[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,323,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_265[] = {
+static const int xmqcli_d117_265[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,324,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_266[] = {
+static const int xmqcli_d117_266[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,325,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_267[] = {
+static const int xmqcli_d117_267[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,326,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_268[] = {
+static const int xmqcli_d117_268[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,327,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_269[] = {
+static const int xmqcli_d117_269[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,328,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_270[] = {
+static const int xmqcli_d117_270[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,329,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_271[] = {
+static const int xmqcli_d117_271[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,330,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_272[] = {
+static const int xmqcli_d117_272[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,331,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_273[] = {
+static const int xmqcli_d117_273[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,332,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_274[] = {
+static const int xmqcli_d117_274[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,333,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_275[] = {
+static const int xmqcli_d117_275[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,334,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_276[] = {
+static const int xmqcli_d117_276[] = {
     0,8,335,9,10,18,11,12,335,13,13,18,14,31,335,32,32,18,
     33,55295,335,57344,1114111,335,1114112,1114112,18,
 };
-static const int xmqcli_d108_277[] = {
+static const int xmqcli_d117_277[] = {
     0,8,18,9,10,277,11,12,18,13,13,277,14,31,18,32,32,277,
     33,44,18,45,45,336,46,96,18,97,97,337,98,98,338,99,99,339,
     100,100,340,101,101,341,102,102,342,103,103,18,104,104,343,105,107,18,
@@ -5349,2193 +5563,2193 @@ static const int xmqcli_d108_277[] = {
     114,114,348,115,115,349,116,116,350,117,117,351,118,118,352,119,119,18,
     120,120,353,121,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_278[] = {
+static const int xmqcli_d117_278[] = {
     9,10,15,13,13,15,32,32,15,1114112,1114112,3,
 };
-static const int xmqcli_d108_279[] = {
+static const int xmqcli_d117_279[] = {
     34,34,214,92,92,214,
 };
-static const int xmqcli_d108_280[] = {
+static const int xmqcli_d117_280[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,354,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_281[] = {
+static const int xmqcli_d117_281[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,355,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_282[] = {
+static const int xmqcli_d117_282[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,356,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_283[] = {
+static const int xmqcli_d117_283[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,357,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_284[] = {
+static const int xmqcli_d117_284[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,358,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_285[] = {
+static const int xmqcli_d117_285[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,359,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_286[] = {
+static const int xmqcli_d117_286[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,360,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_287[] = {
+static const int xmqcli_d117_287[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,361,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_288[] = {
+static const int xmqcli_d117_288[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,98,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_289[] = {
+static const int xmqcli_d117_289[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,362,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_290[] = {
+static const int xmqcli_d117_290[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,363,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_291[] = {
+static const int xmqcli_d117_291[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,364,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_292[] = {
+static const int xmqcli_d117_292[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,293,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_293[] = {
+static const int xmqcli_d117_293[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_294[] = {
+static const int xmqcli_d117_294[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,365,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_295[] = {
+static const int xmqcli_d117_295[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,366,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_296[] = {
+static const int xmqcli_d117_296[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,367,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_297[] = {
+static const int xmqcli_d117_297[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,98,109,112,18,
     113,113,98,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_298[] = {
+static const int xmqcli_d117_298[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,98,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_299[] = {
+static const int xmqcli_d117_299[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,98,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_300[] = {
+static const int xmqcli_d117_300[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,98,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_301[] = {
+static const int xmqcli_d117_301[] = {
     0,8,18,11,12,18,14,31,18,33,121,18,122,122,368,123,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_302[] = {
+static const int xmqcli_d117_302[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,369,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_303[] = {
+static const int xmqcli_d117_303[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,370,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_304[] = {
+static const int xmqcli_d117_304[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,371,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_305[] = {
+static const int xmqcli_d117_305[] = {
     0,8,305,9,10,37,11,12,305,13,13,37,14,31,305,32,32,37,
     33,33,305,35,38,305,40,55295,305,57344,1114111,305,1114112,1114112,3,
 };
-static const int xmqcli_d108_306[] = {
+static const int xmqcli_d117_306[] = {
     0,33,306,34,34,372,35,91,306,92,92,373,93,55295,306,57344,1114111,306,
 };
-static const int xmqcli_d108_307[] = {
+static const int xmqcli_d117_307[] = {
     0,38,307,39,39,372,40,55295,307,57344,1114111,307,
 };
-static const int xmqcli_d108_308[] = {
+static const int xmqcli_d117_308[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,374,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_309[] = {
+static const int xmqcli_d117_309[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,192,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_310[] = {
+static const int xmqcli_d117_310[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,375,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_311[] = {
+static const int xmqcli_d117_311[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,376,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_312[] = {
+static const int xmqcli_d117_312[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,377,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_313[] = {
+static const int xmqcli_d117_313[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,378,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_314[] = {
+static const int xmqcli_d117_314[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,379,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_315[] = {
+static const int xmqcli_d117_315[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,380,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_316[] = {
+static const int xmqcli_d117_316[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,381,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_317[] = {
+static const int xmqcli_d117_317[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,382,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_318[] = {
+static const int xmqcli_d117_318[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,383,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_319[] = {
+static const int xmqcli_d117_319[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,384,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_320[] = {
+static const int xmqcli_d117_320[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,385,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_321[] = {
+static const int xmqcli_d117_321[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,386,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_322[] = {
+static const int xmqcli_d117_322[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,387,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_323[] = {
+static const int xmqcli_d117_323[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,388,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_324[] = {
+static const int xmqcli_d117_324[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,389,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_325[] = {
+static const int xmqcli_d117_325[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,390,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_326[] = {
+static const int xmqcli_d117_326[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,391,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_327[] = {
+static const int xmqcli_d117_327[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,392,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_328[] = {
+static const int xmqcli_d117_328[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,393,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_329[] = {
+static const int xmqcli_d117_329[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,192,109,112,18,
     113,113,192,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_330[] = {
+static const int xmqcli_d117_330[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,394,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_331[] = {
+static const int xmqcli_d117_331[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,395,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_332[] = {
+static const int xmqcli_d117_332[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,396,103,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_333[] = {
+static const int xmqcli_d117_333[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,397,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_334[] = {
+static const int xmqcli_d117_334[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,398,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_335[] = {
+static const int xmqcli_d117_335[] = {
     0,8,335,9,10,18,11,12,335,13,13,18,14,31,335,32,32,18,
     33,55295,335,57344,1114111,335,1114112,1114112,18,
 };
-static const int xmqcli_d108_336[] = {
+static const int xmqcli_d117_336[] = {
     0,8,399,9,10,18,11,12,399,13,13,18,14,31,399,32,32,18,
     33,44,399,45,45,400,46,103,399,104,104,401,105,105,402,106,107,399,
     108,108,403,109,120,399,121,121,401,122,122,401,123,55295,399,57344,1114111,399,
     1114112,1114112,18,
 };
-static const int xmqcli_d108_337[] = {
+static const int xmqcli_d117_337[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,404,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_338[] = {
+static const int xmqcli_d117_338[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,405,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_339[] = {
+static const int xmqcli_d117_339[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,406,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_340[] = {
+static const int xmqcli_d117_340[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,407,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_341[] = {
+static const int xmqcli_d117_341[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,408,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_342[] = {
+static const int xmqcli_d117_342[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,409,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_343[] = {
+static const int xmqcli_d117_343[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,410,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_344[] = {
+static const int xmqcli_d117_344[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,411,106,110,18,
     111,111,412,112,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_345[] = {
+static const int xmqcli_d117_345[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,413,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_346[] = {
+static const int xmqcli_d117_346[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,414,98,113,18,
     114,114,415,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_347[] = {
+static const int xmqcli_d117_347[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,416,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_348[] = {
+static const int xmqcli_d117_348[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,417,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_349[] = {
+static const int xmqcli_d117_349[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,418,98,100,18,
     101,101,419,102,115,18,116,116,420,117,117,421,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_350[] = {
+static const int xmqcli_d117_350[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,422,112,113,18,
     114,114,423,115,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_351[] = {
+static const int xmqcli_d117_351[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,424,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_352[] = {
+static const int xmqcli_d117_352[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,425,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_353[] = {
+static const int xmqcli_d117_353[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,426,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_354[] = {
+static const int xmqcli_d117_354[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,293,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_355[] = {
+static const int xmqcli_d117_355[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,427,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_356[] = {
+static const int xmqcli_d117_356[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,428,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_357[] = {
+static const int xmqcli_d117_357[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,429,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_358[] = {
+static const int xmqcli_d117_358[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,430,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_359[] = {
+static const int xmqcli_d117_359[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,293,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_360[] = {
+static const int xmqcli_d117_360[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,431,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_361[] = {
+static const int xmqcli_d117_361[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,432,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_362[] = {
+static const int xmqcli_d117_362[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,433,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_363[] = {
+static const int xmqcli_d117_363[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,434,105,115,18,
     116,116,435,117,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_364[] = {
+static const int xmqcli_d117_364[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,436,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_365[] = {
+static const int xmqcli_d117_365[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,437,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_366[] = {
+static const int xmqcli_d117_366[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,438,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_367[] = {
+static const int xmqcli_d117_367[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,439,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_368[] = {
+static const int xmqcli_d117_368[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,98,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_369[] = {
+static const int xmqcli_d117_369[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,440,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_370[] = {
+static const int xmqcli_d117_370[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,441,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_371[] = {
+static const int xmqcli_d117_371[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,293,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_372[] = {
+static const int xmqcli_d117_372[] = {
     9,10,37,13,13,37,32,32,37,1114112,1114112,3,
 };
-static const int xmqcli_d108_373[] = {
+static const int xmqcli_d117_373[] = {
     34,34,306,92,92,306,
 };
-static const int xmqcli_d108_374[] = {
+static const int xmqcli_d117_374[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,442,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_375[] = {
+static const int xmqcli_d117_375[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,443,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_376[] = {
+static const int xmqcli_d117_376[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,444,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_377[] = {
+static const int xmqcli_d117_377[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,445,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_378[] = {
+static const int xmqcli_d117_378[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,446,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_379[] = {
+static const int xmqcli_d117_379[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,447,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_380[] = {
+static const int xmqcli_d117_380[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,448,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_381[] = {
+static const int xmqcli_d117_381[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,449,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_382[] = {
+static const int xmqcli_d117_382[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,192,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_383[] = {
+static const int xmqcli_d117_383[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,450,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_384[] = {
+static const int xmqcli_d117_384[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,451,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_385[] = {
+static const int xmqcli_d117_385[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,452,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_386[] = {
+static const int xmqcli_d117_386[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,387,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_387[] = {
+static const int xmqcli_d117_387[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_388[] = {
+static const int xmqcli_d117_388[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,453,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_389[] = {
+static const int xmqcli_d117_389[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,454,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_390[] = {
+static const int xmqcli_d117_390[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,455,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_391[] = {
+static const int xmqcli_d117_391[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,192,109,112,18,
     113,113,192,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_392[] = {
+static const int xmqcli_d117_392[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,192,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_393[] = {
+static const int xmqcli_d117_393[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,192,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_394[] = {
+static const int xmqcli_d117_394[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,192,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_395[] = {
+static const int xmqcli_d117_395[] = {
     0,8,18,11,12,18,14,31,18,33,121,18,122,122,456,123,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_396[] = {
+static const int xmqcli_d117_396[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,457,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_397[] = {
+static const int xmqcli_d117_397[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,458,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_398[] = {
+static const int xmqcli_d117_398[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,459,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_399[] = {
+static const int xmqcli_d117_399[] = {
     0,8,399,9,10,277,11,12,399,13,13,277,14,31,399,32,32,277,
     33,55295,399,57344,1114111,399,1114112,1114112,3,
 };
-static const int xmqcli_d108_400[] = {
+static const int xmqcli_d117_400[] = {
     65,90,460,97,122,460,
 };
-static const int xmqcli_d108_401[] = {
+static const int xmqcli_d117_401[] = {
     0,8,461,9,10,277,11,12,461,13,13,277,14,31,461,32,32,277,
     33,55295,461,57344,1114111,461,1114112,1114112,3,
 };
-static const int xmqcli_d108_402[] = {
+static const int xmqcli_d117_402[] = {
     0,8,461,9,10,18,11,12,461,13,13,18,14,31,461,32,32,18,
     33,55295,461,57344,1114111,461,
 };
-static const int xmqcli_d108_403[] = {
+static const int xmqcli_d117_403[] = {
     0,8,462,9,10,277,11,12,462,13,13,277,14,31,462,32,32,277,
     33,119,462,120,120,463,121,55295,462,57344,1114111,462,1114112,1114112,3,
 };
-static const int xmqcli_d108_404[] = {
+static const int xmqcli_d117_404[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,464,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_405[] = {
+static const int xmqcli_d117_405[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,110,18,111,111,465,112,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_406[] = {
+static const int xmqcli_d117_406[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,466,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_407[] = {
+static const int xmqcli_d117_407[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,467,109,114,18,
     115,115,468,116,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_408[] = {
+static const int xmqcli_d117_408[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,469,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_409[] = {
+static const int xmqcli_d117_409[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,470,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_410[] = {
+static const int xmqcli_d117_410[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,471,109,116,18,
     117,117,472,118,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_411[] = {
+static const int xmqcli_d117_411[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,473,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_412[] = {
+static const int xmqcli_d117_412[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,474,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_413[] = {
+static const int xmqcli_d117_413[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,475,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_414[] = {
+static const int xmqcli_d117_414[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,102,18,103,103,476,104,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_415[] = {
+static const int xmqcli_d117_415[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,477,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_416[] = {
+static const int xmqcli_d117_416[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,478,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_417[] = {
+static const int xmqcli_d117_417[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,479,103,109,18,
     110,110,480,111,111,18,112,112,481,113,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_418[] = {
+static const int xmqcli_d117_418[] = {
     0,8,18,11,12,18,14,31,18,33,117,18,118,118,482,119,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_419[] = {
+static const int xmqcli_d117_419[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,483,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_420[] = {
+static const int xmqcli_d117_420[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,484,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_421[] = {
+static const int xmqcli_d117_421[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,485,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_422[] = {
+static const int xmqcli_d117_422[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,486,46,106,18,
     107,107,487,108,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_423[] = {
+static const int xmqcli_d117_423[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,488,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_424[] = {
+static const int xmqcli_d117_424[] = {
     0,8,18,11,12,18,14,31,18,33,112,18,113,113,489,114,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_425[] = {
+static const int xmqcli_d117_425[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,490,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_426[] = {
+static const int xmqcli_d117_426[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,491,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_427[] = {
+static const int xmqcli_d117_427[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,492,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_428[] = {
+static const int xmqcli_d117_428[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,493,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_429[] = {
+static const int xmqcli_d117_429[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,494,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_430[] = {
+static const int xmqcli_d117_430[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,495,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_431[] = {
+static const int xmqcli_d117_431[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,496,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_432[] = {
+static const int xmqcli_d117_432[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,98,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_433[] = {
+static const int xmqcli_d117_433[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,497,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_434[] = {
+static const int xmqcli_d117_434[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,498,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_435[] = {
+static const int xmqcli_d117_435[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,499,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_436[] = {
+static const int xmqcli_d117_436[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,500,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_437[] = {
+static const int xmqcli_d117_437[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,501,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_438[] = {
+static const int xmqcli_d117_438[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,502,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_439[] = {
+static const int xmqcli_d117_439[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,98,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_440[] = {
+static const int xmqcli_d117_440[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,293,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_441[] = {
+static const int xmqcli_d117_441[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,98,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_442[] = {
+static const int xmqcli_d117_442[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,387,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_443[] = {
+static const int xmqcli_d117_443[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,503,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_444[] = {
+static const int xmqcli_d117_444[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,504,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_445[] = {
+static const int xmqcli_d117_445[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,505,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_446[] = {
+static const int xmqcli_d117_446[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,506,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_447[] = {
+static const int xmqcli_d117_447[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,387,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_448[] = {
+static const int xmqcli_d117_448[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,507,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_449[] = {
+static const int xmqcli_d117_449[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,508,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_450[] = {
+static const int xmqcli_d117_450[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,509,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_451[] = {
+static const int xmqcli_d117_451[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,510,105,115,18,
     116,116,511,117,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_452[] = {
+static const int xmqcli_d117_452[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,512,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_453[] = {
+static const int xmqcli_d117_453[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,513,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_454[] = {
+static const int xmqcli_d117_454[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,514,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_455[] = {
+static const int xmqcli_d117_455[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,515,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_456[] = {
+static const int xmqcli_d117_456[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,192,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_457[] = {
+static const int xmqcli_d117_457[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,516,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_458[] = {
+static const int xmqcli_d117_458[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,517,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_459[] = {
+static const int xmqcli_d117_459[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,387,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_460[] = {
+static const int xmqcli_d117_460[] = {
     9,10,277,13,13,277,32,32,277,45,45,460,48,57,460,61,61,518,
     65,90,460,95,95,460,97,122,460,1114112,1114112,3,
 };
-static const int xmqcli_d108_461[] = {
+static const int xmqcli_d117_461[] = {
     0,8,461,9,10,277,11,12,461,13,13,277,14,31,461,32,32,277,
     33,55295,461,57344,1114111,461,1114112,1114112,3,
 };
-static const int xmqcli_d108_462[] = {
+static const int xmqcli_d117_462[] = {
     0,8,462,9,10,277,11,12,462,13,13,277,14,31,462,32,32,277,
     33,55295,462,57344,1114111,462,1114112,1114112,3,
 };
-static const int xmqcli_d108_463[] = {
+static const int xmqcli_d117_463[] = {
     0,8,519,9,10,277,11,12,519,13,13,277,14,31,519,32,32,277,
     33,55295,519,57344,1114111,519,1114112,1114112,3,
 };
-static const int xmqcli_d108_464[] = {
+static const int xmqcli_d117_464[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,520,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_465[] = {
+static const int xmqcli_d117_465[] = {
     0,8,18,11,12,18,14,31,18,33,118,18,119,119,521,120,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_466[] = {
+static const int xmqcli_d117_466[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,522,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_467[] = {
+static const int xmqcli_d117_467[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,523,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_468[] = {
+static const int xmqcli_d117_468[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,524,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_469[] = {
+static const int xmqcli_d117_469[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,525,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_470[] = {
+static const int xmqcli_d117_470[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,526,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_471[] = {
+static const int xmqcli_d117_471[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,527,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_472[] = {
+static const int xmqcli_d117_472[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_473[] = {
+static const int xmqcli_d117_473[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,528,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_474[] = {
+static const int xmqcli_d117_474[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,529,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_475[] = {
+static const int xmqcli_d117_475[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,530,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_476[] = {
+static const int xmqcli_d117_476[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,472,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_477[] = {
+static const int xmqcli_d117_477[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,531,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_478[] = {
+static const int xmqcli_d117_478[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,532,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_479[] = {
+static const int xmqcli_d117_479[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,533,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_480[] = {
+static const int xmqcli_d117_480[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,534,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_481[] = {
+static const int xmqcli_d117_481[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,535,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_482[] = {
+static const int xmqcli_d117_482[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,536,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_483[] = {
+static const int xmqcli_d117_483[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,537,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_484[] = {
+static const int xmqcli_d117_484[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,538,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_485[] = {
+static const int xmqcli_d117_485[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,539,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_486[] = {
+static const int xmqcli_d117_486[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,540,100,103,18,
     104,104,541,105,105,18,106,106,542,107,115,18,116,116,543,117,119,18,
     120,120,544,121,121,545,122,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_487[] = {
+static const int xmqcli_d117_487[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,546,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_488[] = {
+static const int xmqcli_d117_488[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,547,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_489[] = {
+static const int xmqcli_d117_489[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,548,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_490[] = {
+static const int xmqcli_d117_490[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,549,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_491[] = {
+static const int xmqcli_d117_491[] = {
     0,8,18,11,12,18,14,31,18,33,57,18,58,58,550,59,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_492[] = {
+static const int xmqcli_d117_492[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,551,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_493[] = {
+static const int xmqcli_d117_493[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,552,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_494[] = {
+static const int xmqcli_d117_494[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,553,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_495[] = {
+static const int xmqcli_d117_495[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,554,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_496[] = {
+static const int xmqcli_d117_496[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,555,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_497[] = {
+static const int xmqcli_d117_497[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,556,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_498[] = {
+static const int xmqcli_d117_498[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,557,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_499[] = {
+static const int xmqcli_d117_499[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,558,115,119,18,
     120,120,98,121,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_500[] = {
+static const int xmqcli_d117_500[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,559,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_501[] = {
+static const int xmqcli_d117_501[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,98,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_502[] = {
+static const int xmqcli_d117_502[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,560,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_503[] = {
+static const int xmqcli_d117_503[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,561,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_504[] = {
+static const int xmqcli_d117_504[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,562,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_505[] = {
+static const int xmqcli_d117_505[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,563,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_506[] = {
+static const int xmqcli_d117_506[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,564,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_507[] = {
+static const int xmqcli_d117_507[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,565,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_508[] = {
+static const int xmqcli_d117_508[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,192,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_509[] = {
+static const int xmqcli_d117_509[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,566,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_510[] = {
+static const int xmqcli_d117_510[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,567,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_511[] = {
+static const int xmqcli_d117_511[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,568,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_512[] = {
+static const int xmqcli_d117_512[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,569,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_513[] = {
+static const int xmqcli_d117_513[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,570,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_514[] = {
+static const int xmqcli_d117_514[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,571,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_515[] = {
+static const int xmqcli_d117_515[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,192,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_516[] = {
+static const int xmqcli_d117_516[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,387,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_517[] = {
+static const int xmqcli_d117_517[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,192,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_518[] = {
+static const int xmqcli_d117_518[] = {
     0,8,572,9,10,277,11,12,572,13,13,277,14,31,572,32,32,277,
     33,33,572,34,34,573,35,38,572,39,39,574,40,55295,572,57344,1114111,572,
     1114112,1114112,3,
 };
-static const int xmqcli_d108_519[] = {
+static const int xmqcli_d117_519[] = {
     0,8,519,9,10,277,11,12,519,13,13,277,14,31,519,32,32,277,
     33,55295,519,57344,1114111,519,1114112,1114112,3,
 };
-static const int xmqcli_d108_520[] = {
+static const int xmqcli_d117_520[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,575,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_521[] = {
+static const int xmqcli_d117_521[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,576,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_522[] = {
+static const int xmqcli_d117_522[] = {
     0,8,18,11,12,18,14,31,18,33,106,18,107,107,577,108,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_523[] = {
+static const int xmqcli_d117_523[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,578,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_524[] = {
+static const int xmqcli_d117_524[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,579,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_525[] = {
+static const int xmqcli_d117_525[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,580,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_526[] = {
+static const int xmqcli_d117_526[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,581,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_527[] = {
+static const int xmqcli_d117_527[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_528[] = {
+static const int xmqcli_d117_528[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,582,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_529[] = {
+static const int xmqcli_d117_529[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,1114112,1114112,3,
 };
-static const int xmqcli_d108_530[] = {
+static const int xmqcli_d117_530[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,583,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_531[] = {
+static const int xmqcli_d117_531[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,472,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_532[] = {
+static const int xmqcli_d117_532[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,584,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_533[] = {
+static const int xmqcli_d117_533[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,585,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_534[] = {
+static const int xmqcli_d117_534[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,586,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_535[] = {
+static const int xmqcli_d117_535[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,587,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_536[] = {
+static const int xmqcli_d117_536[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,588,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_537[] = {
+static const int xmqcli_d117_537[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,589,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_538[] = {
+static const int xmqcli_d117_538[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,590,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_539[] = {
+static const int xmqcli_d117_539[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,591,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_540[] = {
+static const int xmqcli_d117_540[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,592,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_541[] = {
+static const int xmqcli_d117_541[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,593,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_542[] = {
+static const int xmqcli_d117_542[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,594,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_543[] = {
+static const int xmqcli_d117_543[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,595,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_544[] = {
+static const int xmqcli_d117_544[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,596,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_545[] = {
+static const int xmqcli_d117_545[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,597,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_546[] = {
+static const int xmqcli_d117_546[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,598,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_547[] = {
+static const int xmqcli_d117_547[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,599,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_548[] = {
+static const int xmqcli_d117_548[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,600,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_549[] = {
+static const int xmqcli_d117_549[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,601,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_550[] = {
+static const int xmqcli_d117_550[] = {
     0,8,602,9,10,18,11,12,602,13,13,18,14,31,602,32,32,18,
     33,55295,602,57344,1114111,602,1114112,1114112,18,
 };
-static const int xmqcli_d108_551[] = {
+static const int xmqcli_d117_551[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,603,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_552[] = {
+static const int xmqcli_d117_552[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,604,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_553[] = {
+static const int xmqcli_d117_553[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,605,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_554[] = {
+static const int xmqcli_d117_554[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,606,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_555[] = {
+static const int xmqcli_d117_555[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,607,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_556[] = {
+static const int xmqcli_d117_556[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,608,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_557[] = {
+static const int xmqcli_d117_557[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,98,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_558[] = {
+static const int xmqcli_d117_558[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,609,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_559[] = {
+static const int xmqcli_d117_559[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,610,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_560[] = {
+static const int xmqcli_d117_560[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,611,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_561[] = {
+static const int xmqcli_d117_561[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,612,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_562[] = {
+static const int xmqcli_d117_562[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,613,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_563[] = {
+static const int xmqcli_d117_563[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,614,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_564[] = {
+static const int xmqcli_d117_564[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,615,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_565[] = {
+static const int xmqcli_d117_565[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,616,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_566[] = {
+static const int xmqcli_d117_566[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,617,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_567[] = {
+static const int xmqcli_d117_567[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,618,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_568[] = {
+static const int xmqcli_d117_568[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,619,115,119,18,
     120,120,192,121,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_569[] = {
+static const int xmqcli_d117_569[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,620,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_570[] = {
+static const int xmqcli_d117_570[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,192,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_571[] = {
+static const int xmqcli_d117_571[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,621,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_572[] = {
+static const int xmqcli_d117_572[] = {
     0,8,572,9,10,277,11,12,572,13,13,277,14,31,572,32,32,277,
     33,33,572,35,38,572,40,55295,572,57344,1114111,572,1114112,1114112,3,
 };
-static const int xmqcli_d108_573[] = {
+static const int xmqcli_d117_573[] = {
     0,33,573,34,34,622,35,91,573,92,92,623,93,55295,573,57344,1114111,573,
 };
-static const int xmqcli_d108_574[] = {
+static const int xmqcli_d117_574[] = {
     0,38,574,39,39,622,40,55295,574,57344,1114111,574,
 };
-static const int xmqcli_d108_575[] = {
+static const int xmqcli_d117_575[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,624,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_576[] = {
+static const int xmqcli_d117_576[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,472,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_577[] = {
+static const int xmqcli_d117_577[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,625,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_578[] = {
+static const int xmqcli_d117_578[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,626,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_579[] = {
+static const int xmqcli_d117_579[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,627,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_580[] = {
+static const int xmqcli_d117_580[] = {
     0,8,18,11,12,18,14,31,18,33,99,18,100,100,628,101,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_581[] = {
+static const int xmqcli_d117_581[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,629,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_582[] = {
+static const int xmqcli_d117_582[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,630,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_583[] = {
+static const int xmqcli_d117_583[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,631,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_584[] = {
+static const int xmqcli_d117_584[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,632,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_585[] = {
+static const int xmqcli_d117_585[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,633,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_586[] = {
+static const int xmqcli_d117_586[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,634,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_587[] = {
+static const int xmqcli_d117_587[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,635,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_588[] = {
+static const int xmqcli_d117_588[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,636,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_589[] = {
+static const int xmqcli_d117_589[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,637,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_590[] = {
+static const int xmqcli_d117_590[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,638,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_591[] = {
+static const int xmqcli_d117_591[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,639,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_592[] = {
+static const int xmqcli_d117_592[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,640,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_593[] = {
+static const int xmqcli_d117_593[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,641,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_594[] = {
+static const int xmqcli_d117_594[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,642,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_595[] = {
+static const int xmqcli_d117_595[] = {
     0,8,18,11,12,18,14,31,18,33,119,18,120,120,643,121,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_596[] = {
+static const int xmqcli_d117_596[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,472,109,112,18,
     113,113,472,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_597[] = {
+static const int xmqcli_d117_597[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,644,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_598[] = {
+static const int xmqcli_d117_598[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,645,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_599[] = {
+static const int xmqcli_d117_599[] = {
     0,8,18,11,12,18,14,31,18,33,101,18,102,102,646,103,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_600[] = {
+static const int xmqcli_d117_600[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,647,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_601[] = {
+static const int xmqcli_d117_601[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,648,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_602[] = {
+static const int xmqcli_d117_602[] = {
     0,8,602,9,10,18,11,12,602,13,13,18,14,31,602,32,32,18,
     33,55295,602,57344,1114111,602,1114112,1114112,18,
 };
-static const int xmqcli_d108_603[] = {
+static const int xmqcli_d117_603[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,649,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_604[] = {
+static const int xmqcli_d117_604[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,650,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_605[] = {
+static const int xmqcli_d117_605[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,651,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_606[] = {
+static const int xmqcli_d117_606[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,652,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_607[] = {
+static const int xmqcli_d117_607[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,98,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_608[] = {
+static const int xmqcli_d117_608[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,653,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_609[] = {
+static const int xmqcli_d117_609[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,654,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_610[] = {
+static const int xmqcli_d117_610[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,655,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_611[] = {
+static const int xmqcli_d117_611[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,656,100,100,18,
     101,101,657,102,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_612[] = {
+static const int xmqcli_d117_612[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,658,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_613[] = {
+static const int xmqcli_d117_613[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,659,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_614[] = {
+static const int xmqcli_d117_614[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,660,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_615[] = {
+static const int xmqcli_d117_615[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,661,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_616[] = {
+static const int xmqcli_d117_616[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,662,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_617[] = {
+static const int xmqcli_d117_617[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,663,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_618[] = {
+static const int xmqcli_d117_618[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,192,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_619[] = {
+static const int xmqcli_d117_619[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,664,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_620[] = {
+static const int xmqcli_d117_620[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,665,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_621[] = {
+static const int xmqcli_d117_621[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,666,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_622[] = {
+static const int xmqcli_d117_622[] = {
     9,10,277,13,13,277,32,32,277,1114112,1114112,3,
 };
-static const int xmqcli_d108_623[] = {
+static const int xmqcli_d117_623[] = {
     34,34,573,92,92,573,
 };
-static const int xmqcli_d108_624[] = {
+static const int xmqcli_d117_624[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,667,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_625[] = {
+static const int xmqcli_d117_625[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,668,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_626[] = {
+static const int xmqcli_d117_626[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,669,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_627[] = {
+static const int xmqcli_d117_627[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,670,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_628[] = {
+static const int xmqcli_d117_628[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,671,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_629[] = {
+static const int xmqcli_d117_629[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,672,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_630[] = {
+static const int xmqcli_d117_630[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,673,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_631[] = {
+static const int xmqcli_d117_631[] = {
     0,8,18,11,12,18,14,31,18,33,111,18,112,112,674,113,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_632[] = {
+static const int xmqcli_d117_632[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,472,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_633[] = {
+static const int xmqcli_d117_633[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,675,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_634[] = {
+static const int xmqcli_d117_634[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,676,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_635[] = {
+static const int xmqcli_d117_635[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,677,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_636[] = {
+static const int xmqcli_d117_636[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,637,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_637[] = {
+static const int xmqcli_d117_637[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_638[] = {
+static const int xmqcli_d117_638[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,678,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_639[] = {
+static const int xmqcli_d117_639[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,679,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_640[] = {
+static const int xmqcli_d117_640[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,680,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_641[] = {
+static const int xmqcli_d117_641[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,472,109,112,18,
     113,113,472,114,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_642[] = {
+static const int xmqcli_d117_642[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,472,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_643[] = {
+static const int xmqcli_d117_643[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,472,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_644[] = {
+static const int xmqcli_d117_644[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,472,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_645[] = {
+static const int xmqcli_d117_645[] = {
     0,8,18,11,12,18,14,31,18,33,121,18,122,122,681,123,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_646[] = {
+static const int xmqcli_d117_646[] = {
     0,8,18,11,12,18,14,31,18,33,110,18,111,111,682,112,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_647[] = {
+static const int xmqcli_d117_647[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,683,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_648[] = {
+static const int xmqcli_d117_648[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,684,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_649[] = {
+static const int xmqcli_d117_649[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,98,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_650[] = {
+static const int xmqcli_d117_650[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,293,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_651[] = {
+static const int xmqcli_d117_651[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,685,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_652[] = {
+static const int xmqcli_d117_652[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,686,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_653[] = {
+static const int xmqcli_d117_653[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,687,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_654[] = {
+static const int xmqcli_d117_654[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,688,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_655[] = {
+static const int xmqcli_d117_655[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,689,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_656[] = {
+static const int xmqcli_d117_656[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,690,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_657[] = {
+static const int xmqcli_d117_657[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,691,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_658[] = {
+static const int xmqcli_d117_658[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,692,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_659[] = {
+static const int xmqcli_d117_659[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,693,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_660[] = {
+static const int xmqcli_d117_660[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,694,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_661[] = {
+static const int xmqcli_d117_661[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,695,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_662[] = {
+static const int xmqcli_d117_662[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,192,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_663[] = {
+static const int xmqcli_d117_663[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,696,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_664[] = {
+static const int xmqcli_d117_664[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,697,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_665[] = {
+static const int xmqcli_d117_665[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,698,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_666[] = {
+static const int xmqcli_d117_666[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,699,100,100,18,
     101,101,700,102,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_667[] = {
+static const int xmqcli_d117_667[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,637,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_668[] = {
+static const int xmqcli_d117_668[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,701,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_669[] = {
+static const int xmqcli_d117_669[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,702,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_670[] = {
+static const int xmqcli_d117_670[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,703,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_671[] = {
+static const int xmqcli_d117_671[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,704,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_672[] = {
+static const int xmqcli_d117_672[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,637,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_673[] = {
+static const int xmqcli_d117_673[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,705,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_674[] = {
+static const int xmqcli_d117_674[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,706,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_675[] = {
+static const int xmqcli_d117_675[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,707,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_676[] = {
+static const int xmqcli_d117_676[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,708,105,115,18,
     116,116,709,117,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_677[] = {
+static const int xmqcli_d117_677[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,44,18,45,45,710,46,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_678[] = {
+static const int xmqcli_d117_678[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,711,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_679[] = {
+static const int xmqcli_d117_679[] = {
     0,8,18,11,12,18,14,31,18,33,116,18,117,117,712,118,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_680[] = {
+static const int xmqcli_d117_680[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,713,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_681[] = {
+static const int xmqcli_d117_681[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,472,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_682[] = {
+static const int xmqcli_d117_682[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,714,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_683[] = {
+static const int xmqcli_d117_683[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,715,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_684[] = {
+static const int xmqcli_d117_684[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,637,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_685[] = {
+static const int xmqcli_d117_685[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,716,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_686[] = {
+static const int xmqcli_d117_686[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,717,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_687[] = {
+static const int xmqcli_d117_687[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,718,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_688[] = {
+static const int xmqcli_d117_688[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,719,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_689[] = {
+static const int xmqcli_d117_689[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,720,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_690[] = {
+static const int xmqcli_d117_690[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,721,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_691[] = {
+static const int xmqcli_d117_691[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,722,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_692[] = {
+static const int xmqcli_d117_692[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,192,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_693[] = {
+static const int xmqcli_d117_693[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,387,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_694[] = {
+static const int xmqcli_d117_694[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,723,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_695[] = {
+static const int xmqcli_d117_695[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,724,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_696[] = {
+static const int xmqcli_d117_696[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,725,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_697[] = {
+static const int xmqcli_d117_697[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,726,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_698[] = {
+static const int xmqcli_d117_698[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,727,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_699[] = {
+static const int xmqcli_d117_699[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,728,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_700[] = {
+static const int xmqcli_d117_700[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,729,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_701[] = {
+static const int xmqcli_d117_701[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,730,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_702[] = {
+static const int xmqcli_d117_702[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,731,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_703[] = {
+static const int xmqcli_d117_703[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,732,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_704[] = {
+static const int xmqcli_d117_704[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,733,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_705[] = {
+static const int xmqcli_d117_705[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,734,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_706[] = {
+static const int xmqcli_d117_706[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,472,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_707[] = {
+static const int xmqcli_d117_707[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,735,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_708[] = {
+static const int xmqcli_d117_708[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,736,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_709[] = {
+static const int xmqcli_d117_709[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,737,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_710[] = {
+static const int xmqcli_d117_710[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,738,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_711[] = {
+static const int xmqcli_d117_711[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,739,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_712[] = {
+static const int xmqcli_d117_712[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,740,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_713[] = {
+static const int xmqcli_d117_713[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,472,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_714[] = {
+static const int xmqcli_d117_714[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,637,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_715[] = {
+static const int xmqcli_d117_715[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,472,100,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_716[] = {
+static const int xmqcli_d117_716[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,741,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_717[] = {
+static const int xmqcli_d117_717[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,98,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_718[] = {
+static const int xmqcli_d117_718[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,98,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_719[] = {
+static const int xmqcli_d117_719[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,98,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_720[] = {
+static const int xmqcli_d117_720[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_721[] = {
+static const int xmqcli_d117_721[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,742,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_722[] = {
+static const int xmqcli_d117_722[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,743,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_723[] = {
+static const int xmqcli_d117_723[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,744,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_724[] = {
+static const int xmqcli_d117_724[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,745,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_725[] = {
+static const int xmqcli_d117_725[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,746,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_726[] = {
+static const int xmqcli_d117_726[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,747,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_727[] = {
+static const int xmqcli_d117_727[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,748,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_728[] = {
+static const int xmqcli_d117_728[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,749,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_729[] = {
+static const int xmqcli_d117_729[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,750,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_730[] = {
+static const int xmqcli_d117_730[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,751,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_731[] = {
+static const int xmqcli_d117_731[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,752,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_732[] = {
+static const int xmqcli_d117_732[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,753,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_733[] = {
+static const int xmqcli_d117_733[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,754,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_734[] = {
+static const int xmqcli_d117_734[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,755,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_735[] = {
+static const int xmqcli_d117_735[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,756,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_736[] = {
+static const int xmqcli_d117_736[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,757,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_737[] = {
+static const int xmqcli_d117_737[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,758,115,119,18,
     120,120,472,121,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_738[] = {
+static const int xmqcli_d117_738[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,759,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_739[] = {
+static const int xmqcli_d117_739[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,472,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_740[] = {
+static const int xmqcli_d117_740[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,760,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_741[] = {
+static const int xmqcli_d117_741[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,293,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_742[] = {
+static const int xmqcli_d117_742[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,761,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_743[] = {
+static const int xmqcli_d117_743[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,762,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_744[] = {
+static const int xmqcli_d117_744[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,763,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_745[] = {
+static const int xmqcli_d117_745[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,192,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_746[] = {
+static const int xmqcli_d117_746[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,192,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_747[] = {
+static const int xmqcli_d117_747[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,192,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_748[] = {
+static const int xmqcli_d117_748[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_749[] = {
+static const int xmqcli_d117_749[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,764,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_750[] = {
+static const int xmqcli_d117_750[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,765,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_751[] = {
+static const int xmqcli_d117_751[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,766,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_752[] = {
+static const int xmqcli_d117_752[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,767,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_753[] = {
+static const int xmqcli_d117_753[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,768,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_754[] = {
+static const int xmqcli_d117_754[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,769,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_755[] = {
+static const int xmqcli_d117_755[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,770,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_756[] = {
+static const int xmqcli_d117_756[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,771,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_757[] = {
+static const int xmqcli_d117_757[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,472,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_758[] = {
+static const int xmqcli_d117_758[] = {
     0,8,18,11,12,18,14,31,18,33,108,18,109,109,772,110,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_759[] = {
+static const int xmqcli_d117_759[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,773,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_760[] = {
+static const int xmqcli_d117_760[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,774,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_761[] = {
+static const int xmqcli_d117_761[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,775,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_762[] = {
+static const int xmqcli_d117_762[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,293,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_763[] = {
+static const int xmqcli_d117_763[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,387,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_764[] = {
+static const int xmqcli_d117_764[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,776,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_765[] = {
+static const int xmqcli_d117_765[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,777,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_766[] = {
+static const int xmqcli_d117_766[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,778,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_767[] = {
+static const int xmqcli_d117_767[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,779,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_768[] = {
+static const int xmqcli_d117_768[] = {
     0,8,18,11,12,18,14,31,18,33,97,18,98,98,780,99,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_769[] = {
+static const int xmqcli_d117_769[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,781,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_770[] = {
+static const int xmqcli_d117_770[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,472,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_771[] = {
+static const int xmqcli_d117_771[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,782,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_772[] = {
+static const int xmqcli_d117_772[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,783,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_773[] = {
+static const int xmqcli_d117_773[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,784,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_774[] = {
+static const int xmqcli_d117_774[] = {
     0,8,18,11,12,18,14,31,18,33,98,18,99,99,785,100,100,18,
     101,101,786,102,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_775[] = {
+static const int xmqcli_d117_775[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,787,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_776[] = {
+static const int xmqcli_d117_776[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,788,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_777[] = {
+static const int xmqcli_d117_777[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,387,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_778[] = {
+static const int xmqcli_d117_778[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,472,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_779[] = {
+static const int xmqcli_d117_779[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,637,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_780[] = {
+static const int xmqcli_d117_780[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,789,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_781[] = {
+static const int xmqcli_d117_781[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,790,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_782[] = {
+static const int xmqcli_d117_782[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,791,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_783[] = {
+static const int xmqcli_d117_783[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,792,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_784[] = {
+static const int xmqcli_d117_784[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,793,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_785[] = {
+static const int xmqcli_d117_785[] = {
     0,8,18,11,12,18,14,31,18,33,103,18,104,104,794,105,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_786[] = {
+static const int xmqcli_d117_786[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,795,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_787[] = {
+static const int xmqcli_d117_787[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,796,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_788[] = {
+static const int xmqcli_d117_788[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,797,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_789[] = {
+static const int xmqcli_d117_789[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,798,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_790[] = {
+static const int xmqcli_d117_790[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,799,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_791[] = {
+static const int xmqcli_d117_791[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,800,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_792[] = {
+static const int xmqcli_d117_792[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,801,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_793[] = {
+static const int xmqcli_d117_793[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,802,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_794[] = {
+static const int xmqcli_d117_794[] = {
     0,8,18,11,12,18,14,31,18,33,96,18,97,97,803,98,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_795[] = {
+static const int xmqcli_d117_795[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,804,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_796[] = {
+static const int xmqcli_d117_796[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,805,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_797[] = {
+static const int xmqcli_d117_797[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,806,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_798[] = {
+static const int xmqcli_d117_798[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,807,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_799[] = {
+static const int xmqcli_d117_799[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,472,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_800[] = {
+static const int xmqcli_d117_800[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,472,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_801[] = {
+static const int xmqcli_d117_801[] = {
     0,8,18,11,12,18,14,31,18,33,107,18,108,108,472,109,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_802[] = {
+static const int xmqcli_d117_802[] = {
     0,8,18,9,10,3,11,12,18,13,13,3,14,31,18,32,32,3,
     33,55295,18,57344,1114111,18,
 };
-static const int xmqcli_d108_803[] = {
+static const int xmqcli_d117_803[] = {
     0,8,18,11,12,18,14,31,18,33,113,18,114,114,808,115,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_804[] = {
+static const int xmqcli_d117_804[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,809,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_805[] = {
+static const int xmqcli_d117_805[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,810,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_806[] = {
+static const int xmqcli_d117_806[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,811,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_807[] = {
+static const int xmqcli_d117_807[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,637,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_808[] = {
+static const int xmqcli_d117_808[] = {
     0,8,18,11,12,18,14,31,18,33,44,18,45,45,812,46,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_809[] = {
+static const int xmqcli_d117_809[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,813,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_810[] = {
+static const int xmqcli_d117_810[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,814,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_811[] = {
+static const int xmqcli_d117_811[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,815,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_812[] = {
+static const int xmqcli_d117_812[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,816,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_813[] = {
+static const int xmqcli_d117_813[] = {
     0,8,18,11,12,18,14,31,18,33,120,18,121,121,637,122,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_814[] = {
+static const int xmqcli_d117_814[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,817,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_815[] = {
+static const int xmqcli_d117_815[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,818,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_816[] = {
+static const int xmqcli_d117_816[] = {
     0,8,18,11,12,18,14,31,18,33,109,18,110,110,819,111,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_817[] = {
+static const int xmqcli_d117_817[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,98,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_818[] = {
+static const int xmqcli_d117_818[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,820,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_819[] = {
+static const int xmqcli_d117_819[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,821,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_820[] = {
+static const int xmqcli_d117_820[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,192,116,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_821[] = {
+static const int xmqcli_d117_821[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,822,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_822[] = {
+static const int xmqcli_d117_822[] = {
     0,8,18,11,12,18,14,31,18,33,115,18,116,116,823,117,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_823[] = {
+static const int xmqcli_d117_823[] = {
     0,8,18,11,12,18,14,31,18,33,104,18,105,105,824,106,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_824[] = {
+static const int xmqcli_d117_824[] = {
     0,8,18,11,12,18,14,31,18,33,100,18,101,101,825,102,55295,18,
     57344,1114111,18,
 };
-static const int xmqcli_d108_825[] = {
+static const int xmqcli_d117_825[] = {
     0,8,18,11,12,18,14,31,18,33,114,18,115,115,472,116,55295,18,
     57344,1114111,18,
 };
 // Predict the alternative of /6, 0 based, -1 if none matches.
-static int xmqcli_predict108(xmqcli_Parser *p)
+static int xmqcli_predict117(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -7543,832 +7757,832 @@ static int xmqcli_predict108(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d108_0, 3, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d108_1, 20, xmqcli_peek(p, i)); break;
-        case 2: s = xmqcli_step(xmqcli_d108_2, 10, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d117_0, 3, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d117_1, 20, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d117_2, 10, xmqcli_peek(p, i)); break;
         case 3: return 1;
-        case 4: s = xmqcli_step(xmqcli_d108_4, 13, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d108_5, 11, xmqcli_peek(p, i)); break;
-        case 6: s = xmqcli_step(xmqcli_d108_6, 12, xmqcli_peek(p, i)); break;
-        case 7: s = xmqcli_step(xmqcli_d108_7, 13, xmqcli_peek(p, i)); break;
-        case 8: s = xmqcli_step(xmqcli_d108_8, 12, xmqcli_peek(p, i)); break;
-        case 9: s = xmqcli_step(xmqcli_d108_9, 13, xmqcli_peek(p, i)); break;
-        case 10: s = xmqcli_step(xmqcli_d108_10, 12, xmqcli_peek(p, i)); break;
-        case 11: s = xmqcli_step(xmqcli_d108_11, 13, xmqcli_peek(p, i)); break;
-        case 12: s = xmqcli_step(xmqcli_d108_12, 10, xmqcli_peek(p, i)); break;
-        case 13: s = xmqcli_step(xmqcli_d108_13, 11, xmqcli_peek(p, i)); break;
-        case 14: s = xmqcli_step(xmqcli_d108_14, 11, xmqcli_peek(p, i)); break;
-        case 15: s = xmqcli_step(xmqcli_d108_15, 34, xmqcli_peek(p, i)); break;
-        case 16: s = xmqcli_step(xmqcli_d108_16, 11, xmqcli_peek(p, i)); break;
-        case 17: s = xmqcli_step(xmqcli_d108_17, 13, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d117_4, 13, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d117_5, 11, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d117_6, 12, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d117_7, 13, xmqcli_peek(p, i)); break;
+        case 8: s = xmqcli_step(xmqcli_d117_8, 12, xmqcli_peek(p, i)); break;
+        case 9: s = xmqcli_step(xmqcli_d117_9, 13, xmqcli_peek(p, i)); break;
+        case 10: s = xmqcli_step(xmqcli_d117_10, 12, xmqcli_peek(p, i)); break;
+        case 11: s = xmqcli_step(xmqcli_d117_11, 13, xmqcli_peek(p, i)); break;
+        case 12: s = xmqcli_step(xmqcli_d117_12, 10, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d117_13, 11, xmqcli_peek(p, i)); break;
+        case 14: s = xmqcli_step(xmqcli_d117_14, 11, xmqcli_peek(p, i)); break;
+        case 15: s = xmqcli_step(xmqcli_d117_15, 34, xmqcli_peek(p, i)); break;
+        case 16: s = xmqcli_step(xmqcli_d117_16, 11, xmqcli_peek(p, i)); break;
+        case 17: s = xmqcli_step(xmqcli_d117_17, 13, xmqcli_peek(p, i)); break;
         case 18: return 0;
-        case 19: s = xmqcli_step(xmqcli_d108_19, 19, xmqcli_peek(p, i)); break;
-        case 20: s = xmqcli_step(xmqcli_d108_20, 7, xmqcli_peek(p, i)); break;
-        case 21: s = xmqcli_step(xmqcli_d108_21, 7, xmqcli_peek(p, i)); break;
-        case 22: s = xmqcli_step(xmqcli_d108_22, 7, xmqcli_peek(p, i)); break;
-        case 23: s = xmqcli_step(xmqcli_d108_23, 7, xmqcli_peek(p, i)); break;
-        case 24: s = xmqcli_step(xmqcli_d108_24, 7, xmqcli_peek(p, i)); break;
-        case 25: s = xmqcli_step(xmqcli_d108_25, 7, xmqcli_peek(p, i)); break;
-        case 26: s = xmqcli_step(xmqcli_d108_26, 7, xmqcli_peek(p, i)); break;
-        case 27: s = xmqcli_step(xmqcli_d108_27, 9, xmqcli_peek(p, i)); break;
-        case 28: s = xmqcli_step(xmqcli_d108_28, 7, xmqcli_peek(p, i)); break;
-        case 29: s = xmqcli_step(xmqcli_d108_29, 9, xmqcli_peek(p, i)); break;
-        case 30: s = xmqcli_step(xmqcli_d108_30, 7, xmqcli_peek(p, i)); break;
-        case 31: s = xmqcli_step(xmqcli_d108_31, 7, xmqcli_peek(p, i)); break;
-        case 32: s = xmqcli_step(xmqcli_d108_32, 12, xmqcli_peek(p, i)); break;
-        case 33: s = xmqcli_step(xmqcli_d108_33, 9, xmqcli_peek(p, i)); break;
-        case 34: s = xmqcli_step(xmqcli_d108_34, 7, xmqcli_peek(p, i)); break;
-        case 35: s = xmqcli_step(xmqcli_d108_35, 7, xmqcli_peek(p, i)); break;
-        case 36: s = xmqcli_step(xmqcli_d108_36, 7, xmqcli_peek(p, i)); break;
-        case 37: s = xmqcli_step(xmqcli_d108_37, 34, xmqcli_peek(p, i)); break;
-        case 38: s = xmqcli_step(xmqcli_d108_38, 13, xmqcli_peek(p, i)); break;
-        case 39: s = xmqcli_step(xmqcli_d108_39, 9, xmqcli_peek(p, i)); break;
-        case 40: s = xmqcli_step(xmqcli_d108_40, 2, xmqcli_peek(p, i)); break;
-        case 41: s = xmqcli_step(xmqcli_d108_41, 9, xmqcli_peek(p, i)); break;
-        case 42: s = xmqcli_step(xmqcli_d108_42, 8, xmqcli_peek(p, i)); break;
-        case 43: s = xmqcli_step(xmqcli_d108_43, 11, xmqcli_peek(p, i)); break;
-        case 44: s = xmqcli_step(xmqcli_d108_44, 7, xmqcli_peek(p, i)); break;
-        case 45: s = xmqcli_step(xmqcli_d108_45, 11, xmqcli_peek(p, i)); break;
-        case 46: s = xmqcli_step(xmqcli_d108_46, 7, xmqcli_peek(p, i)); break;
-        case 47: s = xmqcli_step(xmqcli_d108_47, 9, xmqcli_peek(p, i)); break;
-        case 48: s = xmqcli_step(xmqcli_d108_48, 7, xmqcli_peek(p, i)); break;
-        case 49: s = xmqcli_step(xmqcli_d108_49, 7, xmqcli_peek(p, i)); break;
-        case 50: s = xmqcli_step(xmqcli_d108_50, 9, xmqcli_peek(p, i)); break;
-        case 51: s = xmqcli_step(xmqcli_d108_51, 7, xmqcli_peek(p, i)); break;
-        case 52: s = xmqcli_step(xmqcli_d108_52, 7, xmqcli_peek(p, i)); break;
-        case 53: s = xmqcli_step(xmqcli_d108_53, 7, xmqcli_peek(p, i)); break;
-        case 54: s = xmqcli_step(xmqcli_d108_54, 11, xmqcli_peek(p, i)); break;
-        case 55: s = xmqcli_step(xmqcli_d108_55, 7, xmqcli_peek(p, i)); break;
-        case 56: s = xmqcli_step(xmqcli_d108_56, 7, xmqcli_peek(p, i)); break;
-        case 57: s = xmqcli_step(xmqcli_d108_57, 11, xmqcli_peek(p, i)); break;
-        case 58: s = xmqcli_step(xmqcli_d108_58, 7, xmqcli_peek(p, i)); break;
-        case 59: s = xmqcli_step(xmqcli_d108_59, 7, xmqcli_peek(p, i)); break;
-        case 60: s = xmqcli_step(xmqcli_d108_60, 7, xmqcli_peek(p, i)); break;
-        case 61: s = xmqcli_step(xmqcli_d108_61, 7, xmqcli_peek(p, i)); break;
-        case 62: s = xmqcli_step(xmqcli_d108_62, 9, xmqcli_peek(p, i)); break;
-        case 63: s = xmqcli_step(xmqcli_d108_63, 7, xmqcli_peek(p, i)); break;
-        case 64: s = xmqcli_step(xmqcli_d108_64, 7, xmqcli_peek(p, i)); break;
-        case 65: s = xmqcli_step(xmqcli_d108_65, 7, xmqcli_peek(p, i)); break;
-        case 66: s = xmqcli_step(xmqcli_d108_66, 7, xmqcli_peek(p, i)); break;
-        case 67: s = xmqcli_step(xmqcli_d108_67, 19, xmqcli_peek(p, i)); break;
-        case 68: s = xmqcli_step(xmqcli_d108_68, 7, xmqcli_peek(p, i)); break;
-        case 69: s = xmqcli_step(xmqcli_d108_69, 7, xmqcli_peek(p, i)); break;
-        case 70: s = xmqcli_step(xmqcli_d108_70, 7, xmqcli_peek(p, i)); break;
-        case 71: s = xmqcli_step(xmqcli_d108_71, 7, xmqcli_peek(p, i)); break;
-        case 72: s = xmqcli_step(xmqcli_d108_72, 7, xmqcli_peek(p, i)); break;
-        case 73: s = xmqcli_step(xmqcli_d108_73, 7, xmqcli_peek(p, i)); break;
-        case 74: s = xmqcli_step(xmqcli_d108_74, 7, xmqcli_peek(p, i)); break;
-        case 75: s = xmqcli_step(xmqcli_d108_75, 9, xmqcli_peek(p, i)); break;
-        case 76: s = xmqcli_step(xmqcli_d108_76, 7, xmqcli_peek(p, i)); break;
-        case 77: s = xmqcli_step(xmqcli_d108_77, 9, xmqcli_peek(p, i)); break;
-        case 78: s = xmqcli_step(xmqcli_d108_78, 7, xmqcli_peek(p, i)); break;
-        case 79: s = xmqcli_step(xmqcli_d108_79, 7, xmqcli_peek(p, i)); break;
-        case 80: s = xmqcli_step(xmqcli_d108_80, 12, xmqcli_peek(p, i)); break;
-        case 81: s = xmqcli_step(xmqcli_d108_81, 9, xmqcli_peek(p, i)); break;
-        case 82: s = xmqcli_step(xmqcli_d108_82, 7, xmqcli_peek(p, i)); break;
-        case 83: s = xmqcli_step(xmqcli_d108_83, 7, xmqcli_peek(p, i)); break;
-        case 84: s = xmqcli_step(xmqcli_d108_84, 7, xmqcli_peek(p, i)); break;
-        case 85: s = xmqcli_step(xmqcli_d108_85, 13, xmqcli_peek(p, i)); break;
-        case 86: s = xmqcli_step(xmqcli_d108_86, 10, xmqcli_peek(p, i)); break;
-        case 87: s = xmqcli_step(xmqcli_d108_87, 9, xmqcli_peek(p, i)); break;
-        case 88: s = xmqcli_step(xmqcli_d108_88, 9, xmqcli_peek(p, i)); break;
-        case 89: s = xmqcli_step(xmqcli_d108_89, 9, xmqcli_peek(p, i)); break;
-        case 90: s = xmqcli_step(xmqcli_d108_90, 10, xmqcli_peek(p, i)); break;
-        case 91: s = xmqcli_step(xmqcli_d108_91, 7, xmqcli_peek(p, i)); break;
-        case 92: s = xmqcli_step(xmqcli_d108_92, 7, xmqcli_peek(p, i)); break;
-        case 93: s = xmqcli_step(xmqcli_d108_93, 7, xmqcli_peek(p, i)); break;
-        case 94: s = xmqcli_step(xmqcli_d108_94, 7, xmqcli_peek(p, i)); break;
-        case 95: s = xmqcli_step(xmqcli_d108_95, 7, xmqcli_peek(p, i)); break;
-        case 96: s = xmqcli_step(xmqcli_d108_96, 7, xmqcli_peek(p, i)); break;
-        case 97: s = xmqcli_step(xmqcli_d108_97, 7, xmqcli_peek(p, i)); break;
-        case 98: s = xmqcli_step(xmqcli_d108_98, 9, xmqcli_peek(p, i)); break;
-        case 99: s = xmqcli_step(xmqcli_d108_99, 7, xmqcli_peek(p, i)); break;
-        case 100: s = xmqcli_step(xmqcli_d108_100, 7, xmqcli_peek(p, i)); break;
-        case 101: s = xmqcli_step(xmqcli_d108_101, 7, xmqcli_peek(p, i)); break;
-        case 102: s = xmqcli_step(xmqcli_d108_102, 7, xmqcli_peek(p, i)); break;
-        case 103: s = xmqcli_step(xmqcli_d108_103, 7, xmqcli_peek(p, i)); break;
-        case 104: s = xmqcli_step(xmqcli_d108_104, 7, xmqcli_peek(p, i)); break;
-        case 105: s = xmqcli_step(xmqcli_d108_105, 7, xmqcli_peek(p, i)); break;
-        case 106: s = xmqcli_step(xmqcli_d108_106, 7, xmqcli_peek(p, i)); break;
-        case 107: s = xmqcli_step(xmqcli_d108_107, 7, xmqcli_peek(p, i)); break;
-        case 108: s = xmqcli_step(xmqcli_d108_108, 7, xmqcli_peek(p, i)); break;
-        case 109: s = xmqcli_step(xmqcli_d108_109, 7, xmqcli_peek(p, i)); break;
-        case 110: s = xmqcli_step(xmqcli_d108_110, 7, xmqcli_peek(p, i)); break;
-        case 111: s = xmqcli_step(xmqcli_d108_111, 7, xmqcli_peek(p, i)); break;
-        case 112: s = xmqcli_step(xmqcli_d108_112, 16, xmqcli_peek(p, i)); break;
-        case 113: s = xmqcli_step(xmqcli_d108_113, 7, xmqcli_peek(p, i)); break;
-        case 114: s = xmqcli_step(xmqcli_d108_114, 7, xmqcli_peek(p, i)); break;
-        case 115: s = xmqcli_step(xmqcli_d108_115, 7, xmqcli_peek(p, i)); break;
-        case 116: s = xmqcli_step(xmqcli_d108_116, 7, xmqcli_peek(p, i)); break;
-        case 117: s = xmqcli_step(xmqcli_d108_117, 7, xmqcli_peek(p, i)); break;
-        case 118: s = xmqcli_step(xmqcli_d108_118, 9, xmqcli_peek(p, i)); break;
-        case 119: s = xmqcli_step(xmqcli_d108_119, 2, xmqcli_peek(p, i)); break;
-        case 120: s = xmqcli_step(xmqcli_d108_120, 9, xmqcli_peek(p, i)); break;
-        case 121: s = xmqcli_step(xmqcli_d108_121, 8, xmqcli_peek(p, i)); break;
-        case 122: s = xmqcli_step(xmqcli_d108_122, 11, xmqcli_peek(p, i)); break;
-        case 123: s = xmqcli_step(xmqcli_d108_123, 7, xmqcli_peek(p, i)); break;
-        case 124: s = xmqcli_step(xmqcli_d108_124, 11, xmqcli_peek(p, i)); break;
-        case 125: s = xmqcli_step(xmqcli_d108_125, 7, xmqcli_peek(p, i)); break;
-        case 126: s = xmqcli_step(xmqcli_d108_126, 9, xmqcli_peek(p, i)); break;
-        case 127: s = xmqcli_step(xmqcli_d108_127, 7, xmqcli_peek(p, i)); break;
-        case 128: s = xmqcli_step(xmqcli_d108_128, 7, xmqcli_peek(p, i)); break;
-        case 129: s = xmqcli_step(xmqcli_d108_129, 9, xmqcli_peek(p, i)); break;
-        case 130: s = xmqcli_step(xmqcli_d108_130, 7, xmqcli_peek(p, i)); break;
-        case 131: s = xmqcli_step(xmqcli_d108_131, 7, xmqcli_peek(p, i)); break;
-        case 132: s = xmqcli_step(xmqcli_d108_132, 7, xmqcli_peek(p, i)); break;
-        case 133: s = xmqcli_step(xmqcli_d108_133, 11, xmqcli_peek(p, i)); break;
-        case 134: s = xmqcli_step(xmqcli_d108_134, 7, xmqcli_peek(p, i)); break;
-        case 135: s = xmqcli_step(xmqcli_d108_135, 7, xmqcli_peek(p, i)); break;
-        case 136: s = xmqcli_step(xmqcli_d108_136, 11, xmqcli_peek(p, i)); break;
-        case 137: s = xmqcli_step(xmqcli_d108_137, 7, xmqcli_peek(p, i)); break;
-        case 138: s = xmqcli_step(xmqcli_d108_138, 7, xmqcli_peek(p, i)); break;
-        case 139: s = xmqcli_step(xmqcli_d108_139, 7, xmqcli_peek(p, i)); break;
-        case 140: s = xmqcli_step(xmqcli_d108_140, 7, xmqcli_peek(p, i)); break;
-        case 141: s = xmqcli_step(xmqcli_d108_141, 9, xmqcli_peek(p, i)); break;
-        case 142: s = xmqcli_step(xmqcli_d108_142, 7, xmqcli_peek(p, i)); break;
-        case 143: s = xmqcli_step(xmqcli_d108_143, 7, xmqcli_peek(p, i)); break;
-        case 144: s = xmqcli_step(xmqcli_d108_144, 7, xmqcli_peek(p, i)); break;
-        case 145: s = xmqcli_step(xmqcli_d108_145, 7, xmqcli_peek(p, i)); break;
-        case 146: s = xmqcli_step(xmqcli_d108_146, 13, xmqcli_peek(p, i)); break;
-        case 147: s = xmqcli_step(xmqcli_d108_147, 13, xmqcli_peek(p, i)); break;
-        case 148: s = xmqcli_step(xmqcli_d108_148, 9, xmqcli_peek(p, i)); break;
-        case 149: s = xmqcli_step(xmqcli_d108_149, 7, xmqcli_peek(p, i)); break;
-        case 150: s = xmqcli_step(xmqcli_d108_150, 7, xmqcli_peek(p, i)); break;
-        case 151: s = xmqcli_step(xmqcli_d108_151, 7, xmqcli_peek(p, i)); break;
-        case 152: s = xmqcli_step(xmqcli_d108_152, 7, xmqcli_peek(p, i)); break;
-        case 153: s = xmqcli_step(xmqcli_d108_153, 7, xmqcli_peek(p, i)); break;
-        case 154: s = xmqcli_step(xmqcli_d108_154, 7, xmqcli_peek(p, i)); break;
-        case 155: s = xmqcli_step(xmqcli_d108_155, 7, xmqcli_peek(p, i)); break;
-        case 156: s = xmqcli_step(xmqcli_d108_156, 9, xmqcli_peek(p, i)); break;
-        case 157: s = xmqcli_step(xmqcli_d108_157, 7, xmqcli_peek(p, i)); break;
-        case 158: s = xmqcli_step(xmqcli_d108_158, 9, xmqcli_peek(p, i)); break;
-        case 159: s = xmqcli_step(xmqcli_d108_159, 7, xmqcli_peek(p, i)); break;
-        case 160: s = xmqcli_step(xmqcli_d108_160, 7, xmqcli_peek(p, i)); break;
-        case 161: s = xmqcli_step(xmqcli_d108_161, 7, xmqcli_peek(p, i)); break;
-        case 162: s = xmqcli_step(xmqcli_d108_162, 7, xmqcli_peek(p, i)); break;
-        case 163: s = xmqcli_step(xmqcli_d108_163, 7, xmqcli_peek(p, i)); break;
-        case 164: s = xmqcli_step(xmqcli_d108_164, 7, xmqcli_peek(p, i)); break;
-        case 165: s = xmqcli_step(xmqcli_d108_165, 7, xmqcli_peek(p, i)); break;
-        case 166: s = xmqcli_step(xmqcli_d108_166, 7, xmqcli_peek(p, i)); break;
-        case 167: s = xmqcli_step(xmqcli_d108_167, 7, xmqcli_peek(p, i)); break;
-        case 168: s = xmqcli_step(xmqcli_d108_168, 7, xmqcli_peek(p, i)); break;
-        case 169: s = xmqcli_step(xmqcli_d108_169, 7, xmqcli_peek(p, i)); break;
-        case 170: s = xmqcli_step(xmqcli_d108_170, 7, xmqcli_peek(p, i)); break;
-        case 171: s = xmqcli_step(xmqcli_d108_171, 7, xmqcli_peek(p, i)); break;
-        case 172: s = xmqcli_step(xmqcli_d108_172, 7, xmqcli_peek(p, i)); break;
-        case 173: s = xmqcli_step(xmqcli_d108_173, 7, xmqcli_peek(p, i)); break;
-        case 174: s = xmqcli_step(xmqcli_d108_174, 7, xmqcli_peek(p, i)); break;
-        case 175: s = xmqcli_step(xmqcli_d108_175, 7, xmqcli_peek(p, i)); break;
-        case 176: s = xmqcli_step(xmqcli_d108_176, 7, xmqcli_peek(p, i)); break;
-        case 177: s = xmqcli_step(xmqcli_d108_177, 7, xmqcli_peek(p, i)); break;
-        case 178: s = xmqcli_step(xmqcli_d108_178, 7, xmqcli_peek(p, i)); break;
-        case 179: s = xmqcli_step(xmqcli_d108_179, 9, xmqcli_peek(p, i)); break;
-        case 180: s = xmqcli_step(xmqcli_d108_180, 10, xmqcli_peek(p, i)); break;
-        case 181: s = xmqcli_step(xmqcli_d108_181, 9, xmqcli_peek(p, i)); break;
-        case 182: s = xmqcli_step(xmqcli_d108_182, 9, xmqcli_peek(p, i)); break;
-        case 183: s = xmqcli_step(xmqcli_d108_183, 9, xmqcli_peek(p, i)); break;
-        case 184: s = xmqcli_step(xmqcli_d108_184, 10, xmqcli_peek(p, i)); break;
-        case 185: s = xmqcli_step(xmqcli_d108_185, 7, xmqcli_peek(p, i)); break;
-        case 186: s = xmqcli_step(xmqcli_d108_186, 7, xmqcli_peek(p, i)); break;
-        case 187: s = xmqcli_step(xmqcli_d108_187, 7, xmqcli_peek(p, i)); break;
-        case 188: s = xmqcli_step(xmqcli_d108_188, 7, xmqcli_peek(p, i)); break;
-        case 189: s = xmqcli_step(xmqcli_d108_189, 7, xmqcli_peek(p, i)); break;
-        case 190: s = xmqcli_step(xmqcli_d108_190, 7, xmqcli_peek(p, i)); break;
-        case 191: s = xmqcli_step(xmqcli_d108_191, 7, xmqcli_peek(p, i)); break;
-        case 192: s = xmqcli_step(xmqcli_d108_192, 9, xmqcli_peek(p, i)); break;
-        case 193: s = xmqcli_step(xmqcli_d108_193, 7, xmqcli_peek(p, i)); break;
-        case 194: s = xmqcli_step(xmqcli_d108_194, 7, xmqcli_peek(p, i)); break;
-        case 195: s = xmqcli_step(xmqcli_d108_195, 7, xmqcli_peek(p, i)); break;
-        case 196: s = xmqcli_step(xmqcli_d108_196, 7, xmqcli_peek(p, i)); break;
-        case 197: s = xmqcli_step(xmqcli_d108_197, 7, xmqcli_peek(p, i)); break;
-        case 198: s = xmqcli_step(xmqcli_d108_198, 7, xmqcli_peek(p, i)); break;
-        case 199: s = xmqcli_step(xmqcli_d108_199, 7, xmqcli_peek(p, i)); break;
-        case 200: s = xmqcli_step(xmqcli_d108_200, 7, xmqcli_peek(p, i)); break;
-        case 201: s = xmqcli_step(xmqcli_d108_201, 7, xmqcli_peek(p, i)); break;
-        case 202: s = xmqcli_step(xmqcli_d108_202, 7, xmqcli_peek(p, i)); break;
-        case 203: s = xmqcli_step(xmqcli_d108_203, 7, xmqcli_peek(p, i)); break;
-        case 204: s = xmqcli_step(xmqcli_d108_204, 7, xmqcli_peek(p, i)); break;
-        case 205: s = xmqcli_step(xmqcli_d108_205, 7, xmqcli_peek(p, i)); break;
-        case 206: s = xmqcli_step(xmqcli_d108_206, 16, xmqcli_peek(p, i)); break;
-        case 207: s = xmqcli_step(xmqcli_d108_207, 7, xmqcli_peek(p, i)); break;
-        case 208: s = xmqcli_step(xmqcli_d108_208, 7, xmqcli_peek(p, i)); break;
-        case 209: s = xmqcli_step(xmqcli_d108_209, 7, xmqcli_peek(p, i)); break;
-        case 210: s = xmqcli_step(xmqcli_d108_210, 7, xmqcli_peek(p, i)); break;
-        case 211: s = xmqcli_step(xmqcli_d108_211, 7, xmqcli_peek(p, i)); break;
-        case 212: s = xmqcli_step(xmqcli_d108_212, 11, xmqcli_peek(p, i)); break;
-        case 213: s = xmqcli_step(xmqcli_d108_213, 11, xmqcli_peek(p, i)); break;
-        case 214: s = xmqcli_step(xmqcli_d108_214, 6, xmqcli_peek(p, i)); break;
-        case 215: s = xmqcli_step(xmqcli_d108_215, 4, xmqcli_peek(p, i)); break;
-        case 216: s = xmqcli_step(xmqcli_d108_216, 7, xmqcli_peek(p, i)); break;
-        case 217: s = xmqcli_step(xmqcli_d108_217, 7, xmqcli_peek(p, i)); break;
-        case 218: s = xmqcli_step(xmqcli_d108_218, 7, xmqcli_peek(p, i)); break;
-        case 219: s = xmqcli_step(xmqcli_d108_219, 7, xmqcli_peek(p, i)); break;
-        case 220: s = xmqcli_step(xmqcli_d108_220, 7, xmqcli_peek(p, i)); break;
-        case 221: s = xmqcli_step(xmqcli_d108_221, 7, xmqcli_peek(p, i)); break;
-        case 222: s = xmqcli_step(xmqcli_d108_222, 7, xmqcli_peek(p, i)); break;
-        case 223: s = xmqcli_step(xmqcli_d108_223, 7, xmqcli_peek(p, i)); break;
-        case 224: s = xmqcli_step(xmqcli_d108_224, 7, xmqcli_peek(p, i)); break;
-        case 225: s = xmqcli_step(xmqcli_d108_225, 7, xmqcli_peek(p, i)); break;
-        case 226: s = xmqcli_step(xmqcli_d108_226, 7, xmqcli_peek(p, i)); break;
-        case 227: s = xmqcli_step(xmqcli_d108_227, 7, xmqcli_peek(p, i)); break;
-        case 228: s = xmqcli_step(xmqcli_d108_228, 7, xmqcli_peek(p, i)); break;
-        case 229: s = xmqcli_step(xmqcli_d108_229, 7, xmqcli_peek(p, i)); break;
-        case 230: s = xmqcli_step(xmqcli_d108_230, 7, xmqcli_peek(p, i)); break;
-        case 231: s = xmqcli_step(xmqcli_d108_231, 7, xmqcli_peek(p, i)); break;
-        case 232: s = xmqcli_step(xmqcli_d108_232, 7, xmqcli_peek(p, i)); break;
-        case 233: s = xmqcli_step(xmqcli_d108_233, 7, xmqcli_peek(p, i)); break;
-        case 234: s = xmqcli_step(xmqcli_d108_234, 7, xmqcli_peek(p, i)); break;
-        case 235: s = xmqcli_step(xmqcli_d108_235, 7, xmqcli_peek(p, i)); break;
-        case 236: s = xmqcli_step(xmqcli_d108_236, 7, xmqcli_peek(p, i)); break;
-        case 237: s = xmqcli_step(xmqcli_d108_237, 9, xmqcli_peek(p, i)); break;
-        case 238: s = xmqcli_step(xmqcli_d108_238, 7, xmqcli_peek(p, i)); break;
-        case 239: s = xmqcli_step(xmqcli_d108_239, 7, xmqcli_peek(p, i)); break;
-        case 240: s = xmqcli_step(xmqcli_d108_240, 7, xmqcli_peek(p, i)); break;
-        case 241: s = xmqcli_step(xmqcli_d108_241, 7, xmqcli_peek(p, i)); break;
-        case 242: s = xmqcli_step(xmqcli_d108_242, 7, xmqcli_peek(p, i)); break;
-        case 243: s = xmqcli_step(xmqcli_d108_243, 9, xmqcli_peek(p, i)); break;
-        case 244: s = xmqcli_step(xmqcli_d108_244, 13, xmqcli_peek(p, i)); break;
-        case 245: s = xmqcli_step(xmqcli_d108_245, 9, xmqcli_peek(p, i)); break;
-        case 246: s = xmqcli_step(xmqcli_d108_246, 7, xmqcli_peek(p, i)); break;
-        case 247: s = xmqcli_step(xmqcli_d108_247, 7, xmqcli_peek(p, i)); break;
-        case 248: s = xmqcli_step(xmqcli_d108_248, 7, xmqcli_peek(p, i)); break;
-        case 249: s = xmqcli_step(xmqcli_d108_249, 7, xmqcli_peek(p, i)); break;
-        case 250: s = xmqcli_step(xmqcli_d108_250, 7, xmqcli_peek(p, i)); break;
-        case 251: s = xmqcli_step(xmqcli_d108_251, 7, xmqcli_peek(p, i)); break;
-        case 252: s = xmqcli_step(xmqcli_d108_252, 7, xmqcli_peek(p, i)); break;
-        case 253: s = xmqcli_step(xmqcli_d108_253, 9, xmqcli_peek(p, i)); break;
-        case 254: s = xmqcli_step(xmqcli_d108_254, 7, xmqcli_peek(p, i)); break;
-        case 255: s = xmqcli_step(xmqcli_d108_255, 9, xmqcli_peek(p, i)); break;
-        case 256: s = xmqcli_step(xmqcli_d108_256, 7, xmqcli_peek(p, i)); break;
-        case 257: s = xmqcli_step(xmqcli_d108_257, 7, xmqcli_peek(p, i)); break;
-        case 258: s = xmqcli_step(xmqcli_d108_258, 7, xmqcli_peek(p, i)); break;
-        case 259: s = xmqcli_step(xmqcli_d108_259, 7, xmqcli_peek(p, i)); break;
-        case 260: s = xmqcli_step(xmqcli_d108_260, 7, xmqcli_peek(p, i)); break;
-        case 261: s = xmqcli_step(xmqcli_d108_261, 7, xmqcli_peek(p, i)); break;
-        case 262: s = xmqcli_step(xmqcli_d108_262, 7, xmqcli_peek(p, i)); break;
-        case 263: s = xmqcli_step(xmqcli_d108_263, 7, xmqcli_peek(p, i)); break;
-        case 264: s = xmqcli_step(xmqcli_d108_264, 7, xmqcli_peek(p, i)); break;
-        case 265: s = xmqcli_step(xmqcli_d108_265, 7, xmqcli_peek(p, i)); break;
-        case 266: s = xmqcli_step(xmqcli_d108_266, 7, xmqcli_peek(p, i)); break;
-        case 267: s = xmqcli_step(xmqcli_d108_267, 7, xmqcli_peek(p, i)); break;
-        case 268: s = xmqcli_step(xmqcli_d108_268, 7, xmqcli_peek(p, i)); break;
-        case 269: s = xmqcli_step(xmqcli_d108_269, 7, xmqcli_peek(p, i)); break;
-        case 270: s = xmqcli_step(xmqcli_d108_270, 7, xmqcli_peek(p, i)); break;
-        case 271: s = xmqcli_step(xmqcli_d108_271, 7, xmqcli_peek(p, i)); break;
-        case 272: s = xmqcli_step(xmqcli_d108_272, 7, xmqcli_peek(p, i)); break;
-        case 273: s = xmqcli_step(xmqcli_d108_273, 7, xmqcli_peek(p, i)); break;
-        case 274: s = xmqcli_step(xmqcli_d108_274, 7, xmqcli_peek(p, i)); break;
-        case 275: s = xmqcli_step(xmqcli_d108_275, 7, xmqcli_peek(p, i)); break;
-        case 276: s = xmqcli_step(xmqcli_d108_276, 9, xmqcli_peek(p, i)); break;
-        case 277: s = xmqcli_step(xmqcli_d108_277, 34, xmqcli_peek(p, i)); break;
-        case 278: s = xmqcli_step(xmqcli_d108_278, 4, xmqcli_peek(p, i)); break;
-        case 279: s = xmqcli_step(xmqcli_d108_279, 2, xmqcli_peek(p, i)); break;
-        case 280: s = xmqcli_step(xmqcli_d108_280, 7, xmqcli_peek(p, i)); break;
-        case 281: s = xmqcli_step(xmqcli_d108_281, 7, xmqcli_peek(p, i)); break;
-        case 282: s = xmqcli_step(xmqcli_d108_282, 10, xmqcli_peek(p, i)); break;
-        case 283: s = xmqcli_step(xmqcli_d108_283, 7, xmqcli_peek(p, i)); break;
-        case 284: s = xmqcli_step(xmqcli_d108_284, 7, xmqcli_peek(p, i)); break;
-        case 285: s = xmqcli_step(xmqcli_d108_285, 7, xmqcli_peek(p, i)); break;
-        case 286: s = xmqcli_step(xmqcli_d108_286, 7, xmqcli_peek(p, i)); break;
-        case 287: s = xmqcli_step(xmqcli_d108_287, 7, xmqcli_peek(p, i)); break;
-        case 288: s = xmqcli_step(xmqcli_d108_288, 7, xmqcli_peek(p, i)); break;
-        case 289: s = xmqcli_step(xmqcli_d108_289, 7, xmqcli_peek(p, i)); break;
-        case 290: s = xmqcli_step(xmqcli_d108_290, 7, xmqcli_peek(p, i)); break;
-        case 291: s = xmqcli_step(xmqcli_d108_291, 7, xmqcli_peek(p, i)); break;
-        case 292: s = xmqcli_step(xmqcli_d108_292, 7, xmqcli_peek(p, i)); break;
-        case 293: s = xmqcli_step(xmqcli_d108_293, 8, xmqcli_peek(p, i)); break;
-        case 294: s = xmqcli_step(xmqcli_d108_294, 7, xmqcli_peek(p, i)); break;
-        case 295: s = xmqcli_step(xmqcli_d108_295, 7, xmqcli_peek(p, i)); break;
-        case 296: s = xmqcli_step(xmqcli_d108_296, 7, xmqcli_peek(p, i)); break;
-        case 297: s = xmqcli_step(xmqcli_d108_297, 9, xmqcli_peek(p, i)); break;
-        case 298: s = xmqcli_step(xmqcli_d108_298, 7, xmqcli_peek(p, i)); break;
-        case 299: s = xmqcli_step(xmqcli_d108_299, 7, xmqcli_peek(p, i)); break;
-        case 300: s = xmqcli_step(xmqcli_d108_300, 7, xmqcli_peek(p, i)); break;
-        case 301: s = xmqcli_step(xmqcli_d108_301, 7, xmqcli_peek(p, i)); break;
-        case 302: s = xmqcli_step(xmqcli_d108_302, 7, xmqcli_peek(p, i)); break;
-        case 303: s = xmqcli_step(xmqcli_d108_303, 7, xmqcli_peek(p, i)); break;
-        case 304: s = xmqcli_step(xmqcli_d108_304, 7, xmqcli_peek(p, i)); break;
-        case 305: s = xmqcli_step(xmqcli_d108_305, 11, xmqcli_peek(p, i)); break;
-        case 306: s = xmqcli_step(xmqcli_d108_306, 6, xmqcli_peek(p, i)); break;
-        case 307: s = xmqcli_step(xmqcli_d108_307, 4, xmqcli_peek(p, i)); break;
-        case 308: s = xmqcli_step(xmqcli_d108_308, 7, xmqcli_peek(p, i)); break;
-        case 309: s = xmqcli_step(xmqcli_d108_309, 7, xmqcli_peek(p, i)); break;
-        case 310: s = xmqcli_step(xmqcli_d108_310, 7, xmqcli_peek(p, i)); break;
-        case 311: s = xmqcli_step(xmqcli_d108_311, 7, xmqcli_peek(p, i)); break;
-        case 312: s = xmqcli_step(xmqcli_d108_312, 7, xmqcli_peek(p, i)); break;
-        case 313: s = xmqcli_step(xmqcli_d108_313, 7, xmqcli_peek(p, i)); break;
-        case 314: s = xmqcli_step(xmqcli_d108_314, 7, xmqcli_peek(p, i)); break;
-        case 315: s = xmqcli_step(xmqcli_d108_315, 7, xmqcli_peek(p, i)); break;
-        case 316: s = xmqcli_step(xmqcli_d108_316, 7, xmqcli_peek(p, i)); break;
-        case 317: s = xmqcli_step(xmqcli_d108_317, 7, xmqcli_peek(p, i)); break;
-        case 318: s = xmqcli_step(xmqcli_d108_318, 7, xmqcli_peek(p, i)); break;
-        case 319: s = xmqcli_step(xmqcli_d108_319, 7, xmqcli_peek(p, i)); break;
-        case 320: s = xmqcli_step(xmqcli_d108_320, 7, xmqcli_peek(p, i)); break;
-        case 321: s = xmqcli_step(xmqcli_d108_321, 7, xmqcli_peek(p, i)); break;
-        case 322: s = xmqcli_step(xmqcli_d108_322, 7, xmqcli_peek(p, i)); break;
-        case 323: s = xmqcli_step(xmqcli_d108_323, 7, xmqcli_peek(p, i)); break;
-        case 324: s = xmqcli_step(xmqcli_d108_324, 7, xmqcli_peek(p, i)); break;
-        case 325: s = xmqcli_step(xmqcli_d108_325, 7, xmqcli_peek(p, i)); break;
-        case 326: s = xmqcli_step(xmqcli_d108_326, 7, xmqcli_peek(p, i)); break;
-        case 327: s = xmqcli_step(xmqcli_d108_327, 7, xmqcli_peek(p, i)); break;
-        case 328: s = xmqcli_step(xmqcli_d108_328, 7, xmqcli_peek(p, i)); break;
-        case 329: s = xmqcli_step(xmqcli_d108_329, 9, xmqcli_peek(p, i)); break;
-        case 330: s = xmqcli_step(xmqcli_d108_330, 7, xmqcli_peek(p, i)); break;
-        case 331: s = xmqcli_step(xmqcli_d108_331, 7, xmqcli_peek(p, i)); break;
-        case 332: s = xmqcli_step(xmqcli_d108_332, 7, xmqcli_peek(p, i)); break;
-        case 333: s = xmqcli_step(xmqcli_d108_333, 7, xmqcli_peek(p, i)); break;
-        case 334: s = xmqcli_step(xmqcli_d108_334, 7, xmqcli_peek(p, i)); break;
-        case 335: s = xmqcli_step(xmqcli_d108_335, 9, xmqcli_peek(p, i)); break;
-        case 336: s = xmqcli_step(xmqcli_d108_336, 19, xmqcli_peek(p, i)); break;
-        case 337: s = xmqcli_step(xmqcli_d108_337, 7, xmqcli_peek(p, i)); break;
-        case 338: s = xmqcli_step(xmqcli_d108_338, 7, xmqcli_peek(p, i)); break;
-        case 339: s = xmqcli_step(xmqcli_d108_339, 7, xmqcli_peek(p, i)); break;
-        case 340: s = xmqcli_step(xmqcli_d108_340, 7, xmqcli_peek(p, i)); break;
-        case 341: s = xmqcli_step(xmqcli_d108_341, 7, xmqcli_peek(p, i)); break;
-        case 342: s = xmqcli_step(xmqcli_d108_342, 7, xmqcli_peek(p, i)); break;
-        case 343: s = xmqcli_step(xmqcli_d108_343, 7, xmqcli_peek(p, i)); break;
-        case 344: s = xmqcli_step(xmqcli_d108_344, 9, xmqcli_peek(p, i)); break;
-        case 345: s = xmqcli_step(xmqcli_d108_345, 7, xmqcli_peek(p, i)); break;
-        case 346: s = xmqcli_step(xmqcli_d108_346, 9, xmqcli_peek(p, i)); break;
-        case 347: s = xmqcli_step(xmqcli_d108_347, 7, xmqcli_peek(p, i)); break;
-        case 348: s = xmqcli_step(xmqcli_d108_348, 7, xmqcli_peek(p, i)); break;
-        case 349: s = xmqcli_step(xmqcli_d108_349, 12, xmqcli_peek(p, i)); break;
-        case 350: s = xmqcli_step(xmqcli_d108_350, 9, xmqcli_peek(p, i)); break;
-        case 351: s = xmqcli_step(xmqcli_d108_351, 7, xmqcli_peek(p, i)); break;
-        case 352: s = xmqcli_step(xmqcli_d108_352, 7, xmqcli_peek(p, i)); break;
-        case 353: s = xmqcli_step(xmqcli_d108_353, 7, xmqcli_peek(p, i)); break;
-        case 354: s = xmqcli_step(xmqcli_d108_354, 7, xmqcli_peek(p, i)); break;
-        case 355: s = xmqcli_step(xmqcli_d108_355, 7, xmqcli_peek(p, i)); break;
-        case 356: s = xmqcli_step(xmqcli_d108_356, 7, xmqcli_peek(p, i)); break;
-        case 357: s = xmqcli_step(xmqcli_d108_357, 7, xmqcli_peek(p, i)); break;
-        case 358: s = xmqcli_step(xmqcli_d108_358, 7, xmqcli_peek(p, i)); break;
-        case 359: s = xmqcli_step(xmqcli_d108_359, 7, xmqcli_peek(p, i)); break;
-        case 360: s = xmqcli_step(xmqcli_d108_360, 7, xmqcli_peek(p, i)); break;
-        case 361: s = xmqcli_step(xmqcli_d108_361, 7, xmqcli_peek(p, i)); break;
-        case 362: s = xmqcli_step(xmqcli_d108_362, 7, xmqcli_peek(p, i)); break;
-        case 363: s = xmqcli_step(xmqcli_d108_363, 9, xmqcli_peek(p, i)); break;
-        case 364: s = xmqcli_step(xmqcli_d108_364, 10, xmqcli_peek(p, i)); break;
-        case 365: s = xmqcli_step(xmqcli_d108_365, 7, xmqcli_peek(p, i)); break;
-        case 366: s = xmqcli_step(xmqcli_d108_366, 7, xmqcli_peek(p, i)); break;
-        case 367: s = xmqcli_step(xmqcli_d108_367, 7, xmqcli_peek(p, i)); break;
-        case 368: s = xmqcli_step(xmqcli_d108_368, 7, xmqcli_peek(p, i)); break;
-        case 369: s = xmqcli_step(xmqcli_d108_369, 7, xmqcli_peek(p, i)); break;
-        case 370: s = xmqcli_step(xmqcli_d108_370, 7, xmqcli_peek(p, i)); break;
-        case 371: s = xmqcli_step(xmqcli_d108_371, 7, xmqcli_peek(p, i)); break;
-        case 372: s = xmqcli_step(xmqcli_d108_372, 4, xmqcli_peek(p, i)); break;
-        case 373: s = xmqcli_step(xmqcli_d108_373, 2, xmqcli_peek(p, i)); break;
-        case 374: s = xmqcli_step(xmqcli_d108_374, 7, xmqcli_peek(p, i)); break;
-        case 375: s = xmqcli_step(xmqcli_d108_375, 7, xmqcli_peek(p, i)); break;
-        case 376: s = xmqcli_step(xmqcli_d108_376, 10, xmqcli_peek(p, i)); break;
-        case 377: s = xmqcli_step(xmqcli_d108_377, 7, xmqcli_peek(p, i)); break;
-        case 378: s = xmqcli_step(xmqcli_d108_378, 7, xmqcli_peek(p, i)); break;
-        case 379: s = xmqcli_step(xmqcli_d108_379, 7, xmqcli_peek(p, i)); break;
-        case 380: s = xmqcli_step(xmqcli_d108_380, 7, xmqcli_peek(p, i)); break;
-        case 381: s = xmqcli_step(xmqcli_d108_381, 7, xmqcli_peek(p, i)); break;
-        case 382: s = xmqcli_step(xmqcli_d108_382, 7, xmqcli_peek(p, i)); break;
-        case 383: s = xmqcli_step(xmqcli_d108_383, 7, xmqcli_peek(p, i)); break;
-        case 384: s = xmqcli_step(xmqcli_d108_384, 7, xmqcli_peek(p, i)); break;
-        case 385: s = xmqcli_step(xmqcli_d108_385, 7, xmqcli_peek(p, i)); break;
-        case 386: s = xmqcli_step(xmqcli_d108_386, 7, xmqcli_peek(p, i)); break;
-        case 387: s = xmqcli_step(xmqcli_d108_387, 8, xmqcli_peek(p, i)); break;
-        case 388: s = xmqcli_step(xmqcli_d108_388, 7, xmqcli_peek(p, i)); break;
-        case 389: s = xmqcli_step(xmqcli_d108_389, 7, xmqcli_peek(p, i)); break;
-        case 390: s = xmqcli_step(xmqcli_d108_390, 7, xmqcli_peek(p, i)); break;
-        case 391: s = xmqcli_step(xmqcli_d108_391, 9, xmqcli_peek(p, i)); break;
-        case 392: s = xmqcli_step(xmqcli_d108_392, 7, xmqcli_peek(p, i)); break;
-        case 393: s = xmqcli_step(xmqcli_d108_393, 7, xmqcli_peek(p, i)); break;
-        case 394: s = xmqcli_step(xmqcli_d108_394, 7, xmqcli_peek(p, i)); break;
-        case 395: s = xmqcli_step(xmqcli_d108_395, 7, xmqcli_peek(p, i)); break;
-        case 396: s = xmqcli_step(xmqcli_d108_396, 7, xmqcli_peek(p, i)); break;
-        case 397: s = xmqcli_step(xmqcli_d108_397, 7, xmqcli_peek(p, i)); break;
-        case 398: s = xmqcli_step(xmqcli_d108_398, 7, xmqcli_peek(p, i)); break;
-        case 399: s = xmqcli_step(xmqcli_d108_399, 9, xmqcli_peek(p, i)); break;
-        case 400: s = xmqcli_step(xmqcli_d108_400, 2, xmqcli_peek(p, i)); break;
-        case 401: s = xmqcli_step(xmqcli_d108_401, 9, xmqcli_peek(p, i)); break;
-        case 402: s = xmqcli_step(xmqcli_d108_402, 8, xmqcli_peek(p, i)); break;
-        case 403: s = xmqcli_step(xmqcli_d108_403, 11, xmqcli_peek(p, i)); break;
-        case 404: s = xmqcli_step(xmqcli_d108_404, 7, xmqcli_peek(p, i)); break;
-        case 405: s = xmqcli_step(xmqcli_d108_405, 11, xmqcli_peek(p, i)); break;
-        case 406: s = xmqcli_step(xmqcli_d108_406, 7, xmqcli_peek(p, i)); break;
-        case 407: s = xmqcli_step(xmqcli_d108_407, 9, xmqcli_peek(p, i)); break;
-        case 408: s = xmqcli_step(xmqcli_d108_408, 7, xmqcli_peek(p, i)); break;
-        case 409: s = xmqcli_step(xmqcli_d108_409, 7, xmqcli_peek(p, i)); break;
-        case 410: s = xmqcli_step(xmqcli_d108_410, 9, xmqcli_peek(p, i)); break;
-        case 411: s = xmqcli_step(xmqcli_d108_411, 7, xmqcli_peek(p, i)); break;
-        case 412: s = xmqcli_step(xmqcli_d108_412, 7, xmqcli_peek(p, i)); break;
-        case 413: s = xmqcli_step(xmqcli_d108_413, 7, xmqcli_peek(p, i)); break;
-        case 414: s = xmqcli_step(xmqcli_d108_414, 11, xmqcli_peek(p, i)); break;
-        case 415: s = xmqcli_step(xmqcli_d108_415, 7, xmqcli_peek(p, i)); break;
-        case 416: s = xmqcli_step(xmqcli_d108_416, 7, xmqcli_peek(p, i)); break;
-        case 417: s = xmqcli_step(xmqcli_d108_417, 11, xmqcli_peek(p, i)); break;
-        case 418: s = xmqcli_step(xmqcli_d108_418, 7, xmqcli_peek(p, i)); break;
-        case 419: s = xmqcli_step(xmqcli_d108_419, 7, xmqcli_peek(p, i)); break;
-        case 420: s = xmqcli_step(xmqcli_d108_420, 7, xmqcli_peek(p, i)); break;
-        case 421: s = xmqcli_step(xmqcli_d108_421, 7, xmqcli_peek(p, i)); break;
-        case 422: s = xmqcli_step(xmqcli_d108_422, 9, xmqcli_peek(p, i)); break;
-        case 423: s = xmqcli_step(xmqcli_d108_423, 7, xmqcli_peek(p, i)); break;
-        case 424: s = xmqcli_step(xmqcli_d108_424, 7, xmqcli_peek(p, i)); break;
-        case 425: s = xmqcli_step(xmqcli_d108_425, 7, xmqcli_peek(p, i)); break;
-        case 426: s = xmqcli_step(xmqcli_d108_426, 7, xmqcli_peek(p, i)); break;
-        case 427: s = xmqcli_step(xmqcli_d108_427, 7, xmqcli_peek(p, i)); break;
-        case 428: s = xmqcli_step(xmqcli_d108_428, 7, xmqcli_peek(p, i)); break;
-        case 429: s = xmqcli_step(xmqcli_d108_429, 7, xmqcli_peek(p, i)); break;
-        case 430: s = xmqcli_step(xmqcli_d108_430, 7, xmqcli_peek(p, i)); break;
-        case 431: s = xmqcli_step(xmqcli_d108_431, 7, xmqcli_peek(p, i)); break;
-        case 432: s = xmqcli_step(xmqcli_d108_432, 7, xmqcli_peek(p, i)); break;
-        case 433: s = xmqcli_step(xmqcli_d108_433, 7, xmqcli_peek(p, i)); break;
-        case 434: s = xmqcli_step(xmqcli_d108_434, 7, xmqcli_peek(p, i)); break;
-        case 435: s = xmqcli_step(xmqcli_d108_435, 7, xmqcli_peek(p, i)); break;
-        case 436: s = xmqcli_step(xmqcli_d108_436, 7, xmqcli_peek(p, i)); break;
-        case 437: s = xmqcli_step(xmqcli_d108_437, 7, xmqcli_peek(p, i)); break;
-        case 438: s = xmqcli_step(xmqcli_d108_438, 7, xmqcli_peek(p, i)); break;
-        case 439: s = xmqcli_step(xmqcli_d108_439, 7, xmqcli_peek(p, i)); break;
-        case 440: s = xmqcli_step(xmqcli_d108_440, 7, xmqcli_peek(p, i)); break;
-        case 441: s = xmqcli_step(xmqcli_d108_441, 7, xmqcli_peek(p, i)); break;
-        case 442: s = xmqcli_step(xmqcli_d108_442, 7, xmqcli_peek(p, i)); break;
-        case 443: s = xmqcli_step(xmqcli_d108_443, 7, xmqcli_peek(p, i)); break;
-        case 444: s = xmqcli_step(xmqcli_d108_444, 7, xmqcli_peek(p, i)); break;
-        case 445: s = xmqcli_step(xmqcli_d108_445, 7, xmqcli_peek(p, i)); break;
-        case 446: s = xmqcli_step(xmqcli_d108_446, 7, xmqcli_peek(p, i)); break;
-        case 447: s = xmqcli_step(xmqcli_d108_447, 7, xmqcli_peek(p, i)); break;
-        case 448: s = xmqcli_step(xmqcli_d108_448, 7, xmqcli_peek(p, i)); break;
-        case 449: s = xmqcli_step(xmqcli_d108_449, 7, xmqcli_peek(p, i)); break;
-        case 450: s = xmqcli_step(xmqcli_d108_450, 7, xmqcli_peek(p, i)); break;
-        case 451: s = xmqcli_step(xmqcli_d108_451, 9, xmqcli_peek(p, i)); break;
-        case 452: s = xmqcli_step(xmqcli_d108_452, 10, xmqcli_peek(p, i)); break;
-        case 453: s = xmqcli_step(xmqcli_d108_453, 7, xmqcli_peek(p, i)); break;
-        case 454: s = xmqcli_step(xmqcli_d108_454, 7, xmqcli_peek(p, i)); break;
-        case 455: s = xmqcli_step(xmqcli_d108_455, 7, xmqcli_peek(p, i)); break;
-        case 456: s = xmqcli_step(xmqcli_d108_456, 7, xmqcli_peek(p, i)); break;
-        case 457: s = xmqcli_step(xmqcli_d108_457, 7, xmqcli_peek(p, i)); break;
-        case 458: s = xmqcli_step(xmqcli_d108_458, 7, xmqcli_peek(p, i)); break;
-        case 459: s = xmqcli_step(xmqcli_d108_459, 7, xmqcli_peek(p, i)); break;
-        case 460: s = xmqcli_step(xmqcli_d108_460, 10, xmqcli_peek(p, i)); break;
-        case 461: s = xmqcli_step(xmqcli_d108_461, 9, xmqcli_peek(p, i)); break;
-        case 462: s = xmqcli_step(xmqcli_d108_462, 9, xmqcli_peek(p, i)); break;
-        case 463: s = xmqcli_step(xmqcli_d108_463, 9, xmqcli_peek(p, i)); break;
-        case 464: s = xmqcli_step(xmqcli_d108_464, 10, xmqcli_peek(p, i)); break;
-        case 465: s = xmqcli_step(xmqcli_d108_465, 7, xmqcli_peek(p, i)); break;
-        case 466: s = xmqcli_step(xmqcli_d108_466, 7, xmqcli_peek(p, i)); break;
-        case 467: s = xmqcli_step(xmqcli_d108_467, 7, xmqcli_peek(p, i)); break;
-        case 468: s = xmqcli_step(xmqcli_d108_468, 7, xmqcli_peek(p, i)); break;
-        case 469: s = xmqcli_step(xmqcli_d108_469, 7, xmqcli_peek(p, i)); break;
-        case 470: s = xmqcli_step(xmqcli_d108_470, 7, xmqcli_peek(p, i)); break;
-        case 471: s = xmqcli_step(xmqcli_d108_471, 7, xmqcli_peek(p, i)); break;
-        case 472: s = xmqcli_step(xmqcli_d108_472, 9, xmqcli_peek(p, i)); break;
-        case 473: s = xmqcli_step(xmqcli_d108_473, 7, xmqcli_peek(p, i)); break;
-        case 474: s = xmqcli_step(xmqcli_d108_474, 7, xmqcli_peek(p, i)); break;
-        case 475: s = xmqcli_step(xmqcli_d108_475, 7, xmqcli_peek(p, i)); break;
-        case 476: s = xmqcli_step(xmqcli_d108_476, 7, xmqcli_peek(p, i)); break;
-        case 477: s = xmqcli_step(xmqcli_d108_477, 7, xmqcli_peek(p, i)); break;
-        case 478: s = xmqcli_step(xmqcli_d108_478, 7, xmqcli_peek(p, i)); break;
-        case 479: s = xmqcli_step(xmqcli_d108_479, 7, xmqcli_peek(p, i)); break;
-        case 480: s = xmqcli_step(xmqcli_d108_480, 7, xmqcli_peek(p, i)); break;
-        case 481: s = xmqcli_step(xmqcli_d108_481, 7, xmqcli_peek(p, i)); break;
-        case 482: s = xmqcli_step(xmqcli_d108_482, 7, xmqcli_peek(p, i)); break;
-        case 483: s = xmqcli_step(xmqcli_d108_483, 7, xmqcli_peek(p, i)); break;
-        case 484: s = xmqcli_step(xmqcli_d108_484, 7, xmqcli_peek(p, i)); break;
-        case 485: s = xmqcli_step(xmqcli_d108_485, 7, xmqcli_peek(p, i)); break;
-        case 486: s = xmqcli_step(xmqcli_d108_486, 16, xmqcli_peek(p, i)); break;
-        case 487: s = xmqcli_step(xmqcli_d108_487, 7, xmqcli_peek(p, i)); break;
-        case 488: s = xmqcli_step(xmqcli_d108_488, 7, xmqcli_peek(p, i)); break;
-        case 489: s = xmqcli_step(xmqcli_d108_489, 7, xmqcli_peek(p, i)); break;
-        case 490: s = xmqcli_step(xmqcli_d108_490, 7, xmqcli_peek(p, i)); break;
-        case 491: s = xmqcli_step(xmqcli_d108_491, 7, xmqcli_peek(p, i)); break;
-        case 492: s = xmqcli_step(xmqcli_d108_492, 7, xmqcli_peek(p, i)); break;
-        case 493: s = xmqcli_step(xmqcli_d108_493, 7, xmqcli_peek(p, i)); break;
-        case 494: s = xmqcli_step(xmqcli_d108_494, 7, xmqcli_peek(p, i)); break;
-        case 495: s = xmqcli_step(xmqcli_d108_495, 7, xmqcli_peek(p, i)); break;
-        case 496: s = xmqcli_step(xmqcli_d108_496, 7, xmqcli_peek(p, i)); break;
-        case 497: s = xmqcli_step(xmqcli_d108_497, 7, xmqcli_peek(p, i)); break;
-        case 498: s = xmqcli_step(xmqcli_d108_498, 7, xmqcli_peek(p, i)); break;
-        case 499: s = xmqcli_step(xmqcli_d108_499, 9, xmqcli_peek(p, i)); break;
-        case 500: s = xmqcli_step(xmqcli_d108_500, 7, xmqcli_peek(p, i)); break;
-        case 501: s = xmqcli_step(xmqcli_d108_501, 7, xmqcli_peek(p, i)); break;
-        case 502: s = xmqcli_step(xmqcli_d108_502, 7, xmqcli_peek(p, i)); break;
-        case 503: s = xmqcli_step(xmqcli_d108_503, 7, xmqcli_peek(p, i)); break;
-        case 504: s = xmqcli_step(xmqcli_d108_504, 7, xmqcli_peek(p, i)); break;
-        case 505: s = xmqcli_step(xmqcli_d108_505, 7, xmqcli_peek(p, i)); break;
-        case 506: s = xmqcli_step(xmqcli_d108_506, 7, xmqcli_peek(p, i)); break;
-        case 507: s = xmqcli_step(xmqcli_d108_507, 7, xmqcli_peek(p, i)); break;
-        case 508: s = xmqcli_step(xmqcli_d108_508, 7, xmqcli_peek(p, i)); break;
-        case 509: s = xmqcli_step(xmqcli_d108_509, 7, xmqcli_peek(p, i)); break;
-        case 510: s = xmqcli_step(xmqcli_d108_510, 7, xmqcli_peek(p, i)); break;
-        case 511: s = xmqcli_step(xmqcli_d108_511, 7, xmqcli_peek(p, i)); break;
-        case 512: s = xmqcli_step(xmqcli_d108_512, 7, xmqcli_peek(p, i)); break;
-        case 513: s = xmqcli_step(xmqcli_d108_513, 7, xmqcli_peek(p, i)); break;
-        case 514: s = xmqcli_step(xmqcli_d108_514, 7, xmqcli_peek(p, i)); break;
-        case 515: s = xmqcli_step(xmqcli_d108_515, 7, xmqcli_peek(p, i)); break;
-        case 516: s = xmqcli_step(xmqcli_d108_516, 7, xmqcli_peek(p, i)); break;
-        case 517: s = xmqcli_step(xmqcli_d108_517, 7, xmqcli_peek(p, i)); break;
-        case 518: s = xmqcli_step(xmqcli_d108_518, 13, xmqcli_peek(p, i)); break;
-        case 519: s = xmqcli_step(xmqcli_d108_519, 9, xmqcli_peek(p, i)); break;
-        case 520: s = xmqcli_step(xmqcli_d108_520, 7, xmqcli_peek(p, i)); break;
-        case 521: s = xmqcli_step(xmqcli_d108_521, 7, xmqcli_peek(p, i)); break;
-        case 522: s = xmqcli_step(xmqcli_d108_522, 7, xmqcli_peek(p, i)); break;
-        case 523: s = xmqcli_step(xmqcli_d108_523, 7, xmqcli_peek(p, i)); break;
-        case 524: s = xmqcli_step(xmqcli_d108_524, 7, xmqcli_peek(p, i)); break;
-        case 525: s = xmqcli_step(xmqcli_d108_525, 7, xmqcli_peek(p, i)); break;
-        case 526: s = xmqcli_step(xmqcli_d108_526, 7, xmqcli_peek(p, i)); break;
-        case 527: s = xmqcli_step(xmqcli_d108_527, 9, xmqcli_peek(p, i)); break;
-        case 528: s = xmqcli_step(xmqcli_d108_528, 7, xmqcli_peek(p, i)); break;
-        case 529: s = xmqcli_step(xmqcli_d108_529, 9, xmqcli_peek(p, i)); break;
-        case 530: s = xmqcli_step(xmqcli_d108_530, 7, xmqcli_peek(p, i)); break;
-        case 531: s = xmqcli_step(xmqcli_d108_531, 7, xmqcli_peek(p, i)); break;
-        case 532: s = xmqcli_step(xmqcli_d108_532, 7, xmqcli_peek(p, i)); break;
-        case 533: s = xmqcli_step(xmqcli_d108_533, 7, xmqcli_peek(p, i)); break;
-        case 534: s = xmqcli_step(xmqcli_d108_534, 7, xmqcli_peek(p, i)); break;
-        case 535: s = xmqcli_step(xmqcli_d108_535, 7, xmqcli_peek(p, i)); break;
-        case 536: s = xmqcli_step(xmqcli_d108_536, 7, xmqcli_peek(p, i)); break;
-        case 537: s = xmqcli_step(xmqcli_d108_537, 7, xmqcli_peek(p, i)); break;
-        case 538: s = xmqcli_step(xmqcli_d108_538, 7, xmqcli_peek(p, i)); break;
-        case 539: s = xmqcli_step(xmqcli_d108_539, 7, xmqcli_peek(p, i)); break;
-        case 540: s = xmqcli_step(xmqcli_d108_540, 7, xmqcli_peek(p, i)); break;
-        case 541: s = xmqcli_step(xmqcli_d108_541, 7, xmqcli_peek(p, i)); break;
-        case 542: s = xmqcli_step(xmqcli_d108_542, 7, xmqcli_peek(p, i)); break;
-        case 543: s = xmqcli_step(xmqcli_d108_543, 7, xmqcli_peek(p, i)); break;
-        case 544: s = xmqcli_step(xmqcli_d108_544, 7, xmqcli_peek(p, i)); break;
-        case 545: s = xmqcli_step(xmqcli_d108_545, 7, xmqcli_peek(p, i)); break;
-        case 546: s = xmqcli_step(xmqcli_d108_546, 7, xmqcli_peek(p, i)); break;
-        case 547: s = xmqcli_step(xmqcli_d108_547, 7, xmqcli_peek(p, i)); break;
-        case 548: s = xmqcli_step(xmqcli_d108_548, 7, xmqcli_peek(p, i)); break;
-        case 549: s = xmqcli_step(xmqcli_d108_549, 7, xmqcli_peek(p, i)); break;
-        case 550: s = xmqcli_step(xmqcli_d108_550, 9, xmqcli_peek(p, i)); break;
-        case 551: s = xmqcli_step(xmqcli_d108_551, 7, xmqcli_peek(p, i)); break;
-        case 552: s = xmqcli_step(xmqcli_d108_552, 7, xmqcli_peek(p, i)); break;
-        case 553: s = xmqcli_step(xmqcli_d108_553, 7, xmqcli_peek(p, i)); break;
-        case 554: s = xmqcli_step(xmqcli_d108_554, 7, xmqcli_peek(p, i)); break;
-        case 555: s = xmqcli_step(xmqcli_d108_555, 7, xmqcli_peek(p, i)); break;
-        case 556: s = xmqcli_step(xmqcli_d108_556, 7, xmqcli_peek(p, i)); break;
-        case 557: s = xmqcli_step(xmqcli_d108_557, 7, xmqcli_peek(p, i)); break;
-        case 558: s = xmqcli_step(xmqcli_d108_558, 7, xmqcli_peek(p, i)); break;
-        case 559: s = xmqcli_step(xmqcli_d108_559, 7, xmqcli_peek(p, i)); break;
-        case 560: s = xmqcli_step(xmqcli_d108_560, 7, xmqcli_peek(p, i)); break;
-        case 561: s = xmqcli_step(xmqcli_d108_561, 7, xmqcli_peek(p, i)); break;
-        case 562: s = xmqcli_step(xmqcli_d108_562, 7, xmqcli_peek(p, i)); break;
-        case 563: s = xmqcli_step(xmqcli_d108_563, 7, xmqcli_peek(p, i)); break;
-        case 564: s = xmqcli_step(xmqcli_d108_564, 7, xmqcli_peek(p, i)); break;
-        case 565: s = xmqcli_step(xmqcli_d108_565, 7, xmqcli_peek(p, i)); break;
-        case 566: s = xmqcli_step(xmqcli_d108_566, 7, xmqcli_peek(p, i)); break;
-        case 567: s = xmqcli_step(xmqcli_d108_567, 7, xmqcli_peek(p, i)); break;
-        case 568: s = xmqcli_step(xmqcli_d108_568, 9, xmqcli_peek(p, i)); break;
-        case 569: s = xmqcli_step(xmqcli_d108_569, 7, xmqcli_peek(p, i)); break;
-        case 570: s = xmqcli_step(xmqcli_d108_570, 7, xmqcli_peek(p, i)); break;
-        case 571: s = xmqcli_step(xmqcli_d108_571, 7, xmqcli_peek(p, i)); break;
-        case 572: s = xmqcli_step(xmqcli_d108_572, 11, xmqcli_peek(p, i)); break;
-        case 573: s = xmqcli_step(xmqcli_d108_573, 6, xmqcli_peek(p, i)); break;
-        case 574: s = xmqcli_step(xmqcli_d108_574, 4, xmqcli_peek(p, i)); break;
-        case 575: s = xmqcli_step(xmqcli_d108_575, 7, xmqcli_peek(p, i)); break;
-        case 576: s = xmqcli_step(xmqcli_d108_576, 7, xmqcli_peek(p, i)); break;
-        case 577: s = xmqcli_step(xmqcli_d108_577, 7, xmqcli_peek(p, i)); break;
-        case 578: s = xmqcli_step(xmqcli_d108_578, 7, xmqcli_peek(p, i)); break;
-        case 579: s = xmqcli_step(xmqcli_d108_579, 7, xmqcli_peek(p, i)); break;
-        case 580: s = xmqcli_step(xmqcli_d108_580, 7, xmqcli_peek(p, i)); break;
-        case 581: s = xmqcli_step(xmqcli_d108_581, 7, xmqcli_peek(p, i)); break;
-        case 582: s = xmqcli_step(xmqcli_d108_582, 7, xmqcli_peek(p, i)); break;
-        case 583: s = xmqcli_step(xmqcli_d108_583, 7, xmqcli_peek(p, i)); break;
-        case 584: s = xmqcli_step(xmqcli_d108_584, 7, xmqcli_peek(p, i)); break;
-        case 585: s = xmqcli_step(xmqcli_d108_585, 7, xmqcli_peek(p, i)); break;
-        case 586: s = xmqcli_step(xmqcli_d108_586, 7, xmqcli_peek(p, i)); break;
-        case 587: s = xmqcli_step(xmqcli_d108_587, 7, xmqcli_peek(p, i)); break;
-        case 588: s = xmqcli_step(xmqcli_d108_588, 7, xmqcli_peek(p, i)); break;
-        case 589: s = xmqcli_step(xmqcli_d108_589, 7, xmqcli_peek(p, i)); break;
-        case 590: s = xmqcli_step(xmqcli_d108_590, 7, xmqcli_peek(p, i)); break;
-        case 591: s = xmqcli_step(xmqcli_d108_591, 7, xmqcli_peek(p, i)); break;
-        case 592: s = xmqcli_step(xmqcli_d108_592, 7, xmqcli_peek(p, i)); break;
-        case 593: s = xmqcli_step(xmqcli_d108_593, 7, xmqcli_peek(p, i)); break;
-        case 594: s = xmqcli_step(xmqcli_d108_594, 7, xmqcli_peek(p, i)); break;
-        case 595: s = xmqcli_step(xmqcli_d108_595, 7, xmqcli_peek(p, i)); break;
-        case 596: s = xmqcli_step(xmqcli_d108_596, 9, xmqcli_peek(p, i)); break;
-        case 597: s = xmqcli_step(xmqcli_d108_597, 7, xmqcli_peek(p, i)); break;
-        case 598: s = xmqcli_step(xmqcli_d108_598, 7, xmqcli_peek(p, i)); break;
-        case 599: s = xmqcli_step(xmqcli_d108_599, 7, xmqcli_peek(p, i)); break;
-        case 600: s = xmqcli_step(xmqcli_d108_600, 7, xmqcli_peek(p, i)); break;
-        case 601: s = xmqcli_step(xmqcli_d108_601, 7, xmqcli_peek(p, i)); break;
-        case 602: s = xmqcli_step(xmqcli_d108_602, 9, xmqcli_peek(p, i)); break;
-        case 603: s = xmqcli_step(xmqcli_d108_603, 7, xmqcli_peek(p, i)); break;
-        case 604: s = xmqcli_step(xmqcli_d108_604, 7, xmqcli_peek(p, i)); break;
-        case 605: s = xmqcli_step(xmqcli_d108_605, 7, xmqcli_peek(p, i)); break;
-        case 606: s = xmqcli_step(xmqcli_d108_606, 7, xmqcli_peek(p, i)); break;
-        case 607: s = xmqcli_step(xmqcli_d108_607, 7, xmqcli_peek(p, i)); break;
-        case 608: s = xmqcli_step(xmqcli_d108_608, 7, xmqcli_peek(p, i)); break;
-        case 609: s = xmqcli_step(xmqcli_d108_609, 7, xmqcli_peek(p, i)); break;
-        case 610: s = xmqcli_step(xmqcli_d108_610, 7, xmqcli_peek(p, i)); break;
-        case 611: s = xmqcli_step(xmqcli_d108_611, 9, xmqcli_peek(p, i)); break;
-        case 612: s = xmqcli_step(xmqcli_d108_612, 7, xmqcli_peek(p, i)); break;
-        case 613: s = xmqcli_step(xmqcli_d108_613, 7, xmqcli_peek(p, i)); break;
-        case 614: s = xmqcli_step(xmqcli_d108_614, 7, xmqcli_peek(p, i)); break;
-        case 615: s = xmqcli_step(xmqcli_d108_615, 7, xmqcli_peek(p, i)); break;
-        case 616: s = xmqcli_step(xmqcli_d108_616, 7, xmqcli_peek(p, i)); break;
-        case 617: s = xmqcli_step(xmqcli_d108_617, 7, xmqcli_peek(p, i)); break;
-        case 618: s = xmqcli_step(xmqcli_d108_618, 7, xmqcli_peek(p, i)); break;
-        case 619: s = xmqcli_step(xmqcli_d108_619, 7, xmqcli_peek(p, i)); break;
-        case 620: s = xmqcli_step(xmqcli_d108_620, 7, xmqcli_peek(p, i)); break;
-        case 621: s = xmqcli_step(xmqcli_d108_621, 7, xmqcli_peek(p, i)); break;
-        case 622: s = xmqcli_step(xmqcli_d108_622, 4, xmqcli_peek(p, i)); break;
-        case 623: s = xmqcli_step(xmqcli_d108_623, 2, xmqcli_peek(p, i)); break;
-        case 624: s = xmqcli_step(xmqcli_d108_624, 7, xmqcli_peek(p, i)); break;
-        case 625: s = xmqcli_step(xmqcli_d108_625, 7, xmqcli_peek(p, i)); break;
-        case 626: s = xmqcli_step(xmqcli_d108_626, 10, xmqcli_peek(p, i)); break;
-        case 627: s = xmqcli_step(xmqcli_d108_627, 7, xmqcli_peek(p, i)); break;
-        case 628: s = xmqcli_step(xmqcli_d108_628, 7, xmqcli_peek(p, i)); break;
-        case 629: s = xmqcli_step(xmqcli_d108_629, 7, xmqcli_peek(p, i)); break;
-        case 630: s = xmqcli_step(xmqcli_d108_630, 7, xmqcli_peek(p, i)); break;
-        case 631: s = xmqcli_step(xmqcli_d108_631, 7, xmqcli_peek(p, i)); break;
-        case 632: s = xmqcli_step(xmqcli_d108_632, 7, xmqcli_peek(p, i)); break;
-        case 633: s = xmqcli_step(xmqcli_d108_633, 7, xmqcli_peek(p, i)); break;
-        case 634: s = xmqcli_step(xmqcli_d108_634, 7, xmqcli_peek(p, i)); break;
-        case 635: s = xmqcli_step(xmqcli_d108_635, 7, xmqcli_peek(p, i)); break;
-        case 636: s = xmqcli_step(xmqcli_d108_636, 7, xmqcli_peek(p, i)); break;
-        case 637: s = xmqcli_step(xmqcli_d108_637, 8, xmqcli_peek(p, i)); break;
-        case 638: s = xmqcli_step(xmqcli_d108_638, 7, xmqcli_peek(p, i)); break;
-        case 639: s = xmqcli_step(xmqcli_d108_639, 7, xmqcli_peek(p, i)); break;
-        case 640: s = xmqcli_step(xmqcli_d108_640, 7, xmqcli_peek(p, i)); break;
-        case 641: s = xmqcli_step(xmqcli_d108_641, 9, xmqcli_peek(p, i)); break;
-        case 642: s = xmqcli_step(xmqcli_d108_642, 7, xmqcli_peek(p, i)); break;
-        case 643: s = xmqcli_step(xmqcli_d108_643, 7, xmqcli_peek(p, i)); break;
-        case 644: s = xmqcli_step(xmqcli_d108_644, 7, xmqcli_peek(p, i)); break;
-        case 645: s = xmqcli_step(xmqcli_d108_645, 7, xmqcli_peek(p, i)); break;
-        case 646: s = xmqcli_step(xmqcli_d108_646, 7, xmqcli_peek(p, i)); break;
-        case 647: s = xmqcli_step(xmqcli_d108_647, 7, xmqcli_peek(p, i)); break;
-        case 648: s = xmqcli_step(xmqcli_d108_648, 7, xmqcli_peek(p, i)); break;
-        case 649: s = xmqcli_step(xmqcli_d108_649, 7, xmqcli_peek(p, i)); break;
-        case 650: s = xmqcli_step(xmqcli_d108_650, 7, xmqcli_peek(p, i)); break;
-        case 651: s = xmqcli_step(xmqcli_d108_651, 7, xmqcli_peek(p, i)); break;
-        case 652: s = xmqcli_step(xmqcli_d108_652, 7, xmqcli_peek(p, i)); break;
-        case 653: s = xmqcli_step(xmqcli_d108_653, 7, xmqcli_peek(p, i)); break;
-        case 654: s = xmqcli_step(xmqcli_d108_654, 7, xmqcli_peek(p, i)); break;
-        case 655: s = xmqcli_step(xmqcli_d108_655, 7, xmqcli_peek(p, i)); break;
-        case 656: s = xmqcli_step(xmqcli_d108_656, 7, xmqcli_peek(p, i)); break;
-        case 657: s = xmqcli_step(xmqcli_d108_657, 7, xmqcli_peek(p, i)); break;
-        case 658: s = xmqcli_step(xmqcli_d108_658, 7, xmqcli_peek(p, i)); break;
-        case 659: s = xmqcli_step(xmqcli_d108_659, 7, xmqcli_peek(p, i)); break;
-        case 660: s = xmqcli_step(xmqcli_d108_660, 7, xmqcli_peek(p, i)); break;
-        case 661: s = xmqcli_step(xmqcli_d108_661, 7, xmqcli_peek(p, i)); break;
-        case 662: s = xmqcli_step(xmqcli_d108_662, 7, xmqcli_peek(p, i)); break;
-        case 663: s = xmqcli_step(xmqcli_d108_663, 7, xmqcli_peek(p, i)); break;
-        case 664: s = xmqcli_step(xmqcli_d108_664, 7, xmqcli_peek(p, i)); break;
-        case 665: s = xmqcli_step(xmqcli_d108_665, 7, xmqcli_peek(p, i)); break;
-        case 666: s = xmqcli_step(xmqcli_d108_666, 9, xmqcli_peek(p, i)); break;
-        case 667: s = xmqcli_step(xmqcli_d108_667, 7, xmqcli_peek(p, i)); break;
-        case 668: s = xmqcli_step(xmqcli_d108_668, 7, xmqcli_peek(p, i)); break;
-        case 669: s = xmqcli_step(xmqcli_d108_669, 7, xmqcli_peek(p, i)); break;
-        case 670: s = xmqcli_step(xmqcli_d108_670, 7, xmqcli_peek(p, i)); break;
-        case 671: s = xmqcli_step(xmqcli_d108_671, 7, xmqcli_peek(p, i)); break;
-        case 672: s = xmqcli_step(xmqcli_d108_672, 7, xmqcli_peek(p, i)); break;
-        case 673: s = xmqcli_step(xmqcli_d108_673, 7, xmqcli_peek(p, i)); break;
-        case 674: s = xmqcli_step(xmqcli_d108_674, 7, xmqcli_peek(p, i)); break;
-        case 675: s = xmqcli_step(xmqcli_d108_675, 7, xmqcli_peek(p, i)); break;
-        case 676: s = xmqcli_step(xmqcli_d108_676, 9, xmqcli_peek(p, i)); break;
-        case 677: s = xmqcli_step(xmqcli_d108_677, 10, xmqcli_peek(p, i)); break;
-        case 678: s = xmqcli_step(xmqcli_d108_678, 7, xmqcli_peek(p, i)); break;
-        case 679: s = xmqcli_step(xmqcli_d108_679, 7, xmqcli_peek(p, i)); break;
-        case 680: s = xmqcli_step(xmqcli_d108_680, 7, xmqcli_peek(p, i)); break;
-        case 681: s = xmqcli_step(xmqcli_d108_681, 7, xmqcli_peek(p, i)); break;
-        case 682: s = xmqcli_step(xmqcli_d108_682, 7, xmqcli_peek(p, i)); break;
-        case 683: s = xmqcli_step(xmqcli_d108_683, 7, xmqcli_peek(p, i)); break;
-        case 684: s = xmqcli_step(xmqcli_d108_684, 7, xmqcli_peek(p, i)); break;
-        case 685: s = xmqcli_step(xmqcli_d108_685, 7, xmqcli_peek(p, i)); break;
-        case 686: s = xmqcli_step(xmqcli_d108_686, 7, xmqcli_peek(p, i)); break;
-        case 687: s = xmqcli_step(xmqcli_d108_687, 7, xmqcli_peek(p, i)); break;
-        case 688: s = xmqcli_step(xmqcli_d108_688, 7, xmqcli_peek(p, i)); break;
-        case 689: s = xmqcli_step(xmqcli_d108_689, 7, xmqcli_peek(p, i)); break;
-        case 690: s = xmqcli_step(xmqcli_d108_690, 7, xmqcli_peek(p, i)); break;
-        case 691: s = xmqcli_step(xmqcli_d108_691, 7, xmqcli_peek(p, i)); break;
-        case 692: s = xmqcli_step(xmqcli_d108_692, 7, xmqcli_peek(p, i)); break;
-        case 693: s = xmqcli_step(xmqcli_d108_693, 7, xmqcli_peek(p, i)); break;
-        case 694: s = xmqcli_step(xmqcli_d108_694, 7, xmqcli_peek(p, i)); break;
-        case 695: s = xmqcli_step(xmqcli_d108_695, 7, xmqcli_peek(p, i)); break;
-        case 696: s = xmqcli_step(xmqcli_d108_696, 7, xmqcli_peek(p, i)); break;
-        case 697: s = xmqcli_step(xmqcli_d108_697, 7, xmqcli_peek(p, i)); break;
-        case 698: s = xmqcli_step(xmqcli_d108_698, 7, xmqcli_peek(p, i)); break;
-        case 699: s = xmqcli_step(xmqcli_d108_699, 7, xmqcli_peek(p, i)); break;
-        case 700: s = xmqcli_step(xmqcli_d108_700, 7, xmqcli_peek(p, i)); break;
-        case 701: s = xmqcli_step(xmqcli_d108_701, 7, xmqcli_peek(p, i)); break;
-        case 702: s = xmqcli_step(xmqcli_d108_702, 7, xmqcli_peek(p, i)); break;
-        case 703: s = xmqcli_step(xmqcli_d108_703, 7, xmqcli_peek(p, i)); break;
-        case 704: s = xmqcli_step(xmqcli_d108_704, 7, xmqcli_peek(p, i)); break;
-        case 705: s = xmqcli_step(xmqcli_d108_705, 7, xmqcli_peek(p, i)); break;
-        case 706: s = xmqcli_step(xmqcli_d108_706, 7, xmqcli_peek(p, i)); break;
-        case 707: s = xmqcli_step(xmqcli_d108_707, 7, xmqcli_peek(p, i)); break;
-        case 708: s = xmqcli_step(xmqcli_d108_708, 7, xmqcli_peek(p, i)); break;
-        case 709: s = xmqcli_step(xmqcli_d108_709, 7, xmqcli_peek(p, i)); break;
-        case 710: s = xmqcli_step(xmqcli_d108_710, 7, xmqcli_peek(p, i)); break;
-        case 711: s = xmqcli_step(xmqcli_d108_711, 7, xmqcli_peek(p, i)); break;
-        case 712: s = xmqcli_step(xmqcli_d108_712, 7, xmqcli_peek(p, i)); break;
-        case 713: s = xmqcli_step(xmqcli_d108_713, 7, xmqcli_peek(p, i)); break;
-        case 714: s = xmqcli_step(xmqcli_d108_714, 7, xmqcli_peek(p, i)); break;
-        case 715: s = xmqcli_step(xmqcli_d108_715, 7, xmqcli_peek(p, i)); break;
-        case 716: s = xmqcli_step(xmqcli_d108_716, 7, xmqcli_peek(p, i)); break;
-        case 717: s = xmqcli_step(xmqcli_d108_717, 7, xmqcli_peek(p, i)); break;
-        case 718: s = xmqcli_step(xmqcli_d108_718, 7, xmqcli_peek(p, i)); break;
-        case 719: s = xmqcli_step(xmqcli_d108_719, 7, xmqcli_peek(p, i)); break;
-        case 720: s = xmqcli_step(xmqcli_d108_720, 8, xmqcli_peek(p, i)); break;
-        case 721: s = xmqcli_step(xmqcli_d108_721, 7, xmqcli_peek(p, i)); break;
-        case 722: s = xmqcli_step(xmqcli_d108_722, 7, xmqcli_peek(p, i)); break;
-        case 723: s = xmqcli_step(xmqcli_d108_723, 7, xmqcli_peek(p, i)); break;
-        case 724: s = xmqcli_step(xmqcli_d108_724, 7, xmqcli_peek(p, i)); break;
-        case 725: s = xmqcli_step(xmqcli_d108_725, 7, xmqcli_peek(p, i)); break;
-        case 726: s = xmqcli_step(xmqcli_d108_726, 7, xmqcli_peek(p, i)); break;
-        case 727: s = xmqcli_step(xmqcli_d108_727, 7, xmqcli_peek(p, i)); break;
-        case 728: s = xmqcli_step(xmqcli_d108_728, 7, xmqcli_peek(p, i)); break;
-        case 729: s = xmqcli_step(xmqcli_d108_729, 7, xmqcli_peek(p, i)); break;
-        case 730: s = xmqcli_step(xmqcli_d108_730, 7, xmqcli_peek(p, i)); break;
-        case 731: s = xmqcli_step(xmqcli_d108_731, 7, xmqcli_peek(p, i)); break;
-        case 732: s = xmqcli_step(xmqcli_d108_732, 7, xmqcli_peek(p, i)); break;
-        case 733: s = xmqcli_step(xmqcli_d108_733, 7, xmqcli_peek(p, i)); break;
-        case 734: s = xmqcli_step(xmqcli_d108_734, 7, xmqcli_peek(p, i)); break;
-        case 735: s = xmqcli_step(xmqcli_d108_735, 7, xmqcli_peek(p, i)); break;
-        case 736: s = xmqcli_step(xmqcli_d108_736, 7, xmqcli_peek(p, i)); break;
-        case 737: s = xmqcli_step(xmqcli_d108_737, 9, xmqcli_peek(p, i)); break;
-        case 738: s = xmqcli_step(xmqcli_d108_738, 7, xmqcli_peek(p, i)); break;
-        case 739: s = xmqcli_step(xmqcli_d108_739, 7, xmqcli_peek(p, i)); break;
-        case 740: s = xmqcli_step(xmqcli_d108_740, 7, xmqcli_peek(p, i)); break;
-        case 741: s = xmqcli_step(xmqcli_d108_741, 7, xmqcli_peek(p, i)); break;
-        case 742: s = xmqcli_step(xmqcli_d108_742, 7, xmqcli_peek(p, i)); break;
-        case 743: s = xmqcli_step(xmqcli_d108_743, 7, xmqcli_peek(p, i)); break;
-        case 744: s = xmqcli_step(xmqcli_d108_744, 7, xmqcli_peek(p, i)); break;
-        case 745: s = xmqcli_step(xmqcli_d108_745, 7, xmqcli_peek(p, i)); break;
-        case 746: s = xmqcli_step(xmqcli_d108_746, 7, xmqcli_peek(p, i)); break;
-        case 747: s = xmqcli_step(xmqcli_d108_747, 7, xmqcli_peek(p, i)); break;
-        case 748: s = xmqcli_step(xmqcli_d108_748, 8, xmqcli_peek(p, i)); break;
-        case 749: s = xmqcli_step(xmqcli_d108_749, 7, xmqcli_peek(p, i)); break;
-        case 750: s = xmqcli_step(xmqcli_d108_750, 7, xmqcli_peek(p, i)); break;
-        case 751: s = xmqcli_step(xmqcli_d108_751, 7, xmqcli_peek(p, i)); break;
-        case 752: s = xmqcli_step(xmqcli_d108_752, 7, xmqcli_peek(p, i)); break;
-        case 753: s = xmqcli_step(xmqcli_d108_753, 7, xmqcli_peek(p, i)); break;
-        case 754: s = xmqcli_step(xmqcli_d108_754, 7, xmqcli_peek(p, i)); break;
-        case 755: s = xmqcli_step(xmqcli_d108_755, 7, xmqcli_peek(p, i)); break;
-        case 756: s = xmqcli_step(xmqcli_d108_756, 7, xmqcli_peek(p, i)); break;
-        case 757: s = xmqcli_step(xmqcli_d108_757, 7, xmqcli_peek(p, i)); break;
-        case 758: s = xmqcli_step(xmqcli_d108_758, 7, xmqcli_peek(p, i)); break;
-        case 759: s = xmqcli_step(xmqcli_d108_759, 7, xmqcli_peek(p, i)); break;
-        case 760: s = xmqcli_step(xmqcli_d108_760, 7, xmqcli_peek(p, i)); break;
-        case 761: s = xmqcli_step(xmqcli_d108_761, 7, xmqcli_peek(p, i)); break;
-        case 762: s = xmqcli_step(xmqcli_d108_762, 7, xmqcli_peek(p, i)); break;
-        case 763: s = xmqcli_step(xmqcli_d108_763, 7, xmqcli_peek(p, i)); break;
-        case 764: s = xmqcli_step(xmqcli_d108_764, 7, xmqcli_peek(p, i)); break;
-        case 765: s = xmqcli_step(xmqcli_d108_765, 7, xmqcli_peek(p, i)); break;
-        case 766: s = xmqcli_step(xmqcli_d108_766, 7, xmqcli_peek(p, i)); break;
-        case 767: s = xmqcli_step(xmqcli_d108_767, 7, xmqcli_peek(p, i)); break;
-        case 768: s = xmqcli_step(xmqcli_d108_768, 7, xmqcli_peek(p, i)); break;
-        case 769: s = xmqcli_step(xmqcli_d108_769, 7, xmqcli_peek(p, i)); break;
-        case 770: s = xmqcli_step(xmqcli_d108_770, 7, xmqcli_peek(p, i)); break;
-        case 771: s = xmqcli_step(xmqcli_d108_771, 7, xmqcli_peek(p, i)); break;
-        case 772: s = xmqcli_step(xmqcli_d108_772, 7, xmqcli_peek(p, i)); break;
-        case 773: s = xmqcli_step(xmqcli_d108_773, 7, xmqcli_peek(p, i)); break;
-        case 774: s = xmqcli_step(xmqcli_d108_774, 9, xmqcli_peek(p, i)); break;
-        case 775: s = xmqcli_step(xmqcli_d108_775, 7, xmqcli_peek(p, i)); break;
-        case 776: s = xmqcli_step(xmqcli_d108_776, 7, xmqcli_peek(p, i)); break;
-        case 777: s = xmqcli_step(xmqcli_d108_777, 7, xmqcli_peek(p, i)); break;
-        case 778: s = xmqcli_step(xmqcli_d108_778, 7, xmqcli_peek(p, i)); break;
-        case 779: s = xmqcli_step(xmqcli_d108_779, 7, xmqcli_peek(p, i)); break;
-        case 780: s = xmqcli_step(xmqcli_d108_780, 7, xmqcli_peek(p, i)); break;
-        case 781: s = xmqcli_step(xmqcli_d108_781, 7, xmqcli_peek(p, i)); break;
-        case 782: s = xmqcli_step(xmqcli_d108_782, 7, xmqcli_peek(p, i)); break;
-        case 783: s = xmqcli_step(xmqcli_d108_783, 7, xmqcli_peek(p, i)); break;
-        case 784: s = xmqcli_step(xmqcli_d108_784, 7, xmqcli_peek(p, i)); break;
-        case 785: s = xmqcli_step(xmqcli_d108_785, 7, xmqcli_peek(p, i)); break;
-        case 786: s = xmqcli_step(xmqcli_d108_786, 7, xmqcli_peek(p, i)); break;
-        case 787: s = xmqcli_step(xmqcli_d108_787, 7, xmqcli_peek(p, i)); break;
-        case 788: s = xmqcli_step(xmqcli_d108_788, 7, xmqcli_peek(p, i)); break;
-        case 789: s = xmqcli_step(xmqcli_d108_789, 7, xmqcli_peek(p, i)); break;
-        case 790: s = xmqcli_step(xmqcli_d108_790, 7, xmqcli_peek(p, i)); break;
-        case 791: s = xmqcli_step(xmqcli_d108_791, 7, xmqcli_peek(p, i)); break;
-        case 792: s = xmqcli_step(xmqcli_d108_792, 7, xmqcli_peek(p, i)); break;
-        case 793: s = xmqcli_step(xmqcli_d108_793, 7, xmqcli_peek(p, i)); break;
-        case 794: s = xmqcli_step(xmqcli_d108_794, 7, xmqcli_peek(p, i)); break;
-        case 795: s = xmqcli_step(xmqcli_d108_795, 7, xmqcli_peek(p, i)); break;
-        case 796: s = xmqcli_step(xmqcli_d108_796, 7, xmqcli_peek(p, i)); break;
-        case 797: s = xmqcli_step(xmqcli_d108_797, 7, xmqcli_peek(p, i)); break;
-        case 798: s = xmqcli_step(xmqcli_d108_798, 7, xmqcli_peek(p, i)); break;
-        case 799: s = xmqcli_step(xmqcli_d108_799, 7, xmqcli_peek(p, i)); break;
-        case 800: s = xmqcli_step(xmqcli_d108_800, 7, xmqcli_peek(p, i)); break;
-        case 801: s = xmqcli_step(xmqcli_d108_801, 7, xmqcli_peek(p, i)); break;
-        case 802: s = xmqcli_step(xmqcli_d108_802, 8, xmqcli_peek(p, i)); break;
-        case 803: s = xmqcli_step(xmqcli_d108_803, 7, xmqcli_peek(p, i)); break;
-        case 804: s = xmqcli_step(xmqcli_d108_804, 7, xmqcli_peek(p, i)); break;
-        case 805: s = xmqcli_step(xmqcli_d108_805, 7, xmqcli_peek(p, i)); break;
-        case 806: s = xmqcli_step(xmqcli_d108_806, 7, xmqcli_peek(p, i)); break;
-        case 807: s = xmqcli_step(xmqcli_d108_807, 7, xmqcli_peek(p, i)); break;
-        case 808: s = xmqcli_step(xmqcli_d108_808, 7, xmqcli_peek(p, i)); break;
-        case 809: s = xmqcli_step(xmqcli_d108_809, 7, xmqcli_peek(p, i)); break;
-        case 810: s = xmqcli_step(xmqcli_d108_810, 7, xmqcli_peek(p, i)); break;
-        case 811: s = xmqcli_step(xmqcli_d108_811, 7, xmqcli_peek(p, i)); break;
-        case 812: s = xmqcli_step(xmqcli_d108_812, 7, xmqcli_peek(p, i)); break;
-        case 813: s = xmqcli_step(xmqcli_d108_813, 7, xmqcli_peek(p, i)); break;
-        case 814: s = xmqcli_step(xmqcli_d108_814, 7, xmqcli_peek(p, i)); break;
-        case 815: s = xmqcli_step(xmqcli_d108_815, 7, xmqcli_peek(p, i)); break;
-        case 816: s = xmqcli_step(xmqcli_d108_816, 7, xmqcli_peek(p, i)); break;
-        case 817: s = xmqcli_step(xmqcli_d108_817, 7, xmqcli_peek(p, i)); break;
-        case 818: s = xmqcli_step(xmqcli_d108_818, 7, xmqcli_peek(p, i)); break;
-        case 819: s = xmqcli_step(xmqcli_d108_819, 7, xmqcli_peek(p, i)); break;
-        case 820: s = xmqcli_step(xmqcli_d108_820, 7, xmqcli_peek(p, i)); break;
-        case 821: s = xmqcli_step(xmqcli_d108_821, 7, xmqcli_peek(p, i)); break;
-        case 822: s = xmqcli_step(xmqcli_d108_822, 7, xmqcli_peek(p, i)); break;
-        case 823: s = xmqcli_step(xmqcli_d108_823, 7, xmqcli_peek(p, i)); break;
-        case 824: s = xmqcli_step(xmqcli_d108_824, 7, xmqcli_peek(p, i)); break;
-        case 825: s = xmqcli_step(xmqcli_d108_825, 7, xmqcli_peek(p, i)); break;
+        case 19: s = xmqcli_step(xmqcli_d117_19, 19, xmqcli_peek(p, i)); break;
+        case 20: s = xmqcli_step(xmqcli_d117_20, 7, xmqcli_peek(p, i)); break;
+        case 21: s = xmqcli_step(xmqcli_d117_21, 7, xmqcli_peek(p, i)); break;
+        case 22: s = xmqcli_step(xmqcli_d117_22, 7, xmqcli_peek(p, i)); break;
+        case 23: s = xmqcli_step(xmqcli_d117_23, 7, xmqcli_peek(p, i)); break;
+        case 24: s = xmqcli_step(xmqcli_d117_24, 7, xmqcli_peek(p, i)); break;
+        case 25: s = xmqcli_step(xmqcli_d117_25, 7, xmqcli_peek(p, i)); break;
+        case 26: s = xmqcli_step(xmqcli_d117_26, 7, xmqcli_peek(p, i)); break;
+        case 27: s = xmqcli_step(xmqcli_d117_27, 9, xmqcli_peek(p, i)); break;
+        case 28: s = xmqcli_step(xmqcli_d117_28, 7, xmqcli_peek(p, i)); break;
+        case 29: s = xmqcli_step(xmqcli_d117_29, 9, xmqcli_peek(p, i)); break;
+        case 30: s = xmqcli_step(xmqcli_d117_30, 7, xmqcli_peek(p, i)); break;
+        case 31: s = xmqcli_step(xmqcli_d117_31, 7, xmqcli_peek(p, i)); break;
+        case 32: s = xmqcli_step(xmqcli_d117_32, 12, xmqcli_peek(p, i)); break;
+        case 33: s = xmqcli_step(xmqcli_d117_33, 9, xmqcli_peek(p, i)); break;
+        case 34: s = xmqcli_step(xmqcli_d117_34, 7, xmqcli_peek(p, i)); break;
+        case 35: s = xmqcli_step(xmqcli_d117_35, 7, xmqcli_peek(p, i)); break;
+        case 36: s = xmqcli_step(xmqcli_d117_36, 7, xmqcli_peek(p, i)); break;
+        case 37: s = xmqcli_step(xmqcli_d117_37, 34, xmqcli_peek(p, i)); break;
+        case 38: s = xmqcli_step(xmqcli_d117_38, 13, xmqcli_peek(p, i)); break;
+        case 39: s = xmqcli_step(xmqcli_d117_39, 9, xmqcli_peek(p, i)); break;
+        case 40: s = xmqcli_step(xmqcli_d117_40, 2, xmqcli_peek(p, i)); break;
+        case 41: s = xmqcli_step(xmqcli_d117_41, 9, xmqcli_peek(p, i)); break;
+        case 42: s = xmqcli_step(xmqcli_d117_42, 8, xmqcli_peek(p, i)); break;
+        case 43: s = xmqcli_step(xmqcli_d117_43, 11, xmqcli_peek(p, i)); break;
+        case 44: s = xmqcli_step(xmqcli_d117_44, 7, xmqcli_peek(p, i)); break;
+        case 45: s = xmqcli_step(xmqcli_d117_45, 11, xmqcli_peek(p, i)); break;
+        case 46: s = xmqcli_step(xmqcli_d117_46, 7, xmqcli_peek(p, i)); break;
+        case 47: s = xmqcli_step(xmqcli_d117_47, 9, xmqcli_peek(p, i)); break;
+        case 48: s = xmqcli_step(xmqcli_d117_48, 7, xmqcli_peek(p, i)); break;
+        case 49: s = xmqcli_step(xmqcli_d117_49, 7, xmqcli_peek(p, i)); break;
+        case 50: s = xmqcli_step(xmqcli_d117_50, 9, xmqcli_peek(p, i)); break;
+        case 51: s = xmqcli_step(xmqcli_d117_51, 7, xmqcli_peek(p, i)); break;
+        case 52: s = xmqcli_step(xmqcli_d117_52, 7, xmqcli_peek(p, i)); break;
+        case 53: s = xmqcli_step(xmqcli_d117_53, 7, xmqcli_peek(p, i)); break;
+        case 54: s = xmqcli_step(xmqcli_d117_54, 11, xmqcli_peek(p, i)); break;
+        case 55: s = xmqcli_step(xmqcli_d117_55, 7, xmqcli_peek(p, i)); break;
+        case 56: s = xmqcli_step(xmqcli_d117_56, 7, xmqcli_peek(p, i)); break;
+        case 57: s = xmqcli_step(xmqcli_d117_57, 11, xmqcli_peek(p, i)); break;
+        case 58: s = xmqcli_step(xmqcli_d117_58, 7, xmqcli_peek(p, i)); break;
+        case 59: s = xmqcli_step(xmqcli_d117_59, 7, xmqcli_peek(p, i)); break;
+        case 60: s = xmqcli_step(xmqcli_d117_60, 7, xmqcli_peek(p, i)); break;
+        case 61: s = xmqcli_step(xmqcli_d117_61, 7, xmqcli_peek(p, i)); break;
+        case 62: s = xmqcli_step(xmqcli_d117_62, 9, xmqcli_peek(p, i)); break;
+        case 63: s = xmqcli_step(xmqcli_d117_63, 7, xmqcli_peek(p, i)); break;
+        case 64: s = xmqcli_step(xmqcli_d117_64, 7, xmqcli_peek(p, i)); break;
+        case 65: s = xmqcli_step(xmqcli_d117_65, 7, xmqcli_peek(p, i)); break;
+        case 66: s = xmqcli_step(xmqcli_d117_66, 7, xmqcli_peek(p, i)); break;
+        case 67: s = xmqcli_step(xmqcli_d117_67, 19, xmqcli_peek(p, i)); break;
+        case 68: s = xmqcli_step(xmqcli_d117_68, 7, xmqcli_peek(p, i)); break;
+        case 69: s = xmqcli_step(xmqcli_d117_69, 7, xmqcli_peek(p, i)); break;
+        case 70: s = xmqcli_step(xmqcli_d117_70, 7, xmqcli_peek(p, i)); break;
+        case 71: s = xmqcli_step(xmqcli_d117_71, 7, xmqcli_peek(p, i)); break;
+        case 72: s = xmqcli_step(xmqcli_d117_72, 7, xmqcli_peek(p, i)); break;
+        case 73: s = xmqcli_step(xmqcli_d117_73, 7, xmqcli_peek(p, i)); break;
+        case 74: s = xmqcli_step(xmqcli_d117_74, 7, xmqcli_peek(p, i)); break;
+        case 75: s = xmqcli_step(xmqcli_d117_75, 9, xmqcli_peek(p, i)); break;
+        case 76: s = xmqcli_step(xmqcli_d117_76, 7, xmqcli_peek(p, i)); break;
+        case 77: s = xmqcli_step(xmqcli_d117_77, 9, xmqcli_peek(p, i)); break;
+        case 78: s = xmqcli_step(xmqcli_d117_78, 7, xmqcli_peek(p, i)); break;
+        case 79: s = xmqcli_step(xmqcli_d117_79, 7, xmqcli_peek(p, i)); break;
+        case 80: s = xmqcli_step(xmqcli_d117_80, 12, xmqcli_peek(p, i)); break;
+        case 81: s = xmqcli_step(xmqcli_d117_81, 9, xmqcli_peek(p, i)); break;
+        case 82: s = xmqcli_step(xmqcli_d117_82, 7, xmqcli_peek(p, i)); break;
+        case 83: s = xmqcli_step(xmqcli_d117_83, 7, xmqcli_peek(p, i)); break;
+        case 84: s = xmqcli_step(xmqcli_d117_84, 7, xmqcli_peek(p, i)); break;
+        case 85: s = xmqcli_step(xmqcli_d117_85, 13, xmqcli_peek(p, i)); break;
+        case 86: s = xmqcli_step(xmqcli_d117_86, 10, xmqcli_peek(p, i)); break;
+        case 87: s = xmqcli_step(xmqcli_d117_87, 9, xmqcli_peek(p, i)); break;
+        case 88: s = xmqcli_step(xmqcli_d117_88, 9, xmqcli_peek(p, i)); break;
+        case 89: s = xmqcli_step(xmqcli_d117_89, 9, xmqcli_peek(p, i)); break;
+        case 90: s = xmqcli_step(xmqcli_d117_90, 10, xmqcli_peek(p, i)); break;
+        case 91: s = xmqcli_step(xmqcli_d117_91, 7, xmqcli_peek(p, i)); break;
+        case 92: s = xmqcli_step(xmqcli_d117_92, 7, xmqcli_peek(p, i)); break;
+        case 93: s = xmqcli_step(xmqcli_d117_93, 7, xmqcli_peek(p, i)); break;
+        case 94: s = xmqcli_step(xmqcli_d117_94, 7, xmqcli_peek(p, i)); break;
+        case 95: s = xmqcli_step(xmqcli_d117_95, 7, xmqcli_peek(p, i)); break;
+        case 96: s = xmqcli_step(xmqcli_d117_96, 7, xmqcli_peek(p, i)); break;
+        case 97: s = xmqcli_step(xmqcli_d117_97, 7, xmqcli_peek(p, i)); break;
+        case 98: s = xmqcli_step(xmqcli_d117_98, 9, xmqcli_peek(p, i)); break;
+        case 99: s = xmqcli_step(xmqcli_d117_99, 7, xmqcli_peek(p, i)); break;
+        case 100: s = xmqcli_step(xmqcli_d117_100, 7, xmqcli_peek(p, i)); break;
+        case 101: s = xmqcli_step(xmqcli_d117_101, 7, xmqcli_peek(p, i)); break;
+        case 102: s = xmqcli_step(xmqcli_d117_102, 7, xmqcli_peek(p, i)); break;
+        case 103: s = xmqcli_step(xmqcli_d117_103, 7, xmqcli_peek(p, i)); break;
+        case 104: s = xmqcli_step(xmqcli_d117_104, 7, xmqcli_peek(p, i)); break;
+        case 105: s = xmqcli_step(xmqcli_d117_105, 7, xmqcli_peek(p, i)); break;
+        case 106: s = xmqcli_step(xmqcli_d117_106, 7, xmqcli_peek(p, i)); break;
+        case 107: s = xmqcli_step(xmqcli_d117_107, 7, xmqcli_peek(p, i)); break;
+        case 108: s = xmqcli_step(xmqcli_d117_108, 7, xmqcli_peek(p, i)); break;
+        case 109: s = xmqcli_step(xmqcli_d117_109, 7, xmqcli_peek(p, i)); break;
+        case 110: s = xmqcli_step(xmqcli_d117_110, 7, xmqcli_peek(p, i)); break;
+        case 111: s = xmqcli_step(xmqcli_d117_111, 7, xmqcli_peek(p, i)); break;
+        case 112: s = xmqcli_step(xmqcli_d117_112, 16, xmqcli_peek(p, i)); break;
+        case 113: s = xmqcli_step(xmqcli_d117_113, 7, xmqcli_peek(p, i)); break;
+        case 114: s = xmqcli_step(xmqcli_d117_114, 7, xmqcli_peek(p, i)); break;
+        case 115: s = xmqcli_step(xmqcli_d117_115, 7, xmqcli_peek(p, i)); break;
+        case 116: s = xmqcli_step(xmqcli_d117_116, 7, xmqcli_peek(p, i)); break;
+        case 117: s = xmqcli_step(xmqcli_d117_117, 7, xmqcli_peek(p, i)); break;
+        case 118: s = xmqcli_step(xmqcli_d117_118, 9, xmqcli_peek(p, i)); break;
+        case 119: s = xmqcli_step(xmqcli_d117_119, 2, xmqcli_peek(p, i)); break;
+        case 120: s = xmqcli_step(xmqcli_d117_120, 9, xmqcli_peek(p, i)); break;
+        case 121: s = xmqcli_step(xmqcli_d117_121, 8, xmqcli_peek(p, i)); break;
+        case 122: s = xmqcli_step(xmqcli_d117_122, 11, xmqcli_peek(p, i)); break;
+        case 123: s = xmqcli_step(xmqcli_d117_123, 7, xmqcli_peek(p, i)); break;
+        case 124: s = xmqcli_step(xmqcli_d117_124, 11, xmqcli_peek(p, i)); break;
+        case 125: s = xmqcli_step(xmqcli_d117_125, 7, xmqcli_peek(p, i)); break;
+        case 126: s = xmqcli_step(xmqcli_d117_126, 9, xmqcli_peek(p, i)); break;
+        case 127: s = xmqcli_step(xmqcli_d117_127, 7, xmqcli_peek(p, i)); break;
+        case 128: s = xmqcli_step(xmqcli_d117_128, 7, xmqcli_peek(p, i)); break;
+        case 129: s = xmqcli_step(xmqcli_d117_129, 9, xmqcli_peek(p, i)); break;
+        case 130: s = xmqcli_step(xmqcli_d117_130, 7, xmqcli_peek(p, i)); break;
+        case 131: s = xmqcli_step(xmqcli_d117_131, 7, xmqcli_peek(p, i)); break;
+        case 132: s = xmqcli_step(xmqcli_d117_132, 7, xmqcli_peek(p, i)); break;
+        case 133: s = xmqcli_step(xmqcli_d117_133, 11, xmqcli_peek(p, i)); break;
+        case 134: s = xmqcli_step(xmqcli_d117_134, 7, xmqcli_peek(p, i)); break;
+        case 135: s = xmqcli_step(xmqcli_d117_135, 7, xmqcli_peek(p, i)); break;
+        case 136: s = xmqcli_step(xmqcli_d117_136, 11, xmqcli_peek(p, i)); break;
+        case 137: s = xmqcli_step(xmqcli_d117_137, 7, xmqcli_peek(p, i)); break;
+        case 138: s = xmqcli_step(xmqcli_d117_138, 7, xmqcli_peek(p, i)); break;
+        case 139: s = xmqcli_step(xmqcli_d117_139, 7, xmqcli_peek(p, i)); break;
+        case 140: s = xmqcli_step(xmqcli_d117_140, 7, xmqcli_peek(p, i)); break;
+        case 141: s = xmqcli_step(xmqcli_d117_141, 9, xmqcli_peek(p, i)); break;
+        case 142: s = xmqcli_step(xmqcli_d117_142, 7, xmqcli_peek(p, i)); break;
+        case 143: s = xmqcli_step(xmqcli_d117_143, 7, xmqcli_peek(p, i)); break;
+        case 144: s = xmqcli_step(xmqcli_d117_144, 7, xmqcli_peek(p, i)); break;
+        case 145: s = xmqcli_step(xmqcli_d117_145, 7, xmqcli_peek(p, i)); break;
+        case 146: s = xmqcli_step(xmqcli_d117_146, 13, xmqcli_peek(p, i)); break;
+        case 147: s = xmqcli_step(xmqcli_d117_147, 13, xmqcli_peek(p, i)); break;
+        case 148: s = xmqcli_step(xmqcli_d117_148, 9, xmqcli_peek(p, i)); break;
+        case 149: s = xmqcli_step(xmqcli_d117_149, 7, xmqcli_peek(p, i)); break;
+        case 150: s = xmqcli_step(xmqcli_d117_150, 7, xmqcli_peek(p, i)); break;
+        case 151: s = xmqcli_step(xmqcli_d117_151, 7, xmqcli_peek(p, i)); break;
+        case 152: s = xmqcli_step(xmqcli_d117_152, 7, xmqcli_peek(p, i)); break;
+        case 153: s = xmqcli_step(xmqcli_d117_153, 7, xmqcli_peek(p, i)); break;
+        case 154: s = xmqcli_step(xmqcli_d117_154, 7, xmqcli_peek(p, i)); break;
+        case 155: s = xmqcli_step(xmqcli_d117_155, 7, xmqcli_peek(p, i)); break;
+        case 156: s = xmqcli_step(xmqcli_d117_156, 9, xmqcli_peek(p, i)); break;
+        case 157: s = xmqcli_step(xmqcli_d117_157, 7, xmqcli_peek(p, i)); break;
+        case 158: s = xmqcli_step(xmqcli_d117_158, 9, xmqcli_peek(p, i)); break;
+        case 159: s = xmqcli_step(xmqcli_d117_159, 7, xmqcli_peek(p, i)); break;
+        case 160: s = xmqcli_step(xmqcli_d117_160, 7, xmqcli_peek(p, i)); break;
+        case 161: s = xmqcli_step(xmqcli_d117_161, 7, xmqcli_peek(p, i)); break;
+        case 162: s = xmqcli_step(xmqcli_d117_162, 7, xmqcli_peek(p, i)); break;
+        case 163: s = xmqcli_step(xmqcli_d117_163, 7, xmqcli_peek(p, i)); break;
+        case 164: s = xmqcli_step(xmqcli_d117_164, 7, xmqcli_peek(p, i)); break;
+        case 165: s = xmqcli_step(xmqcli_d117_165, 7, xmqcli_peek(p, i)); break;
+        case 166: s = xmqcli_step(xmqcli_d117_166, 7, xmqcli_peek(p, i)); break;
+        case 167: s = xmqcli_step(xmqcli_d117_167, 7, xmqcli_peek(p, i)); break;
+        case 168: s = xmqcli_step(xmqcli_d117_168, 7, xmqcli_peek(p, i)); break;
+        case 169: s = xmqcli_step(xmqcli_d117_169, 7, xmqcli_peek(p, i)); break;
+        case 170: s = xmqcli_step(xmqcli_d117_170, 7, xmqcli_peek(p, i)); break;
+        case 171: s = xmqcli_step(xmqcli_d117_171, 7, xmqcli_peek(p, i)); break;
+        case 172: s = xmqcli_step(xmqcli_d117_172, 7, xmqcli_peek(p, i)); break;
+        case 173: s = xmqcli_step(xmqcli_d117_173, 7, xmqcli_peek(p, i)); break;
+        case 174: s = xmqcli_step(xmqcli_d117_174, 7, xmqcli_peek(p, i)); break;
+        case 175: s = xmqcli_step(xmqcli_d117_175, 7, xmqcli_peek(p, i)); break;
+        case 176: s = xmqcli_step(xmqcli_d117_176, 7, xmqcli_peek(p, i)); break;
+        case 177: s = xmqcli_step(xmqcli_d117_177, 7, xmqcli_peek(p, i)); break;
+        case 178: s = xmqcli_step(xmqcli_d117_178, 7, xmqcli_peek(p, i)); break;
+        case 179: s = xmqcli_step(xmqcli_d117_179, 9, xmqcli_peek(p, i)); break;
+        case 180: s = xmqcli_step(xmqcli_d117_180, 10, xmqcli_peek(p, i)); break;
+        case 181: s = xmqcli_step(xmqcli_d117_181, 9, xmqcli_peek(p, i)); break;
+        case 182: s = xmqcli_step(xmqcli_d117_182, 9, xmqcli_peek(p, i)); break;
+        case 183: s = xmqcli_step(xmqcli_d117_183, 9, xmqcli_peek(p, i)); break;
+        case 184: s = xmqcli_step(xmqcli_d117_184, 10, xmqcli_peek(p, i)); break;
+        case 185: s = xmqcli_step(xmqcli_d117_185, 7, xmqcli_peek(p, i)); break;
+        case 186: s = xmqcli_step(xmqcli_d117_186, 7, xmqcli_peek(p, i)); break;
+        case 187: s = xmqcli_step(xmqcli_d117_187, 7, xmqcli_peek(p, i)); break;
+        case 188: s = xmqcli_step(xmqcli_d117_188, 7, xmqcli_peek(p, i)); break;
+        case 189: s = xmqcli_step(xmqcli_d117_189, 7, xmqcli_peek(p, i)); break;
+        case 190: s = xmqcli_step(xmqcli_d117_190, 7, xmqcli_peek(p, i)); break;
+        case 191: s = xmqcli_step(xmqcli_d117_191, 7, xmqcli_peek(p, i)); break;
+        case 192: s = xmqcli_step(xmqcli_d117_192, 9, xmqcli_peek(p, i)); break;
+        case 193: s = xmqcli_step(xmqcli_d117_193, 7, xmqcli_peek(p, i)); break;
+        case 194: s = xmqcli_step(xmqcli_d117_194, 7, xmqcli_peek(p, i)); break;
+        case 195: s = xmqcli_step(xmqcli_d117_195, 7, xmqcli_peek(p, i)); break;
+        case 196: s = xmqcli_step(xmqcli_d117_196, 7, xmqcli_peek(p, i)); break;
+        case 197: s = xmqcli_step(xmqcli_d117_197, 7, xmqcli_peek(p, i)); break;
+        case 198: s = xmqcli_step(xmqcli_d117_198, 7, xmqcli_peek(p, i)); break;
+        case 199: s = xmqcli_step(xmqcli_d117_199, 7, xmqcli_peek(p, i)); break;
+        case 200: s = xmqcli_step(xmqcli_d117_200, 7, xmqcli_peek(p, i)); break;
+        case 201: s = xmqcli_step(xmqcli_d117_201, 7, xmqcli_peek(p, i)); break;
+        case 202: s = xmqcli_step(xmqcli_d117_202, 7, xmqcli_peek(p, i)); break;
+        case 203: s = xmqcli_step(xmqcli_d117_203, 7, xmqcli_peek(p, i)); break;
+        case 204: s = xmqcli_step(xmqcli_d117_204, 7, xmqcli_peek(p, i)); break;
+        case 205: s = xmqcli_step(xmqcli_d117_205, 7, xmqcli_peek(p, i)); break;
+        case 206: s = xmqcli_step(xmqcli_d117_206, 16, xmqcli_peek(p, i)); break;
+        case 207: s = xmqcli_step(xmqcli_d117_207, 7, xmqcli_peek(p, i)); break;
+        case 208: s = xmqcli_step(xmqcli_d117_208, 7, xmqcli_peek(p, i)); break;
+        case 209: s = xmqcli_step(xmqcli_d117_209, 7, xmqcli_peek(p, i)); break;
+        case 210: s = xmqcli_step(xmqcli_d117_210, 7, xmqcli_peek(p, i)); break;
+        case 211: s = xmqcli_step(xmqcli_d117_211, 7, xmqcli_peek(p, i)); break;
+        case 212: s = xmqcli_step(xmqcli_d117_212, 11, xmqcli_peek(p, i)); break;
+        case 213: s = xmqcli_step(xmqcli_d117_213, 11, xmqcli_peek(p, i)); break;
+        case 214: s = xmqcli_step(xmqcli_d117_214, 6, xmqcli_peek(p, i)); break;
+        case 215: s = xmqcli_step(xmqcli_d117_215, 4, xmqcli_peek(p, i)); break;
+        case 216: s = xmqcli_step(xmqcli_d117_216, 7, xmqcli_peek(p, i)); break;
+        case 217: s = xmqcli_step(xmqcli_d117_217, 7, xmqcli_peek(p, i)); break;
+        case 218: s = xmqcli_step(xmqcli_d117_218, 7, xmqcli_peek(p, i)); break;
+        case 219: s = xmqcli_step(xmqcli_d117_219, 7, xmqcli_peek(p, i)); break;
+        case 220: s = xmqcli_step(xmqcli_d117_220, 7, xmqcli_peek(p, i)); break;
+        case 221: s = xmqcli_step(xmqcli_d117_221, 7, xmqcli_peek(p, i)); break;
+        case 222: s = xmqcli_step(xmqcli_d117_222, 7, xmqcli_peek(p, i)); break;
+        case 223: s = xmqcli_step(xmqcli_d117_223, 7, xmqcli_peek(p, i)); break;
+        case 224: s = xmqcli_step(xmqcli_d117_224, 7, xmqcli_peek(p, i)); break;
+        case 225: s = xmqcli_step(xmqcli_d117_225, 7, xmqcli_peek(p, i)); break;
+        case 226: s = xmqcli_step(xmqcli_d117_226, 7, xmqcli_peek(p, i)); break;
+        case 227: s = xmqcli_step(xmqcli_d117_227, 7, xmqcli_peek(p, i)); break;
+        case 228: s = xmqcli_step(xmqcli_d117_228, 7, xmqcli_peek(p, i)); break;
+        case 229: s = xmqcli_step(xmqcli_d117_229, 7, xmqcli_peek(p, i)); break;
+        case 230: s = xmqcli_step(xmqcli_d117_230, 7, xmqcli_peek(p, i)); break;
+        case 231: s = xmqcli_step(xmqcli_d117_231, 7, xmqcli_peek(p, i)); break;
+        case 232: s = xmqcli_step(xmqcli_d117_232, 7, xmqcli_peek(p, i)); break;
+        case 233: s = xmqcli_step(xmqcli_d117_233, 7, xmqcli_peek(p, i)); break;
+        case 234: s = xmqcli_step(xmqcli_d117_234, 7, xmqcli_peek(p, i)); break;
+        case 235: s = xmqcli_step(xmqcli_d117_235, 7, xmqcli_peek(p, i)); break;
+        case 236: s = xmqcli_step(xmqcli_d117_236, 7, xmqcli_peek(p, i)); break;
+        case 237: s = xmqcli_step(xmqcli_d117_237, 9, xmqcli_peek(p, i)); break;
+        case 238: s = xmqcli_step(xmqcli_d117_238, 7, xmqcli_peek(p, i)); break;
+        case 239: s = xmqcli_step(xmqcli_d117_239, 7, xmqcli_peek(p, i)); break;
+        case 240: s = xmqcli_step(xmqcli_d117_240, 7, xmqcli_peek(p, i)); break;
+        case 241: s = xmqcli_step(xmqcli_d117_241, 7, xmqcli_peek(p, i)); break;
+        case 242: s = xmqcli_step(xmqcli_d117_242, 7, xmqcli_peek(p, i)); break;
+        case 243: s = xmqcli_step(xmqcli_d117_243, 9, xmqcli_peek(p, i)); break;
+        case 244: s = xmqcli_step(xmqcli_d117_244, 13, xmqcli_peek(p, i)); break;
+        case 245: s = xmqcli_step(xmqcli_d117_245, 9, xmqcli_peek(p, i)); break;
+        case 246: s = xmqcli_step(xmqcli_d117_246, 7, xmqcli_peek(p, i)); break;
+        case 247: s = xmqcli_step(xmqcli_d117_247, 7, xmqcli_peek(p, i)); break;
+        case 248: s = xmqcli_step(xmqcli_d117_248, 7, xmqcli_peek(p, i)); break;
+        case 249: s = xmqcli_step(xmqcli_d117_249, 7, xmqcli_peek(p, i)); break;
+        case 250: s = xmqcli_step(xmqcli_d117_250, 7, xmqcli_peek(p, i)); break;
+        case 251: s = xmqcli_step(xmqcli_d117_251, 7, xmqcli_peek(p, i)); break;
+        case 252: s = xmqcli_step(xmqcli_d117_252, 7, xmqcli_peek(p, i)); break;
+        case 253: s = xmqcli_step(xmqcli_d117_253, 9, xmqcli_peek(p, i)); break;
+        case 254: s = xmqcli_step(xmqcli_d117_254, 7, xmqcli_peek(p, i)); break;
+        case 255: s = xmqcli_step(xmqcli_d117_255, 9, xmqcli_peek(p, i)); break;
+        case 256: s = xmqcli_step(xmqcli_d117_256, 7, xmqcli_peek(p, i)); break;
+        case 257: s = xmqcli_step(xmqcli_d117_257, 7, xmqcli_peek(p, i)); break;
+        case 258: s = xmqcli_step(xmqcli_d117_258, 7, xmqcli_peek(p, i)); break;
+        case 259: s = xmqcli_step(xmqcli_d117_259, 7, xmqcli_peek(p, i)); break;
+        case 260: s = xmqcli_step(xmqcli_d117_260, 7, xmqcli_peek(p, i)); break;
+        case 261: s = xmqcli_step(xmqcli_d117_261, 7, xmqcli_peek(p, i)); break;
+        case 262: s = xmqcli_step(xmqcli_d117_262, 7, xmqcli_peek(p, i)); break;
+        case 263: s = xmqcli_step(xmqcli_d117_263, 7, xmqcli_peek(p, i)); break;
+        case 264: s = xmqcli_step(xmqcli_d117_264, 7, xmqcli_peek(p, i)); break;
+        case 265: s = xmqcli_step(xmqcli_d117_265, 7, xmqcli_peek(p, i)); break;
+        case 266: s = xmqcli_step(xmqcli_d117_266, 7, xmqcli_peek(p, i)); break;
+        case 267: s = xmqcli_step(xmqcli_d117_267, 7, xmqcli_peek(p, i)); break;
+        case 268: s = xmqcli_step(xmqcli_d117_268, 7, xmqcli_peek(p, i)); break;
+        case 269: s = xmqcli_step(xmqcli_d117_269, 7, xmqcli_peek(p, i)); break;
+        case 270: s = xmqcli_step(xmqcli_d117_270, 7, xmqcli_peek(p, i)); break;
+        case 271: s = xmqcli_step(xmqcli_d117_271, 7, xmqcli_peek(p, i)); break;
+        case 272: s = xmqcli_step(xmqcli_d117_272, 7, xmqcli_peek(p, i)); break;
+        case 273: s = xmqcli_step(xmqcli_d117_273, 7, xmqcli_peek(p, i)); break;
+        case 274: s = xmqcli_step(xmqcli_d117_274, 7, xmqcli_peek(p, i)); break;
+        case 275: s = xmqcli_step(xmqcli_d117_275, 7, xmqcli_peek(p, i)); break;
+        case 276: s = xmqcli_step(xmqcli_d117_276, 9, xmqcli_peek(p, i)); break;
+        case 277: s = xmqcli_step(xmqcli_d117_277, 34, xmqcli_peek(p, i)); break;
+        case 278: s = xmqcli_step(xmqcli_d117_278, 4, xmqcli_peek(p, i)); break;
+        case 279: s = xmqcli_step(xmqcli_d117_279, 2, xmqcli_peek(p, i)); break;
+        case 280: s = xmqcli_step(xmqcli_d117_280, 7, xmqcli_peek(p, i)); break;
+        case 281: s = xmqcli_step(xmqcli_d117_281, 7, xmqcli_peek(p, i)); break;
+        case 282: s = xmqcli_step(xmqcli_d117_282, 10, xmqcli_peek(p, i)); break;
+        case 283: s = xmqcli_step(xmqcli_d117_283, 7, xmqcli_peek(p, i)); break;
+        case 284: s = xmqcli_step(xmqcli_d117_284, 7, xmqcli_peek(p, i)); break;
+        case 285: s = xmqcli_step(xmqcli_d117_285, 7, xmqcli_peek(p, i)); break;
+        case 286: s = xmqcli_step(xmqcli_d117_286, 7, xmqcli_peek(p, i)); break;
+        case 287: s = xmqcli_step(xmqcli_d117_287, 7, xmqcli_peek(p, i)); break;
+        case 288: s = xmqcli_step(xmqcli_d117_288, 7, xmqcli_peek(p, i)); break;
+        case 289: s = xmqcli_step(xmqcli_d117_289, 7, xmqcli_peek(p, i)); break;
+        case 290: s = xmqcli_step(xmqcli_d117_290, 7, xmqcli_peek(p, i)); break;
+        case 291: s = xmqcli_step(xmqcli_d117_291, 7, xmqcli_peek(p, i)); break;
+        case 292: s = xmqcli_step(xmqcli_d117_292, 7, xmqcli_peek(p, i)); break;
+        case 293: s = xmqcli_step(xmqcli_d117_293, 8, xmqcli_peek(p, i)); break;
+        case 294: s = xmqcli_step(xmqcli_d117_294, 7, xmqcli_peek(p, i)); break;
+        case 295: s = xmqcli_step(xmqcli_d117_295, 7, xmqcli_peek(p, i)); break;
+        case 296: s = xmqcli_step(xmqcli_d117_296, 7, xmqcli_peek(p, i)); break;
+        case 297: s = xmqcli_step(xmqcli_d117_297, 9, xmqcli_peek(p, i)); break;
+        case 298: s = xmqcli_step(xmqcli_d117_298, 7, xmqcli_peek(p, i)); break;
+        case 299: s = xmqcli_step(xmqcli_d117_299, 7, xmqcli_peek(p, i)); break;
+        case 300: s = xmqcli_step(xmqcli_d117_300, 7, xmqcli_peek(p, i)); break;
+        case 301: s = xmqcli_step(xmqcli_d117_301, 7, xmqcli_peek(p, i)); break;
+        case 302: s = xmqcli_step(xmqcli_d117_302, 7, xmqcli_peek(p, i)); break;
+        case 303: s = xmqcli_step(xmqcli_d117_303, 7, xmqcli_peek(p, i)); break;
+        case 304: s = xmqcli_step(xmqcli_d117_304, 7, xmqcli_peek(p, i)); break;
+        case 305: s = xmqcli_step(xmqcli_d117_305, 11, xmqcli_peek(p, i)); break;
+        case 306: s = xmqcli_step(xmqcli_d117_306, 6, xmqcli_peek(p, i)); break;
+        case 307: s = xmqcli_step(xmqcli_d117_307, 4, xmqcli_peek(p, i)); break;
+        case 308: s = xmqcli_step(xmqcli_d117_308, 7, xmqcli_peek(p, i)); break;
+        case 309: s = xmqcli_step(xmqcli_d117_309, 7, xmqcli_peek(p, i)); break;
+        case 310: s = xmqcli_step(xmqcli_d117_310, 7, xmqcli_peek(p, i)); break;
+        case 311: s = xmqcli_step(xmqcli_d117_311, 7, xmqcli_peek(p, i)); break;
+        case 312: s = xmqcli_step(xmqcli_d117_312, 7, xmqcli_peek(p, i)); break;
+        case 313: s = xmqcli_step(xmqcli_d117_313, 7, xmqcli_peek(p, i)); break;
+        case 314: s = xmqcli_step(xmqcli_d117_314, 7, xmqcli_peek(p, i)); break;
+        case 315: s = xmqcli_step(xmqcli_d117_315, 7, xmqcli_peek(p, i)); break;
+        case 316: s = xmqcli_step(xmqcli_d117_316, 7, xmqcli_peek(p, i)); break;
+        case 317: s = xmqcli_step(xmqcli_d117_317, 7, xmqcli_peek(p, i)); break;
+        case 318: s = xmqcli_step(xmqcli_d117_318, 7, xmqcli_peek(p, i)); break;
+        case 319: s = xmqcli_step(xmqcli_d117_319, 7, xmqcli_peek(p, i)); break;
+        case 320: s = xmqcli_step(xmqcli_d117_320, 7, xmqcli_peek(p, i)); break;
+        case 321: s = xmqcli_step(xmqcli_d117_321, 7, xmqcli_peek(p, i)); break;
+        case 322: s = xmqcli_step(xmqcli_d117_322, 7, xmqcli_peek(p, i)); break;
+        case 323: s = xmqcli_step(xmqcli_d117_323, 7, xmqcli_peek(p, i)); break;
+        case 324: s = xmqcli_step(xmqcli_d117_324, 7, xmqcli_peek(p, i)); break;
+        case 325: s = xmqcli_step(xmqcli_d117_325, 7, xmqcli_peek(p, i)); break;
+        case 326: s = xmqcli_step(xmqcli_d117_326, 7, xmqcli_peek(p, i)); break;
+        case 327: s = xmqcli_step(xmqcli_d117_327, 7, xmqcli_peek(p, i)); break;
+        case 328: s = xmqcli_step(xmqcli_d117_328, 7, xmqcli_peek(p, i)); break;
+        case 329: s = xmqcli_step(xmqcli_d117_329, 9, xmqcli_peek(p, i)); break;
+        case 330: s = xmqcli_step(xmqcli_d117_330, 7, xmqcli_peek(p, i)); break;
+        case 331: s = xmqcli_step(xmqcli_d117_331, 7, xmqcli_peek(p, i)); break;
+        case 332: s = xmqcli_step(xmqcli_d117_332, 7, xmqcli_peek(p, i)); break;
+        case 333: s = xmqcli_step(xmqcli_d117_333, 7, xmqcli_peek(p, i)); break;
+        case 334: s = xmqcli_step(xmqcli_d117_334, 7, xmqcli_peek(p, i)); break;
+        case 335: s = xmqcli_step(xmqcli_d117_335, 9, xmqcli_peek(p, i)); break;
+        case 336: s = xmqcli_step(xmqcli_d117_336, 19, xmqcli_peek(p, i)); break;
+        case 337: s = xmqcli_step(xmqcli_d117_337, 7, xmqcli_peek(p, i)); break;
+        case 338: s = xmqcli_step(xmqcli_d117_338, 7, xmqcli_peek(p, i)); break;
+        case 339: s = xmqcli_step(xmqcli_d117_339, 7, xmqcli_peek(p, i)); break;
+        case 340: s = xmqcli_step(xmqcli_d117_340, 7, xmqcli_peek(p, i)); break;
+        case 341: s = xmqcli_step(xmqcli_d117_341, 7, xmqcli_peek(p, i)); break;
+        case 342: s = xmqcli_step(xmqcli_d117_342, 7, xmqcli_peek(p, i)); break;
+        case 343: s = xmqcli_step(xmqcli_d117_343, 7, xmqcli_peek(p, i)); break;
+        case 344: s = xmqcli_step(xmqcli_d117_344, 9, xmqcli_peek(p, i)); break;
+        case 345: s = xmqcli_step(xmqcli_d117_345, 7, xmqcli_peek(p, i)); break;
+        case 346: s = xmqcli_step(xmqcli_d117_346, 9, xmqcli_peek(p, i)); break;
+        case 347: s = xmqcli_step(xmqcli_d117_347, 7, xmqcli_peek(p, i)); break;
+        case 348: s = xmqcli_step(xmqcli_d117_348, 7, xmqcli_peek(p, i)); break;
+        case 349: s = xmqcli_step(xmqcli_d117_349, 12, xmqcli_peek(p, i)); break;
+        case 350: s = xmqcli_step(xmqcli_d117_350, 9, xmqcli_peek(p, i)); break;
+        case 351: s = xmqcli_step(xmqcli_d117_351, 7, xmqcli_peek(p, i)); break;
+        case 352: s = xmqcli_step(xmqcli_d117_352, 7, xmqcli_peek(p, i)); break;
+        case 353: s = xmqcli_step(xmqcli_d117_353, 7, xmqcli_peek(p, i)); break;
+        case 354: s = xmqcli_step(xmqcli_d117_354, 7, xmqcli_peek(p, i)); break;
+        case 355: s = xmqcli_step(xmqcli_d117_355, 7, xmqcli_peek(p, i)); break;
+        case 356: s = xmqcli_step(xmqcli_d117_356, 7, xmqcli_peek(p, i)); break;
+        case 357: s = xmqcli_step(xmqcli_d117_357, 7, xmqcli_peek(p, i)); break;
+        case 358: s = xmqcli_step(xmqcli_d117_358, 7, xmqcli_peek(p, i)); break;
+        case 359: s = xmqcli_step(xmqcli_d117_359, 7, xmqcli_peek(p, i)); break;
+        case 360: s = xmqcli_step(xmqcli_d117_360, 7, xmqcli_peek(p, i)); break;
+        case 361: s = xmqcli_step(xmqcli_d117_361, 7, xmqcli_peek(p, i)); break;
+        case 362: s = xmqcli_step(xmqcli_d117_362, 7, xmqcli_peek(p, i)); break;
+        case 363: s = xmqcli_step(xmqcli_d117_363, 9, xmqcli_peek(p, i)); break;
+        case 364: s = xmqcli_step(xmqcli_d117_364, 10, xmqcli_peek(p, i)); break;
+        case 365: s = xmqcli_step(xmqcli_d117_365, 7, xmqcli_peek(p, i)); break;
+        case 366: s = xmqcli_step(xmqcli_d117_366, 7, xmqcli_peek(p, i)); break;
+        case 367: s = xmqcli_step(xmqcli_d117_367, 7, xmqcli_peek(p, i)); break;
+        case 368: s = xmqcli_step(xmqcli_d117_368, 7, xmqcli_peek(p, i)); break;
+        case 369: s = xmqcli_step(xmqcli_d117_369, 7, xmqcli_peek(p, i)); break;
+        case 370: s = xmqcli_step(xmqcli_d117_370, 7, xmqcli_peek(p, i)); break;
+        case 371: s = xmqcli_step(xmqcli_d117_371, 7, xmqcli_peek(p, i)); break;
+        case 372: s = xmqcli_step(xmqcli_d117_372, 4, xmqcli_peek(p, i)); break;
+        case 373: s = xmqcli_step(xmqcli_d117_373, 2, xmqcli_peek(p, i)); break;
+        case 374: s = xmqcli_step(xmqcli_d117_374, 7, xmqcli_peek(p, i)); break;
+        case 375: s = xmqcli_step(xmqcli_d117_375, 7, xmqcli_peek(p, i)); break;
+        case 376: s = xmqcli_step(xmqcli_d117_376, 10, xmqcli_peek(p, i)); break;
+        case 377: s = xmqcli_step(xmqcli_d117_377, 7, xmqcli_peek(p, i)); break;
+        case 378: s = xmqcli_step(xmqcli_d117_378, 7, xmqcli_peek(p, i)); break;
+        case 379: s = xmqcli_step(xmqcli_d117_379, 7, xmqcli_peek(p, i)); break;
+        case 380: s = xmqcli_step(xmqcli_d117_380, 7, xmqcli_peek(p, i)); break;
+        case 381: s = xmqcli_step(xmqcli_d117_381, 7, xmqcli_peek(p, i)); break;
+        case 382: s = xmqcli_step(xmqcli_d117_382, 7, xmqcli_peek(p, i)); break;
+        case 383: s = xmqcli_step(xmqcli_d117_383, 7, xmqcli_peek(p, i)); break;
+        case 384: s = xmqcli_step(xmqcli_d117_384, 7, xmqcli_peek(p, i)); break;
+        case 385: s = xmqcli_step(xmqcli_d117_385, 7, xmqcli_peek(p, i)); break;
+        case 386: s = xmqcli_step(xmqcli_d117_386, 7, xmqcli_peek(p, i)); break;
+        case 387: s = xmqcli_step(xmqcli_d117_387, 8, xmqcli_peek(p, i)); break;
+        case 388: s = xmqcli_step(xmqcli_d117_388, 7, xmqcli_peek(p, i)); break;
+        case 389: s = xmqcli_step(xmqcli_d117_389, 7, xmqcli_peek(p, i)); break;
+        case 390: s = xmqcli_step(xmqcli_d117_390, 7, xmqcli_peek(p, i)); break;
+        case 391: s = xmqcli_step(xmqcli_d117_391, 9, xmqcli_peek(p, i)); break;
+        case 392: s = xmqcli_step(xmqcli_d117_392, 7, xmqcli_peek(p, i)); break;
+        case 393: s = xmqcli_step(xmqcli_d117_393, 7, xmqcli_peek(p, i)); break;
+        case 394: s = xmqcli_step(xmqcli_d117_394, 7, xmqcli_peek(p, i)); break;
+        case 395: s = xmqcli_step(xmqcli_d117_395, 7, xmqcli_peek(p, i)); break;
+        case 396: s = xmqcli_step(xmqcli_d117_396, 7, xmqcli_peek(p, i)); break;
+        case 397: s = xmqcli_step(xmqcli_d117_397, 7, xmqcli_peek(p, i)); break;
+        case 398: s = xmqcli_step(xmqcli_d117_398, 7, xmqcli_peek(p, i)); break;
+        case 399: s = xmqcli_step(xmqcli_d117_399, 9, xmqcli_peek(p, i)); break;
+        case 400: s = xmqcli_step(xmqcli_d117_400, 2, xmqcli_peek(p, i)); break;
+        case 401: s = xmqcli_step(xmqcli_d117_401, 9, xmqcli_peek(p, i)); break;
+        case 402: s = xmqcli_step(xmqcli_d117_402, 8, xmqcli_peek(p, i)); break;
+        case 403: s = xmqcli_step(xmqcli_d117_403, 11, xmqcli_peek(p, i)); break;
+        case 404: s = xmqcli_step(xmqcli_d117_404, 7, xmqcli_peek(p, i)); break;
+        case 405: s = xmqcli_step(xmqcli_d117_405, 11, xmqcli_peek(p, i)); break;
+        case 406: s = xmqcli_step(xmqcli_d117_406, 7, xmqcli_peek(p, i)); break;
+        case 407: s = xmqcli_step(xmqcli_d117_407, 9, xmqcli_peek(p, i)); break;
+        case 408: s = xmqcli_step(xmqcli_d117_408, 7, xmqcli_peek(p, i)); break;
+        case 409: s = xmqcli_step(xmqcli_d117_409, 7, xmqcli_peek(p, i)); break;
+        case 410: s = xmqcli_step(xmqcli_d117_410, 9, xmqcli_peek(p, i)); break;
+        case 411: s = xmqcli_step(xmqcli_d117_411, 7, xmqcli_peek(p, i)); break;
+        case 412: s = xmqcli_step(xmqcli_d117_412, 7, xmqcli_peek(p, i)); break;
+        case 413: s = xmqcli_step(xmqcli_d117_413, 7, xmqcli_peek(p, i)); break;
+        case 414: s = xmqcli_step(xmqcli_d117_414, 11, xmqcli_peek(p, i)); break;
+        case 415: s = xmqcli_step(xmqcli_d117_415, 7, xmqcli_peek(p, i)); break;
+        case 416: s = xmqcli_step(xmqcli_d117_416, 7, xmqcli_peek(p, i)); break;
+        case 417: s = xmqcli_step(xmqcli_d117_417, 11, xmqcli_peek(p, i)); break;
+        case 418: s = xmqcli_step(xmqcli_d117_418, 7, xmqcli_peek(p, i)); break;
+        case 419: s = xmqcli_step(xmqcli_d117_419, 7, xmqcli_peek(p, i)); break;
+        case 420: s = xmqcli_step(xmqcli_d117_420, 7, xmqcli_peek(p, i)); break;
+        case 421: s = xmqcli_step(xmqcli_d117_421, 7, xmqcli_peek(p, i)); break;
+        case 422: s = xmqcli_step(xmqcli_d117_422, 9, xmqcli_peek(p, i)); break;
+        case 423: s = xmqcli_step(xmqcli_d117_423, 7, xmqcli_peek(p, i)); break;
+        case 424: s = xmqcli_step(xmqcli_d117_424, 7, xmqcli_peek(p, i)); break;
+        case 425: s = xmqcli_step(xmqcli_d117_425, 7, xmqcli_peek(p, i)); break;
+        case 426: s = xmqcli_step(xmqcli_d117_426, 7, xmqcli_peek(p, i)); break;
+        case 427: s = xmqcli_step(xmqcli_d117_427, 7, xmqcli_peek(p, i)); break;
+        case 428: s = xmqcli_step(xmqcli_d117_428, 7, xmqcli_peek(p, i)); break;
+        case 429: s = xmqcli_step(xmqcli_d117_429, 7, xmqcli_peek(p, i)); break;
+        case 430: s = xmqcli_step(xmqcli_d117_430, 7, xmqcli_peek(p, i)); break;
+        case 431: s = xmqcli_step(xmqcli_d117_431, 7, xmqcli_peek(p, i)); break;
+        case 432: s = xmqcli_step(xmqcli_d117_432, 7, xmqcli_peek(p, i)); break;
+        case 433: s = xmqcli_step(xmqcli_d117_433, 7, xmqcli_peek(p, i)); break;
+        case 434: s = xmqcli_step(xmqcli_d117_434, 7, xmqcli_peek(p, i)); break;
+        case 435: s = xmqcli_step(xmqcli_d117_435, 7, xmqcli_peek(p, i)); break;
+        case 436: s = xmqcli_step(xmqcli_d117_436, 7, xmqcli_peek(p, i)); break;
+        case 437: s = xmqcli_step(xmqcli_d117_437, 7, xmqcli_peek(p, i)); break;
+        case 438: s = xmqcli_step(xmqcli_d117_438, 7, xmqcli_peek(p, i)); break;
+        case 439: s = xmqcli_step(xmqcli_d117_439, 7, xmqcli_peek(p, i)); break;
+        case 440: s = xmqcli_step(xmqcli_d117_440, 7, xmqcli_peek(p, i)); break;
+        case 441: s = xmqcli_step(xmqcli_d117_441, 7, xmqcli_peek(p, i)); break;
+        case 442: s = xmqcli_step(xmqcli_d117_442, 7, xmqcli_peek(p, i)); break;
+        case 443: s = xmqcli_step(xmqcli_d117_443, 7, xmqcli_peek(p, i)); break;
+        case 444: s = xmqcli_step(xmqcli_d117_444, 7, xmqcli_peek(p, i)); break;
+        case 445: s = xmqcli_step(xmqcli_d117_445, 7, xmqcli_peek(p, i)); break;
+        case 446: s = xmqcli_step(xmqcli_d117_446, 7, xmqcli_peek(p, i)); break;
+        case 447: s = xmqcli_step(xmqcli_d117_447, 7, xmqcli_peek(p, i)); break;
+        case 448: s = xmqcli_step(xmqcli_d117_448, 7, xmqcli_peek(p, i)); break;
+        case 449: s = xmqcli_step(xmqcli_d117_449, 7, xmqcli_peek(p, i)); break;
+        case 450: s = xmqcli_step(xmqcli_d117_450, 7, xmqcli_peek(p, i)); break;
+        case 451: s = xmqcli_step(xmqcli_d117_451, 9, xmqcli_peek(p, i)); break;
+        case 452: s = xmqcli_step(xmqcli_d117_452, 10, xmqcli_peek(p, i)); break;
+        case 453: s = xmqcli_step(xmqcli_d117_453, 7, xmqcli_peek(p, i)); break;
+        case 454: s = xmqcli_step(xmqcli_d117_454, 7, xmqcli_peek(p, i)); break;
+        case 455: s = xmqcli_step(xmqcli_d117_455, 7, xmqcli_peek(p, i)); break;
+        case 456: s = xmqcli_step(xmqcli_d117_456, 7, xmqcli_peek(p, i)); break;
+        case 457: s = xmqcli_step(xmqcli_d117_457, 7, xmqcli_peek(p, i)); break;
+        case 458: s = xmqcli_step(xmqcli_d117_458, 7, xmqcli_peek(p, i)); break;
+        case 459: s = xmqcli_step(xmqcli_d117_459, 7, xmqcli_peek(p, i)); break;
+        case 460: s = xmqcli_step(xmqcli_d117_460, 10, xmqcli_peek(p, i)); break;
+        case 461: s = xmqcli_step(xmqcli_d117_461, 9, xmqcli_peek(p, i)); break;
+        case 462: s = xmqcli_step(xmqcli_d117_462, 9, xmqcli_peek(p, i)); break;
+        case 463: s = xmqcli_step(xmqcli_d117_463, 9, xmqcli_peek(p, i)); break;
+        case 464: s = xmqcli_step(xmqcli_d117_464, 10, xmqcli_peek(p, i)); break;
+        case 465: s = xmqcli_step(xmqcli_d117_465, 7, xmqcli_peek(p, i)); break;
+        case 466: s = xmqcli_step(xmqcli_d117_466, 7, xmqcli_peek(p, i)); break;
+        case 467: s = xmqcli_step(xmqcli_d117_467, 7, xmqcli_peek(p, i)); break;
+        case 468: s = xmqcli_step(xmqcli_d117_468, 7, xmqcli_peek(p, i)); break;
+        case 469: s = xmqcli_step(xmqcli_d117_469, 7, xmqcli_peek(p, i)); break;
+        case 470: s = xmqcli_step(xmqcli_d117_470, 7, xmqcli_peek(p, i)); break;
+        case 471: s = xmqcli_step(xmqcli_d117_471, 7, xmqcli_peek(p, i)); break;
+        case 472: s = xmqcli_step(xmqcli_d117_472, 9, xmqcli_peek(p, i)); break;
+        case 473: s = xmqcli_step(xmqcli_d117_473, 7, xmqcli_peek(p, i)); break;
+        case 474: s = xmqcli_step(xmqcli_d117_474, 7, xmqcli_peek(p, i)); break;
+        case 475: s = xmqcli_step(xmqcli_d117_475, 7, xmqcli_peek(p, i)); break;
+        case 476: s = xmqcli_step(xmqcli_d117_476, 7, xmqcli_peek(p, i)); break;
+        case 477: s = xmqcli_step(xmqcli_d117_477, 7, xmqcli_peek(p, i)); break;
+        case 478: s = xmqcli_step(xmqcli_d117_478, 7, xmqcli_peek(p, i)); break;
+        case 479: s = xmqcli_step(xmqcli_d117_479, 7, xmqcli_peek(p, i)); break;
+        case 480: s = xmqcli_step(xmqcli_d117_480, 7, xmqcli_peek(p, i)); break;
+        case 481: s = xmqcli_step(xmqcli_d117_481, 7, xmqcli_peek(p, i)); break;
+        case 482: s = xmqcli_step(xmqcli_d117_482, 7, xmqcli_peek(p, i)); break;
+        case 483: s = xmqcli_step(xmqcli_d117_483, 7, xmqcli_peek(p, i)); break;
+        case 484: s = xmqcli_step(xmqcli_d117_484, 7, xmqcli_peek(p, i)); break;
+        case 485: s = xmqcli_step(xmqcli_d117_485, 7, xmqcli_peek(p, i)); break;
+        case 486: s = xmqcli_step(xmqcli_d117_486, 16, xmqcli_peek(p, i)); break;
+        case 487: s = xmqcli_step(xmqcli_d117_487, 7, xmqcli_peek(p, i)); break;
+        case 488: s = xmqcli_step(xmqcli_d117_488, 7, xmqcli_peek(p, i)); break;
+        case 489: s = xmqcli_step(xmqcli_d117_489, 7, xmqcli_peek(p, i)); break;
+        case 490: s = xmqcli_step(xmqcli_d117_490, 7, xmqcli_peek(p, i)); break;
+        case 491: s = xmqcli_step(xmqcli_d117_491, 7, xmqcli_peek(p, i)); break;
+        case 492: s = xmqcli_step(xmqcli_d117_492, 7, xmqcli_peek(p, i)); break;
+        case 493: s = xmqcli_step(xmqcli_d117_493, 7, xmqcli_peek(p, i)); break;
+        case 494: s = xmqcli_step(xmqcli_d117_494, 7, xmqcli_peek(p, i)); break;
+        case 495: s = xmqcli_step(xmqcli_d117_495, 7, xmqcli_peek(p, i)); break;
+        case 496: s = xmqcli_step(xmqcli_d117_496, 7, xmqcli_peek(p, i)); break;
+        case 497: s = xmqcli_step(xmqcli_d117_497, 7, xmqcli_peek(p, i)); break;
+        case 498: s = xmqcli_step(xmqcli_d117_498, 7, xmqcli_peek(p, i)); break;
+        case 499: s = xmqcli_step(xmqcli_d117_499, 9, xmqcli_peek(p, i)); break;
+        case 500: s = xmqcli_step(xmqcli_d117_500, 7, xmqcli_peek(p, i)); break;
+        case 501: s = xmqcli_step(xmqcli_d117_501, 7, xmqcli_peek(p, i)); break;
+        case 502: s = xmqcli_step(xmqcli_d117_502, 7, xmqcli_peek(p, i)); break;
+        case 503: s = xmqcli_step(xmqcli_d117_503, 7, xmqcli_peek(p, i)); break;
+        case 504: s = xmqcli_step(xmqcli_d117_504, 7, xmqcli_peek(p, i)); break;
+        case 505: s = xmqcli_step(xmqcli_d117_505, 7, xmqcli_peek(p, i)); break;
+        case 506: s = xmqcli_step(xmqcli_d117_506, 7, xmqcli_peek(p, i)); break;
+        case 507: s = xmqcli_step(xmqcli_d117_507, 7, xmqcli_peek(p, i)); break;
+        case 508: s = xmqcli_step(xmqcli_d117_508, 7, xmqcli_peek(p, i)); break;
+        case 509: s = xmqcli_step(xmqcli_d117_509, 7, xmqcli_peek(p, i)); break;
+        case 510: s = xmqcli_step(xmqcli_d117_510, 7, xmqcli_peek(p, i)); break;
+        case 511: s = xmqcli_step(xmqcli_d117_511, 7, xmqcli_peek(p, i)); break;
+        case 512: s = xmqcli_step(xmqcli_d117_512, 7, xmqcli_peek(p, i)); break;
+        case 513: s = xmqcli_step(xmqcli_d117_513, 7, xmqcli_peek(p, i)); break;
+        case 514: s = xmqcli_step(xmqcli_d117_514, 7, xmqcli_peek(p, i)); break;
+        case 515: s = xmqcli_step(xmqcli_d117_515, 7, xmqcli_peek(p, i)); break;
+        case 516: s = xmqcli_step(xmqcli_d117_516, 7, xmqcli_peek(p, i)); break;
+        case 517: s = xmqcli_step(xmqcli_d117_517, 7, xmqcli_peek(p, i)); break;
+        case 518: s = xmqcli_step(xmqcli_d117_518, 13, xmqcli_peek(p, i)); break;
+        case 519: s = xmqcli_step(xmqcli_d117_519, 9, xmqcli_peek(p, i)); break;
+        case 520: s = xmqcli_step(xmqcli_d117_520, 7, xmqcli_peek(p, i)); break;
+        case 521: s = xmqcli_step(xmqcli_d117_521, 7, xmqcli_peek(p, i)); break;
+        case 522: s = xmqcli_step(xmqcli_d117_522, 7, xmqcli_peek(p, i)); break;
+        case 523: s = xmqcli_step(xmqcli_d117_523, 7, xmqcli_peek(p, i)); break;
+        case 524: s = xmqcli_step(xmqcli_d117_524, 7, xmqcli_peek(p, i)); break;
+        case 525: s = xmqcli_step(xmqcli_d117_525, 7, xmqcli_peek(p, i)); break;
+        case 526: s = xmqcli_step(xmqcli_d117_526, 7, xmqcli_peek(p, i)); break;
+        case 527: s = xmqcli_step(xmqcli_d117_527, 9, xmqcli_peek(p, i)); break;
+        case 528: s = xmqcli_step(xmqcli_d117_528, 7, xmqcli_peek(p, i)); break;
+        case 529: s = xmqcli_step(xmqcli_d117_529, 9, xmqcli_peek(p, i)); break;
+        case 530: s = xmqcli_step(xmqcli_d117_530, 7, xmqcli_peek(p, i)); break;
+        case 531: s = xmqcli_step(xmqcli_d117_531, 7, xmqcli_peek(p, i)); break;
+        case 532: s = xmqcli_step(xmqcli_d117_532, 7, xmqcli_peek(p, i)); break;
+        case 533: s = xmqcli_step(xmqcli_d117_533, 7, xmqcli_peek(p, i)); break;
+        case 534: s = xmqcli_step(xmqcli_d117_534, 7, xmqcli_peek(p, i)); break;
+        case 535: s = xmqcli_step(xmqcli_d117_535, 7, xmqcli_peek(p, i)); break;
+        case 536: s = xmqcli_step(xmqcli_d117_536, 7, xmqcli_peek(p, i)); break;
+        case 537: s = xmqcli_step(xmqcli_d117_537, 7, xmqcli_peek(p, i)); break;
+        case 538: s = xmqcli_step(xmqcli_d117_538, 7, xmqcli_peek(p, i)); break;
+        case 539: s = xmqcli_step(xmqcli_d117_539, 7, xmqcli_peek(p, i)); break;
+        case 540: s = xmqcli_step(xmqcli_d117_540, 7, xmqcli_peek(p, i)); break;
+        case 541: s = xmqcli_step(xmqcli_d117_541, 7, xmqcli_peek(p, i)); break;
+        case 542: s = xmqcli_step(xmqcli_d117_542, 7, xmqcli_peek(p, i)); break;
+        case 543: s = xmqcli_step(xmqcli_d117_543, 7, xmqcli_peek(p, i)); break;
+        case 544: s = xmqcli_step(xmqcli_d117_544, 7, xmqcli_peek(p, i)); break;
+        case 545: s = xmqcli_step(xmqcli_d117_545, 7, xmqcli_peek(p, i)); break;
+        case 546: s = xmqcli_step(xmqcli_d117_546, 7, xmqcli_peek(p, i)); break;
+        case 547: s = xmqcli_step(xmqcli_d117_547, 7, xmqcli_peek(p, i)); break;
+        case 548: s = xmqcli_step(xmqcli_d117_548, 7, xmqcli_peek(p, i)); break;
+        case 549: s = xmqcli_step(xmqcli_d117_549, 7, xmqcli_peek(p, i)); break;
+        case 550: s = xmqcli_step(xmqcli_d117_550, 9, xmqcli_peek(p, i)); break;
+        case 551: s = xmqcli_step(xmqcli_d117_551, 7, xmqcli_peek(p, i)); break;
+        case 552: s = xmqcli_step(xmqcli_d117_552, 7, xmqcli_peek(p, i)); break;
+        case 553: s = xmqcli_step(xmqcli_d117_553, 7, xmqcli_peek(p, i)); break;
+        case 554: s = xmqcli_step(xmqcli_d117_554, 7, xmqcli_peek(p, i)); break;
+        case 555: s = xmqcli_step(xmqcli_d117_555, 7, xmqcli_peek(p, i)); break;
+        case 556: s = xmqcli_step(xmqcli_d117_556, 7, xmqcli_peek(p, i)); break;
+        case 557: s = xmqcli_step(xmqcli_d117_557, 7, xmqcli_peek(p, i)); break;
+        case 558: s = xmqcli_step(xmqcli_d117_558, 7, xmqcli_peek(p, i)); break;
+        case 559: s = xmqcli_step(xmqcli_d117_559, 7, xmqcli_peek(p, i)); break;
+        case 560: s = xmqcli_step(xmqcli_d117_560, 7, xmqcli_peek(p, i)); break;
+        case 561: s = xmqcli_step(xmqcli_d117_561, 7, xmqcli_peek(p, i)); break;
+        case 562: s = xmqcli_step(xmqcli_d117_562, 7, xmqcli_peek(p, i)); break;
+        case 563: s = xmqcli_step(xmqcli_d117_563, 7, xmqcli_peek(p, i)); break;
+        case 564: s = xmqcli_step(xmqcli_d117_564, 7, xmqcli_peek(p, i)); break;
+        case 565: s = xmqcli_step(xmqcli_d117_565, 7, xmqcli_peek(p, i)); break;
+        case 566: s = xmqcli_step(xmqcli_d117_566, 7, xmqcli_peek(p, i)); break;
+        case 567: s = xmqcli_step(xmqcli_d117_567, 7, xmqcli_peek(p, i)); break;
+        case 568: s = xmqcli_step(xmqcli_d117_568, 9, xmqcli_peek(p, i)); break;
+        case 569: s = xmqcli_step(xmqcli_d117_569, 7, xmqcli_peek(p, i)); break;
+        case 570: s = xmqcli_step(xmqcli_d117_570, 7, xmqcli_peek(p, i)); break;
+        case 571: s = xmqcli_step(xmqcli_d117_571, 7, xmqcli_peek(p, i)); break;
+        case 572: s = xmqcli_step(xmqcli_d117_572, 11, xmqcli_peek(p, i)); break;
+        case 573: s = xmqcli_step(xmqcli_d117_573, 6, xmqcli_peek(p, i)); break;
+        case 574: s = xmqcli_step(xmqcli_d117_574, 4, xmqcli_peek(p, i)); break;
+        case 575: s = xmqcli_step(xmqcli_d117_575, 7, xmqcli_peek(p, i)); break;
+        case 576: s = xmqcli_step(xmqcli_d117_576, 7, xmqcli_peek(p, i)); break;
+        case 577: s = xmqcli_step(xmqcli_d117_577, 7, xmqcli_peek(p, i)); break;
+        case 578: s = xmqcli_step(xmqcli_d117_578, 7, xmqcli_peek(p, i)); break;
+        case 579: s = xmqcli_step(xmqcli_d117_579, 7, xmqcli_peek(p, i)); break;
+        case 580: s = xmqcli_step(xmqcli_d117_580, 7, xmqcli_peek(p, i)); break;
+        case 581: s = xmqcli_step(xmqcli_d117_581, 7, xmqcli_peek(p, i)); break;
+        case 582: s = xmqcli_step(xmqcli_d117_582, 7, xmqcli_peek(p, i)); break;
+        case 583: s = xmqcli_step(xmqcli_d117_583, 7, xmqcli_peek(p, i)); break;
+        case 584: s = xmqcli_step(xmqcli_d117_584, 7, xmqcli_peek(p, i)); break;
+        case 585: s = xmqcli_step(xmqcli_d117_585, 7, xmqcli_peek(p, i)); break;
+        case 586: s = xmqcli_step(xmqcli_d117_586, 7, xmqcli_peek(p, i)); break;
+        case 587: s = xmqcli_step(xmqcli_d117_587, 7, xmqcli_peek(p, i)); break;
+        case 588: s = xmqcli_step(xmqcli_d117_588, 7, xmqcli_peek(p, i)); break;
+        case 589: s = xmqcli_step(xmqcli_d117_589, 7, xmqcli_peek(p, i)); break;
+        case 590: s = xmqcli_step(xmqcli_d117_590, 7, xmqcli_peek(p, i)); break;
+        case 591: s = xmqcli_step(xmqcli_d117_591, 7, xmqcli_peek(p, i)); break;
+        case 592: s = xmqcli_step(xmqcli_d117_592, 7, xmqcli_peek(p, i)); break;
+        case 593: s = xmqcli_step(xmqcli_d117_593, 7, xmqcli_peek(p, i)); break;
+        case 594: s = xmqcli_step(xmqcli_d117_594, 7, xmqcli_peek(p, i)); break;
+        case 595: s = xmqcli_step(xmqcli_d117_595, 7, xmqcli_peek(p, i)); break;
+        case 596: s = xmqcli_step(xmqcli_d117_596, 9, xmqcli_peek(p, i)); break;
+        case 597: s = xmqcli_step(xmqcli_d117_597, 7, xmqcli_peek(p, i)); break;
+        case 598: s = xmqcli_step(xmqcli_d117_598, 7, xmqcli_peek(p, i)); break;
+        case 599: s = xmqcli_step(xmqcli_d117_599, 7, xmqcli_peek(p, i)); break;
+        case 600: s = xmqcli_step(xmqcli_d117_600, 7, xmqcli_peek(p, i)); break;
+        case 601: s = xmqcli_step(xmqcli_d117_601, 7, xmqcli_peek(p, i)); break;
+        case 602: s = xmqcli_step(xmqcli_d117_602, 9, xmqcli_peek(p, i)); break;
+        case 603: s = xmqcli_step(xmqcli_d117_603, 7, xmqcli_peek(p, i)); break;
+        case 604: s = xmqcli_step(xmqcli_d117_604, 7, xmqcli_peek(p, i)); break;
+        case 605: s = xmqcli_step(xmqcli_d117_605, 7, xmqcli_peek(p, i)); break;
+        case 606: s = xmqcli_step(xmqcli_d117_606, 7, xmqcli_peek(p, i)); break;
+        case 607: s = xmqcli_step(xmqcli_d117_607, 7, xmqcli_peek(p, i)); break;
+        case 608: s = xmqcli_step(xmqcli_d117_608, 7, xmqcli_peek(p, i)); break;
+        case 609: s = xmqcli_step(xmqcli_d117_609, 7, xmqcli_peek(p, i)); break;
+        case 610: s = xmqcli_step(xmqcli_d117_610, 7, xmqcli_peek(p, i)); break;
+        case 611: s = xmqcli_step(xmqcli_d117_611, 9, xmqcli_peek(p, i)); break;
+        case 612: s = xmqcli_step(xmqcli_d117_612, 7, xmqcli_peek(p, i)); break;
+        case 613: s = xmqcli_step(xmqcli_d117_613, 7, xmqcli_peek(p, i)); break;
+        case 614: s = xmqcli_step(xmqcli_d117_614, 7, xmqcli_peek(p, i)); break;
+        case 615: s = xmqcli_step(xmqcli_d117_615, 7, xmqcli_peek(p, i)); break;
+        case 616: s = xmqcli_step(xmqcli_d117_616, 7, xmqcli_peek(p, i)); break;
+        case 617: s = xmqcli_step(xmqcli_d117_617, 7, xmqcli_peek(p, i)); break;
+        case 618: s = xmqcli_step(xmqcli_d117_618, 7, xmqcli_peek(p, i)); break;
+        case 619: s = xmqcli_step(xmqcli_d117_619, 7, xmqcli_peek(p, i)); break;
+        case 620: s = xmqcli_step(xmqcli_d117_620, 7, xmqcli_peek(p, i)); break;
+        case 621: s = xmqcli_step(xmqcli_d117_621, 7, xmqcli_peek(p, i)); break;
+        case 622: s = xmqcli_step(xmqcli_d117_622, 4, xmqcli_peek(p, i)); break;
+        case 623: s = xmqcli_step(xmqcli_d117_623, 2, xmqcli_peek(p, i)); break;
+        case 624: s = xmqcli_step(xmqcli_d117_624, 7, xmqcli_peek(p, i)); break;
+        case 625: s = xmqcli_step(xmqcli_d117_625, 7, xmqcli_peek(p, i)); break;
+        case 626: s = xmqcli_step(xmqcli_d117_626, 10, xmqcli_peek(p, i)); break;
+        case 627: s = xmqcli_step(xmqcli_d117_627, 7, xmqcli_peek(p, i)); break;
+        case 628: s = xmqcli_step(xmqcli_d117_628, 7, xmqcli_peek(p, i)); break;
+        case 629: s = xmqcli_step(xmqcli_d117_629, 7, xmqcli_peek(p, i)); break;
+        case 630: s = xmqcli_step(xmqcli_d117_630, 7, xmqcli_peek(p, i)); break;
+        case 631: s = xmqcli_step(xmqcli_d117_631, 7, xmqcli_peek(p, i)); break;
+        case 632: s = xmqcli_step(xmqcli_d117_632, 7, xmqcli_peek(p, i)); break;
+        case 633: s = xmqcli_step(xmqcli_d117_633, 7, xmqcli_peek(p, i)); break;
+        case 634: s = xmqcli_step(xmqcli_d117_634, 7, xmqcli_peek(p, i)); break;
+        case 635: s = xmqcli_step(xmqcli_d117_635, 7, xmqcli_peek(p, i)); break;
+        case 636: s = xmqcli_step(xmqcli_d117_636, 7, xmqcli_peek(p, i)); break;
+        case 637: s = xmqcli_step(xmqcli_d117_637, 8, xmqcli_peek(p, i)); break;
+        case 638: s = xmqcli_step(xmqcli_d117_638, 7, xmqcli_peek(p, i)); break;
+        case 639: s = xmqcli_step(xmqcli_d117_639, 7, xmqcli_peek(p, i)); break;
+        case 640: s = xmqcli_step(xmqcli_d117_640, 7, xmqcli_peek(p, i)); break;
+        case 641: s = xmqcli_step(xmqcli_d117_641, 9, xmqcli_peek(p, i)); break;
+        case 642: s = xmqcli_step(xmqcli_d117_642, 7, xmqcli_peek(p, i)); break;
+        case 643: s = xmqcli_step(xmqcli_d117_643, 7, xmqcli_peek(p, i)); break;
+        case 644: s = xmqcli_step(xmqcli_d117_644, 7, xmqcli_peek(p, i)); break;
+        case 645: s = xmqcli_step(xmqcli_d117_645, 7, xmqcli_peek(p, i)); break;
+        case 646: s = xmqcli_step(xmqcli_d117_646, 7, xmqcli_peek(p, i)); break;
+        case 647: s = xmqcli_step(xmqcli_d117_647, 7, xmqcli_peek(p, i)); break;
+        case 648: s = xmqcli_step(xmqcli_d117_648, 7, xmqcli_peek(p, i)); break;
+        case 649: s = xmqcli_step(xmqcli_d117_649, 7, xmqcli_peek(p, i)); break;
+        case 650: s = xmqcli_step(xmqcli_d117_650, 7, xmqcli_peek(p, i)); break;
+        case 651: s = xmqcli_step(xmqcli_d117_651, 7, xmqcli_peek(p, i)); break;
+        case 652: s = xmqcli_step(xmqcli_d117_652, 7, xmqcli_peek(p, i)); break;
+        case 653: s = xmqcli_step(xmqcli_d117_653, 7, xmqcli_peek(p, i)); break;
+        case 654: s = xmqcli_step(xmqcli_d117_654, 7, xmqcli_peek(p, i)); break;
+        case 655: s = xmqcli_step(xmqcli_d117_655, 7, xmqcli_peek(p, i)); break;
+        case 656: s = xmqcli_step(xmqcli_d117_656, 7, xmqcli_peek(p, i)); break;
+        case 657: s = xmqcli_step(xmqcli_d117_657, 7, xmqcli_peek(p, i)); break;
+        case 658: s = xmqcli_step(xmqcli_d117_658, 7, xmqcli_peek(p, i)); break;
+        case 659: s = xmqcli_step(xmqcli_d117_659, 7, xmqcli_peek(p, i)); break;
+        case 660: s = xmqcli_step(xmqcli_d117_660, 7, xmqcli_peek(p, i)); break;
+        case 661: s = xmqcli_step(xmqcli_d117_661, 7, xmqcli_peek(p, i)); break;
+        case 662: s = xmqcli_step(xmqcli_d117_662, 7, xmqcli_peek(p, i)); break;
+        case 663: s = xmqcli_step(xmqcli_d117_663, 7, xmqcli_peek(p, i)); break;
+        case 664: s = xmqcli_step(xmqcli_d117_664, 7, xmqcli_peek(p, i)); break;
+        case 665: s = xmqcli_step(xmqcli_d117_665, 7, xmqcli_peek(p, i)); break;
+        case 666: s = xmqcli_step(xmqcli_d117_666, 9, xmqcli_peek(p, i)); break;
+        case 667: s = xmqcli_step(xmqcli_d117_667, 7, xmqcli_peek(p, i)); break;
+        case 668: s = xmqcli_step(xmqcli_d117_668, 7, xmqcli_peek(p, i)); break;
+        case 669: s = xmqcli_step(xmqcli_d117_669, 7, xmqcli_peek(p, i)); break;
+        case 670: s = xmqcli_step(xmqcli_d117_670, 7, xmqcli_peek(p, i)); break;
+        case 671: s = xmqcli_step(xmqcli_d117_671, 7, xmqcli_peek(p, i)); break;
+        case 672: s = xmqcli_step(xmqcli_d117_672, 7, xmqcli_peek(p, i)); break;
+        case 673: s = xmqcli_step(xmqcli_d117_673, 7, xmqcli_peek(p, i)); break;
+        case 674: s = xmqcli_step(xmqcli_d117_674, 7, xmqcli_peek(p, i)); break;
+        case 675: s = xmqcli_step(xmqcli_d117_675, 7, xmqcli_peek(p, i)); break;
+        case 676: s = xmqcli_step(xmqcli_d117_676, 9, xmqcli_peek(p, i)); break;
+        case 677: s = xmqcli_step(xmqcli_d117_677, 10, xmqcli_peek(p, i)); break;
+        case 678: s = xmqcli_step(xmqcli_d117_678, 7, xmqcli_peek(p, i)); break;
+        case 679: s = xmqcli_step(xmqcli_d117_679, 7, xmqcli_peek(p, i)); break;
+        case 680: s = xmqcli_step(xmqcli_d117_680, 7, xmqcli_peek(p, i)); break;
+        case 681: s = xmqcli_step(xmqcli_d117_681, 7, xmqcli_peek(p, i)); break;
+        case 682: s = xmqcli_step(xmqcli_d117_682, 7, xmqcli_peek(p, i)); break;
+        case 683: s = xmqcli_step(xmqcli_d117_683, 7, xmqcli_peek(p, i)); break;
+        case 684: s = xmqcli_step(xmqcli_d117_684, 7, xmqcli_peek(p, i)); break;
+        case 685: s = xmqcli_step(xmqcli_d117_685, 7, xmqcli_peek(p, i)); break;
+        case 686: s = xmqcli_step(xmqcli_d117_686, 7, xmqcli_peek(p, i)); break;
+        case 687: s = xmqcli_step(xmqcli_d117_687, 7, xmqcli_peek(p, i)); break;
+        case 688: s = xmqcli_step(xmqcli_d117_688, 7, xmqcli_peek(p, i)); break;
+        case 689: s = xmqcli_step(xmqcli_d117_689, 7, xmqcli_peek(p, i)); break;
+        case 690: s = xmqcli_step(xmqcli_d117_690, 7, xmqcli_peek(p, i)); break;
+        case 691: s = xmqcli_step(xmqcli_d117_691, 7, xmqcli_peek(p, i)); break;
+        case 692: s = xmqcli_step(xmqcli_d117_692, 7, xmqcli_peek(p, i)); break;
+        case 693: s = xmqcli_step(xmqcli_d117_693, 7, xmqcli_peek(p, i)); break;
+        case 694: s = xmqcli_step(xmqcli_d117_694, 7, xmqcli_peek(p, i)); break;
+        case 695: s = xmqcli_step(xmqcli_d117_695, 7, xmqcli_peek(p, i)); break;
+        case 696: s = xmqcli_step(xmqcli_d117_696, 7, xmqcli_peek(p, i)); break;
+        case 697: s = xmqcli_step(xmqcli_d117_697, 7, xmqcli_peek(p, i)); break;
+        case 698: s = xmqcli_step(xmqcli_d117_698, 7, xmqcli_peek(p, i)); break;
+        case 699: s = xmqcli_step(xmqcli_d117_699, 7, xmqcli_peek(p, i)); break;
+        case 700: s = xmqcli_step(xmqcli_d117_700, 7, xmqcli_peek(p, i)); break;
+        case 701: s = xmqcli_step(xmqcli_d117_701, 7, xmqcli_peek(p, i)); break;
+        case 702: s = xmqcli_step(xmqcli_d117_702, 7, xmqcli_peek(p, i)); break;
+        case 703: s = xmqcli_step(xmqcli_d117_703, 7, xmqcli_peek(p, i)); break;
+        case 704: s = xmqcli_step(xmqcli_d117_704, 7, xmqcli_peek(p, i)); break;
+        case 705: s = xmqcli_step(xmqcli_d117_705, 7, xmqcli_peek(p, i)); break;
+        case 706: s = xmqcli_step(xmqcli_d117_706, 7, xmqcli_peek(p, i)); break;
+        case 707: s = xmqcli_step(xmqcli_d117_707, 7, xmqcli_peek(p, i)); break;
+        case 708: s = xmqcli_step(xmqcli_d117_708, 7, xmqcli_peek(p, i)); break;
+        case 709: s = xmqcli_step(xmqcli_d117_709, 7, xmqcli_peek(p, i)); break;
+        case 710: s = xmqcli_step(xmqcli_d117_710, 7, xmqcli_peek(p, i)); break;
+        case 711: s = xmqcli_step(xmqcli_d117_711, 7, xmqcli_peek(p, i)); break;
+        case 712: s = xmqcli_step(xmqcli_d117_712, 7, xmqcli_peek(p, i)); break;
+        case 713: s = xmqcli_step(xmqcli_d117_713, 7, xmqcli_peek(p, i)); break;
+        case 714: s = xmqcli_step(xmqcli_d117_714, 7, xmqcli_peek(p, i)); break;
+        case 715: s = xmqcli_step(xmqcli_d117_715, 7, xmqcli_peek(p, i)); break;
+        case 716: s = xmqcli_step(xmqcli_d117_716, 7, xmqcli_peek(p, i)); break;
+        case 717: s = xmqcli_step(xmqcli_d117_717, 7, xmqcli_peek(p, i)); break;
+        case 718: s = xmqcli_step(xmqcli_d117_718, 7, xmqcli_peek(p, i)); break;
+        case 719: s = xmqcli_step(xmqcli_d117_719, 7, xmqcli_peek(p, i)); break;
+        case 720: s = xmqcli_step(xmqcli_d117_720, 8, xmqcli_peek(p, i)); break;
+        case 721: s = xmqcli_step(xmqcli_d117_721, 7, xmqcli_peek(p, i)); break;
+        case 722: s = xmqcli_step(xmqcli_d117_722, 7, xmqcli_peek(p, i)); break;
+        case 723: s = xmqcli_step(xmqcli_d117_723, 7, xmqcli_peek(p, i)); break;
+        case 724: s = xmqcli_step(xmqcli_d117_724, 7, xmqcli_peek(p, i)); break;
+        case 725: s = xmqcli_step(xmqcli_d117_725, 7, xmqcli_peek(p, i)); break;
+        case 726: s = xmqcli_step(xmqcli_d117_726, 7, xmqcli_peek(p, i)); break;
+        case 727: s = xmqcli_step(xmqcli_d117_727, 7, xmqcli_peek(p, i)); break;
+        case 728: s = xmqcli_step(xmqcli_d117_728, 7, xmqcli_peek(p, i)); break;
+        case 729: s = xmqcli_step(xmqcli_d117_729, 7, xmqcli_peek(p, i)); break;
+        case 730: s = xmqcli_step(xmqcli_d117_730, 7, xmqcli_peek(p, i)); break;
+        case 731: s = xmqcli_step(xmqcli_d117_731, 7, xmqcli_peek(p, i)); break;
+        case 732: s = xmqcli_step(xmqcli_d117_732, 7, xmqcli_peek(p, i)); break;
+        case 733: s = xmqcli_step(xmqcli_d117_733, 7, xmqcli_peek(p, i)); break;
+        case 734: s = xmqcli_step(xmqcli_d117_734, 7, xmqcli_peek(p, i)); break;
+        case 735: s = xmqcli_step(xmqcli_d117_735, 7, xmqcli_peek(p, i)); break;
+        case 736: s = xmqcli_step(xmqcli_d117_736, 7, xmqcli_peek(p, i)); break;
+        case 737: s = xmqcli_step(xmqcli_d117_737, 9, xmqcli_peek(p, i)); break;
+        case 738: s = xmqcli_step(xmqcli_d117_738, 7, xmqcli_peek(p, i)); break;
+        case 739: s = xmqcli_step(xmqcli_d117_739, 7, xmqcli_peek(p, i)); break;
+        case 740: s = xmqcli_step(xmqcli_d117_740, 7, xmqcli_peek(p, i)); break;
+        case 741: s = xmqcli_step(xmqcli_d117_741, 7, xmqcli_peek(p, i)); break;
+        case 742: s = xmqcli_step(xmqcli_d117_742, 7, xmqcli_peek(p, i)); break;
+        case 743: s = xmqcli_step(xmqcli_d117_743, 7, xmqcli_peek(p, i)); break;
+        case 744: s = xmqcli_step(xmqcli_d117_744, 7, xmqcli_peek(p, i)); break;
+        case 745: s = xmqcli_step(xmqcli_d117_745, 7, xmqcli_peek(p, i)); break;
+        case 746: s = xmqcli_step(xmqcli_d117_746, 7, xmqcli_peek(p, i)); break;
+        case 747: s = xmqcli_step(xmqcli_d117_747, 7, xmqcli_peek(p, i)); break;
+        case 748: s = xmqcli_step(xmqcli_d117_748, 8, xmqcli_peek(p, i)); break;
+        case 749: s = xmqcli_step(xmqcli_d117_749, 7, xmqcli_peek(p, i)); break;
+        case 750: s = xmqcli_step(xmqcli_d117_750, 7, xmqcli_peek(p, i)); break;
+        case 751: s = xmqcli_step(xmqcli_d117_751, 7, xmqcli_peek(p, i)); break;
+        case 752: s = xmqcli_step(xmqcli_d117_752, 7, xmqcli_peek(p, i)); break;
+        case 753: s = xmqcli_step(xmqcli_d117_753, 7, xmqcli_peek(p, i)); break;
+        case 754: s = xmqcli_step(xmqcli_d117_754, 7, xmqcli_peek(p, i)); break;
+        case 755: s = xmqcli_step(xmqcli_d117_755, 7, xmqcli_peek(p, i)); break;
+        case 756: s = xmqcli_step(xmqcli_d117_756, 7, xmqcli_peek(p, i)); break;
+        case 757: s = xmqcli_step(xmqcli_d117_757, 7, xmqcli_peek(p, i)); break;
+        case 758: s = xmqcli_step(xmqcli_d117_758, 7, xmqcli_peek(p, i)); break;
+        case 759: s = xmqcli_step(xmqcli_d117_759, 7, xmqcli_peek(p, i)); break;
+        case 760: s = xmqcli_step(xmqcli_d117_760, 7, xmqcli_peek(p, i)); break;
+        case 761: s = xmqcli_step(xmqcli_d117_761, 7, xmqcli_peek(p, i)); break;
+        case 762: s = xmqcli_step(xmqcli_d117_762, 7, xmqcli_peek(p, i)); break;
+        case 763: s = xmqcli_step(xmqcli_d117_763, 7, xmqcli_peek(p, i)); break;
+        case 764: s = xmqcli_step(xmqcli_d117_764, 7, xmqcli_peek(p, i)); break;
+        case 765: s = xmqcli_step(xmqcli_d117_765, 7, xmqcli_peek(p, i)); break;
+        case 766: s = xmqcli_step(xmqcli_d117_766, 7, xmqcli_peek(p, i)); break;
+        case 767: s = xmqcli_step(xmqcli_d117_767, 7, xmqcli_peek(p, i)); break;
+        case 768: s = xmqcli_step(xmqcli_d117_768, 7, xmqcli_peek(p, i)); break;
+        case 769: s = xmqcli_step(xmqcli_d117_769, 7, xmqcli_peek(p, i)); break;
+        case 770: s = xmqcli_step(xmqcli_d117_770, 7, xmqcli_peek(p, i)); break;
+        case 771: s = xmqcli_step(xmqcli_d117_771, 7, xmqcli_peek(p, i)); break;
+        case 772: s = xmqcli_step(xmqcli_d117_772, 7, xmqcli_peek(p, i)); break;
+        case 773: s = xmqcli_step(xmqcli_d117_773, 7, xmqcli_peek(p, i)); break;
+        case 774: s = xmqcli_step(xmqcli_d117_774, 9, xmqcli_peek(p, i)); break;
+        case 775: s = xmqcli_step(xmqcli_d117_775, 7, xmqcli_peek(p, i)); break;
+        case 776: s = xmqcli_step(xmqcli_d117_776, 7, xmqcli_peek(p, i)); break;
+        case 777: s = xmqcli_step(xmqcli_d117_777, 7, xmqcli_peek(p, i)); break;
+        case 778: s = xmqcli_step(xmqcli_d117_778, 7, xmqcli_peek(p, i)); break;
+        case 779: s = xmqcli_step(xmqcli_d117_779, 7, xmqcli_peek(p, i)); break;
+        case 780: s = xmqcli_step(xmqcli_d117_780, 7, xmqcli_peek(p, i)); break;
+        case 781: s = xmqcli_step(xmqcli_d117_781, 7, xmqcli_peek(p, i)); break;
+        case 782: s = xmqcli_step(xmqcli_d117_782, 7, xmqcli_peek(p, i)); break;
+        case 783: s = xmqcli_step(xmqcli_d117_783, 7, xmqcli_peek(p, i)); break;
+        case 784: s = xmqcli_step(xmqcli_d117_784, 7, xmqcli_peek(p, i)); break;
+        case 785: s = xmqcli_step(xmqcli_d117_785, 7, xmqcli_peek(p, i)); break;
+        case 786: s = xmqcli_step(xmqcli_d117_786, 7, xmqcli_peek(p, i)); break;
+        case 787: s = xmqcli_step(xmqcli_d117_787, 7, xmqcli_peek(p, i)); break;
+        case 788: s = xmqcli_step(xmqcli_d117_788, 7, xmqcli_peek(p, i)); break;
+        case 789: s = xmqcli_step(xmqcli_d117_789, 7, xmqcli_peek(p, i)); break;
+        case 790: s = xmqcli_step(xmqcli_d117_790, 7, xmqcli_peek(p, i)); break;
+        case 791: s = xmqcli_step(xmqcli_d117_791, 7, xmqcli_peek(p, i)); break;
+        case 792: s = xmqcli_step(xmqcli_d117_792, 7, xmqcli_peek(p, i)); break;
+        case 793: s = xmqcli_step(xmqcli_d117_793, 7, xmqcli_peek(p, i)); break;
+        case 794: s = xmqcli_step(xmqcli_d117_794, 7, xmqcli_peek(p, i)); break;
+        case 795: s = xmqcli_step(xmqcli_d117_795, 7, xmqcli_peek(p, i)); break;
+        case 796: s = xmqcli_step(xmqcli_d117_796, 7, xmqcli_peek(p, i)); break;
+        case 797: s = xmqcli_step(xmqcli_d117_797, 7, xmqcli_peek(p, i)); break;
+        case 798: s = xmqcli_step(xmqcli_d117_798, 7, xmqcli_peek(p, i)); break;
+        case 799: s = xmqcli_step(xmqcli_d117_799, 7, xmqcli_peek(p, i)); break;
+        case 800: s = xmqcli_step(xmqcli_d117_800, 7, xmqcli_peek(p, i)); break;
+        case 801: s = xmqcli_step(xmqcli_d117_801, 7, xmqcli_peek(p, i)); break;
+        case 802: s = xmqcli_step(xmqcli_d117_802, 8, xmqcli_peek(p, i)); break;
+        case 803: s = xmqcli_step(xmqcli_d117_803, 7, xmqcli_peek(p, i)); break;
+        case 804: s = xmqcli_step(xmqcli_d117_804, 7, xmqcli_peek(p, i)); break;
+        case 805: s = xmqcli_step(xmqcli_d117_805, 7, xmqcli_peek(p, i)); break;
+        case 806: s = xmqcli_step(xmqcli_d117_806, 7, xmqcli_peek(p, i)); break;
+        case 807: s = xmqcli_step(xmqcli_d117_807, 7, xmqcli_peek(p, i)); break;
+        case 808: s = xmqcli_step(xmqcli_d117_808, 7, xmqcli_peek(p, i)); break;
+        case 809: s = xmqcli_step(xmqcli_d117_809, 7, xmqcli_peek(p, i)); break;
+        case 810: s = xmqcli_step(xmqcli_d117_810, 7, xmqcli_peek(p, i)); break;
+        case 811: s = xmqcli_step(xmqcli_d117_811, 7, xmqcli_peek(p, i)); break;
+        case 812: s = xmqcli_step(xmqcli_d117_812, 7, xmqcli_peek(p, i)); break;
+        case 813: s = xmqcli_step(xmqcli_d117_813, 7, xmqcli_peek(p, i)); break;
+        case 814: s = xmqcli_step(xmqcli_d117_814, 7, xmqcli_peek(p, i)); break;
+        case 815: s = xmqcli_step(xmqcli_d117_815, 7, xmqcli_peek(p, i)); break;
+        case 816: s = xmqcli_step(xmqcli_d117_816, 7, xmqcli_peek(p, i)); break;
+        case 817: s = xmqcli_step(xmqcli_d117_817, 7, xmqcli_peek(p, i)); break;
+        case 818: s = xmqcli_step(xmqcli_d117_818, 7, xmqcli_peek(p, i)); break;
+        case 819: s = xmqcli_step(xmqcli_d117_819, 7, xmqcli_peek(p, i)); break;
+        case 820: s = xmqcli_step(xmqcli_d117_820, 7, xmqcli_peek(p, i)); break;
+        case 821: s = xmqcli_step(xmqcli_d117_821, 7, xmqcli_peek(p, i)); break;
+        case 822: s = xmqcli_step(xmqcli_d117_822, 7, xmqcli_peek(p, i)); break;
+        case 823: s = xmqcli_step(xmqcli_d117_823, 7, xmqcli_peek(p, i)); break;
+        case 824: s = xmqcli_step(xmqcli_d117_824, 7, xmqcli_peek(p, i)); break;
+        case 825: s = xmqcli_step(xmqcli_d117_825, 7, xmqcli_peek(p, i)); break;
         default: return -1;
         }
         if (s < 0) return -1;
@@ -8376,23 +8590,23 @@ static int xmqcli_predict108(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d110_0[] = {
+static const int xmqcli_d119_0[] = {
     9,10,1,13,13,1,32,32,1,1114112,1114112,2,
 };
-static const int xmqcli_d110_1[] = {
+static const int xmqcli_d119_1[] = {
     0,8,2,9,10,1,11,12,2,13,13,1,14,31,2,32,32,1,
     33,44,2,45,45,3,46,55295,2,57344,1114112,2,
 };
-static const int xmqcli_d110_3[] = {
+static const int xmqcli_d119_3[] = {
     0,8,4,9,10,2,11,12,4,13,13,2,14,31,4,32,32,2,
     33,104,4,105,105,5,106,55295,4,57344,1114111,4,1114112,1114112,2,
 };
-static const int xmqcli_d110_5[] = {
+static const int xmqcli_d119_5[] = {
     0,8,4,9,10,2,11,12,4,13,13,2,14,31,4,32,32,2,
     33,55295,4,57344,1114111,4,
 };
 // Predict the alternative of /9, 0 based, -1 if none matches.
-static int xmqcli_predict110(xmqcli_Parser *p)
+static int xmqcli_predict119(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8400,12 +8614,12 @@ static int xmqcli_predict110(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d110_0, 4, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d110_1, 10, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d119_0, 4, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d119_1, 10, xmqcli_peek(p, i)); break;
         case 2: return 1;
-        case 3: s = xmqcli_step(xmqcli_d110_3, 11, xmqcli_peek(p, i)); break;
+        case 3: s = xmqcli_step(xmqcli_d119_3, 11, xmqcli_peek(p, i)); break;
         case 4: return 0;
-        case 5: s = xmqcli_step(xmqcli_d110_5, 8, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d119_5, 8, xmqcli_peek(p, i)); break;
         default: return -1;
         }
         if (s < 0) return -1;
@@ -8413,27 +8627,27 @@ static int xmqcli_predict110(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d112_0[] = {
+static const int xmqcli_d121_0[] = {
     45,45,1,
 };
-static const int xmqcli_d112_1[] = {
+static const int xmqcli_d121_1[] = {
     0,8,2,11,12,2,14,31,2,33,44,2,45,45,3,46,103,2,
     104,104,4,105,107,2,108,108,5,109,120,2,121,121,4,122,122,4,
     123,55295,2,57344,1114111,2,
 };
-static const int xmqcli_d112_4[] = {
+static const int xmqcli_d121_4[] = {
     0,8,2,9,10,6,11,12,2,13,13,6,14,31,2,32,32,6,
     33,55295,2,57344,1114111,2,1114112,1114112,6,
 };
-static const int xmqcli_d112_5[] = {
+static const int xmqcli_d121_5[] = {
     0,119,2,120,120,7,121,55295,2,57344,1114112,2,
 };
-static const int xmqcli_d112_7[] = {
+static const int xmqcli_d121_7[] = {
     0,8,2,9,10,6,11,12,2,13,13,6,14,31,2,32,32,6,
     33,55295,2,57344,1114111,2,1114112,1114112,6,
 };
 // Predict the alternative of option, 0 based, -1 if none matches.
-static int xmqcli_predict112(xmqcli_Parser *p)
+static int xmqcli_predict121(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8441,14 +8655,14 @@ static int xmqcli_predict112(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d112_0, 1, xmqcli_peek(p, i)); break;
-        case 1: s = xmqcli_step(xmqcli_d112_1, 14, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d121_0, 1, xmqcli_peek(p, i)); break;
+        case 1: s = xmqcli_step(xmqcli_d121_1, 14, xmqcli_peek(p, i)); break;
         case 2: return 2;
         case 3: return 0;
-        case 4: s = xmqcli_step(xmqcli_d112_4, 9, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d112_5, 4, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d121_4, 9, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d121_5, 4, xmqcli_peek(p, i)); break;
         case 6: return 1;
-        case 7: s = xmqcli_step(xmqcli_d112_7, 9, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d121_7, 9, xmqcli_peek(p, i)); break;
         default: return -1;
         }
         if (s < 0) return -1;
@@ -8456,12 +8670,12 @@ static int xmqcli_predict112(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d113_0[] = {
+static const int xmqcli_d122_0[] = {
     0,8,1,11,12,1,14,31,1,33,44,1,46,103,1,104,105,2,
     106,107,1,108,108,3,109,120,1,121,122,2,123,55295,1,57344,1114111,1,
 };
 // Predict the alternative of gother, 0 based, -1 if none matches.
-static int xmqcli_predict113(xmqcli_Parser *p)
+static int xmqcli_predict122(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8469,7 +8683,7 @@ static int xmqcli_predict113(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d113_0, 12, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d122_0, 12, xmqcli_peek(p, i)); break;
         case 1: return 0;
         case 2: return 1;
         case 3: return 2;
@@ -8480,148 +8694,11 @@ static int xmqcli_predict113(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d114_0[] = {
+static const int xmqcli_d123_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,1114112,1114112,2,
 };
 // Predict the alternative of /22, 0 based, -1 if none matches.
-static int xmqcli_predict114(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d114_0, 9, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d115_0[] = {
-    0,8,1,11,12,1,14,31,1,33,119,1,120,120,2,121,55295,1,
-    57344,1114111,1,
-};
-// Predict the alternative of /18, 0 based, -1 if none matches.
-static int xmqcli_predict115(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d115_0, 7, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d117_0[] = {
-    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
-    33,55295,1,57344,1114111,1,1114112,1114112,2,
-};
-// Predict the alternative of /20, 0 based, -1 if none matches.
-static int xmqcli_predict117(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d117_0, 9, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d118_0[] = {
-    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
-    33,55295,1,57344,1114111,1,1114112,1114112,2,
-};
-// Predict the alternative of /19, 0 based, -1 if none matches.
-static int xmqcli_predict118(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d118_0, 9, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d120_0[] = {
-    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
-    33,55295,1,57344,1114111,1,1114112,1114112,2,
-};
-// Predict the alternative of /16, 0 based, -1 if none matches.
-static int xmqcli_predict120(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d120_0, 9, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d121_0[] = {
-    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
-    33,55295,1,57344,1114111,1,1114112,1114112,2,
-};
-// Predict the alternative of /15, 0 based, -1 if none matches.
-static int xmqcli_predict121(xmqcli_Parser *p)
-{
-    size_t i = p->pos;
-    int s = 0;
-    for (;;)
-    {
-        switch (s)
-        {
-        case 0: s = xmqcli_step(xmqcli_d121_0, 9, xmqcli_peek(p, i)); break;
-        case 1: return 0;
-        case 2: return 1;
-        default: return -1;
-        }
-        if (s < 0) return -1;
-        i++;
-    }
-}
-
-static const int xmqcli_d123_0[] = {
-    104,104,1,108,108,2,121,121,3,122,122,4,
-};
-// Predict the alternative of /13, 0 based, -1 if none matches.
 static int xmqcli_predict123(xmqcli_Parser *p)
 {
     size_t i = p->pos;
@@ -8630,7 +8707,144 @@ static int xmqcli_predict123(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d123_0, 4, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d123_0, 9, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d124_0[] = {
+    0,8,1,11,12,1,14,31,1,33,119,1,120,120,2,121,55295,1,
+    57344,1114111,1,
+};
+// Predict the alternative of /18, 0 based, -1 if none matches.
+static int xmqcli_predict124(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d124_0, 7, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d126_0[] = {
+    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
+    33,55295,1,57344,1114111,1,1114112,1114112,2,
+};
+// Predict the alternative of /20, 0 based, -1 if none matches.
+static int xmqcli_predict126(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d126_0, 9, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d127_0[] = {
+    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
+    33,55295,1,57344,1114111,1,1114112,1114112,2,
+};
+// Predict the alternative of /19, 0 based, -1 if none matches.
+static int xmqcli_predict127(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d127_0, 9, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d129_0[] = {
+    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
+    33,55295,1,57344,1114111,1,1114112,1114112,2,
+};
+// Predict the alternative of /16, 0 based, -1 if none matches.
+static int xmqcli_predict129(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d129_0, 9, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d130_0[] = {
+    0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
+    33,55295,1,57344,1114111,1,1114112,1114112,2,
+};
+// Predict the alternative of /15, 0 based, -1 if none matches.
+static int xmqcli_predict130(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d130_0, 9, xmqcli_peek(p, i)); break;
+        case 1: return 0;
+        case 2: return 1;
+        default: return -1;
+        }
+        if (s < 0) return -1;
+        i++;
+    }
+}
+
+static const int xmqcli_d132_0[] = {
+    104,104,1,108,108,2,121,121,3,122,122,4,
+};
+// Predict the alternative of /13, 0 based, -1 if none matches.
+static int xmqcli_predict132(xmqcli_Parser *p)
+{
+    size_t i = p->pos;
+    int s = 0;
+    for (;;)
+    {
+        switch (s)
+        {
+        case 0: s = xmqcli_step(xmqcli_d132_0, 4, xmqcli_peek(p, i)); break;
         case 1: return 0;
         case 2: return 3;
         case 3: return 2;
@@ -8642,11 +8856,11 @@ static int xmqcli_predict123(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d125_0[] = {
+static const int xmqcli_d134_0[] = {
     9,10,1,13,13,1,32,32,1,61,61,2,120,120,1,1114112,1114112,1,
 };
 // Predict the alternative of /12, 0 based, -1 if none matches.
-static int xmqcli_predict125(xmqcli_Parser *p)
+static int xmqcli_predict134(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8654,7 +8868,7 @@ static int xmqcli_predict125(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d125_0, 6, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d134_0, 6, xmqcli_peek(p, i)); break;
         case 1: return 1;
         case 2: return 0;
         default: return -1;
@@ -8664,15 +8878,15 @@ static int xmqcli_predict125(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d128_0[] = {
+static const int xmqcli_d137_0[] = {
     0,8,1,11,12,1,14,31,1,33,44,1,45,45,2,46,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d128_2[] = {
+static const int xmqcli_d137_2[] = {
     9,10,1,13,13,1,32,32,1,105,105,3,120,120,1,1114112,1114112,1,
 };
 // Predict the alternative of source, 0 based, -1 if none matches.
-static int xmqcli_predict128(xmqcli_Parser *p)
+static int xmqcli_predict137(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8680,9 +8894,9 @@ static int xmqcli_predict128(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d128_0, 7, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d137_0, 7, xmqcli_peek(p, i)); break;
         case 1: return 0;
-        case 2: s = xmqcli_step(xmqcli_d128_2, 6, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d137_2, 6, xmqcli_peek(p, i)); break;
         case 3: return 1;
         default: return -1;
         }
@@ -8691,56 +8905,56 @@ static int xmqcli_predict128(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d131_0[] = {
+static const int xmqcli_d140_0[] = {
     0,8,1,11,12,1,14,31,1,33,33,1,35,38,1,40,44,1,
     46,104,1,105,105,2,106,55295,1,57344,1114111,1,
 };
-static const int xmqcli_d131_2[] = {
+static const int xmqcli_d140_2[] = {
     0,8,1,11,12,1,14,31,1,33,119,1,120,120,3,121,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d131_3[] = {
+static const int xmqcli_d140_3[] = {
     0,8,1,11,12,1,14,31,1,33,108,1,109,109,4,110,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d131_4[] = {
+static const int xmqcli_d140_4[] = {
     0,8,1,11,12,1,14,31,1,33,107,1,108,108,5,109,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d131_5[] = {
+static const int xmqcli_d140_5[] = {
     0,8,1,11,12,1,14,31,1,33,57,1,58,58,6,59,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d131_6[] = {
+static const int xmqcli_d140_6[] = {
     0,8,7,11,12,7,14,31,7,33,45,7,46,46,8,47,55295,7,
     57344,1114111,7,
 };
-static const int xmqcli_d131_7[] = {
+static const int xmqcli_d140_7[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,55295,7,57344,1114111,7,
 };
-static const int xmqcli_d131_8[] = {
+static const int xmqcli_d140_8[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,104,7,105,105,10,106,55295,7,57344,1114111,7,
 };
-static const int xmqcli_d131_10[] = {
+static const int xmqcli_d140_10[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,119,7,120,120,11,121,55295,7,57344,1114111,7,
 };
-static const int xmqcli_d131_11[] = {
+static const int xmqcli_d140_11[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,108,7,109,109,12,110,55295,7,57344,1114111,7,
 };
-static const int xmqcli_d131_12[] = {
+static const int xmqcli_d140_12[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,107,7,108,108,13,109,55295,7,57344,1114111,7,
 };
-static const int xmqcli_d131_13[] = {
+static const int xmqcli_d140_13[] = {
     0,8,7,9,10,9,11,12,7,13,13,9,14,31,7,32,32,9,
     33,45,7,46,46,8,47,55295,7,57344,1114111,7,
 };
 // Predict the alternative of grammar, 0 based, -1 if none matches.
-static int xmqcli_predict131(xmqcli_Parser *p)
+static int xmqcli_predict140(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8748,20 +8962,20 @@ static int xmqcli_predict131(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d131_0, 10, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d140_0, 10, xmqcli_peek(p, i)); break;
         case 1: return 1;
-        case 2: s = xmqcli_step(xmqcli_d131_2, 7, xmqcli_peek(p, i)); break;
-        case 3: s = xmqcli_step(xmqcli_d131_3, 7, xmqcli_peek(p, i)); break;
-        case 4: s = xmqcli_step(xmqcli_d131_4, 7, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d131_5, 7, xmqcli_peek(p, i)); break;
-        case 6: s = xmqcli_step(xmqcli_d131_6, 7, xmqcli_peek(p, i)); break;
-        case 7: s = xmqcli_step(xmqcli_d131_7, 10, xmqcli_peek(p, i)); break;
-        case 8: s = xmqcli_step(xmqcli_d131_8, 12, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d140_2, 7, xmqcli_peek(p, i)); break;
+        case 3: s = xmqcli_step(xmqcli_d140_3, 7, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d140_4, 7, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d140_5, 7, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d140_6, 7, xmqcli_peek(p, i)); break;
+        case 7: s = xmqcli_step(xmqcli_d140_7, 10, xmqcli_peek(p, i)); break;
+        case 8: s = xmqcli_step(xmqcli_d140_8, 12, xmqcli_peek(p, i)); break;
         case 9: return 0;
-        case 10: s = xmqcli_step(xmqcli_d131_10, 12, xmqcli_peek(p, i)); break;
-        case 11: s = xmqcli_step(xmqcli_d131_11, 12, xmqcli_peek(p, i)); break;
-        case 12: s = xmqcli_step(xmqcli_d131_12, 12, xmqcli_peek(p, i)); break;
-        case 13: s = xmqcli_step(xmqcli_d131_13, 10, xmqcli_peek(p, i)); break;
+        case 10: s = xmqcli_step(xmqcli_d140_10, 12, xmqcli_peek(p, i)); break;
+        case 11: s = xmqcli_step(xmqcli_d140_11, 12, xmqcli_peek(p, i)); break;
+        case 12: s = xmqcli_step(xmqcli_d140_12, 12, xmqcli_peek(p, i)); break;
+        case 13: s = xmqcli_step(xmqcli_d140_13, 10, xmqcli_peek(p, i)); break;
         default: return -1;
         }
         if (s < 0) return -1;
@@ -8769,32 +8983,32 @@ static int xmqcli_predict131(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d134_0[] = {
+static const int xmqcli_d143_0[] = {
     0,8,1,11,12,1,14,31,1,33,33,1,35,38,1,40,44,1,
     46,46,2,47,55295,1,57344,1114111,1,
 };
-static const int xmqcli_d134_2[] = {
+static const int xmqcli_d143_2[] = {
     0,8,1,11,12,1,14,31,1,33,104,1,105,105,3,106,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d134_3[] = {
+static const int xmqcli_d143_3[] = {
     0,8,1,11,12,1,14,31,1,33,119,1,120,120,4,121,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d134_4[] = {
+static const int xmqcli_d143_4[] = {
     0,8,1,11,12,1,14,31,1,33,108,1,109,109,5,110,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d134_5[] = {
+static const int xmqcli_d143_5[] = {
     0,8,1,11,12,1,14,31,1,33,107,1,108,108,6,109,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d134_6[] = {
+static const int xmqcli_d143_6[] = {
     0,8,1,9,10,7,11,12,1,13,13,7,14,31,1,32,32,7,
     33,55295,1,57344,1114111,1,
 };
 // Predict the alternative of /28, 0 based, -1 if none matches.
-static int xmqcli_predict134(xmqcli_Parser *p)
+static int xmqcli_predict143(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8802,13 +9016,13 @@ static int xmqcli_predict134(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d134_0, 9, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d143_0, 9, xmqcli_peek(p, i)); break;
         case 1: return 0;
-        case 2: s = xmqcli_step(xmqcli_d134_2, 7, xmqcli_peek(p, i)); break;
-        case 3: s = xmqcli_step(xmqcli_d134_3, 7, xmqcli_peek(p, i)); break;
-        case 4: s = xmqcli_step(xmqcli_d134_4, 7, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d134_5, 7, xmqcli_peek(p, i)); break;
-        case 6: s = xmqcli_step(xmqcli_d134_6, 8, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d143_2, 7, xmqcli_peek(p, i)); break;
+        case 3: s = xmqcli_step(xmqcli_d143_3, 7, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d143_4, 7, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d143_5, 7, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d143_6, 8, xmqcli_peek(p, i)); break;
         case 7: return 1;
         default: return -1;
         }
@@ -8817,32 +9031,32 @@ static int xmqcli_predict134(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d136_0[] = {
+static const int xmqcli_d145_0[] = {
     0,8,1,11,12,1,14,31,1,33,45,1,46,46,2,47,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d136_2[] = {
+static const int xmqcli_d145_2[] = {
     0,8,1,11,12,1,14,31,1,33,104,1,105,105,3,106,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d136_3[] = {
+static const int xmqcli_d145_3[] = {
     0,8,1,11,12,1,14,31,1,33,119,1,120,120,4,121,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d136_4[] = {
+static const int xmqcli_d145_4[] = {
     0,8,1,11,12,1,14,31,1,33,108,1,109,109,5,110,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d136_5[] = {
+static const int xmqcli_d145_5[] = {
     0,8,1,11,12,1,14,31,1,33,107,1,108,108,6,109,55295,1,
     57344,1114111,1,
 };
-static const int xmqcli_d136_6[] = {
+static const int xmqcli_d145_6[] = {
     0,8,1,9,10,7,11,12,1,13,13,7,14,31,1,32,32,7,
     33,55295,1,57344,1114111,1,
 };
 // Predict the alternative of /27, 0 based, -1 if none matches.
-static int xmqcli_predict136(xmqcli_Parser *p)
+static int xmqcli_predict145(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8850,13 +9064,13 @@ static int xmqcli_predict136(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d136_0, 7, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d145_0, 7, xmqcli_peek(p, i)); break;
         case 1: return 0;
-        case 2: s = xmqcli_step(xmqcli_d136_2, 7, xmqcli_peek(p, i)); break;
-        case 3: s = xmqcli_step(xmqcli_d136_3, 7, xmqcli_peek(p, i)); break;
-        case 4: s = xmqcli_step(xmqcli_d136_4, 7, xmqcli_peek(p, i)); break;
-        case 5: s = xmqcli_step(xmqcli_d136_5, 7, xmqcli_peek(p, i)); break;
-        case 6: s = xmqcli_step(xmqcli_d136_6, 8, xmqcli_peek(p, i)); break;
+        case 2: s = xmqcli_step(xmqcli_d145_2, 7, xmqcli_peek(p, i)); break;
+        case 3: s = xmqcli_step(xmqcli_d145_3, 7, xmqcli_peek(p, i)); break;
+        case 4: s = xmqcli_step(xmqcli_d145_4, 7, xmqcli_peek(p, i)); break;
+        case 5: s = xmqcli_step(xmqcli_d145_5, 7, xmqcli_peek(p, i)); break;
+        case 6: s = xmqcli_step(xmqcli_d145_6, 8, xmqcli_peek(p, i)); break;
         case 7: return 1;
         default: return -1;
         }
@@ -8865,12 +9079,12 @@ static int xmqcli_predict136(xmqcli_Parser *p)
     }
 }
 
-static const int xmqcli_d139_0[] = {
+static const int xmqcli_d148_0[] = {
     0,8,1,9,10,2,11,12,1,13,13,2,14,31,1,32,32,2,
     33,55295,1,57344,1114111,1,
 };
 // Predict the alternative of /24, 0 based, -1 if none matches.
-static int xmqcli_predict139(xmqcli_Parser *p)
+static int xmqcli_predict148(xmqcli_Parser *p)
 {
     size_t i = p->pos;
     int s = 0;
@@ -8878,7 +9092,7 @@ static int xmqcli_predict139(xmqcli_Parser *p)
     {
         switch (s)
         {
-        case 0: s = xmqcli_step(xmqcli_d139_0, 8, xmqcli_peek(p, i)); break;
+        case 0: s = xmqcli_step(xmqcli_d148_0, 8, xmqcli_peek(p, i)); break;
         case 1: return 0;
         case 2: return 1;
         default: return -1;
@@ -8903,12 +9117,12 @@ static bool xmqcli_eat_xmq(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // ws
 static bool xmqcli_eat_ws(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_103(p, elem, attr)) return false; // /103
+    if (!xmqcli_eat_111(p, elem, attr)) return false; // /111
     return true;
 }
 
-// /103
-static bool xmqcli_eat_103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /111
+static bool xmqcli_eat_111(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -8974,18 +9188,18 @@ static bool xmqcli_eat_help(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
         free(v.data);
     }
-    if (!xmqcli_eat_38(p, elem, attr)) return false; // /38
+    if (!xmqcli_eat_39(p, elem, attr)) return false; // /39
     return true;
 }
 
-// /38
-static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /39
+static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict6(p))
     {
     case 0:
     {
-        if (!xmqcli_eat_37(p, elem, attr)) return false; // /37
+        if (!xmqcli_eat_38(p, elem, attr)) return false; // /38
         return true;
     }
     case 1:
@@ -8997,8 +9211,8 @@ static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /37
-static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /38
+static bool xmqcli_eat_38(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_eat_s(p, elem, attr)) return false; // s
     if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
@@ -9023,7 +9237,7 @@ static bool xmqcli_eat_arg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     case 1:
     {
-        if (!xmqcli_eat_93(p, elem, attr)) return false; // /93
+        if (!xmqcli_eat_101(p, elem, attr)) return false; // /101
         if (!xmqcli_eat_s(p, elem, attr)) return false; // s
         if (!xmqcli_eat_rawvalue(p, elem, attr)) return false; // rawvalue
         return true;
@@ -9048,7 +9262,7 @@ static bool xmqcli_eat_rawvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_2, 7, xmqcli_ascii_2, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "rawvalue", "not #9-#a, #d, space, '\042', #27, #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_eat_96(p, elem, attr)) return false; // /96
+        if (!xmqcli_eat_104(p, elem, attr)) return false; // /104
         return true;
     }
     default:
@@ -9056,8 +9270,8 @@ static bool xmqcli_eat_rawvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /96
-static bool xmqcli_eat_96(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /104
+static bool xmqcli_eat_104(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9083,7 +9297,7 @@ static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_5, 1, xmqcli_ascii_5, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "'\042'");
         p->pos++;
-        if (!xmqcli_eat_99(p, elem, attr)) return false; // /99
+        if (!xmqcli_eat_107(p, elem, attr)) return false; // /107
         if (!xmqcli_inset(xmqcli_set_5, 1, xmqcli_ascii_5, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "'\042'");
         p->pos++;
         return true;
@@ -9092,7 +9306,7 @@ static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
         if (!xmqcli_inset(xmqcli_set_6, 1, xmqcli_ascii_6, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "#27");
         p->pos++;
-        if (!xmqcli_eat_100(p, elem, attr)) return false; // /100
+        if (!xmqcli_eat_108(p, elem, attr)) return false; // /108
         if (!xmqcli_inset(xmqcli_set_6, 1, xmqcli_ascii_6, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "qvalue", "#27");
         p->pos++;
         return true;
@@ -9102,8 +9316,8 @@ static bool xmqcli_eat_qvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /100
-static bool xmqcli_eat_100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /108
+static bool xmqcli_eat_108(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9120,16 +9334,16 @@ static bool xmqcli_eat_100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /99
-static bool xmqcli_eat_99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /107
+static bool xmqcli_eat_107(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict13(p))
     {
     case 0:
     {
-        if (!xmqcli_eat_98(p, elem, attr)) return false; // /98
-        goto start; // /99
+        if (!xmqcli_eat_106(p, elem, attr)) return false; // /106
+        goto start; // /107
     }
     case 1:
     {
@@ -9140,8 +9354,8 @@ start:
     }
 }
 
-// /98
-static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /106
+static bool xmqcli_eat_106(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict14(p))
     {
@@ -9169,21 +9383,21 @@ static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // s
 static bool xmqcli_eat_s(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_102(p, elem, attr)) return false; // /102
+    if (!xmqcli_eat_110(p, elem, attr)) return false; // /110
     return true;
 }
 
-// /102
-static bool xmqcli_eat_102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /110
+static bool xmqcli_eat_110(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_0, 3, xmqcli_ascii_0, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "s", "whitespace");
     p->pos++;
-    if (!xmqcli_eat_101(p, elem, attr)) return false; // /101
+    if (!xmqcli_eat_109(p, elem, attr)) return false; // /109
     return true;
 }
 
-// /101
-static bool xmqcli_eat_101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /109
+static bool xmqcli_eat_109(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9199,8 +9413,8 @@ static bool xmqcli_eat_101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /93
-static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /101
+static bool xmqcli_eat_101(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "arg", "'-'");
     p->pos++;
@@ -9235,12 +9449,12 @@ static bool xmqcli_eat_bare(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_12, 8, xmqcli_ascii_12, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "bare", "not #9-#a, #d, space, '\042', #27, '-', #d800-#dfff");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_eat_97(p, elem, attr)) return false; // /97
+    if (!xmqcli_eat_105(p, elem, attr)) return false; // /105
     return true;
 }
 
-// /97
-static bool xmqcli_eat_97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /105
+static bool xmqcli_eat_105(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9260,12 +9474,12 @@ static bool xmqcli_eat_97(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // helpname
 static bool xmqcli_eat_helpname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_81(p, elem, attr)) return false; // /81
+    if (!xmqcli_eat_82(p, elem, attr)) return false; // /82
     return true;
 }
 
-// /81
-static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /82
+static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "helpname", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9384,7 +9598,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_ecopts(p, elem, attr)) return false; // ecopts
         if (!xmqcli_eat_s(p, elem, attr)) return false; // s
         if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
         else
@@ -9393,16 +9607,8 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
             if (!xmqcli_eat_arg(p, n, NULL)) return false;
         }
-        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
-        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
-        if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
-        else
-        {
-            xmqcli_flush(p);
-            void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
-            if (!xmqcli_eat_arg(p, n, NULL)) return false;
-        }
-        if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
+        if (!xmqcli_eat_ecopts(p, elem, attr)) return false; // ecopts
+        if (!xmqcli_eat_35(p, elem, attr)) return false; // /35
         return true;
     }
     case 3:
@@ -9422,7 +9628,7 @@ static bool xmqcli_eat_command(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             free(v.data);
         }
         if (!xmqcli_eat_copts(p, elem, attr)) return false; // copts
-        if (!xmqcli_eat_36(p, elem, attr)) return false; // /36
+        if (!xmqcli_eat_37(p, elem, attr)) return false; // /37
         return true;
     }
     case 4:
@@ -9467,6 +9673,14 @@ static bool xmqcli_eat_xslcommand(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr
 // xslarg
 static bool xmqcli_eat_xslarg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
+    if (!xmqcli_eat_84(p, elem, attr)) return false; // /84
+    return true;
+}
+
+// /84
+static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
     if (!xmqcli_eat_83(p, elem, attr)) return false; // /83
     return true;
 }
@@ -9474,21 +9688,13 @@ static bool xmqcli_eat_xslarg(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /83
 static bool xmqcli_eat_83(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
-    if (!xmqcli_eat_82(p, elem, attr)) return false; // /82
-    return true;
-}
-
-// /82
-static bool xmqcli_eat_82(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
-{
 start:
     switch (xmqcli_predict30(p))
     {
     case 0:
     {
         if (!xmqcli_eat_fchar(p, elem, attr)) return false; // fchar
-        goto start; // /82
+        goto start; // /83
     }
     case 1:
     {
@@ -9511,12 +9717,12 @@ static bool xmqcli_eat_fchar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // xsl
 static bool xmqcli_eat_xsl(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_80(p, elem, attr)) return false; // /80
+    if (!xmqcli_eat_81(p, elem, attr)) return false; // /81
     return true;
 }
 
-// /80
-static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /81
+static bool xmqcli_eat_81(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xsl", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -9530,14 +9736,14 @@ static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /36
-static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /37
+static bool xmqcli_eat_37(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict34(p))
     {
     case 0:
     {
-        if (!xmqcli_eat_35(p, elem, attr)) return false; // /35
+        if (!xmqcli_eat_36(p, elem, attr)) return false; // /36
         return true;
     }
     case 1:
@@ -9549,8 +9755,8 @@ static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /35
-static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /36
+static bool xmqcli_eat_36(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_eat_s(p, elem, attr)) return false; // s
     if (attr) { if (!xmqcli_eat_file(p, elem, attr)) return false; }
@@ -9567,20 +9773,20 @@ static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // copts
 static bool xmqcli_eat_copts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_85(p, elem, attr)) return false; // /85
+    if (!xmqcli_eat_86(p, elem, attr)) return false; // /86
     return true;
 }
 
-// /85
-static bool xmqcli_eat_85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /86
+static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict37(p))
     {
     case 0:
     {
-        if (!xmqcli_eat_84(p, elem, attr)) return false; // /84
-        goto start; // /85
+        if (!xmqcli_eat_85(p, elem, attr)) return false; // /85
+        goto start; // /86
     }
     case 1:
     {
@@ -9591,8 +9797,8 @@ start:
     }
 }
 
-// /84
-static bool xmqcli_eat_84(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /85
+static bool xmqcli_eat_85(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_eat_s(p, elem, attr)) return false; // s
     if (attr) { if (!xmqcli_eat_coption(p, elem, attr)) return false; }
@@ -9612,7 +9818,7 @@ static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     {
     case 0:
     {
-        if (!xmqcli_eat_86(p, elem, attr)) return false; // /86
+        if (!xmqcli_eat_87(p, elem, attr)) return false; // /87
         if (attr) { if (!xmqcli_eat_name(p, elem, attr)) return false; }
         else
         {
@@ -9627,7 +9833,7 @@ static bool xmqcli_eat_coption(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
             if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
             free(v.data);
         }
-        if (!xmqcli_eat_88(p, elem, attr)) return false; // /88
+        if (!xmqcli_eat_89(p, elem, attr)) return false; // /89
         return true;
     }
     case 1:
@@ -9683,7 +9889,7 @@ static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_20, 8, xmqcli_ascii_20, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cother", "not #9-#a, #d, space, '-', 'c', 'n'-'p', #d800-#dfff");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_eat_90(p, elem, attr)) return false; // /90
+        if (!xmqcli_eat_91(p, elem, attr)) return false; // /91
         return true;
     }
     case 1:
@@ -9691,7 +9897,7 @@ static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
         if (!xmqcli_inset(xmqcli_set_21, 2, xmqcli_ascii_21, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cother", "'c', 'n'-'p'");
         xmqcli_char(p, elem, attr, p->in[p->pos]);
         p->pos++;
-        if (!xmqcli_eat_92(p, elem, attr)) return false; // /92
+        if (!xmqcli_eat_93(p, elem, attr)) return false; // /93
         return true;
     }
     default:
@@ -9699,16 +9905,16 @@ static bool xmqcli_eat_cother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /92
-static bool xmqcli_eat_92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /93
+static bool xmqcli_eat_93(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
-    if (!xmqcli_eat_91(p, elem, attr)) return false; // /91
+    if (!xmqcli_eat_92(p, elem, attr)) return false; // /92
     return true;
 }
 
-// /91
-static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /92
+static bool xmqcli_eat_92(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict42(p))
@@ -9716,7 +9922,7 @@ start:
     case 0:
     {
         if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
-        goto start; // /91
+        goto start; // /92
     }
     case 1:
     {
@@ -9736,8 +9942,8 @@ static bool xmqcli_eat_schar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /90
-static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /91
+static bool xmqcli_eat_91(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
     switch (xmqcli_predict44(p))
@@ -9745,7 +9951,7 @@ start:
     case 0:
     {
         if (!xmqcli_eat_schar(p, elem, attr)) return false; // schar
-        goto start; // /90
+        goto start; // /91
     }
     case 1:
     {
@@ -9761,12 +9967,12 @@ static bool xmqcli_eat_cshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "cshort", "'-'");
     p->pos++;
-    if (!xmqcli_eat_89(p, elem, attr)) return false; // /89
+    if (!xmqcli_eat_90(p, elem, attr)) return false; // /90
     return true;
 }
 
-// /89
-static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /90
+static bool xmqcli_eat_90(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict46(p))
     {
@@ -9803,14 +10009,14 @@ static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /88
-static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /89
+static bool xmqcli_eat_89(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     switch (xmqcli_predict47(p))
     {
     case 0:
     {
-        if (!xmqcli_eat_87(p, elem, attr)) return false; // /87
+        if (!xmqcli_eat_88(p, elem, attr)) return false; // /88
         return true;
     }
     case 1:
@@ -9822,8 +10028,8 @@ static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /87
-static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /88
+static bool xmqcli_eat_88(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "coption", "'='");
     p->pos++;
@@ -9856,7 +10062,7 @@ static bool xmqcli_eat_optvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     case 1:
     {
-        if (!xmqcli_eat_95(p, elem, attr)) return false; // /95
+        if (!xmqcli_eat_103(p, elem, attr)) return false; // /103
         return true;
     }
     default:
@@ -9864,8 +10070,8 @@ static bool xmqcli_eat_optvalue(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /95
-static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /103
+static bool xmqcli_eat_103(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9888,12 +10094,12 @@ static bool xmqcli_eat_name(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_26, 2, xmqcli_ascii_26, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name", "'A'-'Z', 'a'-'z'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_eat_94(p, elem, attr)) return false; // /94
+    if (!xmqcli_eat_102(p, elem, attr)) return false; // /102
     return true;
 }
 
-// /94
-static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /102
+static bool xmqcli_eat_102(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     // Greedy loop over a character table.
     for (;;)
@@ -9910,8 +10116,8 @@ static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /86
-static bool xmqcli_eat_86(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /87
+static bool xmqcli_eat_87(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "coption", "'-'");
     p->pos++;
@@ -10039,12 +10245,12 @@ static bool xmqcli_eat_first(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // load
 static bool xmqcli_eat_load(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_79(p, elem, attr)) return false; // /79
+    if (!xmqcli_eat_80(p, elem, attr)) return false; // /80
     return true;
 }
 
-// /79
-static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /80
+static bool xmqcli_eat_80(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "load", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10061,17 +10267,244 @@ static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// name2
-static bool xmqcli_eat_name2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /35
+static bool xmqcli_eat_35(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_eat_78(p, elem, attr)) return false; // /78
+    switch (xmqcli_predict63(p))
+    {
+    case 0:
+    {
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_arg(p, elem, attr)) return false; }
+        else
+        {
+            xmqcli_flush(p);
+            void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "arg") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "arg");
+            if (!xmqcli_eat_arg(p, n, NULL)) return false;
+        }
+        if (!xmqcli_eat_ecopts(p, elem, attr)) return false; // ecopts
+        return true;
+    }
+    case 1:
+    {
+        if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+        if (attr) { if (!xmqcli_eat_withopt(p, elem, attr)) return false; }
+        else
+        {
+            xmqcli_flush(p);
+            void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "option") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "option");
+            if (!xmqcli_eat_withopt(p, n, NULL)) return false;
+        }
+        if (!xmqcli_eat_ecopts(p, elem, attr)) return false; // ecopts
+        return true;
+    }
+    default:
+        return xmqcli_fail(p, "command", NULL);
+    }
+}
+
+// ecopts
+static bool xmqcli_eat_ecopts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_eat_95(p, elem, attr)) return false; // /95
     return true;
 }
 
-// /78
-static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /95
+static bool xmqcli_eat_95(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'r'");
+start:
+    switch (xmqcli_predict65(p))
+    {
+    case 0:
+    {
+        if (!xmqcli_eat_94(p, elem, attr)) return false; // /94
+        goto start; // /95
+    }
+    case 1:
+    {
+        return true;
+    }
+    default:
+        return xmqcli_fail(p, "ecopts", NULL);
+    }
+}
+
+// /94
+static bool xmqcli_eat_94(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_eat_s(p, elem, attr)) return false; // s
+    if (p->pos + 12 <= p->n && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 0]) && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 1]) && xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, p->in[p->pos + 2]) && xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, p->in[p->pos + 3]) && xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, p->in[p->pos + 4]) && xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, p->in[p->pos + 5]) && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 6]) && xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, p->in[p->pos + 7]) && xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, p->in[p->pos + 8]) && xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, p->in[p->pos + 9]) && xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, p->in[p->pos + 10]) && xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, p->in[p->pos + 11])) return xmqcli_fail(p, "ecopts", "not '-' '-' 'w' 'i' 't' 'h' '-' 'f' 'i' 'l' 'e' '='");
+    if (p->pos + 17 <= p->n && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 0]) && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 1]) && xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, p->in[p->pos + 2]) && xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, p->in[p->pos + 3]) && xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, p->in[p->pos + 4]) && xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, p->in[p->pos + 5]) && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 6]) && xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, p->in[p->pos + 7]) && xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, p->in[p->pos + 8]) && xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, p->in[p->pos + 9]) && xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, p->in[p->pos + 10]) && xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, p->in[p->pos + 11]) && xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, p->in[p->pos + 12]) && xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, p->in[p->pos + 13]) && xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, p->in[p->pos + 14]) && xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, p->in[p->pos + 15]) && xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, p->in[p->pos + 16])) return xmqcli_fail(p, "ecopts", "not '-' '-' 'w' 'i' 't' 'h' '-' 't' 'e' 'x' 't' '-' 'f' 'i' 'l' 'e' '='");
+    if (attr) { if (!xmqcli_eat_coption(p, elem, attr)) return false; }
+    else
+    {
+        xmqcli_flush(p);
+        void *n = elem ? XMQ_ADD_ELEMENT(p->ctx, elem, "option") : XMQ_ADD_ROOT_ELEMENT(p->ctx, "option");
+        if (!xmqcli_eat_coption(p, n, NULL)) return false;
+    }
+    return true;
+}
+
+// withopt
+static bool xmqcli_eat_withopt(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_eat_98(p, elem, attr)) return false; // /98
+    if (attr) { if (!xmqcli_eat_withname(p, elem, attr)) return false; }
+    else
+    {
+        xmqcli_Buf v = {0};
+        xmqcli_buf_add(&v, "", 0);
+        if (!xmqcli_eat_withname(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "name"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute name occurs more than once on an element");
+        }
+        if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "name", v.data, v.len);
+        free(v.data);
+    }
+    if (!xmqcli_inset(xmqcli_set_25, 1, xmqcli_ascii_25, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withopt", "'='");
+    p->pos++;
+    if (attr) { if (!xmqcli_eat_optvalue(p, elem, attr)) return false; }
+    else
+    {
+        xmqcli_Buf v = {0};
+        xmqcli_buf_add(&v, "", 0);
+        if (!xmqcli_eat_optvalue(p, elem, &v)) { free(v.data); return false; }
+        if (elem && XMQ_HAS_ATTRIBUTE(p->ctx, elem, "value"))
+        {
+            free(v.data);
+            return xmqcli_fail_dynamic(p, "dynamic error D02: the attribute value occurs more than once on an element");
+        }
+        if (elem) XMQ_SET_ATTRIBUTE(p->ctx, elem, "value", v.data, v.len);
+        free(v.data);
+    }
+    return true;
+}
+
+// withname
+static bool xmqcli_eat_withname(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    switch (xmqcli_predict68(p))
+    {
+    case 0:
+    {
+        if (!xmqcli_eat_99(p, elem, attr)) return false; // /99
+        return true;
+    }
+    case 1:
+    {
+        if (!xmqcli_eat_100(p, elem, attr)) return false; // /100
+        return true;
+    }
+    default:
+        return xmqcli_fail(p, "withname", NULL);
+    }
+}
+
+// /100
+static bool xmqcli_eat_100(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'w'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'h'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'x'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'f'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'l'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /99
+static bool xmqcli_eat_99(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'w'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'h'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'f'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'l'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withname", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /98
+static bool xmqcli_eat_98(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withopt", "'-'");
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "withopt", "'-'");
+    p->pos++;
+    return true;
+}
+
+// name2
+static bool xmqcli_eat_name2(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_eat_79(p, elem, attr)) return false; // /79
+    return true;
+}
+
+// /79
+static bool xmqcli_eat_79(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'e'");
@@ -10101,16 +10534,16 @@ static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name2", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10119,66 +10552,66 @@ static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // name1
 static bool xmqcli_eat_name1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict65(p))
+    switch (xmqcli_predict74(p))
     {
     case 0:
-    {
-        if (!xmqcli_eat_66(p, elem, attr)) return false; // /66
-        return true;
-    }
-    case 1:
     {
         if (!xmqcli_eat_67(p, elem, attr)) return false; // /67
         return true;
     }
-    case 2:
+    case 1:
     {
         if (!xmqcli_eat_68(p, elem, attr)) return false; // /68
         return true;
     }
-    case 3:
+    case 2:
     {
         if (!xmqcli_eat_69(p, elem, attr)) return false; // /69
         return true;
     }
-    case 4:
+    case 3:
     {
         if (!xmqcli_eat_70(p, elem, attr)) return false; // /70
         return true;
     }
-    case 5:
+    case 4:
     {
         if (!xmqcli_eat_71(p, elem, attr)) return false; // /71
         return true;
     }
-    case 6:
+    case 5:
     {
         if (!xmqcli_eat_72(p, elem, attr)) return false; // /72
         return true;
     }
-    case 7:
+    case 6:
     {
         if (!xmqcli_eat_73(p, elem, attr)) return false; // /73
         return true;
     }
-    case 8:
+    case 7:
     {
         if (!xmqcli_eat_74(p, elem, attr)) return false; // /74
         return true;
     }
-    case 9:
+    case 8:
     {
         if (!xmqcli_eat_75(p, elem, attr)) return false; // /75
         return true;
     }
-    case 10:
+    case 9:
     {
         if (!xmqcli_eat_76(p, elem, attr)) return false; // /76
         return true;
     }
-    case 11:
+    case 10:
     {
         if (!xmqcli_eat_77(p, elem, attr)) return false; // /77
+        return true;
+    }
+    case 11:
+    {
+        if (!xmqcli_eat_78(p, elem, attr)) return false; // /78
         return true;
     }
     default:
@@ -10186,8 +10619,8 @@ static bool xmqcli_eat_name1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /77
-static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /78
+static bool xmqcli_eat_78(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10201,13 +10634,13 @@ static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'c'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
@@ -10219,55 +10652,55 @@ static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /76
-static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /77
+static bool xmqcli_eat_77(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
@@ -10282,25 +10715,25 @@ static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /75
-static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /76
+static bool xmqcli_eat_76(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
@@ -10324,8 +10757,8 @@ static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /74
-static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /75
+static bool xmqcli_eat_75(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10333,7 +10766,7 @@ static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'v'");
+    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'v'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
@@ -10342,7 +10775,7 @@ static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
@@ -10351,10 +10784,10 @@ static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /73
-static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /74
+static bool xmqcli_eat_74(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'v'");
+    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'v'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
@@ -10363,7 +10796,7 @@ static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
@@ -10372,7 +10805,7 @@ static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
@@ -10381,13 +10814,13 @@ static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /72
-static bool xmqcli_eat_72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /73
+static bool xmqcli_eat_73(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
@@ -10399,31 +10832,31 @@ static bool xmqcli_eat_72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'f'");
+    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'f'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /71
-static bool xmqcli_eat_71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /72
+static bool xmqcli_eat_72(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'f'");
+    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'f'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
@@ -10444,8 +10877,8 @@ static bool xmqcli_eat_71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /70
-static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /71
+static bool xmqcli_eat_71(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10462,7 +10895,52 @@ static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'c'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /70
+static bool xmqcli_eat_70(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'l'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'n'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10483,31 +10961,10 @@ static bool xmqcli_eat_69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'n'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'i'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10516,22 +10973,28 @@ static bool xmqcli_eat_69(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /68
 static bool xmqcli_eat_68(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
+    if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'l'");
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
+    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'e'");
+    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10549,177 +11012,147 @@ static bool xmqcli_eat_67(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'-'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'r'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'o'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'t'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    return true;
-}
-
-// /66
-static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
-{
-    if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'a'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_33, 1, xmqcli_ascii_33, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name1", "'d'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
     return true;
 }
 
 // name0
 static bool xmqcli_eat_name0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict78(p))
+    switch (xmqcli_predict87(p))
     {
     case 0:
-    {
-        if (!xmqcli_eat_39(p, elem, attr)) return false; // /39
-        return true;
-    }
-    case 1:
     {
         if (!xmqcli_eat_40(p, elem, attr)) return false; // /40
         return true;
     }
-    case 2:
+    case 1:
     {
         if (!xmqcli_eat_41(p, elem, attr)) return false; // /41
         return true;
     }
-    case 3:
+    case 2:
     {
         if (!xmqcli_eat_42(p, elem, attr)) return false; // /42
         return true;
     }
-    case 4:
+    case 3:
     {
         if (!xmqcli_eat_43(p, elem, attr)) return false; // /43
         return true;
     }
-    case 5:
+    case 4:
     {
         if (!xmqcli_eat_44(p, elem, attr)) return false; // /44
         return true;
     }
-    case 6:
+    case 5:
     {
         if (!xmqcli_eat_45(p, elem, attr)) return false; // /45
         return true;
     }
-    case 7:
+    case 6:
     {
         if (!xmqcli_eat_46(p, elem, attr)) return false; // /46
         return true;
     }
-    case 8:
+    case 7:
     {
         if (!xmqcli_eat_47(p, elem, attr)) return false; // /47
         return true;
     }
-    case 9:
+    case 8:
     {
         if (!xmqcli_eat_48(p, elem, attr)) return false; // /48
         return true;
     }
-    case 10:
+    case 9:
     {
         if (!xmqcli_eat_49(p, elem, attr)) return false; // /49
         return true;
     }
-    case 11:
+    case 10:
     {
         if (!xmqcli_eat_50(p, elem, attr)) return false; // /50
         return true;
     }
-    case 12:
+    case 11:
     {
         if (!xmqcli_eat_51(p, elem, attr)) return false; // /51
         return true;
     }
-    case 13:
+    case 12:
     {
         if (!xmqcli_eat_52(p, elem, attr)) return false; // /52
         return true;
     }
-    case 14:
+    case 13:
     {
         if (!xmqcli_eat_53(p, elem, attr)) return false; // /53
         return true;
     }
-    case 15:
+    case 14:
     {
         if (!xmqcli_eat_54(p, elem, attr)) return false; // /54
         return true;
     }
-    case 16:
+    case 15:
     {
         if (!xmqcli_eat_55(p, elem, attr)) return false; // /55
         return true;
     }
-    case 17:
+    case 16:
     {
         if (!xmqcli_eat_56(p, elem, attr)) return false; // /56
         return true;
     }
-    case 18:
+    case 17:
     {
         if (!xmqcli_eat_57(p, elem, attr)) return false; // /57
         return true;
     }
-    case 19:
+    case 18:
     {
         if (!xmqcli_eat_58(p, elem, attr)) return false; // /58
         return true;
     }
-    case 20:
+    case 19:
     {
         if (!xmqcli_eat_59(p, elem, attr)) return false; // /59
         return true;
     }
-    case 21:
+    case 20:
     {
         if (!xmqcli_eat_60(p, elem, attr)) return false; // /60
         return true;
     }
-    case 22:
+    case 21:
     {
         if (!xmqcli_eat_61(p, elem, attr)) return false; // /61
         return true;
     }
-    case 23:
+    case 22:
     {
         if (!xmqcli_eat_62(p, elem, attr)) return false; // /62
         return true;
     }
-    case 24:
+    case 23:
     {
         if (!xmqcli_eat_63(p, elem, attr)) return false; // /63
         return true;
     }
-    case 25:
+    case 24:
     {
         if (!xmqcli_eat_64(p, elem, attr)) return false; // /64
         return true;
     }
-    case 26:
+    case 25:
     {
         if (!xmqcli_eat_65(p, elem, attr)) return false; // /65
+        return true;
+    }
+    case 26:
+    {
+        if (!xmqcli_eat_66(p, elem, attr)) return false; // /66
         return true;
     }
     default:
@@ -10727,19 +11160,19 @@ static bool xmqcli_eat_name0(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
 }
 
-// /65
-static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /66
+static bool xmqcli_eat_66(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
@@ -10748,22 +11181,73 @@ static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /65
+static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'f'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10772,25 +11256,19 @@ static bool xmqcli_eat_65(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /64
 static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'f'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
+    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'k'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
@@ -10799,22 +11277,22 @@ static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -10822,51 +11300,6 @@ static bool xmqcli_eat_64(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 
 // /63
 static bool xmqcli_eat_63(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
-{
-    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'k'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    return true;
-}
-
-// /62
-static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -10895,16 +11328,16 @@ static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -10916,34 +11349,34 @@ static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /61
-static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /62
+static bool xmqcli_eat_62(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -10961,7 +11394,7 @@ static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
@@ -10973,16 +11406,16 @@ static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -10994,25 +11427,52 @@ static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /60
-static bool xmqcli_eat_60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /61
+static bool xmqcli_eat_61(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
+    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /60
+static bool xmqcli_eat_60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11030,25 +11490,13 @@ static bool xmqcli_eat_60(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /59
 static bool xmqcli_eat_59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -11057,43 +11505,28 @@ static bool xmqcli_eat_59(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /58
 static bool xmqcli_eat_58(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    return true;
-}
-
-// /57
-static bool xmqcli_eat_57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
-{
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_22, 1, xmqcli_ascii_22, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'c'");
@@ -11105,31 +11538,31 @@ static bool xmqcli_eat_57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /56
-static bool xmqcli_eat_56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /57
+static bool xmqcli_eat_57(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /55
-static bool xmqcli_eat_55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /56
+static bool xmqcli_eat_56(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
+    if (!xmqcli_inset(xmqcli_set_40, 1, xmqcli_ascii_40, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'b'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'w'");
+    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'w'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_19, 1, xmqcli_ascii_19, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'s'");
@@ -11141,8 +11574,8 @@ static bool xmqcli_eat_55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /54
-static bool xmqcli_eat_54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /55
+static bool xmqcli_eat_55(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -11153,8 +11586,8 @@ static bool xmqcli_eat_54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /53
-static bool xmqcli_eat_53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /54
+static bool xmqcli_eat_54(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -11171,29 +11604,29 @@ static bool xmqcli_eat_53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /52
-static bool xmqcli_eat_52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /53
+static bool xmqcli_eat_53(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /51
-static bool xmqcli_eat_51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /52
+static bool xmqcli_eat_52(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
@@ -11207,34 +11640,34 @@ static bool xmqcli_eat_51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_16, 1, xmqcli_ascii_16, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'p'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
+    if (!xmqcli_inset(xmqcli_set_41, 1, xmqcli_ascii_41, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'u'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /50
-static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /51
+static bool xmqcli_eat_51(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'k'");
+    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'k'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11243,7 +11676,7 @@ static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_47, 1, xmqcli_ascii_47, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'z'");
@@ -11255,10 +11688,10 @@ static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /49
-static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /50
+static bool xmqcli_eat_50(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11273,13 +11706,13 @@ static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11291,10 +11724,10 @@ static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /48
-static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /49
+static bool xmqcli_eat_49(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11309,25 +11742,25 @@ static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
@@ -11342,10 +11775,10 @@ static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /47
-static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /48
+static bool xmqcli_eat_48(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11360,7 +11793,7 @@ static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_34, 1, xmqcli_ascii_34, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
+    if (!xmqcli_inset(xmqcli_set_38, 1, xmqcli_ascii_38, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'r'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
@@ -11369,10 +11802,10 @@ static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
@@ -11381,10 +11814,10 @@ static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /46
-static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /47
+static bool xmqcli_eat_47(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11399,7 +11832,7 @@ static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_23, 1, xmqcli_ascii_23, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'n'");
@@ -11414,10 +11847,10 @@ static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /45
-static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /46
+static bool xmqcli_eat_46(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11426,7 +11859,7 @@ static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_14, 1, xmqcli_ascii_14, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'e'");
@@ -11435,16 +11868,16 @@ static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
 }
 
-// /44
-static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /45
+static bool xmqcli_eat_45(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11453,13 +11886,13 @@ static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
+    if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'y'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_32, 1, xmqcli_ascii_32, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'a'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
@@ -11468,10 +11901,10 @@ static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /43
-static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /44
+static bool xmqcli_eat_44(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11495,10 +11928,10 @@ static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /42
-static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /43
+static bool xmqcli_eat_43(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11510,13 +11943,40 @@ static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    return true;
+}
+
+// /42
+static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+{
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    xmqcli_char(p, elem, attr, p->in[p->pos]);
+    p->pos++;
+    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -11525,34 +11985,7 @@ static bool xmqcli_eat_42(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /41
 static bool xmqcli_eat_41(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'-'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_13, 1, xmqcli_ascii_13, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'h'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
-    xmqcli_char(p, elem, attr, p->in[p->pos]);
-    p->pos++;
-    return true;
-}
-
-// /40
-static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
-{
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11564,7 +11997,7 @@ static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'l'");
@@ -11573,10 +12006,10 @@ static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     return true;
 }
 
-// /39
-static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
+// /40
+static bool xmqcli_eat_40(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
+    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'t'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_24, 1, xmqcli_ascii_24, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'o'");
@@ -11588,10 +12021,10 @@ static bool xmqcli_eat_39(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
+    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "name0", "'q'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     return true;
@@ -11608,7 +12041,7 @@ static bool xmqcli_eat_sources(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /7
 static bool xmqcli_eat_7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict107(p))
+    switch (xmqcli_predict116(p))
     {
     case 0:
     {
@@ -11627,7 +12060,7 @@ static bool xmqcli_eat_7(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /6
 static bool xmqcli_eat_6(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict108(p))
+    switch (xmqcli_predict117(p))
     {
     case 0:
     {
@@ -11668,7 +12101,7 @@ static bool xmqcli_eat_opts(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 static bool xmqcli_eat_9(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict110(p))
+    switch (xmqcli_predict119(p))
     {
     case 0:
     {
@@ -11701,7 +12134,7 @@ static bool xmqcli_eat_8(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // option
 static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict112(p))
+    switch (xmqcli_predict121(p))
     {
     case 0:
     {
@@ -11769,7 +12202,7 @@ static bool xmqcli_eat_option(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // gother
 static bool xmqcli_eat_gother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict113(p))
+    switch (xmqcli_predict122(p))
     {
     case 0:
     {
@@ -11803,7 +12236,7 @@ static bool xmqcli_eat_gother(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /22
 static bool xmqcli_eat_22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict114(p))
+    switch (xmqcli_predict123(p))
     {
     case 0:
     {
@@ -11822,7 +12255,7 @@ static bool xmqcli_eat_22(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /18
 static bool xmqcli_eat_18(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict115(p))
+    switch (xmqcli_predict124(p))
     {
     case 0:
     {
@@ -11857,7 +12290,7 @@ static bool xmqcli_eat_21(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 static bool xmqcli_eat_20(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict117(p))
+    switch (xmqcli_predict126(p))
     {
     case 0:
     {
@@ -11877,7 +12310,7 @@ start:
 static bool xmqcli_eat_19(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict118(p))
+    switch (xmqcli_predict127(p))
     {
     case 0:
     {
@@ -11905,7 +12338,7 @@ static bool xmqcli_eat_17(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 static bool xmqcli_eat_16(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict120(p))
+    switch (xmqcli_predict129(p))
     {
     case 0:
     {
@@ -11925,7 +12358,7 @@ start:
 static bool xmqcli_eat_15(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict121(p))
+    switch (xmqcli_predict130(p))
     {
     case 0:
     {
@@ -11953,7 +12386,7 @@ static bool xmqcli_eat_gshort(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /13
 static bool xmqcli_eat_13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict123(p))
+    switch (xmqcli_predict132(p))
     {
     case 0:
     {
@@ -11971,7 +12404,7 @@ static bool xmqcli_eat_13(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     }
     case 2:
     {
-        if (!xmqcli_inset(xmqcli_set_37, 1, xmqcli_ascii_37, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gshort", "'y'");
+        if (!xmqcli_inset(xmqcli_set_39, 1, xmqcli_ascii_39, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "gshort", "'y'");
         p->pos++;
         xmqcli_text(p, elem, attr, "yes", 3);
         return true;
@@ -12000,7 +12433,7 @@ static bool xmqcli_eat_14(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /12
 static bool xmqcli_eat_12(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict125(p))
+    switch (xmqcli_predict134(p))
     {
     case 0:
     {
@@ -12051,7 +12484,7 @@ static bool xmqcli_eat_10(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // source
 static bool xmqcli_eat_source(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict128(p))
+    switch (xmqcli_predict137(p))
     {
     case 0:
     {
@@ -12094,7 +12527,7 @@ static bool xmqcli_eat_30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_11, 1, xmqcli_ascii_11, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "input", "'-'");
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "input", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "input", "'i'");
     p->pos++;
     return true;
 }
@@ -12102,7 +12535,7 @@ static bool xmqcli_eat_30(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // grammar
 static bool xmqcli_eat_grammar(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict131(p))
+    switch (xmqcli_predict140(p))
     {
     case 0:
     {
@@ -12134,13 +12567,13 @@ static bool xmqcli_eat_29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
     if (!xmqcli_inset(xmqcli_set_52, 1, xmqcli_ascii_52, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'.'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "ixmlfile", "'l'");
@@ -12152,7 +12585,7 @@ static bool xmqcli_eat_29(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 // /28
 static bool xmqcli_eat_28(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    switch (xmqcli_predict134(p))
+    switch (xmqcli_predict143(p))
     {
     case 0:
     {
@@ -12180,7 +12613,7 @@ static bool xmqcli_eat_26(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 static bool xmqcli_eat_27(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict136(p))
+    switch (xmqcli_predict145(p))
     {
     case 0:
     {
@@ -12217,7 +12650,7 @@ static bool xmqcli_eat_25(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 static bool xmqcli_eat_24(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
 start:
-    switch (xmqcli_predict139(p))
+    switch (xmqcli_predict148(p))
     {
     case 0:
     {
@@ -12236,13 +12669,13 @@ start:
 // /23
 static bool xmqcli_eat_23(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
-    if (!xmqcli_inset(xmqcli_set_36, 1, xmqcli_ascii_36, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'i'");
+    if (!xmqcli_inset(xmqcli_set_35, 1, xmqcli_ascii_35, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'i'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'x'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'m'");
     xmqcli_char(p, elem, attr, p->in[p->pos]);
     p->pos++;
     if (!xmqcli_inset(xmqcli_set_15, 1, xmqcli_ascii_15, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "grammar", "'l'");
@@ -12259,9 +12692,9 @@ static bool xmqcli_eat_1(xmqcli_Parser *p, void *elem, xmqcli_Buf *attr)
 {
     if (!xmqcli_inset(xmqcli_set_18, 1, xmqcli_ascii_18, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'x'");
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_42, 1, xmqcli_ascii_42, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'m'");
+    if (!xmqcli_inset(xmqcli_set_43, 1, xmqcli_ascii_43, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'m'");
     p->pos++;
-    if (!xmqcli_inset(xmqcli_set_44, 1, xmqcli_ascii_44, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'q'");
+    if (!xmqcli_inset(xmqcli_set_45, 1, xmqcli_ascii_45, xmqcli_peek(p, p->pos))) return xmqcli_fail(p, "xmq", "'q'");
     p->pos++;
     return true;
 }

@@ -1,0 +1,30 @@
+!DOCTYPE = html
+html {
+    head {
+        meta(http-equiv = content-type
+             content    = 'text/html; charset=UTF-8')
+        title = libxmq
+        link(type = text/css
+             href = resources/style.css
+             rel  = stylesheet)
+        link(type = text/css
+             href = resources/xmq.css
+             rel  = stylesheet)
+        script(type = text/javascript
+               src  = resources/code.js) = ''
+        meta(name          = viewport
+             content       = width=device-width
+             initial-scale = 1.0)
+    }
+    body(onload='checkBackgroundSetting();')
+    {
+       form(method  = post
+            enctype = multipart/form-data
+            action  = view?light)
+       {
+           input(name = file
+                 type = file
+                 onchange = 'form.submit()')
+        }
+    }
+}
