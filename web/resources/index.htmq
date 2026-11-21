@@ -1,617 +1,1036 @@
 !DOCTYPE = html
-html {
+html(lang = en)
+{
     head {
-        meta(http-equiv = content-type
-             content    = 'text/html; charset=UTF-8')
-        title = libxmq
-        link(type = text/css
-             href = resources/style.css
-             rel  = stylesheet)
-        link(type = text/css
-             href = resources/xmq.css
-             rel  = stylesheet)
-        script(type = text/javascript
-               src  = resources/code.js) = ''
-        meta(name          = viewport
-             content       = width=device-width
-             initial-scale = 1.0)
+        meta(charset = UTF-8)
+        title = 'xmq · readable XML, HTML and JSON'
+        meta(name    = viewport
+             content = 'width=device-width, initial-scale=1')
+        meta(name    = description
+             content = 'XMQ is a human friendly notation that captures exactly the content of XML, HTML and JSON. The xmq tool converts, pretty prints, queries, transforms and parses any text with IXML.')
+        meta(name    = color-scheme
+             content = 'light dark')
+        // Apply a forced light/dark theme before the first paint.
+        script = '''try { var t = localStorage.getItem("xmq-theme"); if (t === "light" || t === "dark") document.documentElement.classList.add(t); } catch (e) {}'''
+        link(rel  = stylesheet
+             href = resources/xmq.css)
+        link(rel  = stylesheet
+             href = resources/site.css)
+        script(src = resources/code.js) = ''
     }
-    body(onload = 'checkBackgroundSetting();')
+    body(onload = 'siteInit();')
     {
-        h1 = 'XMQ - a configuration language, data-storage language, logging language compatible with  xml/html and json. Can also parse any text using IXML.'
-        i  = ( 'by Fredrik Öhrström (last updated '
-               &DATE;
-               ') oehrstroem@gmail.com' )
-        br
-        form(id      = upload
-             method  = post
-             enctype = multipart/form-data
-             action  = view?light)
+        a(class = skip
+          href  = '#main') = 'Skip to content'
+        header(class = top)
         {
-            button(type    = button
-                   title   = 'Set functional cookie background=dark'
-                   onClick = 'goDark();') = 'Dark Mode'
-            ' '
-            button(type    = button
-                   title   = 'Set functional cookie background=light'
-                   onClick = 'goLight();') = 'Light Mode'
-            ' '
-            input(name     = uploadFile
-                  id       = uploadFile
-                  type     = file
-                  onchange = 'form.submit()'
-                  hidden)
-            button(type    = button
-                   title   = 'Max 200KB, logs cleared after 30 days.'
-                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload your own XML/HTML/JSON and render as XMQ'
-        }
-        div {
-            a(href = https://github.com/libxmq/xmq/releases/latest) = '[Download Executables]'
-            &nbsp;
-            '  '
-            a(href = https://github.com/libxmq/xmq) = [Github]
-            &nbsp;
-            '  '
-            a(href = doxygen/html/index.html) = [C-api]
-            &nbsp;
-            '  '
-            a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = [Javadoc]
-            '  '
-            a(href = xmq.pdf) = [Grammar]
-            &nbsp;
-            '  '
-            a(href = https://github.com/orgs/libxmq/discussions) = [Forum/Discussions]
-            br
-        }
-        &SHIPORDER_XMQ;
-        ' '
-        pre(class = 'xmq xmq_light w40') = ( &SHIPORDER_XML;
-                                             &#10; )
-        p = 'The XMQ format is easier for a human to read and write than XML/HTML yet it
-             captures exactly the XML/HTML content. It can always be safely pretty printed
-             without introducing significant whitespace. The file-suffix HTMQ is used
-             when working with HTML in the XMQ format. XMQ also maps to JSON.'
-        &WEBCONFIG_XMQ;
-        ' '
-        pre(class = 'xmq xmq_light w40') = &WEBCONFIG_JSON;
-        br
-        div(id = ixmldiv) {
-            p
-            'You can test the IXML parsing right here! Enter the grammar to the left and the input to be parsed t the right.'
-            form(id      = useixml
-                 method  = post
-                 enctype = multipart/form-data
-                 action  = useixml?light)
+            nav(class      = wrap
+                aria-label = Main)
             {
-               input(id = how
-                     type = hidden
-                     name = how
-                     value = to-xmq)
-               textarea(name = grammar
-                        class = 'ixml xmq xmq_light w40'
-                        style = 'width: 40%') = "S = S, '+', M | M.
-                                                 M = M, '*', T | T.
-                                                 T = [N]+."
-               ' '
-               textarea(name = content
-                        class = 'ixml xmq xmq_light w40'
-                        style = 'width: 40%') = "1+2*3"
+                a(class = logo
+                  href  = '#top') {
+                    span = x
+                    'mq'
+                }
+                a(href = '#try') = Playground
+                a(href = '#examples') = Examples
+                a(href = '#learn') = Learn
+                a(href = xmq.pdf) = Grammar
+                a(href = https://github.com/libxmq/xmq) = GitHub
+                button(id      = themebutton
+                       class   = theme
+                       type    = button
+                       onclick = 'siteCycleTheme();') = 'Theme: auto'
             }
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                   onClick =  "goParse('to-xmq');") = 'Parse to XMQ'
-                  ' '
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                  onClick = "goParse('to-xml');") = 'Parse to XML'
-                  ' '
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                  onClick = "goParse('to-json');") = 'Parse to JSON'
-                  ' '
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                  onClick = "goParse('view-parse');") = 'View parse'
-                  ' '
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                  onClick = "goParse('debug-parse');") = 'Debug parse'
-                  ' '
-            button(type    = button
-                   title   = 'Parse text using IXML grammar'
-                  onClick = "goParse('trace-parse');") = 'Trace parse'
-            p
         }
-        div {
-            'What does it look like? Click on the examples: '
-            br
-            a(href = resources/index.htmq_xmq.html) = '[this page as htmq]'
-            '  '
-            a(href = resources/pom.xml_xmq.html) = [pom]
-            '  '
-            a(href = resources/rss.xml_xmq.html) = [rss]
-            '  '
-            a(href = resources/diagonal.svg_xmq.html) = [svg]
-            '  '
-            a(href = resources/ibmpcjr_cart.xml_xmq.html) = '[mame cart driver]'
-            '  '
-            a(href = resources/android_layout_main.xml_xmq.html) = '[android layout]'
-            '  '
-            a(href = resources/jabber.xml_xmq.html) = [jabber]
-            '  '
-            a(href = resources/docx_example.xml_xmq.html) = [docx]
-            '  '
-            a(href = resources/odt_example.xml_xmq.html) = [odt]
-            '  '
-            a(href = resources/instances.json_xmq.html) = [json]
-            '  '
-            a(href = resources/xsd_example.xsd_xmq.html) = '[xsd schema definition]'
-            '  '
-            a(href = resources/todos.xslt_xmq.html) = '[xslt transform]'
-            '  '
-            a(href = resources/soap_response.xml_xmq.html) = '[soap response]'
-            '  '
-            a(href = resources/java_pojo.xml_xmq.html) = '[java pojo jackson]'
-            '  '
-            a(href = resources/saml_idp_metadata.xml_xmq.html) = '[saml idp metadata]'
-            '  '
-            a(href = resources/saml_authn_response.xml_xmq.html) = '[saml authn_response]'
-            '  '
-            a(href = resources/SEQLXML26.xml_xmq.html) = '[WIPO ST.26_sequence listing xmq]'
-            '  '
-            a(href = resources/thresholds.xml_xmq.html) = '[Imagemagick thresholds xmq]'
-            '  '
-            a(href = resources/crazy.xml_xmq.html) = '[Heartbeat Cluster Configuration xmq]'
-        }
-        a(href = languages.html) = 'An exposé of existing markup/data-storage/xml-shorthand languages.'
-        p {
-            'Upload your own xml/html/json file and render it as xmq on-line: '
-            button(type    = button
-                   title   = 'Max 200KB, logs cleared after 30 days.'
-                   onclick = '''document.getElementById('uploadFile').click()''') = 'Upload XML/HTML/JSON'
-        }
-        p {
-            'You can use the standalone '
-            a(href = https://github.com/libxmq/xmq/releases/latest)
-            {
-                i = xmq
-            }
-            ' tool to convert between xmq/xml/htmq/html/json  or include '
-            a(href = https://github.com/libxmq/xmq/releases/latest) = xmq.h/xmq.c
-            ' to use xmq directly from your program or in the future link to a prebuilt libxmq.
-             With the xmq tool you can syntax highlight and pretty print XMQ (and thus indirectly XML and HTML).
-             You can convert between XMQ/HTMQ and XML/HTML/JSON, you can apply XSLT transformations, replace
-             entities with other XMQ/XML/JSON or quoted content, write raw text output and more...'
-        }
-        pre = '''########## Pretty print as xmq using colors on terminal
-                 xmq pom.xml
-                 xmq data.json
-                 xmq index.html
-                 cat rss.xml | xmq
-
-                 ########## Convert to xmq and store in file
-                 xmq pom.xml > pom.xmq
-                 xmq data.json > data.xmq
-
-                 ########## Use the built in pager.
-                 xmq pom.xml pa
-                 cat data.json | xmq pa
-                 xmq index.html delete //script delete //style pa
-                 curl -s 'https://dummyjson.com/todos?limit=20'  | xmq pa
-
-                 ########## View in your default browser.
-                 xmq docbook.xml br
-                 xmq data.json br
-                 curl https://slashdot.org | xmq delete //script delete //style br
-
-                 ########## Convert to xml,html or json
-                 xmq pom.xmq to-xml > pom.xml
-                 xmq data.xmq to-json > data.json
-                 xmq index.htmq to-html > index.html
-                 xmq rest.json to-xml > rest.xml
-
-                 # Parse any input with a suitable ixml grammar. Output xmq/xml/json etc.
-                 # Check https://invisiblexml.org
-                 xmq --ixml=grammars/core/tsv.ixml input.txt
-
-                 # List all hyperlinks (a elements with children) in a web page.
-                 xmq index.html select //a
-
-                 # Compose a new web page with all the images from the source html.
-                 # And immediately view it using your default browser.
-                 xmq page.html select //img add-root body add-root html to-html br
-
-                 # List all href attributes in a web page.
-                 xmq page.html select //a/@href
-
-                 # Replace entities with strings you can also --with-text-file=abc
-                 # which inserts the content safely quoted, or as DOM --with-file=abc.xml
-                 # where the file abc.xml has to be parseable (XML/HTL/XMQ/HTMQ/JSON).
-                 xmq template.htmq replace-entity DATE 2024-01-11 render-html --theme=lightbg > page.html
-                 xmq test.htmq replace-entity INFO --with-file=data.json render-html --theme=lightbg > page.html
-
-                 # Apply an xslq transform to some json to generate a html page.
-                 xmq todos.json transform todos.xslq to-html > list.html
-
-                 # Apply an xslq transform to generate plain text, ie keep only the text nodes.
-                 xmq todos.json transform todosframed.xslq to-text > list.txt
-
-                 # Print xmq compact form on a single line.
-                 xmq pom.xml to-xmq --compact
-
-                 # Print DOM as clines (eg. /html/body="Hello")
-                 # useful for feeding into grep and other shell tools.
-                 xmq pom.xml to-clines
-
-                 # Render content for tex typesetting.
-                 xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex
-
-                 # Compose a new DOM from xmq snippets and write the xml
-                 xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml'''
-        h2  = Background
-        p   = 'XML can be human readable/editable if it is used for markup of longer
-               human language texts, ie books, articles and other documents etc. In
-               these cases the xml-tags represent a minor part of the whole xml-file.'
-        p   = 'However XML is often used for data storage and
-               configuration files (eg pom.xml).  In such files the
-               xml-tags represent a major part of the whole
-               xml-file. This makes the data storage and config files
-               hard to read and edit directly by hand. Today, the tags
-               are a major part of html files as well, which is one
-               reason why html files are hard to read and edit.'
-        p   = 'The other reason why XML/HTML is hard to edit by hand is because they
-               have a complicated approach to dealing with significant
-               whitespace. The truth is that you cannot always pretty print the
-               XML/HTML code as you would like since it might introduce significant
-               white space. In fact proper pretty printing even requires a full
-               understanding of the DTD/XSD/CSS!'
-        h2  = Solution
-        p   = 'XMQ solves the verbosity of tags by using braces to avoid
-               closing xml-tags and parentheses to surround the
-               attributes. XMQ solves the whitespace confusion by
-               requiring all intended whitespace to be quoted. There are a lot
-               of details, of course, but let us begin with an example.'
-        p {
-            'Download/build the xmq executable for your platform, then
-             download: '
-            &nbsp;
-            a(href = resources/shiporder.xmq) = shiporder.xmq
-            &nbsp;
-            &nbsp;
-            a(href = resources/shiporder.xml) = shiporder.xml
-            ' (Note that the xml is manually pretty printed.)'
-        }
-        p {
-            'To convert the XML to XMQ and pretty print with colors:'
-            br
-            span(class = code) = 'xmq shiporder.xml'
-        }
-        p {
-            'Use the page command if the source file is large:'
-            br
-            span(class = code) = 'xmq shiporder.xml page'
-            br
-            'Press q or esc to exit pager. You can shorten the command to just pa.'
-        }
-        p {
-            'Use the browse command to start your default browser to view the content:'
-            br
-            span(class = code) = 'xmq shiporder.xml browse'
-            br
-            'You can shorten the command to just br. Set the environement variable
-             XMQ_THEME=darkbg or XMQ_THEME=lightbg to background color or XMQ_THEME=mono for no color.'
-        }
-        p {
-            'Use shell redirection to store the XMQ output in a file:'
-            br
-            span(class = code) = 'xmq shiporder.xml to-xmq > test.xmq'
-            br
-            '(The to-xmq command is the default command and can be left out here.)'
-        }
-        p {
-            'To convert the XMQ to XML:'
-            br
-            span(class = code) = 'xmq shiporder.xmq to-xml > test.xml'
-        }
-        &SHIPORDER_XMQ;
-        ' '
-        pre(class = 'xmq xmq_light w40') = ( &SHIPORDER_XML;
-                                             &#10; )
-        p = 'The hierarchical style should look familiar, but note:'
-        ul {
-            li = 'XMQ files are always UTF8 encoded.'
-            li = 'Safe values after = can be stored as plain text (see 889923 container), no quoting needed!'
-            li = '''Unsafe values (after =) with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
-            li = 'Two single quotes always mean the empty string (see sailing).'
-            li = 'In multiline quotes, the incidental indentation is removed (see address).'
-            li = ''''
-                 Quotes containing quotes are quoted using n+1 single quotes (see coord).
-                 Note that two quotes are reserved for the empty string. You will therefore see a single
-                 quote ' or three quotes ''' or more quotes.
-                 ''''
-            li = 'Single line comments use // and multi line comments use /* */.'
-            li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
-        }
-        p  = 'This means that you can quote any block of text (except invisible spaces near newlines) with enough single quotes and you
-              can comment any block of text with enough slashes.'
-        p  = 'The incidental indentation removal and n+1 quotes ideas originated in the expert group
-              for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey and Brian Goetz.
-              The seed to the idea to separate desired whitespace from incidental(accidental) whitespace
-              was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.
-              Earlier languages supporting indentation removal are: YAML and HJSON.'
-        h2 = 'XMQ as a configuration file'
-        p {
-            'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
-             then the first iteration of your config file can be as simple as this:'
-            &nbsp;
-            &nbsp;
-            a(href = resources/config.xmq) = config.xmq
-        }
-        &CONFIG_XMQ;
-        p = 'Every xmq file can be printed in compact form on a single line where whitespace between tokens is minimized.'
-        &CONFIG_COMPACT_XMQ;
-        p = 'The only permitted whitespace between tokens are space (ascii 32) and newlines (ascii 10 or 13 or 13 10).
-             All other whitespace (including tabs) must be quoted. Let us take a look at shiporder in compact form.
-             (Any linebreaks below are due to your browser.)'
-        &SHIPORDER_COMPACT_XMQ;
-        p {
-            'You can see character entities like '
-            xmqE = '&#10;'
-            ' for newlines and compound values like '
-            xmqEK = address
-            '='
-            xmqCP = '('
-            xmqQ  = '''
-                    '...'
-                    '''
-            xmqE  = '&#10;'
-            xmqQ  = '''
-                    '...'
-                    '''
-            xmqCP = ')'
-            ' which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'
-        }
-        p = 'You can read the config file using a simple C api. (There is also a Java api and future
-             programming languages APIs will be coming.)'
-        pre(class = 'xmq xmq_light w40')
+        main(id = main)
         {
-            'XMQDoc *doc = '
-            xmqQ = xmqNewDoc
-            '();
-             ok = '
-            xmqQ = xmqParseFile
-            '(doc, "config.xmq, "myconf"); assert(ok);
-             server = '
-            xmqQ = xmqGetString
-            '(doc, "/myconf/server");
-             port = '
-            xmqQ = xmqGetInt
-            '(doc, "/myconf/port");
-             file = '
-            xmqQ = xmqGetString
-            '(doc, "/myconf/file");
-             cron = '
-            xmqQ = xmqGetString
-            '(doc, "/myconf/cron");'
+            // ---------------------------------------------------------------- Hero
+            section(id    = top
+                    class = 'band alt hero')
+            {
+                div(class = 'wrap cols')
+                {
+                    div {
+                        div(class = kicker) = 'xml · html · json · ixml'
+                        h1(class = tagline) {
+                            'Readable'
+                            br
+                            em = markup
+                            br
+                            'and data.'
+                        }
+                        p(class = lead) = 'XMQ is a human friendly notation that captures exactly the content
+                                           of XML and HTML, and maps to JSON. It can always be pretty printed
+                                           safely, because all intended whitespace is quoted.'
+                        p = 'Use it as a configuration language, for data storage, for logging, or simply
+                             to read that huge pom.xml. The xmq tool can also parse any text with IXML.'
+                        div(class = actions)
+                        {
+                            a(class = 'btn primary'
+                              href  = https://github.com/libxmq/xmq/releases/latest) = 'Download xmq'
+                            a(class = btn
+                              href  = '#try') = 'Try it in the browser'
+                        }
+                    }
+                    div {
+                        div(class = demo)
+                        {
+                            div {
+                                div(class = label) {
+                                    b = shiporder.xmq
+                                    'rendered by xmq'
+                                }
+                                &SHIPORDER_XMQ;
+                            }
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Features
+            section(class = band)
+            {
+                div(class = wrap)
+                {
+                    div(class = features)
+                    {
+                        div(class = feature) {
+                            span(class = icon) = '{ }'
+                            h2 = 'Exactly XML, without the noise'
+                            p  = 'Braces replace closing tags and parentheses hold the attributes.
+                                  Every XML/HTML document round trips to XMQ and back.'
+                        }
+                        div(class = feature) {
+                            span(class = icon) = '␣'
+                            h2 = 'Explicit whitespace'
+                            p  = 'All intended whitespace is quoted, so pretty printing never
+                                  changes the content. No more guessing what is significant.'
+                        }
+                        div(class = feature) {
+                            span(class = icon) = '[ ]'
+                            h2 = 'Speaks JSON'
+                            p  = 'Convert JSON to XMQ, work on it, write it back. Clean XML
+                                  like pom.xml becomes clean JSON.'
+                        }
+                        div(class = feature) {
+                            span(class = icon) = '::='
+                            h2 = 'Parse anything with IXML'
+                            p {
+                                'Give xmq an '
+                                a(href = https://invisiblexml.org) = 'Invisible XML'
+                                ' grammar and any text, csv or log file becomes a tree you can query and convert.'
+                            }
+                        }
+                        div(class = feature) {
+                            span(class = icon) = '$_'
+                            h2 = 'A sharp command line'
+                            p  = 'Pretty print with colors, page, browse, select and delete with XPath,
+                                  replace entities and run XSLT transforms, all in one pipeline.'
+                        }
+                        div(class = feature) {
+                            span(class = icon) = '.h'
+                            h2 = 'Embeddable library'
+                            p {
+                                'Drop xmq.h/xmq.c into your C program, or use the Java library. See the '
+                                a(href = doxygen/html/index.html) = C-api
+                                ' and the '
+                                a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = Javadoc
+                                '.'
+                            }
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Compare
+            section(class = 'band alt')
+            {
+                div(class = wrap)
+                {
+                    h2 = 'Same content, less noise'
+                    p(class = lead) = 'The XML on the left and the XMQ on the right are the same document.
+                                       The XMQ is what you get from: xmq shiporder.xml'
+                    div(class = 'demo split')
+                    {
+                        div {
+                            div(class = label) {
+                                b = shiporder.xml
+                                'the original'
+                            }
+                            pre(class = 'xmq xmq_light') = ( &SHIPORDER_XML;
+                                                             &#10; )
+                        }
+                        div {
+                            div(class = label) {
+                                b = shiporder.xmq
+                                'xmq shiporder.xml'
+                            }
+                            &SHIPORDER_XMQ;
+                        }
+                    }
+                    p(class = lead) = 'XMQ also maps to JSON. Here is a config file in XMQ and the JSON from: xmq webconfig.xmq to-json'
+                    div(class = 'demo split')
+                    {
+                        div {
+                            div(class = label) {
+                                b = webconfig.xmq
+                            }
+                            &WEBCONFIG_XMQ;
+                        }
+                        div {
+                            div(class = label) {
+                                b = webconfig.json
+                                'xmq webconfig.xmq to-json'
+                            }
+                            pre(class = 'xmq xmq_light') = &WEBCONFIG_JSON;
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Playground
+            section(id    = try
+                    class = 'band play')
+            {
+                div(class = wrap)
+                {
+                    h2 = 'Try it yourself'
+                    p(class = lead) = 'Write an IXML grammar on the left and some input on the right, then parse it.
+                                       Or upload your own XML, HTML or JSON file and see it as XMQ.'
+                    div(id = ixmldiv)
+                    {
+                        form(id      = useixml
+                             method  = post
+                             enctype = multipart/form-data
+                             action  = useixml?light)
+                        {
+                            input(id    = how
+                                  type  = hidden
+                                  name  = how
+                                  value = to-xmq)
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    label(class = label
+                                          for   = grammar) {
+                                        b = grammar.ixml
+                                        'editable'
+                                    }
+                                    textarea(id         = grammar
+                                             name       = grammar
+                                             spellcheck = false) = "S = S, '+', M | M.
+                                                                    M = M, '*', T | T.
+                                                                    T = [N]+."
+                                }
+                                div {
+                                    label(class = label
+                                          for   = content) {
+                                        b = input.txt
+                                        'editable'
+                                    }
+                                    textarea(id         = content
+                                             name       = content
+                                             spellcheck = false) = "1+2*3"
+                                }
+                            }
+                        }
+                        div(class = buttons)
+                        {
+                            button(type    = button
+                                   class   = 'btn primary'
+                                   onclick = "siteParse('to-xmq');") = 'Parse to XMQ'
+                            button(type    = button
+                                   class   = btn
+                                   onclick = "siteParse('to-xml');") = 'to XML'
+                            button(type    = button
+                                   class   = btn
+                                   onclick = "siteParse('to-json');") = 'to JSON'
+                            button(type    = button
+                                   class   = btn
+                                   title   = 'Show the parse tree'
+                                   onclick = "siteParse('view-parse');") = 'View parse'
+                            button(type    = button
+                                   class   = btn
+                                   onclick = "siteParse('debug-parse');") = 'Debug parse'
+                            button(type    = button
+                                   class   = btn
+                                   onclick = "siteParse('trace-parse');") = 'Trace parse'
+                        }
+                    }
+                    h3 = 'Render your own file'
+                    form(id      = upload
+                         method  = post
+                         enctype = multipart/form-data
+                         action  = view?light)
+                    {
+                        input(name     = uploadFile
+                              id       = uploadFile
+                              type     = file
+                              onchange = 'siteSubmit(this.form);'
+                              hidden)
+                        button(type    = button
+                               class   = btn
+                               title   = 'Max 200KB, logs cleared after 30 days.'
+                               onclick = 'siteUpload();') = 'Upload XML/HTML/JSON and render as XMQ'
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Examples
+            section(id    = examples
+                    class = 'band alt')
+            {
+                div(class = wrap)
+                {
+                    h2 = 'What does it look like?'
+                    p(class = lead) = 'Real world files rendered as XMQ. Each page can also show the original.'
+                    ul(class = chips)
+                    {
+                        li { a(href = resources/index.htmq_xmq.html) = 'this page as htmq' }
+                        li { a(href = resources/pom.xml_xmq.html) = 'maven pom' }
+                        li { a(href = resources/rss.xml_xmq.html) = 'rss feed' }
+                        li { a(href = resources/diagonal.svg_xmq.html) = svg }
+                        li { a(href = resources/ibmpcjr_cart.xml_xmq.html) = 'mame cart driver' }
+                        li { a(href = resources/android_layout_main.xml_xmq.html) = 'android layout' }
+                        li { a(href = resources/jabber.xml_xmq.html) = jabber }
+                        li { a(href = resources/docx_example.xml_xmq.html) = docx }
+                        li { a(href = resources/odt_example.xml_xmq.html) = odt }
+                        li { a(href = resources/instances.json_xmq.html) = json }
+                        li { a(href = resources/xsd_example.xsd_xmq.html) = 'xsd schema' }
+                        li { a(href = resources/todos.xslt_xmq.html) = 'xslt transform' }
+                        li { a(href = resources/soap_response.xml_xmq.html) = 'soap response' }
+                        li { a(href = resources/java_pojo.xml_xmq.html) = 'java pojo jackson' }
+                        li { a(href = resources/saml_idp_metadata.xml_xmq.html) = 'saml idp metadata' }
+                        li { a(href = resources/saml_authn_response.xml_xmq.html) = 'saml authn response' }
+                        li { a(href = resources/SEQLXML26.xml_xmq.html) = 'WIPO ST.26 sequence listing' }
+                        li { a(href = resources/thresholds.xml_xmq.html) = 'imagemagick thresholds' }
+                        li { a(href = resources/crazy.xml_xmq.html) = 'heartbeat cluster config' }
+                    }
+                    p {
+                        'Curious how XMQ compares? Read '
+                        a(href = languages.html) = 'an exposé of existing markup/data-storage/xml-shorthand languages'
+                        '.'
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Cookbook
+            section(id    = cookbook
+                    class = band)
+            {
+                div(class = wrap)
+                {
+                    h2 = 'The xmq cookbook'
+                    p(class = lead) = 'The xmq tool converts between XMQ/HTMQ and XML/HTML/JSON, syntax highlights and pretty prints,
+                                       applies XSLT transforms, replaces entities, writes raw text and more.
+                                       Click a topic to see the commands.'
+                    div(class = foldtools)
+                    {
+                        button(type    = button
+                               onclick = "siteFoldAll('cookbook', true);") = 'Open all'
+                        button(type    = button
+                               onclick = "siteFoldAll('cookbook', false);") = 'Close all'
+                    }
+                    details(class = fold
+                            open)
+                    {
+                        summary {
+                            h3 = 'Pretty print, page and browse'
+                            span(class = teaser) = 'Colors in the terminal, a built in pager, or your web browser.'
+                        }
+                        div(class = body) {
+                            div(class = demo) { div {
+                            pre(class = cook) = '''# Pretty print as xmq using colors on terminal
+                                                   xmq pom.xml
+                                                   xmq data.json
+                                                   xmq index.html
+                                                   cat rss.xml | xmq
+
+                                                   # Use the built in pager.
+                                                   xmq pom.xml pa
+                                                   cat data.json | xmq pa
+                                                   xmq index.html delete //script delete //style pa
+                                                   curl -s 'https://dummyjson.com/todos?limit=20' | xmq pa
+
+                                                   # View in your default browser.
+                                                   xmq docbook.xml br
+                                                   xmq data.json br
+                                                   curl https://slashdot.org | xmq delete //script delete //style br'''
+                            } }
+                        }
+                    }
+                    details(class = fold)
+                    {
+                        summary {
+                            h3 = 'Convert between formats'
+                            span(class = teaser) = 'xmq, xml, html, json, compact xmq, clines and tex.'
+                        }
+                        div(class = body) {
+                            div(class = demo) { div {
+                            pre(class = cook) = '''# Convert to xmq and store in file
+                                                   xmq pom.xml > pom.xmq
+                                                   xmq data.json > data.xmq
+
+                                                   # Convert to xml, html or json
+                                                   xmq pom.xmq to-xml > pom.xml
+                                                   xmq data.xmq to-json > data.json
+                                                   xmq index.htmq to-html > index.html
+                                                   xmq rest.json to-xml > rest.xml
+
+                                                   # Print xmq compact form on a single line.
+                                                   xmq pom.xml to-xmq --compact
+
+                                                   # Print DOM as clines (eg. /html/body="Hello")
+                                                   # useful for feeding into grep and other shell tools.
+                                                   xmq pom.xml to-clines
+
+                                                   # Render content for tex typesetting.
+                                                   xmq input.xmq render-tex > input_as_tex.tex ; xelatex input_as_tex.tex'''
+                            } }
+                        }
+                    }
+                    details(class = fold)
+                    {
+                        summary {
+                            h3 = 'Query and edit with XPath'
+                            span(class = teaser) = 'Select, delete and compose new documents.'
+                        }
+                        div(class = body) {
+                            div(class = demo) { div {
+                            pre(class = cook) = '''# List all hyperlinks (a elements with children) in a web page.
+                                                   xmq index.html select //a
+
+                                                   # List all href attributes in a web page.
+                                                   xmq page.html select //a/@href
+
+                                                   # Compose a new web page with all the images from the source html.
+                                                   # And immediately view it using your default browser.
+                                                   xmq page.html select //img add-root body add-root html to-html br
+
+                                                   # Compose a new DOM from xmq snippets and write the xml
+                                                   xmq -z add weight=2.5ton add speed=123km/h add-root car to-xml'''
+                            } }
+                        }
+                    }
+                    details(class = fold)
+                    {
+                        summary {
+                            h3 = 'Templates and transforms'
+                            span(class = teaser) = 'Replace entities with text or DOM, apply xslq transforms.'
+                        }
+                        div(class = body) {
+                            div(class = demo) { div {
+                            pre(class = cook) = '''# Replace entities with strings, you can also use --with-text-file=abc
+                                                   # which inserts the content safely quoted, or as DOM --with-file=abc.xml
+                                                   # where the file abc.xml has to be parseable (XML/HTML/XMQ/HTMQ/JSON).
+                                                   xmq template.htmq replace-entity DATE 2024-01-11 render-html --theme=lightbg > page.html
+                                                   xmq test.htmq replace-entity INFO --with-file=data.json render-html --theme=lightbg > page.html
+
+                                                   # Apply an xslq transform to some json to generate a html page.
+                                                   xmq todos.json transform todos.xslq to-html > list.html
+
+                                                   # Apply an xslq transform to generate plain text, ie keep only the text nodes.
+                                                   xmq todos.json transform todosframed.xslq to-text > list.txt'''
+                            } }
+                        }
+                    }
+                    details(class = fold)
+                    {
+                        summary {
+                            h3 = 'Parse any text with IXML'
+                            span(class = teaser) = 'Turn csv, logs or your own little language into a tree.'
+                        }
+                        div(class = body) {
+                            div(class = demo) { div {
+                            pre(class = cook) = '''# Parse any input with a suitable ixml grammar. Output xmq/xml/json etc.
+                                                   # Check https://invisiblexml.org
+                                                   xmq --ixml=grammars/core/tsv.ixml input.txt'''
+                            } }
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Learn
+            section(id    = learn
+                    class = 'band alt')
+            {
+                div(class = wrap)
+                {
+                    h2 = 'Learn XMQ'
+                    p(class = lead) = 'A guided tour, from why XMQ exists to JSON, XSLT and schemas. Open the chapters that interest you.'
+                    div(class = foldtools)
+                    {
+                        button(type    = button
+                               onclick = "siteFoldAll('learn', true);") = 'Open all'
+                        button(type    = button
+                               onclick = "siteFoldAll('learn', false);") = 'Close all'
+                    }
+                    // ------------------------------------------------ Background
+                    details(id    = background
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'Why XMQ?'
+                            span(class = teaser) = 'Tags and significant whitespace make XML and HTML hard to read and edit by hand.'
+                        }
+                        div(class = body)
+                        {
+                            p   = 'XML can be human readable/editable if it is used for markup of longer
+                                   human language texts, ie books, articles and other documents etc. In
+                                   these cases the xml-tags represent a minor part of the whole xml-file.'
+                            p   = 'However XML is often used for data storage and
+                                   configuration files (eg pom.xml).  In such files the
+                                   xml-tags represent a major part of the whole
+                                   xml-file. This makes the data storage and config files
+                                   hard to read and edit directly by hand. Today, the tags
+                                   are a major part of html files as well, which is one
+                                   reason why html files are hard to read and edit.'
+                            p   = 'The other reason why XML/HTML is hard to edit by hand is because they
+                                   have a complicated approach to dealing with significant
+                                   whitespace. The truth is that you cannot always pretty print the
+                                   XML/HTML code as you would like since it might introduce significant
+                                   white space. In fact proper pretty printing even requires a full
+                                   understanding of the DTD/XSD/CSS!'
+                            p   = 'XMQ solves the verbosity of tags by using braces to avoid
+                                   closing xml-tags and parentheses to surround the
+                                   attributes. XMQ solves the whitespace confusion by
+                                   requiring all intended whitespace to be quoted. There are a lot
+                                   of details, of course, but let us begin with an example.'
+                        }
+                    }
+                    // ------------------------------------------------ First example
+                    details(id    = first-example
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'A first example: quoting and comments'
+                            span(class = teaser) = 'Convert shiporder.xml, and learn the n+1 quote and comment rules.'
+                        }
+                        div(class = body)
+                        {
+                            p {
+                                'Download/build the xmq executable for your platform, then download '
+                                a(href = resources/shiporder.xmq) = shiporder.xmq
+                                ' and '
+                                a(href = resources/shiporder.xml) = shiporder.xml
+                                ' (note that the xml is manually pretty printed). To convert the XML to XMQ and pretty print with colors:'
+                            }
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xml' }
+                            p = 'Use the page command if the source file is large. Press q or esc to exit the pager. You can shorten the command to just pa.'
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xml page' }
+                            p = 'Use the browse command to start your default browser to view the content. You can shorten the command to just br.
+                                 Set the environment variable XMQ_THEME=darkbg or XMQ_THEME=lightbg to match your background color or XMQ_THEME=mono for no color.'
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xml browse' }
+                            p = 'Use shell redirection to store the XMQ output in a file. (The to-xmq command is the default command and can be left out here.)'
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xml to-xmq > test.xmq' }
+                            p = 'To convert the XMQ to XML:'
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xmq to-xml > test.xml' }
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    div(class = label) { b = shiporder.xmq }
+                                    &SHIPORDER_XMQ;
+                                }
+                                div {
+                                    div(class = label) { b = shiporder.xml }
+                                    pre(class = 'xmq xmq_light') = ( &SHIPORDER_XML;
+                                                                     &#10; )
+                                }
+                            }
+                            p = 'The hierarchical style should look familiar, but note:'
+                            ul {
+                                li = 'XMQ files are always UTF8 encoded.'
+                                li = 'Safe values after = can be stored as plain text (see 889923 container), no quoting needed!'
+                                li = '''Unsafe values (after =) with newlines, whitespace or ( ) { } ' " or leading = & // /* must be quoted.'''
+                                li = 'Two single quotes always mean the empty string (see sailing).'
+                                li = 'In multiline quotes, the incidental indentation is removed (see address).'
+                                li = ''''
+                                     Quotes containing quotes are quoted using n+1 single quotes (see coord).
+                                     Note that two quotes are reserved for the empty string. You will therefore see a single
+                                     quote ' or three quotes ''' or more quotes.
+                                     ''''
+                                li = 'Single line comments use // and multi line comments use /* */.'
+                                li = 'Comments containing comments are commented using n+1 slashes (eg ///* *///).'
+                            }
+                            p  = 'This means that you can quote any block of text (except invisible spaces near newlines) with enough single quotes and you
+                                  can comment any block of text with enough slashes.'
+                            p  = 'The incidental indentation removal and n+1 quotes ideas originated in the expert group
+                                  for JEP 378 Java Text blocks and was a collaborative effort led by Jim Laskey and Brian Goetz.
+                                  The seed to the idea to separate desired whitespace from incidental(accidental) whitespace
+                                  was planted by Kevin Bourrillion and the idea for n+1 quotes came from John Rose.
+                                  Earlier languages supporting indentation removal are: YAML and HJSON.'
+                        }
+                    }
+                    // ------------------------------------------------ Config
+                    details(id    = config
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'XMQ as a configuration file'
+                            span(class = teaser) = 'Multiple root nodes, compact form, and a simple C api to read values.'
+                        }
+                        div(class = body)
+                        {
+                            p {
+                                'XMQ permits multiple root nodes which means that if you use XMQ as your software config file format
+                                 then the first iteration of your config file can be as simple as this: '
+                                a(href = resources/config.xmq) = config.xmq
+                            }
+                            div(class = demo) { div {
+                                div(class = label) { b = config.xmq }
+                                &CONFIG_XMQ;
+                            } }
+                            p = 'Every xmq file can be printed in compact form on a single line where whitespace between tokens is minimized.'
+                            div(class = 'demo wrapcode') { div {
+                                div(class = label) { b = 'xmq config.xmq to-xmq --compact' }
+                                &CONFIG_COMPACT_XMQ;
+                            } }
+                            p = 'The only permitted whitespace between tokens are space (ascii 32) and newlines (ascii 10 or 13 or 13 10).
+                                 All other whitespace (including tabs) must be quoted. Let us take a look at shiporder in compact form.
+                                 (Any linebreaks below are due to your browser.)'
+                            div(class = 'demo wrapcode') { div {
+                                div(class = label) { b = 'xmq shiporder.xml to-xmq --compact' }
+                                &SHIPORDER_COMPACT_XMQ;
+                            } }
+                            p {
+                                'You can see character entities like '
+                                xmqE = '&#10;'
+                                ' for newlines and compound values like '
+                                xmqEK = address
+                                '='
+                                xmqCP = '('
+                                xmqQ  = '''
+                                        '...'
+                                        '''
+                                xmqE  = '&#10;'
+                                xmqQ  = '''
+                                        '...'
+                                        '''
+                                xmqCP = ')'
+                                ' which normally is a multiline quote but where escaped newlines are intermingled with quotes to create the compact form.'
+                            }
+                            p = 'You can read the config file using a simple C api. (There is also a Java api and future
+                                 programming languages APIs will be coming.)'
+                            div(class = demo) { div {
+                                div(class = label) { b = main.c }
+                                pre(class = 'xmq xmq_light')
+                                {
+                                    'XMQDoc *doc = '
+                                    xmqQ = xmqNewDoc
+                                    '();
+                                     ok = '
+                                    xmqQ = xmqParseFile
+                                    '(doc, "config.xmq, "myconf"); assert(ok);
+                                     server = '
+                                    xmqQ = xmqGetString
+                                    '(doc, "/myconf/server");
+                                     port = '
+                                    xmqQ = xmqGetInt
+                                    '(doc, "/myconf/port");
+                                     file = '
+                                    xmqQ = xmqGetString
+                                    '(doc, "/myconf/file");
+                                     cron = '
+                                    xmqQ = xmqGetString
+                                    '(doc, "/myconf/cron");'
+                                }
+                            } }
+                            p = 'As you can see, XMQ can be trivial, which is nice for your first config file, but when your program
+                                 grows in complexity, so can your config file. You do not have to convert your config
+                                 file to xml, but if you want to then you can supply your implicit root (in this case myconf):'
+                            p(class = cmd) { span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml' }
+                            div(class = demo) { div {
+                                div(class = label) { b = config.xml }
+                                pre(class = 'xmq xmq_light') = &CONFIG_XML;
+                            } }
+                        }
+                    }
+                    // ------------------------------------------------ Whitespace
+                    details(id    = whitespace
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'Web pages and whitespace'
+                            span(class = teaser) = 'HTMQ makes every significant space visible, and xmq trims the incidental ones.'
+                        }
+                        div(class = body)
+                        {
+                            p {
+                                'Now let us try some htmq/html: '
+                                a(href = resources/welcome_traveller.htmq) = welcome_traveller.htmq
+                                ' and '
+                                a(href = resources/welcome_traveller.html) = welcome_traveller.html
+                                ' (note that the html is manually pretty printed).'
+                            }
+                            p(class = cmd) { span(class = code) = 'xmq welcome_traveller.htmq pager' }
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    div(class = label) { b = welcome_traveller.htmq }
+                                    &WELCOME_TRAVELLER_HTMQ;
+                                }
+                                div {
+                                    div(class = label) { b = welcome_traveller.html }
+                                    pre(class = 'xmq xmq_light') = &WELCOME_TRAVELLER_HTML;
+                                }
+                            }
+                            ul {
+                                li = '''Text that does not immediately follow an equal sign = is called a standalone quote
+                                        (see 'Rest here ...' and 'p until ...') and must always be quoted.
+                                        If you do not quote them, they will be interpreted as elements (see html body a h1).'''
+                                li = 'XMQ pretty printing is straightforward whereas the html line breaks are weird to prevent spaces inside the word sleep.'
+                                li = 'XMQ entities like &nabla; (∇) must be outside of the quotes.'
+                                li = 'In the xmq it is obvious that there is exactly a single space between Say and the nabla.'
+                            }
+                            p = 'If you convert from htmq to html, then you will see that xmq does not pretty print since it wants to preserve the xmq whitespace
+                                 exactly as it was written. (Any linebreaks below are due to your browser.)
+                                 Since you know exactly what whitespace you are feeding the browser (html) and other tools (xml)
+                                 it will be easier to control their behaviour.'
+                            p(class = cmd) { span(class = code) = 'xmq welcome_traveller.htmq to-html' }
+                            div(class = 'demo wrapcode') { div {
+                                div(class = label) { b = 'welcome_traveller.html' 'generated' }
+                                pre(class = 'xmq xmq_light') = &WELCOME_TRAVELLER_NOPP_HTML;
+                            } }
+                            p = 'If you convert from the original manually pretty printed html above to htmq
+                                 then you will see that the tool xmq by default trims
+                                 whitespace using its own heuristic.  It keeps the
+                                 original linebreaks but removes incidental indentation
+                                 and leading/ending whitespace if the leader/ender contain
+                                 newlines. This is the same rule xmq uses for trimming multiline quotes
+                                 and comments. This heuristic usually works well but might in some
+                                 situation remove significant spaces from XML sources which
+                                 were not written with this in mind.'
+                            p(class = cmd) { span(class = code) = 'xmq welcome_traveller.html to-htmq' }
+                            div(class = demo) { div {
+                                div(class = label) { b = 'welcome_traveller.htmq' 'trimmed' }
+                                &WELCOME_TRAVELLER_BACK_HTMQ;
+                            } }
+                            p = 'You can also see that the &nabla; was replaced with the actual ∇. This happened because
+                                 it was character entity, which is just another kind of quote.
+                                 If you want to preserve all whitespace and restore the html entities then do:'
+                            p(class = cmd) { span(class = code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit' }
+                            div(class = demo) { div {
+                                div(class = label) { b = 'welcome_traveller.htmq' 'untrimmed' }
+                                &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
+                            } }
+                            p  = 'As you can see there is quite a lot of whitespace in xml/html, which might or might not be
+                                  significant/ignorable depending on your css and other settings. If you really want this whitespace then
+                                  xmq will make it obvious.'
+                        }
+                    }
+                    // ------------------------------------------------ Compact
+                    details(id    = compact
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'Compact XMQ with multiline comments'
+                            span(class = teaser) = 'Everything fits on one line, even multiline comments and comments containing two dashes.'
+                        }
+                        div(class = body)
+                        {
+                            p = 'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines:'
+                            p(class = cmd) { span(class = code) = 'xmq welcome_traveller.htmq to-htmq --compact' }
+                            div(class = 'demo wrapcode') { div {
+                                div(class = label) { b = 'compact htmq' }
+                                &WELCOME_TRAVELLER_HTMQ_COMPACT;
+                            } }
+                            p {
+                                'Even multiline comments can be printed as compact XMQ since */* means a newline.
+                                 This is not possible with XML since there is no standardized way to escape newlines inside html/xml comments. '
+                                a(href = resources/multi.xmq) = multi.xmq
+                            }
+                            div(class = demo) { div {
+                                div(class = label) { b = multi.xmq }
+                                &MULTI_XMQ;
+                            } }
+                            p(class = cmd) { span(class = code) = 'xmq multi.xmq to-xmq --compact' }
+                            div(class = 'demo wrapcode') { div {
+                                div(class = label) { b = 'compact xmq' }
+                                &MULTI_COMPACT_XMQ;
+                            } }
+                            p = 'Note that, for historical reasons, xml/html does not permit two or more consecutive dashes inside a comment! This is
+                                 quite a showstopper if you just want to comment out some large part of your document. As you
+                                 can see two dashes are permitted in xmq-comments and the xmq tool works around
+                                 this problem when converting to xml/html by adding a very specific char (␐) in such a way
+                                 there are no two consecutive dashes in the xml. When loading from such xml, the char (␐) is
+                                 instead removed to restore the two dashes.'
+                            p(class = cmd) { span(class = code) = 'xmq multi.xmq to-xml' }
+                            div(class = demo) { div {
+                                div(class = label) { b = multi.xml }
+                                pre(class = 'xmq xmq_light') = &MULTI_XML;
+                            } }
+                        }
+                    }
+                    // ------------------------------------------------ Quoting
+                    details(id    = quoting
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'Quoting and entities inside attributes'
+                            span(class = teaser) = 'Syntactic sugar for values, leading/ending whitespace and compound values.'
+                        }
+                        div(class = body)
+                        {
+                            p  = '''For elements, a key=value is syntactic sugar for: key{'value'}.
+                                    For attributes, you can only write: key=value.
+                                    In the example below all content is: 123.
+                                    If the xmq tool detects that all children of an element are either text or entities,
+                                    then it will present the element as a key value pair.'''
+                            div(class = demo) { div {
+                                div(class = label) { b = syntactic_sugar.xmq }
+                                &SYNTACTIC_SUGAR_XMQ;
+                            } }
+                            p = 'XMQ is designed with the assumption that we rarely need significant leading/ending whitespace/quotes.
+                                 However sometimes you have to have that. For an element value, you can express such whitespace in
+                                 different ways:'
+                            div(class = demo) { div {
+                                div(class = label) { b = corners.xmq }
+                                &CORNERS_XMQ;
+                            } }
+                            p {
+                                'You can see the magenta colored parentheses '
+                                xmqCP = '( )'
+                                ' after the equal = sign. This is a compound value which can only consist of quotes and entities.
+                                 Compound values are mandatory for the attribute values that need multiple quotes/entities since braces
+                                 { } cannot be used inside an attribute value.'
+                            }
+                            div(class = demo) { div {
+                                div(class = label) { b = compound.xmq }
+                                &COMPOUND_XMQ;
+                            } }
+                        }
+                    }
+                    // ------------------------------------------------ Large html
+                    details(id    = large-html
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'Viewing large html pages'
+                            span(class = teaser) = 'Delete what you do not need with XPath and page through the rest.'
+                        }
+                        div(class = body)
+                        {
+                            p = 'The xmq tool is useful to decode large html pages. Let us assume that you downloaded a large html page: index.html'
+                            p(class = cmd) { span(class = code) = 'xmq index.html delete /html/head delete //style delete //script pager' }
+                            p = 'This command will delete the head node and all style and script nodes, before using the pager to show you the htmq.
+                                 The argument to delete is an xpath expression.'
+                            p {
+                                'There are other commands to modify the xmq. In particular you can see how this web page is constructed by
+                                 replacing entities with text files or with xmq files: '
+                                a(href = resources/index.htmq_xmq.html) = index.htmq
+                            }
+                        }
+                    }
+                    // ------------------------------------------------ JSON
+                    details(id    = json
+                            class = fold)
+                    {
+                        summary {
+                            h3 = JSON
+                            span(class = teaser) = 'Read and write JSON, including unique keys for repeated element names.'
+                        }
+                        div(class = body)
+                        {
+                            p = 'We can use the xmq tool to convert shiporder to json.
+                                 You can see that the xml element name is folded as the key "_":"shiporder" and
+                                 attributes are folded as children prefixed with underscores.'
+                            p(class = cmd) { span(class = code) = 'xmq shiporder.xmq to-json | jq .' }
+                            div(class = demo) { div {
+                                div(class = label) { b = shiporder.json }
+                                pre(class = 'xmq xmq_light') = &SHIPORDER_JSON;
+                            } }
+                            p = 'If an XMQ value is a valid JSON number, true, false or null, then it is converted to
+                                 the proper JSON value (no quotes) see "id":889923 . If you want to force a number to a JSON string,
+                                 then add the S attribute: speed(S)=123 will translate into "speed":"123" .'
+                            p {
+                                'We can also use the xmq tool to parse json, see '
+                                a(href = resources/todos.xmq) = todos.xmq
+                                ' and '
+                                a(href = resources/todos.json) = todos.json
+                                ':'
+                            }
+                            p(class = cmd) { span(class = code) = '''curl -s 'https://dummyjson.com/todos?skip=4&limit=2' | xmq''' }
+                            p(class = cmd) { span(class = code) = 'xmq todos.json' }
+                            p = 'A limitation of JSON is painfully visible as underline element names.
+                                 The Javascript objects lack types which means that the JSON objects lacks type information
+                                 and this results in the corresponding XMQ element get the anonymous name/type underscore _.
+                                 If the JSON object contains a child _ with a name, then xmq will use this as the key instead,
+                                 this enables proper back-forth conversion between XMQ and JSON.'
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    div(class = label) { b = todos.xmq }
+                                    &TODOS_XMQ;
+                                }
+                                div {
+                                    div(class = label) { b = todos.json }
+                                    pre(class = 'xmq xmq_light') = ( &TODOS_JSON;
+                                                                     &#10; )
+                                }
+                            }
+                            p = 'XMQ can read and generate json. The workflow is intended to be: 1) convert json to xmq 2) work on the data as xmq
+                                 3) possibly write back to json. Some clean xml files (like pom.files) can be converted to clean json,
+                                 worked on in json and then converted back to xmq. But if you convert generic xml/html with standalone text nodes
+                                 and attributes to json, then the result is probably rather confusing since key values must be unique in json.'
+                            p = 'The xmq tool solves this by detecting non-unique element names and suffixing them with [0], [1], [2] etc.'
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    div(class = label) { b = simple_page.htmq }
+                                    &SIMPLE_PAGE_HTMQ;
+                                }
+                                div {
+                                    div(class = label) { b = simple_page.json }
+                                    pre(class = 'xmq xmq_light') = ( &SIMPLE_PAGE_JSON;
+                                                                     &#10; )
+                                }
+                            }
+                        }
+                    }
+                    // ------------------------------------------------ XSLT
+                    details(id    = xslt
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'XSLT transforms'
+                            span(class = teaser) = 'Write readable xslq and generate html or whitespace exact text.'
+                        }
+                        div(class = body)
+                        {
+                            p {
+                                'XSLT transforms can be complicated when you have to deal with whitespace.
+                                 Again the XMQ format solves this part of the XSLT complexity because the whitespace in XMQ is explicit.
+                                 Let us convert the curled JSON directly into an HTML page using xmq and an xslq transform, '
+                                a(href = resources/todos.xslq) = todos.xslq
+                                ' (or as '
+                                a(href = resources/todos.xslt) = todos.xslt
+                                ').'
+                            }
+                            p(class = cmd) { span(class = code) = 'xmq todos.json transform todos.xslq to-html > todos.html' }
+                            div(class = demo) { div {
+                                div(class = label) { b = todos.xslq }
+                                &TODOS_XSLQ;
+                            } }
+                            p {
+                                'And this is the generated HTMQ, '
+                                a(href = resources/todos.html) = todos.html
+                                '.'
+                            }
+                            div(class = demo) { div {
+                                div(class = label) { b = todos.html 'as htmq' }
+                                &TODOS_HTMQ;
+                            } }
+                            p {
+                                'We can generate whitespace exact text output and still have
+                                 a pretty printed and readable xslq-transform. The to-text command
+                                 will output only text nodes and substituted entities, see '
+                                a(href = resources/todosframed.xslq) = todosframed.xslq
+                                '.'
+                            }
+                            p(class = cmd) { span(class = code) = 'xmq todos.json transform todosframed.xslq to-text' }
+                            div(class = demo) { div {
+                                div(class = label) { b = todosframed.xslq }
+                                &TODOSFRAMED_XSLQ;
+                            } }
+                            p {
+                                'And this is the generated text file, '
+                                a(href = resources/todos.text) = todos.text
+                                '.'
+                            }
+                            div(class = demo) { div {
+                                div(class = label) { b = todos.text }
+                                pre(class = 'xmq xmq_light text') = &TODOS_TEXT;
+                            } }
+                        }
+                    }
+                    // ------------------------------------------------ DTD/XSD
+                    details(id    = dtd-xsd
+                            class = fold)
+                    {
+                        summary {
+                            h3 = 'DTDs and XSDs'
+                            span(class = teaser) = 'The inline DTD is just the value of !DOCTYPE, XSDs are ordinary XML.'
+                        }
+                        div(class = body)
+                        {
+                            p  = 'The inline DTD is the value assigned to the !DOCTYPE.
+                                  There are no changes to the DTD language.'
+                            div(class = 'demo split')
+                            {
+                                div {
+                                    div(class = label) { b = dtd_example.xmq }
+                                    &DTD_EXAMPLE_XMQ;
+                                }
+                                div {
+                                    div(class = label) { b = dtd_example.xml }
+                                    pre(class = 'xmq xmq_light') = &DTD_EXAMPLE_XML;
+                                }
+                            }
+                            p = 'Since XSDs are normal xml they are rendered as XMQ in the same way as other XML.'
+                            div(class = demo) { div {
+                                div(class = label) { b = xsd_example.xsd 'as xmq' }
+                                &XSD_EXAMPLE_XSQ;
+                            } }
+                        }
+                    }
+                    // ------------------------------------------------ Conclusions
+                    details(id    = conclusions
+                            class = fold)
+                    {
+                        summary {
+                            h3 = Conclusions
+                            span(class = teaser) = 'Mark-up or key-value store, you no longer have to choose.'
+                        }
+                        div(class = body)
+                        {
+                            p  = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
+                                  has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value
+                                  store situations.'
+                        }
+                    }
+                }
+            }
+            // ---------------------------------------------------------------- Get it
+            section(id    = get
+                    class = band)
+            {
+                div(class = 'wrap cols')
+                {
+                    div {
+                        h2 = 'Get xmq'
+                        p {
+                            'Download the standalone '
+                            code = xmq
+                            ' tool for your platform, or include '
+                            code = xmq.h
+                            ' and '
+                            code = xmq.c
+                            ' to use xmq directly from your C program. A Java library is also available.'
+                        }
+                        div(class = actions)
+                        {
+                            a(class = 'btn primary'
+                              href  = https://github.com/libxmq/xmq/releases/latest) = 'Download executables'
+                            a(class = btn
+                              href  = https://github.com/libxmq/xmq) = 'Source on GitHub'
+                        }
+                    }
+                    div {
+                        h2 = 'Further resources'
+                        ul {
+                            li { a(href = xmq.pdf) = 'The XMQ grammar (pdf)' }
+                            li { a(href = doxygen/html/index.html) = 'C api documentation' }
+                            li { a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = Javadoc }
+                            li { a(href = https://github.com/orgs/libxmq/discussions) = 'Forum and discussions' }
+                            li { a(href = languages.html) = 'Comparison with other markup languages' }
+                        }
+                    }
+                }
+            }
         }
-        p {
-            'As you can see, XMQ can be trivial, which is nice for your first config file, but when your program
-             grows in complexity, so can your config file. You do not have to convert your config
-             file to xml, but if you want to then you can supply your implicit root (in this case myconf):'
-            br
-            span(class = code) = 'xmq --root=myconf config.xmq to-xml > config.xml'
+        footer {
+            div(class = wrap)
+            {
+                p = 'XMQ and libxmq by Fredrik Öhrström · oehrstroem@gmail.com · MIT licensed'
+                p = ( 'Last updated '
+                      &DATE; )
+            }
         }
-        pre(class = 'xmq xmq_light w80') = &CONFIG_XML;
-        h2 = 'Web pages and whitespace'
-        p {
-            'Now let us try some htmq/html:'
-            &nbsp;
-            &nbsp;
-            a(href = resources/welcome_traveller.htmq) = welcome_traveller.htmq
-            &nbsp;
-            &nbsp;
-            a(href = resources/welcome_traveller.html) = welcome_traveller.html
-            &nbsp;
-            &nbsp;
-            ' (Note that the html is manually pretty printed.)'
-        }
-        p {
-            span(class = code) = 'xmq welcome_traveller.htmq pager'
-        }
-        &WELCOME_TRAVELLER_HTMQ;
-        ' '
-        pre(class = 'xmq xmq_light w80') = &WELCOME_TRAVELLER_HTML;
-        ul {
-            li = '''Text that does not immediately follow an equal sign = is called a standalone quote
-                    (see 'Rest here ...' and 'p until ...') and must always be quoted.
-                    If you do not quote them, they will be interpreted as elements (see html body a h1).'''
-            li = 'XMQ pretty printing is straightforward whereas the html line breaks are weird to prevent spaces inside the word sleep.'
-            li = 'XMQ entities like &nabla; (∇) must be outside of the quotes.'
-            li = 'In the xmq it is obvious that there is exactly a single space between Say and the nabla.'
-        }
-        p {
-            'If you convert from htmq to html:'
-            br
-            span(class = code) = 'xmq welcome_traveller.htmq to-html'
-            br
-            'Then you will see that xmq does not pretty print since it wants to preserve the xmq whitespace
-             exactly as it was written. (Any linebreaks below are due to your browser.)
-             Since you know exactly what whitespace you are feeding the browser (html) and other tools (xml)
-             it will be easier to control their behaviour.'
-        }
-        pre(class = 'xmq xmq_light w40') = &WELCOME_TRAVELLER_NOPP_HTML;
-        p {
-            'If you convert from the original manually pretty printed html above to htmq:'
-            span(class = code) = 'xmq welcome_traveller.html to-htmq'
-            ' then you will see that the tool xmq by default trims
-             whitespace using its own heuristic.  It keeps the
-             original linebreaks but removes incidental indentation
-             and leading/ending whitespace if the leader/ender contain
-             newlines. This is the same rule xmq uses for trimming multiline quotes
-             and comments. This heuristic usually works well but might in some
-             situation remove significant spaces from XML sources which
-             were not written with this in mind.'
-        }
-        &WELCOME_TRAVELLER_BACK_HTMQ;
-        p {
-            'You can also see that the &nabla; was replaced with the actual ∇. This happened because
-             it was character entity, which is just another kind of quote.
-             If you want to preserve all whitespace and restore the html entities then do:'
-            br
-            span(class = code) = 'xmq --trim=none welcome_traveller.html to-htmq --escape-non-7bit'
-        }
-        &WELCOME_TRAVELLER_BACK_NOTRIM_HTMQ;
-        p  = 'As you can see there is quite a lot of whitespace in xml/html, which might or might not be
-              significant/ignorable depending on your css and other settings. If you really want this whitespace then
-              xmq will make it obvious.'
-        h2 = 'Compact XMQ with multiline comments'
-        p {
-            'The opposite of xmq pretty printing is xmq compact printing with no indentation and no newlines: '
-            br
-            span(class = code) = 'xmq welcome_traveller.htmq to-htmq --compact'
-        }
-        &WELCOME_TRAVELLER_HTMQ_COMPACT;
-        p {
-            'Even multiline comments can be printed as compact XMQ since */* means a newline.
-             This is not possible with XML since there is no standardized way to escape newlines inside html/xml comments.'
-            &nbsp;
-            &nbsp;
-            a(href = resources/multi.xmq) = multi.xmq
-        }
-        &MULTI_XMQ;
-        p {
-            span(class = code) = 'xmq multi.xmq to-xmq --compact'
-        }
-        &MULTI_COMPACT_XMQ;
-        ' '
-        p {
-            'Note that, for historical reasons, xml/html does not permit two or more consecutive dashes inside a comment! This is
-             quite a showstopper if you just want to comment out some large part of your document. As you
-             can see two dashes are permitted in xmq-comments and the xmq tool works around
-             this problem when converting to xml/html by adding a very specific char (␐) in such a way
-             there are no two consecutive dashes in the xml. When loading from such xml, the char (␐) is
-             instead removed to restore the two dashes.'
-            span(class = code) = 'xmq multi.xmq to-xml'
-        }
-        pre(class = 'xmq xmq_light w80') = &MULTI_XML;
-        h2 = 'Quoting and entities inside attributes'
-        p  = '''For elements, a key=value is syntactic sugar for: key{'value'}
-                For attributes, you can only write: key=value
-                In the example below all content is: 123
-                If the xmq tool detects that all children of an element are either text or entities,
-                then it will present the element as a key value pair.'''
-        &SYNTACTIC_SUGAR_XMQ;
-        p = 'XMQ is designed with the assumption that we rarely need significant leading/ending whitespace/quotes.
-             However sometimes you have to have that. For an element value, you can express such whitespace in
-             different ways:'
-        &CORNERS_XMQ;
-        p {
-            'You can see the magenta colored parentheses '
-            xmqCP = '( )'
-            ' after the equal = sign. This is a compound value which can only consist of quotes and entities.
-             Compound values are mandatory for the attribute values that need multiple quotes/entities since braces
-             { } cannot be used inside an attribute value.'
-        }
-        &COMPOUND_XMQ;
-        h2 = 'Viewing large html pages'
-        p  = 'The xmq tool is useful to decode large html pages. Let us assume that you downloaded a large html page: index.html'
-        pre(class = 'xmq xmq_light w40') = 'xmq index.html delete /html/head delete //style delete //script pager'
-        p = 'This command will delete the head node and all style and script nodes, before using the pager to show you the htmq.
-             The argument to delete is an xpath expression.'
-        p {
-            'There are other commands to modify the xmq. In particular you can see how this web page is constructed by
-             replacing entities with text files or with xmq files. '
-            a(href = resources/index_htmq.html) = index.htmq
-        }
-        h2 = JSON
-        a(id = json)
-        p {
-            'We can use the xmq tool to convert shiporder to json:'
-            span(class = code) = 'xmq shiporder.xmq to-json | jq .'
-            ' You can see that the xml element name is folded as the key "_":"shiporder" and
-             attributes are folded as children prefixed with underscores.'
-        }
-        pre(class = 'xmq xmq_light w40') = &SHIPORDER_JSON;
-        p = 'If an XMQ value is a valid JSON number, true, false or null, then it is converted to
-             the proper JSON value (no quotes) see "id":889923 . If you want to force a number to a JSON string,
-             then add the S attribute: speed(S)=123 will translate into "speed":"123" .'
-        p {
-            'We can also use the xmq tool to parse json. '
-            br
-            span(class = code) = '''curl -s 'https://dummyjson.com/todos?skip=4&limit=2' | xmq'''
-            ' or '
-            br
-            span(class = code) = 'xmq todos.json'
-            &nbsp;
-            &nbsp;
-            a(href = resources/todos.xmq) = todos.xmq
-            &nbsp;
-            &nbsp;
-            a(href = resources/todos.json) = todos.json
-        }
-        p = 'A limitation of JSON is painfully visible as underline element names.
-             The Javascript objects lack types which means that the JSON objects lacks type information
-             and this results in the corresponding XMQ element get the anonymous name/type underscore _.
-             If the JSON object contains a child _ with a name, then xmq will use this as the key instead,
-             this enables proper back-forth conversion between XMQ and JSON.'
-        &TODOS_XMQ;
-        ' '
-        pre(class = 'xmq xmq_light w80') = ( &TODOS_JSON;
-                                             &#10; )
-        p = 'XMQ can read and generate json. The workflow is intended to be: 1) convert json to xmq 2) work on the data as xmq
-             3) possibly write back to json. Some clean xml files (like pom.files) can be converted to clean json,
-             worked on in json and then converted back to xmq. But if you convert generic xml/html with standalone text nodes
-             and attributes to json, then the result is probably rather confusing since key values must be unique in json.'
-        p = 'The xmq tool solves this by detecting non-unique element names and suffixing them with [0], [1], [2] etc.'
-        &SIMPLE_PAGE_HTMQ;
-        ' '
-        pre(class = 'xmq xmq_light w40') = ( &SIMPLE_PAGE_JSON;
-                                             &#10; )
-        h2 = 'XSLT transforms'
-        p {
-            'XSLT transforms can be complicated when you have to deal with whitespace.
-             Again the XMQ format solves this part of the XSLT complexity because the whitespace in XMQ is explicit.
-             Let us convert the curled JSON directly into an HTML page using xmq and an xslq transform.'
-            &nbsp;
-            &nbsp;
-            a(href = resources/todos.xslq) = todos.xslq
-            &nbsp;
-            &nbsp;
-            a(href = resources/todos.xslt) = todos.xslt
-            br
-            span(class = code) = 'xmq todos.json transform todos.xslq to-html > todos.html'
-        }
-        &TODOS_XSLQ;
-        p {
-            'And this is the generated HTMQ. '
-            a(href = resources/todos.html) = todos.html
-        }
-        &TODOS_HTMQ;
-        p {
-            'We can generate whitespace exact text output and still have
-             a pretty printed and readable xslq-transform. The to-text commad
-             will output only text nodes and substituted entities.'
-            br
-            span(class = code) = 'xmq todos.json transform todosframed.xslq to-text'
-            br
-            a(href = resources/todos.xslq) = todosframed.xslq
-        }
-        &TODOSFRAMED_XSLQ;
-        p {
-            'And this is the generated text file. '
-            a(href = resources/todos.text) = todos.text
-        }
-        pre(class = 'xmq xmq_light w80 text') = &TODOS_TEXT;
-        h2 = 'DTD:s and XSD:s'
-        p  = 'The inline DTD is the value assigned to the !DOCTYPE.
-              There are no changes the the DTD language.'
-        &DTD_EXAMPLE_XMQ;
-        pre(class = 'xmq xmq_light w40') = &DTD_EXAMPLE_XML;
-        p = 'Since XSD:s are normal xml they are rendered as XMQ in the same way as other XML.'
-        &XSD_EXAMPLE_XSQ;
-        h2 = Conclusions
-        p  = 'With XMQ the assumed dichotomy between mark-up languages (like XML) and key-value store languages (like JSON)
-              has been (perhaps surprisingly) removed. We can now use XML for mark-up situations and XMQ for key-value
-              store situations.'
     }
 }

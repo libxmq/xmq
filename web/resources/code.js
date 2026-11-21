@@ -93,3 +93,93 @@ function goParse(how)
     document.getElementById("how").value = how;
     form.submit();
 }
+
+// The new site (index.html, site.css). The theme follows prefers-color-scheme
+// unless the visitor picked light or dark, which is stored in localStorage
+// and in the background cookie (so the example pages follow the choice).
+
+function siteTheme()
+{
+    try { return localStorage.getItem("xmq-theme") || "auto"; } catch (e) { return "auto"; }
+}
+
+function siteEffectiveTheme()
+{
+    const t = siteTheme();
+    if (t !== "auto") return t;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function siteApplyTheme()
+{
+    const t = siteTheme();
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    if (t !== "auto") root.classList.add(t);
+    const b = document.getElementById("themebutton");
+    if (b)
+    {
+        const label = { auto: "Theme: auto", light: "Theme: light", dark: "Theme: dark" }[t];
+        b.textContent = label;
+        b.setAttribute("aria-label", label + ", click to change");
+    }
+}
+
+function siteCycleTheme()
+{
+    const next = { auto: "light", light: "dark", dark: "auto" }[siteTheme()];
+    try { localStorage.setItem("xmq-theme", next); } catch (e) {}
+    if (next === "auto")
+    {
+        document.cookie = "background=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
+    }
+    else
+    {
+        document.cookie = "background=" + next + ";expires=Fri, 31 Dec 9999 23:59:59 GMT;path=/;SameSite=Lax";
+    }
+    siteApplyTheme();
+}
+
+// Server side renderings (upload and ixml) use the current light/dark scheme.
+function siteSubmit(form)
+{
+    form.action = form.action.replace(/\?(light|dark)$/, "") + "?" + siteEffectiveTheme();
+    form.submit();
+}
+
+function siteUpload()
+{
+    document.getElementById("uploadFile").click();
+}
+
+function siteParse(how)
+{
+    document.getElementById("how").value = how;
+    siteSubmit(document.getElementById("useixml"));
+}
+
+// Open the details element that contains (or is) the target of the url hash.
+function siteOpenHash()
+{
+    if (!location.hash) return;
+    const el = document.getElementById(decodeURIComponent(location.hash.substring(1)));
+    if (!el) return;
+    const d = el.closest("details");
+    if (d && !d.open)
+    {
+        d.open = true;
+        el.scrollIntoView();
+    }
+}
+
+function siteFoldAll(id, open)
+{
+    document.querySelectorAll("#" + id + " details.fold").forEach(d => { d.open = open; });
+}
+
+function siteInit()
+{
+    siteApplyTheme();
+    siteOpenHash();
+    window.addEventListener("hashchange", siteOpenHash);
+}
