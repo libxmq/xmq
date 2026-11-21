@@ -108,8 +108,8 @@ html(lang = en)
                         }
                         div(class = feature) {
                             span(class = icon) = '[ ]'
-                            h2 = 'Speaks JSON'
-                            p  = 'Convert JSON to XMQ, work on it, write it back. Clean XML
+                            h2 = 'Speaks JSON/YAML'
+                            p  = 'Convert JSON/YAML to XMQ, work on it, write it back. Clean XML
                                   like pom.xml becomes clean JSON.'
                         }
                         div(class = feature) {
@@ -193,6 +193,23 @@ html(lang = en)
                 div(class = wrap)
                 {
                     h2 = 'Try it yourself'
+                    h3 = 'Pick one of your files and view it as xmq'
+                    form(id      = upload
+                         method  = post
+                         enctype = multipart/form-data
+                         action  = view?light)
+                    {
+                        input(name     = uploadFile
+                              id       = uploadFile
+                              type     = file
+                              onchange = 'siteSubmit(this.form);'
+                              hidden)
+                        button(type    = button
+                               class   = 'btn primary'
+                               title   = 'Max 200KB, logs cleared after 30 days.'
+                               onclick = 'siteUpload();') = 'Upload an XML/HTML/JSON/YAML file and render as XMQ'
+                    }
+                    h3 = 'Parse any text file using invisible xml'
                     p(class = lead) = 'Write an IXML grammar on the left and some input on the right, then parse it.
                                        Or upload your own XML, HTML or JSON file and see it as XMQ.'
                     div(id = ixmldiv)
@@ -238,38 +255,16 @@ html(lang = en)
                                    class   = 'btn primary'
                                    onclick = "siteParse('to-xmq');") = 'Parse to XMQ'
                             button(type    = button
-                                   class   = btn
-                                   onclick = "siteParse('to-xml');") = 'to XML'
+                                   class   = 'btn primary'
+                                   onclick = "siteParse('to-xml');") = 'Parse to XML'
                             button(type    = button
-                                   class   = btn
-                                   onclick = "siteParse('to-json');") = 'to JSON'
+                                   class   = 'btn primary'
+                                   onclick = "siteParse('to-json');") = 'Parse to JSON'
                             button(type    = button
                                    class   = btn
                                    title   = 'Show the parse tree'
-                                   onclick = "siteParse('view-parse');") = 'View parse'
-                            button(type    = button
-                                   class   = btn
-                                   onclick = "siteParse('debug-parse');") = 'Debug parse'
-                            button(type    = button
-                                   class   = btn
-                                   onclick = "siteParse('trace-parse');") = 'Trace parse'
+                                   onclick = "siteParse('trace-parse');") = 'Trace xml parse'
                         }
-                    }
-                    h3 = 'Render your own file'
-                    form(id      = upload
-                         method  = post
-                         enctype = multipart/form-data
-                         action  = view?light)
-                    {
-                        input(name     = uploadFile
-                              id       = uploadFile
-                              type     = file
-                              onchange = 'siteSubmit(this.form);'
-                              hidden)
-                        button(type    = button
-                               class   = btn
-                               title   = 'Max 200KB, logs cleared after 30 days.'
-                               onclick = 'siteUpload();') = 'Upload XML/HTML/JSON and render as XMQ'
                     }
                 }
             }
