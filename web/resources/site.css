@@ -468,6 +468,8 @@ footer p { margin: 0.2rem 0; }
     .langs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 article.lang { min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 5rem; }
+/* The filter hides cards with the hidden attribute, display: flex above would override it. */
+[hidden] { display: none !important; }
 article.lang .demo { margin: 0.6rem 0 0; flex: 1; }
 article.lang pre { font-size: 0.78rem; }
 .langhead { display: flex; align-items: baseline; gap: 0.8rem; flex-wrap: wrap; }
