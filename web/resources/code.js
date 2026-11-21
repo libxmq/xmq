@@ -183,3 +183,18 @@ function siteInit()
     siteOpenHash();
     window.addEventListener("hashchange", siteOpenHash);
 }
+
+// Filter the language cards of languages.html on any text in the card.
+function siteFilterLangs(q)
+{
+    q = q.trim().toLowerCase();
+    let shown = 0;
+    const all = document.querySelectorAll("article.lang");
+    all.forEach(a => {
+        const hit = q === "" || a.textContent.toLowerCase().includes(q);
+        a.hidden = !hit;
+        if (hit) shown++;
+    });
+    const c = document.getElementById("langcount");
+    if (c) c.textContent = q === "" ? "" : shown + " of " + all.length + " languages";
+}

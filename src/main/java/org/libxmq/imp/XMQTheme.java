@@ -360,7 +360,7 @@ public class XMQTheme
 
         // The bg color (or default when not overridden).
         XMQColorDef def = colors[XMQ_COLOR_BG_INDEX];
-        if (def.r == -1) sb.append(dark ? "263338" : "ffffcc");
+        if (def.r == -1) sb.append(dark ? "263338" : "fffcf2");
         else sb.append(hex(def.r, def.g, def.b));
 
         sb.append(";border:solid 1px ").append(dark ? "#555555" : "#888888")

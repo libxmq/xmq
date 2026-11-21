@@ -460,3 +460,43 @@ footer {
     padding: 2rem 0 2.5rem;
 }
 footer p { margin: 0.2rem 0; }
+
+/* The languages exposé (languages.html). */
+
+.langs { display: grid; gap: 1.5rem 2.5rem; }
+@media (min-width: 1000px) {
+    .langs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+article.lang { min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 5rem; }
+article.lang .demo { margin: 0.6rem 0 0; flex: 1; }
+article.lang pre { font-size: 0.78rem; }
+.langhead { display: flex; align-items: baseline; gap: 0.8rem; flex-wrap: wrap; }
+.langhead h2 { font-size: 1.25rem; margin: 0; }
+.langhead h2 a { color: var(--heading); text-decoration-color: var(--link-line); }
+.langhead h2 a:hover { color: var(--link); }
+.year {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 0.55rem;
+}
+article.lang p.info { margin: 0.3rem 0 0; }
+article.lang p.by { margin: 0.1rem 0 0; color: var(--muted); font-style: italic; font-size: 0.92rem; }
+
+.filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.8rem; margin-top: 1.6rem; }
+.filter label { font-weight: 600; }
+.filter input {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.8rem;
+    width: min(26rem, 100%);
+}
+.filter span { color: var(--muted); font-size: 0.92rem; }
+
+/* Themed scrollbars, so wide code does not get a bright bar in dark mode. */
+pre, textarea, .demo { scrollbar-color: var(--border) transparent; scrollbar-width: thin; }

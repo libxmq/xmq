@@ -8619,7 +8619,7 @@ static void append_pre_html_coloring(MemBuffer *style_pre, XMQTheme *theme, bool
     if (def->r == -1)
     {
         // No override, use default.
-        membuffer_append(style_pre, dark_mode?"263338":"ffffcc");
+        membuffer_append(style_pre, dark_mode?"263338":"fffcf2");
     }
     else
     {

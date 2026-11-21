@@ -5,80 +5,159 @@ xsl:stylesheet(version   = 1.0
                doctype-system = about:legacy-compat
                encoding       = utf-8
                indent         = yes)
+    // The build date, eg xmq languages.xmq transform --stringparam=date="2026-11-21 09:00" genlanguages.xslq to-html
+    xsl:param(name = date)
     xsl:template(match = list)
     {
-        html {
+        html(lang = en) {
             head {
-                meta(http-equiv = content-type
-                content    = 'text/html; charset=UTF-8')
-                title = libxmq
-                link(type = text/css
-                     href = resources/style.css
-                     rel  = stylesheet)
-                link(type = text/css
-                     href = resources/xmq.css
-                     rel  = stylesheet)
-                script(type = text/javascript
-                       src  = resources/code.js) = ''
-                meta(name          = viewport
-                     content       = width=device-width
-                     initial-scale = 1.0)
+                meta(charset = UTF-8)
+                title = 'Markup and data languages · xmq'
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                // Apply a forced light/dark theme before the first paint.
+                script = '''try { var t = localStorage.getItem("xmq-theme"); if (t === "light" || t === "dark") document.documentElement.classList.add(t); } catch (e) {}'''
+                link(rel  = stylesheet
+                     href = resources/xmq.css)
+                link(rel  = stylesheet
+                     href = resources/site.css)
+                script(src = resources/code.js) = ''
             }
-            body(onload = 'checkBackgroundSetting();')
+            body(onload = 'siteInit();')
             {
-                h1 = 'A list of markup/data-storage/configuration languages and configuration generator languages.'
-                'Last updated 2024-08-11 oehrstroem@gmail.com'
-                p
-                'Source: '
-                a(href=resources/languages.xmq) = languages.xmq
-                ' Transform: '
-                a(href=resources/genlanguages.xslq) = genlanguages.xslq
-                br
-                'Cmdline: xmq languages.xmq transform genlanguages.xslq to-html'
-                p
-                table(border = 0)
+                a(class = skip
+                  href  = '#main') = 'Skip to content'
+                header(class = top)
                 {
-                    xsl:for-each(select = lang)
+                    nav(class      = wrap
+                        aria-label = Main)
                     {
-                        tr {
-                            td {
-                                a {
-                                   xsl:attribute(name = href) {
-                                       xsl:value-of(select = url)
-                                   }
-                                   xsl:value-of(select = name)
-                                }
+                        a(class = logo
+                          href  = index.html) {
+                            span = x
+                            'mq'
+                        }
+                        a(href = 'index.html#try') = Playground
+                        a(href = 'index.html#examples') = Examples
+                        a(href = 'index.html#learn') = Learn
+                        a(href = xmq.pdf) = Grammar
+                        a(href = https://github.com/libxmq/xmq) = GitHub
+                        button(id      = themebutton
+                               class   = theme
+                               type    = button
+                               onclick = 'siteCycleTheme();') = 'Theme: auto'
+                    }
+                }
+                main(id = main)
+                {
+                    section(class = 'band alt hero')
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = kicker) = 'an exposé'
+                            h1(class = tagline) {
+                                'Markup and'
+                                br
+                                em = data
+                                ' languages.'
                             }
-                            td(style='padding-right:10px') {
-                                xsl:value-of(select = year)
+                            p(class = lead) {
+                                'A list of '
+                                xsl:value-of(select = 'count(lang)')
+                                ' markup, data-storage, configuration and configuration generator languages,
+                                 from GML in 1969 until today. Each with a small example.'
                             }
-                            td {
-                                xsl:value-of(select = info)
+                            p {
+                                'Source '
+                                a(href = resources/languages.xmq) = languages.xmq
+                                ', transform '
+                                a(href = resources/genlanguages.xslq) = genlanguages.xslq
+                                ', generated with:'
+                            }
+                            p(class = cmd) {
+                                span(class = code) = 'xmq languages.xmq transform genlanguages.xslq to-html'
+                            }
+                            div(class = filter) {
+                                label(for = langfilter) = 'Filter'
+                                input(id          = langfilter
+                                      type        = search
+                                      placeholder = 'name, year, author or syntax...'
+                                      oninput     = 'siteFilterLangs(this.value);')
+                                span(id        = langcount
+                                     aria-live = polite)
                             }
                         }
-                        tr {
-                            td
-                            td
-                            td(style = 'font-style:italic') {
-                                xsl:value-of(select = by)
-                            }
-                        }
-                        tr {
-                            td
-                            td
-                            td {
-                                div(style = '
-                                        display:inline-block;
-                                        padding:10px;
-                                        white-space:pre;
-                                        color:white;
-                                        font-family:monospace;
-                                        font-size: 10px;
-                                        border-radius:5px;
-                                        background-color:#888888;') {
-                                    xsl:value-of(select = example)
+                    }
+                    section(class = band)
+                    {
+                        div(class = 'wrap langs')
+                        {
+                            xsl:for-each(select = lang)
+                            {
+                                article(class = lang
+                                        id    = '{translate(name, " ()/+#.", "-------")}-{year}')
+                                {
+                                    div(class = langhead) {
+                                        h2 {
+                                            xsl:choose {
+                                                xsl:when(test = url) {
+                                                    a(href = '{url}') {
+                                                        xsl:value-of(select = name)
+                                                    }
+                                                }
+                                                xsl:otherwise {
+                                                    xsl:value-of(select = name)
+                                                }
+                                            }
+                                        }
+                                        span(class = year) {
+                                            xsl:value-of(select = year)
+                                        }
+                                    }
+                                    xsl:if(test = info) {
+                                        p(class = info) {
+                                            xsl:value-of(select = info)
+                                        }
+                                    }
+                                    xsl:if(test = by) {
+                                        p(class = by) {
+                                            xsl:value-of(select = by)
+                                        }
+                                    }
+                                    div(class = demo) {
+                                        div {
+                                            div(class = label) {
+                                                b {
+                                                    xsl:value-of(select = name)
+                                                }
+                                                'example'
+                                            }
+                                            pre {
+                                                xsl:value-of(select = example)
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                        }
+                    }
+                }
+                footer {
+                    div(class = wrap)
+                    {
+                        p {
+                            'Compiled by Fredrik Öhrström · oehrstroem@gmail.com'
+                            xsl:if(test = '$date') {
+                                ' · last updated '
+                                xsl:value-of(select = '$date')
+                            }
+                        }
+                        p {
+                            'Missing a language? Suggest it in the '
+                            a(href = https://github.com/orgs/libxmq/discussions) = forum
+                            '.'
                         }
                     }
                 }

@@ -173,7 +173,7 @@ $XMQ web/ixml/index.htmq \
      replace-entity DATE "$TODAY" \
      to-html > build/web/ixml/index.html
 
-$XMQ web/resources/languages.xmq replace-entity DATE "$TODAY" transform web/resources/genlanguages.xslq to-html > build/web/languages.html
+$XMQ web/resources/languages.xmq transform --stringparam=date="$TODAY" web/resources/genlanguages.xslq to-html > build/web/languages.html
 
 $XMQ web/upload.htmq to-html > build/web/upload.html
 
