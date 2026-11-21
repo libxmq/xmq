@@ -15,18 +15,12 @@ html {
         meta(name          = viewport
              content       = width=device-width
              initial-scale = 1.0)
-        style = 'body.light { max-width: 150ch; } body.dark { max-width: 150ch; }'
+        meta(name    = color-scheme
+             content = 'light dark')
+        style = 'body.xmq_auto { max-width: 150ch; }'
     }
-    body(onload='checkBackgroundSetting();' class='dark')
+    body(class = xmq_auto)
     {
-        button(type = button
-               title = 'Set functional cookie background=dark'
-               onClick = 'goDark();') = 'Dark Mode'
-        ' '
-        button(type = button
-               title = 'Set functional cookie background=light'
-               onClick = 'goLight();') = 'Light Mode'
-        ' '
         button(type = button
                title = 'Show as original xml'
                onClick = 'goXML();') = 'Show as XML'

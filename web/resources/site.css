@@ -1,0 +1,462 @@
+/* libxmq web site. Solarized inspired, with darkened/lightened accents so
+   that all text and syntax colors reach at least WCAG AA (4.5:1) contrast.
+   Follows prefers-color-scheme, html.light / html.dark force a scheme. */
+
+@font-face {
+    font-family: Mononoki;
+    src: url('mononoki-Regular.otf');
+}
+
+:root {
+    color-scheme: light;
+    --bg:         #fdf6e3;
+    --bg-alt:     #eee8d5;
+    --panel:      #fffcf2;
+    --panel-head: #f6efda;
+    --border:     #d6ccb0;
+    --text:       #073642;
+    --muted:      #4a5d64;
+    --heading:    #002b36;
+    --link:       #1a64a0;
+    --link-line:  #268bd255;
+    --accent:     #a8390c;
+    --accent-bg:  #cb4b16;
+    --on-accent:  #ffffff;
+    --shadow:     0 1px 2px #586e7522, 0 6px 24px #586e7514;
+
+    --t-en:  #a8390c; /* element name, orange */
+    --t-ek:  #1a64a0; /* element key, blue */
+    --t-ekv: #4a6600; /* values and quotes, green */
+    --t-ak:  #5a4eae; /* attribute key, violet */
+    --t-akv: #0f6e66; /* attribute value, cyan */
+    --t-c:   #596a6e; /* comment */
+    --t-e:   #a8215f; /* entity, compound, xsl, magenta */
+    --t-uw:  #b81d1b; /* unicode whitespace, red */
+
+    --margin: 1.25rem;
+    --band: 3.5rem;
+    --mono: Mononoki, ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+        color-scheme: dark;
+        --bg:         #002b36;
+        --bg-alt:     #073642;
+        --panel:      #00202a;
+        --panel-head: #052f3a;
+        --border:     #1d4c58;
+        --text:       #e6dfca;
+        --muted:      #a3b3b3;
+        --heading:    #fdf6e3;
+        --link:       #5aaeea;
+        --link-line:  #5aaeea66;
+        --accent:     #ec8550;
+        --accent-bg:  #cb4b16;
+        --on-accent:  #ffffff;
+        --shadow:     0 1px 2px #0006, 0 8px 28px #0004;
+        --t-en:  #ec8550;
+        --t-ek:  #5aaeea;
+        --t-ekv: #adc03a;
+        --t-ak:  #a3a7ea;
+        --t-akv: #45c4b8;
+        --t-c:   #93a8aa;
+        --t-e:   #ee72ad;
+        --t-uw:  #ff7a75;
+    }
+}
+
+:root.dark {
+    color-scheme: dark;
+    --bg:         #002b36;
+    --bg-alt:     #073642;
+    --panel:      #00202a;
+    --panel-head: #052f3a;
+    --border:     #1d4c58;
+    --text:       #e6dfca;
+    --muted:      #a3b3b3;
+    --heading:    #fdf6e3;
+    --link:       #5aaeea;
+    --link-line:  #5aaeea66;
+    --accent:     #ec8550;
+    --accent-bg:  #cb4b16;
+    --on-accent:  #ffffff;
+    --shadow:     0 1px 2px #0006, 0 8px 28px #0004;
+    --t-en:  #ec8550;
+    --t-ek:  #5aaeea;
+    --t-ekv: #adc03a;
+    --t-ak:  #a3a7ea;
+    --t-akv: #45c4b8;
+    --t-c:   #93a8aa;
+    --t-e:   #ee72ad;
+    --t-uw:  #ff7a75;
+}
+
+@media (min-width: 640px) {
+    :root { --margin: 2.5rem; --band: 4.5rem; }
+}
+
+/* Base */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    scroll-behavior: smooth;
+    interpolate-size: allow-keywords;
+}
+
+@media (min-width: 1200px) { html { font-size: 18px; } }
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; }
+}
+
+body { margin: 0; }
+
+h1, h2, h3 { color: var(--heading); line-height: 1.2; }
+h2 { font-size: 1.45rem; font-weight: 700; margin: 0 0 0.6rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
+p, ul { margin: 0 0 1rem; }
+ul { padding-left: 1.2rem; }
+li { margin-bottom: 0.35rem; }
+li::marker { color: var(--accent); }
+
+a {
+    color: var(--link);
+    text-decoration-line: underline;
+    text-decoration-color: var(--link-line);
+    text-decoration-thickness: 0.14em;
+    text-underline-offset: 0.18em;
+}
+a:hover { text-decoration-color: var(--link); }
+
+:focus-visible {
+    outline: 3px solid var(--link);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.skip {
+    position: absolute;
+    left: -999px;
+}
+.skip:focus { left: 1rem; top: 1rem; z-index: 10; background: var(--panel); padding: 0.5rem 1rem; }
+
+/* Layout: full width bands with a centered column, like rcl-lang.org. */
+
+.wrap {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 0 var(--margin);
+}
+
+section.band {
+    padding: var(--band) 0;
+    background: var(--bg);
+}
+section.band.alt { background: var(--bg-alt); }
+
+.cols { display: grid; gap: 1.5rem 3rem; }
+.features { display: grid; gap: 2rem 3rem; }
+
+@media (min-width: 860px) {
+    .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .features { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.lead { font-size: 1.12rem; color: var(--muted); max-width: 46rem; }
+.kicker {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+}
+
+/* Header */
+
+header.top {
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+@media (max-width: 639px) {
+    header.top { position: static; }
+}
+
+header.top nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 1.4rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+}
+
+header.top a { color: var(--text); text-decoration: none; font-weight: 500; }
+header.top a:hover { color: var(--link); }
+header.top a.logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: var(--heading);
+    margin-right: auto;
+}
+header.top a.logo span { color: var(--accent); }
+
+button.theme {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.15rem 0.8rem;
+    cursor: pointer;
+}
+button.theme:hover { color: var(--text); border-color: var(--muted); }
+
+/* Hero */
+
+.hero { padding-top: calc(var(--band) * 0.8); }
+
+h1.tagline {
+    font-size: clamp(2.3rem, 6vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin: 0 0 1.4rem;
+}
+h1.tagline em { font-style: normal; color: var(--accent); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 1.8rem 0 0; }
+
+.btn, button.btn {
+    font: inherit;
+    font-weight: 600;
+    display: inline-block;
+    padding: 0.55rem 1.2rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn:hover { border-color: var(--link); color: var(--link); }
+.btn.primary { background: var(--accent-bg); border-color: var(--accent-bg); color: var(--on-accent); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--on-accent); }
+
+/* Code panes */
+
+.demo {
+    display: grid;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin: 1.2rem 0 1.6rem;
+}
+.demo > div { min-width: 0; display: flex; flex-direction: column; }
+.demo > div + div { border-top: 1px solid var(--border); }
+
+@media (min-width: 860px) {
+    .demo.split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .demo.split > div + div { border-top: none; border-left: 1px solid var(--border); }
+}
+
+.demo .label {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    background: var(--panel-head);
+    border-bottom: 1px solid var(--border);
+    padding: 0.4rem 0.9rem;
+    margin: 0;
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+}
+.demo .label b { color: var(--text); font-weight: 600; }
+
+/* All code, including the pre blocks rendered by xmq (class xmq_auto/xmq_light). */
+pre, .demo pre.xmq, pre.xmq {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: block;
+    margin: 0;
+    padding: 0.9rem 1rem;
+    white-space: pre;
+    word-break: normal;
+    overflow-x: auto;
+    max-width: none;
+    width: 100%;
+    tab-size: 4;
+}
+.demo.wrapcode pre, .demo.wrapcode pre.xmq { white-space: pre-wrap; word-break: break-all; }
+
+pre.xmq xmqEN  { color: var(--t-en); }
+pre.xmq xmqEK  { color: var(--t-ek); }
+pre.xmq xmqEKV { color: var(--t-ekv); font-weight: 600; }
+pre.xmq xmqQ   { color: var(--t-ekv); font-weight: 600; }
+pre.xmq xmqAK  { color: var(--t-ak); }
+pre.xmq xmqAKV { color: var(--t-akv); }
+pre.xmq xmqC   { color: var(--t-c); font-style: italic; }
+pre.xmq xmqE, pre.xmq xmqCP, pre.xmq xmqXSL { color: var(--t-e); }
+pre.xmq xmqNS  { color: var(--t-ak); }
+pre.xmq xmqNSD { color: var(--t-akv); }
+pre.xmq xmqUW  { color: var(--t-uw); text-decoration: underline; }
+
+/* Inline tokens used in the running text. */
+p xmqE, p xmqCP { color: var(--t-e); font-family: var(--mono); }
+p xmqEK { color: var(--t-ek); font-family: var(--mono); }
+p xmqQ  { color: var(--t-ekv); font-family: var(--mono); font-weight: 600; }
+
+code, span.code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0.05rem 0.4rem;
+    white-space: nowrap;
+}
+p.cmd { margin: 0.4rem 0 1rem; }
+p.cmd span.code {
+    display: inline-block;
+    white-space: pre-wrap;
+    padding: 0.3rem 0.7rem;
+}
+p.cmd span.code::before { content: '$ '; color: var(--muted); }
+
+/* Features */
+
+.feature h2 { font-size: 1.15rem; margin-bottom: 0.35rem; }
+.feature p { color: var(--muted); margin: 0; }
+.feature .icon {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+/* Expandable areas */
+
+details.fold {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    margin: 0 0 0.9rem;
+    box-shadow: var(--shadow);
+}
+details.fold > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 1rem 3rem 1rem 1.2rem;
+    position: relative;
+    border-radius: 0.5rem;
+}
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after {
+    content: '';
+    position: absolute;
+    right: 1.3rem;
+    top: 1.35rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+details.fold[open] > summary::after { transform: rotate(-135deg); top: 1.6rem; }
+details.fold > summary:hover { background: var(--panel-head); }
+details.fold[open] > summary { border-bottom: 1px solid var(--border); border-radius: 0.5rem 0.5rem 0 0; }
+details.fold > summary h2, details.fold > summary h3 { display: inline; margin: 0; font-size: 1.15rem; }
+details.fold > summary .teaser { display: block; color: var(--muted); font-size: 0.95rem; margin-top: 0.2rem; }
+details.fold > .body { padding: 1.2rem 1.2rem 0.4rem; }
+details.fold > .body > .demo:last-child { margin-bottom: 1rem; }
+
+details.fold::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 0.25s ease, content-visibility 0.25s allow-discrete;
+}
+details.fold[open]::details-content { block-size: auto; }
+
+.foldtools { display: flex; justify-content: flex-end; gap: 0.6rem; margin-bottom: 0.8rem; }
+.foldtools button {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--link);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Examples gallery */
+
+.chips { display: flex; flex-wrap: wrap; gap: 0.6rem; list-style: none; padding: 0; }
+.chips li { margin: 0; }
+.chips a {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.92rem;
+}
+.chips a:hover { border-color: var(--link); color: var(--link); }
+
+/* IXML playground */
+
+.play textarea {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    width: 100%;
+    min-height: 9rem;
+    resize: vertical;
+    color: var(--text);
+    background: var(--panel);
+    border: none;
+    padding: 0.9rem 1rem;
+    margin: 0;
+    display: block;
+    flex: 1;
+}
+.play textarea:focus-visible { outline: 3px solid var(--link); outline-offset: -3px; border-radius: 0; }
+.play form { margin: 0; }
+.play .demo { margin-bottom: 1rem; }
+.buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.buttons .btn { font-size: 0.9rem; padding: 0.4rem 0.9rem; }
+
+/* Footer */
+
+footer {
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.92rem;
+    padding: 2rem 0 2.5rem;
+}
+footer p { margin: 0.2rem 0; }
