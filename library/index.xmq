@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-21T21:30:26Z)
+library(created = 2026-11-21T22:26:50Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -761,10 +761,10 @@ library(created = 2026-11-21T21:30:26Z)
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
     file(path        = lang/java.ixml
-         size        = 27459
-         sha256      = 101715c2aebf3d1a77788bb4f44277887fdeab7410e2e969589ea17db33133ca
-         mtime       = 2026-11-21T19:07:40Z
-         version     = 0g
+         size        = 27620
+         sha256      = 757644f6a1307a6b3058f97faf0522f2a962be04e29cb762c28b697f8ee4fa34
+         mtime       = 2026-11-21T22:25:42Z
+         version     = 0h
          summary     = 'A Java 17 grammar written in IXML.'
          description = '''A Java 17 grammar written in IXML.
 
@@ -849,12 +849,12 @@ library(created = 2026-11-21T21:30:26Z)
                           method references on a generic type (List<String>::size),
                           module-info.java and the Java 21 features (record patterns, patterns in switch).''')
     file(path        = lang/java.xslq
-         size        = 22426
-         sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 0g
-         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.'
-         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+         size        = 24548
+         sha256      = fbe5551029cf68c4d50dc2f418b3f542382b08185bab56a59ee37a5c6bad72a9
+         mtime       = 2026-11-21T22:26:02Z
+         version     = 0h
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.'
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
                         The grammar is written for the generated LL(*) parser, so its expressions have an
@@ -871,17 +871,18 @@ library(created = 2026-11-21T21:30:26Z)
                             (Outer.super) or class_literal (a.b.class),
                           - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
                             it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
-                          - a leading comment (on its own line) is moved to the declaration or statement
-                            that follows it, or to the end of the block before a closing brace, and the
-                            comments of a token with text, eg a name, are after its element.
+                          - a leading comment or javadoc (on its own line) is moved to the declaration or
+                            statement that follows it, or to the end of the block before a closing brace, and
+                            the comments of a token with text, eg a name, are after its element. A javadoc
+                            (/** ... */) stays a javadoc element, eg the first child of the method it documents.
 
                           xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
                           xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
     file(path        = lang/java_v0.ixml
-         size        = 27459
-         sha256      = 101715c2aebf3d1a77788bb4f44277887fdeab7410e2e969589ea17db33133ca
-         mtime       = 2026-11-21T19:07:40Z
-         version     = 0g
+         size        = 27620
+         sha256      = 757644f6a1307a6b3058f97faf0522f2a962be04e29cb762c28b697f8ee4fa34
+         mtime       = 2026-11-21T22:25:42Z
+         version     = 0h
          summary     = 'A Java 17 grammar written in IXML.'
          description = '''A Java 17 grammar written in IXML.
 
@@ -966,12 +967,12 @@ library(created = 2026-11-21T21:30:26Z)
                           method references on a generic type (List<String>::size),
                           module-info.java and the Java 21 features (record patterns, patterns in switch).''')
     file(path        = lang/java_v0.xslq
-         size        = 22426
-         sha256      = 8b5433331fcf38c100d888bd6d2c70b97881ffb7ab4bd2c251d31107364dfc55
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 0g
-         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.'
-         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+         size        = 24548
+         sha256      = fbe5551029cf68c4d50dc2f418b3f542382b08185bab56a59ee37a5c6bad72a9
+         mtime       = 2026-11-21T22:26:02Z
+         version     = 0h
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.'
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.
                         Fredrik Öhrström (c) 2026 spdx: MIT
 
                         The grammar is written for the generated LL(*) parser, so its expressions have an
@@ -988,9 +989,10 @@ library(created = 2026-11-21T21:30:26Z)
                             (Outer.super) or class_literal (a.b.class),
                           - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
                             it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
-                          - a leading comment (on its own line) is moved to the declaration or statement
-                            that follows it, or to the end of the block before a closing brace, and the
-                            comments of a token with text, eg a name, are after its element.
+                          - a leading comment or javadoc (on its own line) is moved to the declaration or
+                            statement that follows it, or to the end of the block before a closing brace, and
+                            the comments of a token with text, eg a name, are after its element. A javadoc
+                            (/** ... */) stays a javadoc element, eg the first child of the method it documents.
 
                           xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
                           xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
@@ -1586,6 +1588,124 @@ library(created = 2026-11-21T21:30:26Z)
                           - a leading comment (on its own line) is moved to the declaration or statement
                             that follows it, or to the end of the block before a closing brace, and the
                             comments of a token with text, eg a name, are after its element.
+
+                          xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
+                          xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')
+    file(path        = lang/java_v0h.ixml
+         size        = 27620
+         sha256      = 757644f6a1307a6b3058f97faf0522f2a962be04e29cb762c28b697f8ee4fa34
+         mtime       = 2026-11-21T22:25:42Z
+         version     = 0h
+         summary     = 'A Java 17 grammar written in IXML.'
+         description = '''A Java 17 grammar written in IXML.
+
+                          Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
+
+                          Permission is hereby granted, free of charge, to any person obtaining a copy
+                          of this software and associated documentation files (the "Software"), to deal
+                          in the Software without restriction, including without limitation the rights
+                          to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                          copies of the Software, and to permit persons to whom the Software is
+                          furnished to do so, subject to the following conditions:
+
+                          The above copyright notice and this permission notice shall be included in all
+                          copies or substantial portions of the Software.
+
+                          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                          AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                          LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                          OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                          SOFTWARE.
+
+                          The grammar parses Java 17 source files, which are UTF-8. The tree has the
+                          contents of the code: names, literals, operators, comments and the structure.
+                          Whitespace and punctuation are dropped.
+
+                          The grammar is written for the LL(*) parser generator (xmqj generate-parser)
+                          as well as the ixml engine, in the style of library/lang/c.ixml:
+
+                            - Whitespace and comments (ws) are placed at the end of each token, except
+                              in the first rule, which accepts leading white space. No rule may start
+                              with ws, otherwise whitespace can be split ambiguously. A comment on the
+                              line of the token is a comment, a comment on the following lines is a
+                              leading_comment, which java.xslq moves to the declaration or statement
+                              that follows it.
+                            - Tokens use the not operator ! to implement maximal munch, e.g. an
+                              IDENTIFIER cannot be followed by another identifier character (!idchar) and
+                              the token + cannot be followed by + or =. Keywords cannot be identifiers
+                              (!keyword). The contextual keywords (var, yield, record, sealed, permits)
+                              are identifiers, matched as keywords only where the syntax needs them.
+                            - > is always a single token, so that List<List<String>> closes two type
+                              argument lists. The shift operators >> and >>> are > tokens without
+                              whitespace between them. The assignments >>= and >>>= are tokens.
+                            - Unicode escapes (A) are only recognized inside char, string and
+                              text block literals.
+                            - Literals keep their source text without the quotes, escapes are not
+                              translated, e.g. "a\n" is STRING_LITERAL = a\n
+
+                          The tree, eg for public static <T> List<T>[] f(final int x) throws E { ... }
+
+                            method(name = f) {
+                                modifier = public
+                                modifier = static
+                                type_parameters { type_parameter(name = T) }
+                                type { name = List  type_arguments { type { name = T } }  dim }
+                                parameter(name = x) { modifier = final  type { primitive = int } }
+                                throws { type { name = E } }
+                                block
+                            }
+
+                            - Declared names are attributes: class(name = A), variable(name = x), ...
+                            - A type has a primitive (int) or a dotted name (java.util.List), then its
+                              type_arguments, and a dim for every []. A name is split only where type
+                              arguments or annotations come between its parts:
+                              Outer<String>.Inner is type { name = Outer  type_arguments {...}  name = Inner }
+                            - wildcard { extends {...} } or wildcard { super {...} } for ? extends T.
+                            - Annotations and modifiers are kept in source order.
+                            - void, varargs, static (of an initializer) and dim are empty elements.
+                            - A comment keeps its text without // or /* */, eg comment = ' the x'. After
+                              java.xslq the comments on their own lines before a declaration or
+                              statement are its first children, eg the javadoc of a method, the
+                              comments before a closing brace are the last children of the block, and
+                              a comment on the line of a token is after the element of the token.
+
+                          The grammar accepts more than Java in a few places: an expression statement
+                          can be any primary (a; is accepted, Java requires a call, x++ or an
+                          assignment) and the left side of an assignment can be any primary (1 = x;).
+
+                          Not supported: annotation type declarations (@interface), annotations on
+                          types (eg List<@NonNull String>, annotations before a type are modifiers),
+                          method references on a generic type (List<String>::size),
+                          module-info.java and the Java 21 features (record patterns, patterns in switch).''')
+    file(path        = lang/java_v0h.xslq
+         size        = 24548
+         sha256      = fbe5551029cf68c4d50dc2f418b3f542382b08185bab56a59ee37a5c6bad72a9
+         mtime       = 2026-11-21T22:26:02Z
+         version     = 0h
+         summary     = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.'
+         description = 'Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                        The grammar is written for the generated LL(*) parser, so its expressions have an
+                        element for every precedence level they pass and the method calls, field and array
+                        accesses are chains of selectors on a primary. This stylesheet:
+
+                          - removes the levels without an operator, eg assignment { conditional_expression {
+                            logical_or { postfix { name = x } } } } is name = x, and names a level with an
+                            operator after the operator, eg additive for + and -,
+                          - conditional_expression with ? : is conditional and a level with instanceof is
+                            instanceof,
+                          - a primary (or postfix) with a selector is method_call, field_access,
+                            array_access, method_reference, new (outer.new), this (Outer.this), super
+                            (Outer.super) or class_literal (a.b.class),
+                          - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
+                            it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
+                          - a leading comment or javadoc (on its own line) is moved to the declaration or
+                            statement that follows it, or to the end of the block before a closing brace, and
+                            the comments of a token with text, eg a name, are after its element. A javadoc
+                            (/** ... */) stays a javadoc element, eg the first child of the method it documents.
 
                           xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
                           xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq')

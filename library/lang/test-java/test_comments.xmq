@@ -4,7 +4,7 @@ compilation_unit {
     comment = ' pkg'
     class(name = A)
     {
-        comment = '* Doc for A. '
+        javadoc = ' Doc for A. '
         body {
             field {
                 comment = ' field x'
@@ -47,8 +47,9 @@ compilation_unit {
     class(name = A)
     {
         comment = ' eof'
-        comment = ( '*
-                      * Doc.'
+        javadoc = ( &#10;
+                    ' '
+                    '* Doc.'
                     &#10;
                     ' ' )
         annotation {
@@ -65,7 +66,7 @@ compilation_unit {
         }
         body {
             field {
-                comment  = '* Doc x. '
+                javadoc  = ' Doc x. '
                 modifier = private
                 type {
                     primitive = int

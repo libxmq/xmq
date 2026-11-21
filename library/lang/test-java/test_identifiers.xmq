@@ -1,7 +1,7 @@
 compilation_unit {
     class(name = classes)
     {
-        comment = '* Identifiers: the contextual keywords, $ _ and Unicode are names.
+        javadoc = ' Identifiers: the contextual keywords, $ _ and Unicode are names.
                        The keywords are not, eg classes and if_x are identifiers. '
         body {
             field {

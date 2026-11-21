@@ -1,4 +1,4 @@
-{ v0g A Java 17 grammar written in IXML.
+{ v0h A Java 17 grammar written in IXML.
 
 Copyright (c) 2026 Fredrik Öhrström libxmq (spdx: MIT)
 
@@ -400,18 +400,21 @@ constructor_call = (type_arguments?, (^THIS>this | ^SUPER>super)
   The ws after a token is split at the end of its line. A comment on the same
   line as the token is a comment, eg int x; // the x, it stays where the token
   is. The comments on the following lines, up to the next token, are each a
-  leading_comment. java.xslq moves a leading comment to the declaration or
+  leading_comment, or a javadoc if it starts with /** (but /**/ is a comment).
+  java.xslq moves a leading comment or javadoc to the declaration or
   statement that follows it, eg the javadoc of a method is in the method. }
 
 -ws = (-hspace | comment)*, (-eol, lws | !wsstart).
--lws = (-[' '; #9; #a; #c; #d; #feff] | leading_comment)*, !wsstart.
+-lws = (-[' '; #9; #a; #c; #d; #feff] | leading_comment | javadoc)*, !wsstart.
 -hspace = -[' '; #9; #c; #feff].
 -eol = -#a | -#d, -#a | -#d, !#a.
 -wsstart = [' '; #9; #a; #c; #d; #feff] | '//' | '/*'.
 comment = -'//', ~[#a; #d]*, !~[#a; #d]
         | -'/*', comment_char*, -'*/'.
 leading_comment = -'//', ~[#a; #d]*, !~[#a; #d]
-                | -'/*', comment_char*, -'*/'.
+                | -'/**/'
+                | -'/*', !'*', comment_char*, -'*/'.
+javadoc = -'/**', !'/', comment_char*, -'*/'.
 -comment_char = ~['*'] | '*', !'/'.
 
 { Literals }

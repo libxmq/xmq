@@ -1,0 +1,756 @@
+// Generate javaapi.html, the documentation of the public Java api in
+// src/main/java/org/libxmq (not imp), see scripts/generate_java_api_doc.sh.
+// The input is javaapi { file(name) { compilation_unit ... } ... } where each file was
+// parsed with ixml:lang/java, so a javadoc /** ... */ is a javadoc element and the
+// first child of the declaration it documents.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = no)
+    xsl:param(name = date)
+
+    xsl:variable(name = nl) {
+        xsl:text = &#10;
+    }
+
+    // The documented types, the top level types of the files.
+    xsl:variable(name   = types
+                 select = '/javaapi/file/compilation_unit/*[self::class or self::interface or self::enum or self::record]')
+
+    xsl:template(match = javaapi)
+    {
+        html(lang = en) {
+            head {
+                meta(charset = UTF-8)
+                title = 'Java api · xmq'
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                script = '''try { var t = localStorage.getItem("xmq-theme"); if (t === "light" || t === "dark") document.documentElement.classList.add(t); } catch (e) {}'''
+                link(rel  = stylesheet
+                     href = resources/xmq.css)
+                link(rel  = stylesheet
+                     href = resources/site.css)
+                script(src = resources/code.js) = ''
+            }
+            body(onload = 'siteInit();')
+            {
+                a(class = skip
+                  href  = '#main') = 'Skip to content'
+                header(class = top)
+                {
+                    nav(class      = wrap
+                        aria-label = Main)
+                    {
+                        a(class = logo
+                          href  = index.html) {
+                            span = x
+                            'mq'
+                        }
+                        a(href = 'index.html#try') = Playground
+                        a(href = library.html) = Library
+                        a(href = api.html) = 'C api'
+                        a(href = javaapi.html) = 'Java api'
+                        a(href = https://github.com/libxmq/xmq) = GitHub
+                        button(id      = themebutton
+                               class   = theme
+                               type    = button
+                               onclick = 'siteCycleTheme();') = 'Theme: auto'
+                    }
+                }
+                main(id = main)
+                {
+                    section(class = 'band alt hero')
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = kicker) = 'org.libxmq'
+                            h1(class = tagline) {
+                                'The Java'
+                                br
+                                em = api
+                                '.'
+                            }
+                            p(class = lead) = 'Parse xmq, xml, html and json into a DOM and query it with xpath, from Java.
+                                               This page is generated from the Java sources: each file is parsed with the
+                                               ixml grammar ixml:lang/java, where /** ... */ is a javadoc element, and
+                                               transformed with an xslq stylesheet.'
+                            p(class = cmd) {
+                                span(class = code) = 'scripts/generate_java_api_doc.sh'
+                            }
+                            div(class = filter) {
+                                label(for = libfilter) = 'Filter'
+                                input(id          = libfilter
+                                      type        = search
+                                      placeholder = 'name or description...'
+                                      oninput     = 'siteFilterLibrary(this.value);')
+                                span(id        = libcount
+                                     aria-live = polite)
+                            }
+                        }
+                    }
+                    section(class = band)
+                    {
+                        div(class = wrap)
+                        {
+                            div(class = foldtools)
+                            {
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', true);") = 'Open all'
+                                button(type    = button
+                                       onclick = "siteFoldAll('liblist', false);") = 'Close all'
+                            }
+                            div(id = liblist)
+                            {
+                                // XMQ first, then the other types by name.
+                                xsl:apply-templates(select = '$types[@name = "XMQ"]'
+                                                    mode   = type)
+                                xsl:apply-templates(select = '$types[@name != "XMQ"]'
+                                                    mode   = type)
+                                {
+                                    xsl:sort(select = @name)
+                                }
+                            }
+                        }
+                    }
+                }
+                footer {
+                    div(class = wrap)
+                    {
+                        p {
+                            'Generated from src/main/java/org/libxmq with '
+                            a(href = resources/genjavaapi.xslq) = genjavaapi.xslq
+                            xsl:if(test = '$date') {
+                                ' · last updated '
+                                xsl:value-of(select = '$date')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Types
+
+    // A class, interface, enum or record: a folded section with its members.
+    xsl:template(match = '*'
+                 mode  = type)
+    {
+        xsl:variable(name = doc) {
+            xsl:call-template(name = clean) {
+                xsl:with-param(name = text select = 'string(javadoc)')
+            }
+        }
+        xsl:variable(name = interface select = 'boolean(self::interface)')
+        xsl:variable(name   = members
+                     select = 'body/*[self::constant or ((self::field or self::constructor or self::method) and (modifier = "public" or $interface))]')
+        details(class = 'fold libdir'
+                id    = '{@name}')
+        {
+            summary {
+                h2 {
+                    xsl:value-of(select = @name)
+                }
+                span(class = teaser) {
+                    span(class = libitem) {
+                        xsl:value-of(select = 'local-name()')
+                    }
+                    span(class = apiteaser) {
+                        xsl:call-template(name = summary) {
+                            xsl:with-param(name = doc select = $doc)
+                        }
+                    }
+                }
+            }
+            div(class = body)
+            {
+                pre(class = apisig) {
+                    xsl:call-template(name = modifiers)
+                    xsl:value-of(select = 'local-name()')
+                    xsl:text = ' '
+                    b {
+                        xsl:value-of(select = @name)
+                    }
+                    xsl:apply-templates(select = type_parameters
+                                        mode   = sig)
+                    xsl:for-each(select = 'extends')
+                    {
+                        ' extends '
+                        xsl:call-template(name = type-list)
+                    }
+                    xsl:for-each(select = 'implements')
+                    {
+                        ' implements '
+                        xsl:call-template(name = type-list)
+                    }
+                }
+                xsl:call-template(name = documentation) {
+                    xsl:with-param(name = doc select = $doc)
+                }
+                xsl:apply-templates(select = $members
+                                    mode   = member)
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Members
+
+    xsl:template(match = '*'
+                 mode  = member)
+    {
+        xsl:variable(name = doc) {
+            xsl:call-template(name = clean) {
+                xsl:with-param(name = text select = 'string(javadoc)')
+            }
+        }
+        xsl:variable(name = type select = 'ancestor::*[self::class or self::interface or self::enum or self::record][1]/@name')
+        xsl:variable(name = name) {
+            xsl:choose {
+                xsl:when(test = 'self::field') {
+                    xsl:value-of(select = 'variable/@name')
+                }
+                xsl:otherwise {
+                    xsl:value-of(select = '@name')
+                }
+            }
+        }
+        // Overloaded methods and constructors get a number in their id.
+        xsl:variable(name = n select = 'count(preceding-sibling::*[local-name() = local-name(current()) and @name = current()/@name])')
+        details(class = 'fold libentry apientry'
+                id    = '{$type}.{$name}{substring(concat("-", $n + 1), 1, 9 * number($n > 0))}')
+        {
+            summary {
+                span(class = libname) {
+                    xsl:value-of(select = $name)
+                    xsl:if(test = 'self::method or self::constructor') {
+                        '('
+                        xsl:for-each(select = parameter) {
+                            xsl:if(test = 'position() > 1') {
+                                ', '
+                            }
+                            xsl:apply-templates(select = type
+                                                mode   = plain)
+                            xsl:if(test = varargs) {
+                                '...'
+                            }
+                        }
+                        ')'
+                    }
+                }
+                span(class = libsum) {
+                    xsl:call-template(name = summary) {
+                        xsl:with-param(name = doc select = $doc)
+                    }
+                }
+            }
+            div(class = body)
+            {
+                pre(class = apisig) {
+                    xsl:apply-templates(select = '.'
+                                        mode   = sig)
+                }
+                xsl:call-template(name = documentation) {
+                    xsl:with-param(name = doc select = $doc)
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ Signatures
+
+    xsl:template(name = modifiers)
+    {
+        xsl:for-each(select = modifier) {
+            xsl:value-of(select = '.')
+            xsl:text = ' '
+        }
+    }
+
+    xsl:template(match = method
+                 mode  = sig)
+    {
+        xsl:call-template(name = modifiers)
+        xsl:if(test = type_parameters) {
+            xsl:apply-templates(select = type_parameters
+                                mode   = sig)
+            xsl:text = ' '
+        }
+        xsl:choose {
+            xsl:when(test = void) {
+                'void'
+            }
+            xsl:otherwise {
+                xsl:apply-templates(select = type
+                                    mode   = sig)
+            }
+        }
+        xsl:text = ' '
+        b {
+            xsl:value-of(select = @name)
+        }
+        xsl:call-template(name = parameters)
+    }
+
+    xsl:template(match = constructor
+                 mode  = sig)
+    {
+        xsl:call-template(name = modifiers)
+        b {
+            xsl:value-of(select = @name)
+        }
+        xsl:call-template(name = parameters)
+    }
+
+    xsl:template(match = field
+                 mode  = sig)
+    {
+        xsl:call-template(name = modifiers)
+        xsl:apply-templates(select = type
+                            mode   = sig)
+        xsl:text = ' '
+        b {
+            xsl:value-of(select = 'variable/@name')
+        }
+        ';'
+    }
+
+    xsl:template(match = constant
+                 mode  = sig)
+    {
+        xsl:value-of(select = '../../@name')
+        '.'
+        b {
+            xsl:value-of(select = @name)
+        }
+    }
+
+    xsl:template(name = parameters)
+    {
+        '('
+        xsl:for-each(select = parameter) {
+            xsl:if(test = 'position() > 1') {
+                ', '
+            }
+            xsl:apply-templates(select = type
+                                mode   = sig)
+            xsl:if(test = varargs) {
+                '...'
+            }
+            xsl:text = ' '
+            xsl:value-of(select = @name)
+        }
+        ')'
+        xsl:for-each(select = throws) {
+            ' throws '
+            xsl:call-template(name = type-list)
+        }
+        ';'
+    }
+
+    xsl:template(name = type-list)
+    {
+        xsl:for-each(select = type) {
+            xsl:if(test = 'position() > 1') {
+                ', '
+            }
+            xsl:apply-templates(select = '.'
+                                mode   = sig)
+        }
+    }
+
+    // A type, a documented type links to its section.
+    xsl:template(match = type
+                 mode  = sig)
+    {
+        xsl:variable(name = t select = 'string(name | primitive)')
+        xsl:choose {
+            xsl:when(test = '$types[@name = $t]') {
+                a(href = '#{$t}') {
+                    xsl:value-of(select = $t)
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $t)
+            }
+        }
+        xsl:if(test = type_arguments) {
+            '<'
+            xsl:for-each(select = 'type_arguments/type') {
+                xsl:if(test = 'position() > 1') {
+                    ', '
+                }
+                xsl:apply-templates(select = '.'
+                                    mode   = sig)
+            }
+            '>'
+        }
+        xsl:for-each(select = dim) {
+            '[]'
+        }
+    }
+
+    // A type as plain text, for the row names.
+    xsl:template(match = type
+                 mode  = plain)
+    {
+        xsl:value-of(select = 'name | primitive')
+        xsl:if(test = type_arguments) {
+            '<'
+            xsl:for-each(select = 'type_arguments/type') {
+                xsl:if(test = 'position() > 1') {
+                    ', '
+                }
+                xsl:apply-templates(select = '.'
+                                    mode   = plain)
+            }
+            '>'
+        }
+        xsl:for-each(select = dim) {
+            '[]'
+        }
+    }
+
+    xsl:template(match = type_parameters
+                 mode  = sig)
+    {
+        '<'
+        xsl:for-each(select = type_parameter) {
+            xsl:if(test = 'position() > 1') {
+                ', '
+            }
+            xsl:value-of(select = @name)
+            xsl:for-each(select = 'extends') {
+                ' extends '
+                xsl:call-template(name = type-list)
+            }
+        }
+        '>'
+    }
+
+    // ------------------------------------------------------------------ Javadoc
+
+    // The javadoc without the leading * of each line (and one space after it).
+    xsl:template(name = clean)
+    {
+        xsl:param(name = text)
+        xsl:if(test = 'string-length($text) > 0') {
+            xsl:variable(name = line) {
+                xsl:call-template(name = ltrim) {
+                    xsl:with-param(name = s select = 'substring-before(concat($text, $nl), $nl)')
+                }
+            }
+            xsl:variable(name = star) {
+                xsl:choose {
+                    xsl:when(test = 'starts-with($line, "* ")') {
+                        xsl:value-of(select = 'substring($line, 3)')
+                    }
+                    xsl:when(test = 'starts-with($line, "*")') {
+                        xsl:value-of(select = 'substring($line, 2)')
+                    }
+                    xsl:otherwise {
+                        xsl:value-of(select = $line)
+                    }
+                }
+            }
+            xsl:value-of(select = $star)
+            xsl:value-of(select = $nl)
+            xsl:call-template(name = clean) {
+                xsl:with-param(name = text select = 'substring-after($text, $nl)')
+            }
+        }
+    }
+
+    xsl:template(name = ltrim)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = 'starts-with($s, " ")') {
+                xsl:call-template(name = ltrim) {
+                    xsl:with-param(name = s select = 'substring($s, 2)')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+
+    // The first sentence of the description.
+    xsl:template(name = summary)
+    {
+        xsl:param(name = doc)
+        xsl:variable(name = text) {
+            xsl:call-template(name = plain-description) {
+                xsl:with-param(name = doc select = $doc)
+            }
+        }
+        xsl:variable(name = t select = 'normalize-space($text)')
+        xsl:choose {
+            xsl:when(test = 'contains($t, ". ")') {
+                xsl:value-of(select = 'substring-before($t, ". ")')
+                '.'
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $t)
+            }
+        }
+    }
+
+    // The description as plain text: the lines before the first tag, without the
+    // code blocks and html tags.
+    xsl:template(name = plain-description)
+    {
+        xsl:param(name = doc)
+        xsl:param(name = code select = 'false()')
+        xsl:if(test = 'string-length($doc) > 0') {
+            xsl:variable(name = line select = 'normalize-space(substring-before(concat($doc, $nl), $nl))')
+            xsl:if(test = 'not(starts-with($line, "@"))') {
+                xsl:variable(name = incode select = '($code and not(contains($line, "</pre>"))) or (starts-with($line, "<pre>") and not(contains($line, "</pre>")))')
+                xsl:if(test = 'not($code) and not(starts-with($line, "<pre>"))') {
+                    xsl:call-template(name = strip-tags) {
+                        xsl:with-param(name = s select = $line)
+                    }
+                    xsl:text = ' '
+                }
+                xsl:call-template(name = plain-description) {
+                    xsl:with-param(name = doc select = 'substring-after($doc, $nl)')
+                    xsl:with-param(name = code select = $incode)
+                }
+            }
+        }
+    }
+
+    // Remove <p>, </p> and the braces of {@code x} from a line.
+    xsl:template(name = strip-tags)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = 'contains($s, "<p>")') {
+                xsl:call-template(name = strip-tags) {
+                    xsl:with-param(name = s select = 'concat(substring-before($s, "<p>"), substring-after($s, "<p>"))')
+                }
+            }
+            xsl:when(test = 'contains($s, "</p>")') {
+                xsl:call-template(name = strip-tags) {
+                    xsl:with-param(name = s select = 'concat(substring-before($s, "</p>"), substring-after($s, "</p>"))')
+                }
+            }
+            xsl:when(test = 'contains($s, "{@code ") and contains(substring-after($s, "{@code "), "}")') {
+                xsl:variable(name = after select = 'substring-after($s, "{@code ")')
+                xsl:call-template(name = strip-tags) {
+                    xsl:with-param(name = s select = 'concat(substring-before($s, "{@code "), substring-before($after, "}"), substring-after($after, "}"))')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+
+    // The description, parameters, return value and exceptions.
+    xsl:template(name = documentation)
+    {
+        xsl:param(name = doc)
+        div(class = apidesc) {
+            xsl:call-template(name = description) {
+                xsl:with-param(name = doc select = $doc)
+            }
+        }
+        xsl:if(test = 'contains($doc, "@param ")') {
+            h3 = Parameters
+            dl(class = apiparams) {
+                xsl:call-template(name = tags) {
+                    xsl:with-param(name = doc select = $doc)
+                    xsl:with-param(name = tag select = '"@param "')
+                    xsl:with-param(name = named select = 'true()')
+                }
+            }
+        }
+        xsl:if(test = 'contains($doc, "@return")') {
+            h3 = Returns
+            dl(class = apiparams) {
+                xsl:call-template(name = tags) {
+                    xsl:with-param(name = doc select = $doc)
+                    xsl:with-param(name = tag select = '"@return "')
+                    xsl:with-param(name = named select = 'false()')
+                }
+            }
+        }
+        xsl:if(test = 'contains($doc, "@throws ")') {
+            h3 = Throws
+            dl(class = apiparams) {
+                xsl:call-template(name = tags) {
+                    xsl:with-param(name = doc select = $doc)
+                    xsl:with-param(name = tag select = '"@throws "')
+                    xsl:with-param(name = named select = 'true()')
+                }
+            }
+        }
+    }
+
+    // The description as html, the lines before the first tag: paragraphs at empty
+    // lines and <p>, <pre> blocks as code blocks, {@code x} as code.
+    xsl:template(name = description)
+    {
+        xsl:param(name = doc)
+        xsl:if(test = 'string-length($doc) > 0') {
+            xsl:variable(name = raw select = 'substring-before(concat($doc, $nl), $nl)')
+            xsl:variable(name = line select = 'normalize-space($raw)')
+            xsl:variable(name = rest select = 'substring-after($doc, $nl)')
+            xsl:choose {
+                xsl:when(test = 'starts-with($line, "@")') {
+                }
+                xsl:when(test = 'starts-with($line, "<pre>")') {
+                    span(class = apicode) {
+                        xsl:call-template(name = pre-lines) {
+                            xsl:with-param(name = doc select = $rest)
+                        }
+                    }
+                    xsl:call-template(name = description) {
+                        xsl:with-param(name = doc select = 'substring-after(substring-after($rest, "</pre>"), $nl)')
+                    }
+                }
+                xsl:otherwise {
+                    xsl:choose {
+                        xsl:when(test = '$line = "" or starts-with($line, "<p>")') {
+                            span(class = apibreak)
+                        }
+                    }
+                    xsl:call-template(name = inline) {
+                        xsl:with-param(name = s) {
+                            xsl:call-template(name = strip-p) {
+                                xsl:with-param(name = s select = $line)
+                            }
+                        }
+                    }
+                    xsl:text = ' '
+                    xsl:call-template(name = description) {
+                        xsl:with-param(name = doc select = $rest)
+                    }
+                }
+            }
+        }
+    }
+
+    // The lines of a <pre> block until the line with </pre>.
+    xsl:template(name = pre-lines)
+    {
+        xsl:param(name = doc)
+        xsl:variable(name = raw select = 'substring-before(concat($doc, $nl), $nl)')
+        xsl:if(test = 'string-length($doc) > 0 and not(contains($raw, "</pre>"))') {
+            xsl:value-of(select = $raw)
+            xsl:value-of(select = $nl)
+            xsl:call-template(name = pre-lines) {
+                xsl:with-param(name = doc select = 'substring-after($doc, $nl)')
+            }
+        }
+    }
+
+    xsl:template(name = strip-p)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = 'contains($s, "<p>")') {
+                xsl:call-template(name = strip-p) {
+                    xsl:with-param(name = s select = 'concat(substring-before($s, "<p>"), substring-after($s, "<p>"))')
+                }
+            }
+            xsl:when(test = 'contains($s, "</p>")') {
+                xsl:call-template(name = strip-p) {
+                    xsl:with-param(name = s select = 'concat(substring-before($s, "</p>"), substring-after($s, "</p>"))')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+
+    // {@code x} as a code element.
+    xsl:template(name = inline)
+    {
+        xsl:param(name = s)
+        xsl:choose {
+            xsl:when(test = 'contains($s, "{@code ") and contains(substring-after($s, "{@code "), "}")') {
+                xsl:variable(name = after select = 'substring-after($s, "{@code ")')
+                xsl:value-of(select = 'substring-before($s, "{@code ")')
+                code {
+                    xsl:value-of(select = 'substring-before($after, "}")')
+                }
+                xsl:call-template(name = inline) {
+                    xsl:with-param(name = s select = 'substring-after($after, "}")')
+                }
+            }
+            xsl:otherwise {
+                xsl:value-of(select = $s)
+            }
+        }
+    }
+
+    // The block tags @param, @return or @throws as dt/dd, the text of a tag continues
+    // on the following lines until the next tag.
+    xsl:template(name = tags)
+    {
+        xsl:param(name = doc)
+        xsl:param(name = tag)
+        xsl:param(name = named)
+        xsl:if(test = 'string-length($doc) > 0') {
+            xsl:variable(name = line select = 'normalize-space(substring-before(concat($doc, $nl), $nl))')
+            xsl:variable(name = rest select = 'substring-after($doc, $nl)')
+            xsl:if(test = 'starts-with(concat($line, " "), $tag)') {
+                xsl:variable(name = text) {
+                    xsl:value-of(select = 'substring-after(concat($line, " "), $tag)')
+                    xsl:call-template(name = continuation) {
+                        xsl:with-param(name = doc select = $rest)
+                    }
+                }
+                xsl:variable(name = t select = 'normalize-space($text)')
+                xsl:choose {
+                    xsl:when(test = $named) {
+                        dt {
+                            code {
+                                xsl:value-of(select = 'substring-before(concat($t, " "), " ")')
+                            }
+                        }
+                        dd {
+                            xsl:call-template(name = inline) {
+                                xsl:with-param(name = s select = 'substring-after($t, " ")')
+                            }
+                        }
+                    }
+                    xsl:otherwise {
+                        dd(class = full) {
+                            xsl:call-template(name = inline) {
+                                xsl:with-param(name = s select = $t)
+                            }
+                        }
+                    }
+                }
+            }
+            xsl:call-template(name = tags) {
+                xsl:with-param(name = doc select = $rest)
+                xsl:with-param(name = tag select = $tag)
+                xsl:with-param(name = named select = $named)
+            }
+        }
+    }
+
+    // The lines that continue a tag, until the next tag or the end.
+    xsl:template(name = continuation)
+    {
+        xsl:param(name = doc)
+        xsl:variable(name = line select = 'normalize-space(substring-before(concat($doc, $nl), $nl))')
+        xsl:if(test = 'string-length($doc) > 0 and $line != "" and not(starts-with($line, "@"))') {
+            xsl:text = ' '
+            xsl:value-of(select = $line)
+            xsl:call-template(name = continuation) {
+                xsl:with-param(name = doc select = 'substring-after($doc, $nl)')
+            }
+        }
+    }
+}

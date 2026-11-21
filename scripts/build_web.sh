@@ -192,6 +192,10 @@ $XMQ library/index.xmq transform --stringparam=date="$TODAY" web/resources/genli
 cp web/resources/genapi.xslq build/web/resources/genapi.xslq
 scripts/generate_xmq_h_api_doc.sh build/web/api.html "$XMQ" > /dev/null
 
+# The Java api page for org.libxmq, made from the sources parsed with ixml:lang/java.
+cp web/resources/genjavaapi.xslq build/web/resources/genjavaapi.xslq
+scripts/generate_java_api_doc.sh build/web/javaapi.html "$XMQ" > /dev/null
+
 $XMQ web/upload.htmq to-html > build/web/upload.html
 
 echo Updated build/web/index.html

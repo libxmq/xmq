@@ -36,6 +36,7 @@ html(lang = en)
                 a(href = '#examples') = Examples
                 a(href = library.html) = Library
                 a(href = api.html) = 'C api'
+                a(href = javaapi.html) = 'Java api'
                 a(href = '#learn') = Learn
                 a(href = xmq.pdf) = Grammar
                 a(href = https://github.com/libxmq/xmq) = GitHub
@@ -1014,6 +1015,7 @@ html(lang = en)
                             li { a(href = xmq.pdf) = 'The XMQ grammar (pdf)' }
                             li { a(href = library.html) = 'The library of ixml grammars and xslq transforms' }
                             li { a(href = api.html) = 'The C api, xmq.h' }
+                            li { a(href = javaapi.html) = 'The Java api, org.libxmq' }
                             li { a(href = javadoc/org.libxmq/org/libxmq/package-summary.html) = Javadoc }
                             li { a(href = https://github.com/orgs/libxmq/discussions) = 'Forum and discussions' }
                             li { a(href = languages.html) = 'Comparison with other markup languages' }

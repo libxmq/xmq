@@ -1,4 +1,4 @@
-// v0g Cleanup after the ixml parse of Java with java.ixml, version v0g as the grammar.
+// v0h Cleanup after the ixml parse of Java with java.ixml, version v0h as the grammar.
 // Fredrik Öhrström (c) 2026 spdx: MIT
 //
 // The grammar is written for the generated LL(*) parser, so its expressions have an
@@ -15,9 +15,10 @@
 //     (Outer.super) or class_literal (a.b.class),
 //   - a chain of names is a dotted name, a.b.c is name = a.b.c, and a method call on
 //     it has the dotted name: a.b.c(x) is method_call(name = a.b.c) { arguments }.
-//   - a leading comment (on its own line) is moved to the declaration or statement
-//     that follows it, or to the end of the block before a closing brace, and the
-//     comments of a token with text, eg a name, are after its element.
+//   - a leading comment or javadoc (on its own line) is moved to the declaration or
+//     statement that follows it, or to the end of the block before a closing brace, and
+//     the comments of a token with text, eg a name, are after its element. A javadoc
+//     (/** ... */) stays a javadoc element, eg the first child of the method it documents.
 //
 //   xmq ixml:lang/java Foo.java           (uses this cleanup automatically)
 //   xmq library/lang/java.ixml Foo.java transform library/lang/java.xslq
@@ -34,8 +35,8 @@ xsl:stylesheet(version   = 1.0
     // the comment is found with the ancestors and their siblings, the following axis is
     // slow.)
     xsl:key(name = target
-            match = leading_comment
-            use = "generate-id(ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment)]][1]/following-sibling::*[not(self::comment or self::leading_comment)][1])")
+            match = 'leading_comment|javadoc'
+            use = "generate-id(ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment or self::javadoc)]][1]/following-sibling::*[not(self::comment or self::leading_comment or self::javadoc)][1])")
 
     xsl:template(match = '@*|text()')
     {
@@ -69,12 +70,12 @@ xsl:stylesheet(version   = 1.0
             }
             xsl:if(test = 'self::compilation_unit')
             {
-                xsl:apply-templates(select = '//leading_comment[not(ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment)]])]' mode = moved)
+                xsl:apply-templates(select = '//*[self::leading_comment or self::javadoc][not(ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment or self::javadoc)]])]' mode = moved)
             }
         }
         xsl:if(test = '$leaf')
         {
-            xsl:apply-templates(select = 'comment|leading_comment')
+            xsl:apply-templates(select = 'comment|leading_comment|javadoc')
         }
     }
 
@@ -83,21 +84,34 @@ xsl:stylesheet(version   = 1.0
         xsl:apply-templates(select = "key('target', generate-id())" mode = moved)
     }
 
-    xsl:template(match = leading_comment)
+    xsl:template(match = 'leading_comment|javadoc')
     {
-        xsl:variable(name = f select = 'ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment)]][1]/following-sibling::*[not(self::comment or self::leading_comment)][1]')
+        xsl:variable(name = f select = 'ancestor-or-self::*[following-sibling::*[not(self::comment or self::leading_comment or self::javadoc)]][1]/following-sibling::*[not(self::comment or self::leading_comment or self::javadoc)][1]')
         xsl:if(test = '$f and not($f[self::rbrace or self::package or self::import or self::static_import or self::class or self::interface or self::enum or self::record or self::constant or self::field or self::method or self::constructor or self::compact_constructor or self::initializer or self::local_variable or self::empty or self::label or self::expression_statement or self::if or self::else or self::assert or self::switch or self::switch_rule or self::switch_group or self::while or self::do or self::for or self::foreach or self::break or self::continue or self::return or self::throw or self::yield or self::synchronized or self::try or self::catch or self::finally or self::constructor_call or self::block])')
         {
-            comment {
-                xsl:value-of(select = '.')
-            }
+            xsl:call-template(name = moved-comment)
         }
     }
 
-    xsl:template(match = leading_comment mode = moved)
+    xsl:template(match = 'leading_comment|javadoc' mode = moved)
     {
-        comment {
-            xsl:value-of(select = '.')
+        xsl:call-template(name = moved-comment)
+    }
+
+    // A leading comment is a comment, a javadoc stays a javadoc.
+    xsl:template(name = moved-comment)
+    {
+        xsl:choose {
+            xsl:when(test = 'self::javadoc') {
+                javadoc {
+                    xsl:value-of(select = '.')
+                }
+            }
+            xsl:otherwise {
+                comment {
+                    xsl:value-of(select = '.')
+                }
+            }
         }
     }
 
@@ -106,82 +120,82 @@ xsl:stylesheet(version   = 1.0
     // expression is used). So the levels are recognized by their children, not their names:
     // a level with one child is the child, one with [left, operator, right] is the element
     // of the operator, eg additive for + and -.
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 1]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 1]')
     {
         xsl:apply-templates(select = '*')
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::OR]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::OR]]')
     {
         logical_or {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::AND]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::AND]]')
     {
         logical_and {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::BITOR]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::BITOR]]')
     {
         bitwise_or {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::CARET]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::CARET]]')
     {
         bitwise_xor {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::BITAND]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::BITAND]]')
     {
         bitwise_and {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::EQ or self::NE]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::EQ or self::NE]]')
     {
         equality {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::LT or self::GT or self::LE or self::GE]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::LT or self::GT or self::LE or self::GE]]')
     {
         relational {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::SHL or self::SHR or self::USHR]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::SHL or self::SHR or self::USHR]]')
     {
         shift {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::PLUS or self::MINUS]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::PLUS or self::MINUS]]')
     {
         additive {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::STAR or self::SLASH or self::PERCENT]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::STAR or self::SLASH or self::PERCENT]]')
     {
         multiplicative {
             xsl:apply-templates(select = '*')
         }
     }
 
-    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment)]) = 3 and *[not(self::comment or self::leading_comment)][2][self::instanceof]]')
+    xsl:template(match = '*[(self::assignment or self::conditional_expression or self::logical_or or self::logical_and or self::bitwise_or or self::bitwise_xor or self::bitwise_and or self::equality or self::relational or self::shift or self::additive or self::multiplicative or self::postfix or self::primary) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::instanceof]]')
     {
         instanceof {
             xsl:apply-templates(select = '*[not(self::instanceof)]|instanceof/*')
@@ -189,7 +203,7 @@ xsl:stylesheet(version   = 1.0
     }
 
     // a ? b : c, the condition, the true branch and the false branch.
-    xsl:template(match = 'conditional_expression[count(*[not(self::comment or self::leading_comment)]) = 3]')
+    xsl:template(match = 'conditional_expression[count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 3]')
     {
         conditional {
             xsl:apply-templates(select = '*')
@@ -206,116 +220,116 @@ xsl:stylesheet(version   = 1.0
     }
 
     // A target with a selector. The outermost selector of a chain is in the postfix.
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::call]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::call]]')
     {
-        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment)][1]') } }
+        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]') } }
         method_call {
             xsl:attribute(name = name)
             {
                 xsl:if(test = '$pure = 1')
                 {
-                    xsl:call-template(name = dotted) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment)][1]') }
+                    xsl:call-template(name = dotted) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]') }
                     xsl:text = .
                 }
-                xsl:value-of(select = '*[not(self::comment or self::leading_comment)][2]/@name')
+                xsl:value-of(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/@name')
             }
             xsl:if(test = 'not($pure = 1)')
             {
-                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
+                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
             }
             xsl:if(test = '$pure = 1')
             {
-                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]//comment|*[not(self::comment or self::leading_comment)][1]//leading_comment')
+                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]//comment|*[not(self::comment or self::leading_comment or self::javadoc)][1]//leading_comment')
             }
-            xsl:apply-templates(select = 'comment|leading_comment')
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/*')
+            xsl:apply-templates(select = 'comment|leading_comment|javadoc')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/*')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::field_select]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::field_select]]')
     {
-        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment)][1]') } }
+        xsl:variable(name = pure) { xsl:call-template(name = pure) { xsl:with-param(name = n select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]') } }
         xsl:choose {
             xsl:when(test = '$pure = 1')
             {
                 name {
                     xsl:call-template(name = dotted) { xsl:with-param(name = n select = '.') }
                 }
-                xsl:apply-templates(select = './/comment|.//leading_comment')
+                xsl:apply-templates(select = './/comment|.//leading_comment|.//javadoc')
             }
             xsl:otherwise {
-                field_access(name = '{*[not(self::comment or self::leading_comment)][2]/@name}')
+                field_access(name = '{*[not(self::comment or self::leading_comment or self::javadoc)][2]/@name}')
                 {
-                    xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-                    xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
+                    xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+                    xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
                 }
             }
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::index]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::index]]')
     {
         array_access {
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-            xsl:apply-templates(select = 'comment|leading_comment')
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/*')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+            xsl:apply-templates(select = 'comment|leading_comment|javadoc')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/*')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::reference]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::reference]]')
     {
-        method_reference(name = '{*[not(self::comment or self::leading_comment)][2]/@name}')
+        method_reference(name = '{*[not(self::comment or self::leading_comment or self::javadoc)][2]/@name}')
         {
             xsl:choose {
-                xsl:when(test = '*[not(self::comment or self::leading_comment)][2]/dim')
+                xsl:when(test = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/dim')
                 {
                     type {
-                        xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-                        xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/dim')
+                        xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+                        xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/dim')
                     }
                 }
                 xsl:otherwise {
-                    xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
+                    xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
                 }
             }
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/type_arguments')
-            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/type_arguments')
+            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::class_selector]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::class_selector]]')
     {
         class_literal {
             type {
-                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/dim')
+                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+                xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/dim')
             }
-            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
+            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::outer_new]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::outer_new]]')
     {
         new {
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][2]/new/*')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][2]/new/*')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::outer_this]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::outer_this]]')
     {
         this {
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
         }
     }
 
-    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment)]) = 2 and *[not(self::comment or self::leading_comment)][2][self::outer_super]]')
+    xsl:template(match = '*[(self::primary or self::postfix) and count(*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and *[not(self::comment or self::leading_comment or self::javadoc)][2][self::outer_super]]')
     {
         super {
-            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment)][1]')
-            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment)][2]/comment|*[not(self::comment or self::leading_comment)][2]/leading_comment')
+            xsl:apply-templates(select = '*[not(self::comment or self::leading_comment or self::javadoc)][1]')
+            xsl:apply-templates(select = 'comment|leading_comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/comment|*[not(self::comment or self::leading_comment or self::javadoc)][2]/leading_comment')
         }
     }
 
@@ -325,13 +339,13 @@ xsl:stylesheet(version   = 1.0
         xsl:param(name = n)
         xsl:choose {
             xsl:when(test = '$n/self::name') { xsl:text = 1 }
-            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*[not(self::comment or self::leading_comment)]) = 1')
+            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*[not(self::comment or self::leading_comment or self::javadoc)]) = 1')
             {
-                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment)][1]') }
+                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment or self::javadoc)][1]') }
             }
-            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*[not(self::comment or self::leading_comment)]) = 2 and $n/*[not(self::comment or self::leading_comment)][2][self::field_select]')
+            xsl:when(test = '($n/self::primary or $n/self::postfix) and count($n/*[not(self::comment or self::leading_comment or self::javadoc)]) = 2 and $n/*[not(self::comment or self::leading_comment or self::javadoc)][2][self::field_select]')
             {
-                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment)][1]') }
+                xsl:call-template(name = pure) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment or self::javadoc)][1]') }
             }
             xsl:otherwise { xsl:text = 0 }
         }
@@ -343,14 +357,14 @@ xsl:stylesheet(version   = 1.0
         xsl:param(name = n)
         xsl:choose {
             xsl:when(test = '$n/self::name') { xsl:for-each(select = '$n/text()') { xsl:value-of(select = '.') } }
-            xsl:when(test = 'count($n/*[not(self::comment or self::leading_comment)]) = 1')
+            xsl:when(test = 'count($n/*[not(self::comment or self::leading_comment or self::javadoc)]) = 1')
             {
-                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment)][1]') }
+                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment or self::javadoc)][1]') }
             }
             xsl:otherwise {
-                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment)][1]') }
+                xsl:call-template(name = dotted) { xsl:with-param(name = n select = '$n/*[not(self::comment or self::leading_comment or self::javadoc)][1]') }
                 xsl:text = .
-                xsl:value-of(select = '$n/*[not(self::comment or self::leading_comment)][2]/@name')
+                xsl:value-of(select = '$n/*[not(self::comment or self::leading_comment or self::javadoc)][2]/@name')
             }
         }
     }

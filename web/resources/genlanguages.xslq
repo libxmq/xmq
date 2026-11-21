@@ -43,6 +43,7 @@ xsl:stylesheet(version   = 1.0
                         a(href = 'index.html#examples') = Examples
                         a(href = library.html) = Library
                         a(href = api.html) = 'C api'
+                        a(href = javaapi.html) = 'Java api'
                         a(href = 'index.html#learn') = Learn
                         a(href = xmq.pdf) = Grammar
                         a(href = https://github.com/libxmq/xmq) = GitHub
