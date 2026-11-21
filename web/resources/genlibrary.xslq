@@ -80,7 +80,7 @@ xsl:stylesheet(version   = 1.0
                                 input(id          = libfilter
                                       type        = search
                                       placeholder = 'name or description...'
-                                      oninput     = "siteFilter('details.libentry', 'libcount', 'entries', this.value);")
+                                      oninput     = 'siteFilterLibrary(this.value);')
                                 span(id        = libcount
                                      aria-live = polite)
                             }
@@ -99,25 +99,17 @@ xsl:stylesheet(version   = 1.0
                             }
                             div(id = liblist)
                             {
+                                // One folded section per directory, the index is sorted by path,
+                                // so a directory starts at its first grammar/stylesheet.
                                 xsl:for-each(select = 'file[@version][not(contains(@path, "_v"))]')
                                 {
-                                    xsl:sort(select = 'substring-before(@path, ".")')
-                                    xsl:variable(name   = stem
-                                                 select = 'substring-before(@path, ".")')
-                                    xsl:variable(name   = ixml
-                                                 select = '../file[@path = concat($stem, ".ixml")]')
-                                    xsl:variable(name   = xslq
-                                                 select = '../file[@path = concat($stem, ".xslq")]')
-                                    // An xslq with an ixml of the same name is shown in the row of the ixml.
-                                    xsl:if(test = 'substring-after(@path, ".") = "ixml" or not($ixml)')
+                                    xsl:variable(name   = dir
+                                                 select = 'substring-before(@path, "/")')
+                                    xsl:if(test = 'not(preceding-sibling::file[@version][not(contains(@path, "_v"))][substring-before(@path, "/") = $dir])')
                                     {
-                                        xsl:call-template(name = entry) {
-                                            xsl:with-param(name   = stem
-                                                           select = $stem)
-                                            xsl:with-param(name   = ixml
-                                                           select = $ixml)
-                                            xsl:with-param(name   = xslq
-                                                           select = $xslq)
+                                        xsl:call-template(name = directory) {
+                                            xsl:with-param(name   = dir
+                                                           select = $dir)
                                         }
                                     }
                                 }
@@ -137,6 +129,62 @@ xsl:stylesheet(version   = 1.0
                                 ' · last updated '
                                 xsl:value-of(select = '$date')
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // A directory of the library, folded, with a row per name inside.
+    xsl:template(name = directory)
+    {
+        xsl:param(name = dir)
+        xsl:variable(name   = files
+                     select = '../file[@version][not(contains(@path, "_v"))][substring-before(@path, "/") = $dir]')
+        details(class = 'fold libdir'
+                id    = 'dir-{$dir}')
+        {
+            summary {
+                h2 {
+                    xsl:value-of(select = $dir)
+                }
+                span(class = teaser) {
+                    xsl:for-each(select = $files)
+                    {
+                        xsl:sort(select = 'substring-before(@path, ".")')
+                        xsl:variable(name   = stem
+                                     select = 'substring-before(@path, ".")')
+                        xsl:if(test = 'substring-after(@path, ".") = "ixml" or not(../file[@path = concat($stem, ".ixml")])')
+                        {
+                            span(class = libitem) {
+                                xsl:value-of(select = 'substring-after($stem, "/")')
+                            }
+                        }
+                    }
+                }
+            }
+            div(class = body)
+            {
+                xsl:for-each(select = $files)
+                {
+                    xsl:sort(select = 'substring-before(@path, ".")')
+                    xsl:variable(name   = stem
+                                 select = 'substring-before(@path, ".")')
+                    xsl:variable(name   = ixml
+                                 select = '../file[@path = concat($stem, ".ixml")]')
+                    xsl:variable(name   = xslq
+                                 select = '../file[@path = concat($stem, ".xslq")]')
+                    // An xslq with an ixml of the same name is shown in the row of the ixml.
+                    xsl:if(test = 'substring-after(@path, ".") = "ixml" or not($ixml)')
+                    {
+                        xsl:call-template(name = entry) {
+                            xsl:with-param(name   = stem
+                                           select = $stem)
+                            xsl:with-param(name   = ixml
+                                           select = $ixml)
+                            xsl:with-param(name   = xslq
+                                           select = $xslq)
                         }
                     }
                 }

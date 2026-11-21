@@ -8630,7 +8630,7 @@ static void append_pre_html_coloring(MemBuffer *style_pre, XMQTheme *theme, bool
     }
     membuffer_append(style_pre, ";border:solid 1px ");
     membuffer_append(style_pre, dark_mode?"#555555":"#888888");
-    membuffer_append(style_pre, ";display:inline-block;padding:1em;color:#");
+    membuffer_append(style_pre, ";display:block;width:fit-content;margin-left:auto;margin-right:auto;padding:1em;color:#");
 
     // Lookup the fg color in dark/light.
     def = dark_mode?&theme->colors_darkbg[XMQ_COLOR_FG_INDEX]:&theme->colors_lightbg[XMQ_COLOR_FG_INDEX];

@@ -1,5 +1,5 @@
 // v1a Render a TAF forecast, parsed with taf.ixml, as a web page:
-//   xmq ixml:measurement/taf taf.inp xsl:measurement/taf-to-html to-html > taf.html
+//   xmq ixml:meas/taf taf.inp xsl:meas/taf-to-html to-html > taf.html
 //
 // A blue header shows the station, the issue time, the validity period, the
 // flight category (VFR, MVFR, IFR, LIFR) of the base forecast and the maximum

@@ -164,12 +164,13 @@ function siteOpenHash()
     if (!location.hash) return;
     const el = document.getElementById(decodeURIComponent(location.hash.substring(1)));
     if (!el) return;
-    const d = el.closest("details");
-    if (d && !d.open)
+    // Open the details and all details around it, eg a library directory and its row.
+    let opened = false;
+    for (let d = el.closest("details"); d; d = d.parentElement ? d.parentElement.closest("details") : null)
     {
-        d.open = true;
-        el.scrollIntoView();
+        if (!d.open) { d.open = true; opened = true; }
     }
+    if (opened) el.scrollIntoView();
 }
 
 function siteFoldAll(id, open)
@@ -204,4 +205,17 @@ function siteFilter(selector, countId, noun, q)
 function siteFilterLangs(q)
 {
     siteFilter("article.lang", "langcount", "languages", q);
+}
+
+// Filter the library rows. The directories with matching rows are opened, the others hidden.
+// With an empty filter all directories are shown again, folded.
+function siteFilterLibrary(q)
+{
+    siteFilter("details.libentry", "libcount", "entries", q);
+    const empty = q.trim() === "";
+    document.querySelectorAll("details.libdir").forEach(d => {
+        const hit = d.querySelector("details.libentry:not([hidden])") !== null;
+        d.hidden = !empty && !hit;
+        d.open = !empty && hit;
+    });
 }

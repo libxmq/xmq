@@ -540,3 +540,18 @@ details.libentry[open] > summary::after { top: 1.35rem; }
 .libdesc p.desc { white-space: pre-line; }
 .libdesc p.versions { color: var(--muted); font-size: 0.9rem; }
 .libdesc p.versions code { white-space: nowrap; }
+
+/* Library directories, folded sections with the rows inside. */
+details.libdir > summary h2 { display: inline; font-family: var(--mono); font-size: 1.2rem; }
+details.libdir > summary .teaser { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; margin-top: 0.4rem; }
+.libitem {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 0.55rem;
+}
+details.libdir > .body { padding: 1rem 1rem 0.4rem; }
+details.libdir details.libentry { background: var(--bg); }
+details.libdir details.libentry > summary:hover { background: var(--bg-alt); }

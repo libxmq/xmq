@@ -1,5 +1,5 @@
 // v1a Render a METAR report, parsed with metar.ixml, as a web page:
-//   xmq ixml:measurement/metar metar.inp xsl:measurement/metar-to-html to-html > metar.html
+//   xmq ixml:meas/metar metar.inp xsl:meas/metar-to-html to-html > metar.html
 //
 // The wind is drawn on a compass dial, the arrow flies with the wind from the
 // direction it blows from, the variation is drawn as an arc. Every weather group

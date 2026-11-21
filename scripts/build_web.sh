@@ -176,6 +176,7 @@ $XMQ web/ixml/index.htmq \
 $XMQ web/resources/languages.xmq transform --stringparam=date="$TODAY" web/resources/genlanguages.xslq to-html > build/web/languages.html
 
 # The library page, one row per grammar/stylesheet name, with the files rendered as html.
+rm -rf build/web/library-src
 for f in $(cd library && ls */*.ixml */*.xslq | grep -v '_v[0-9]')
 do
     mkdir -p "build/web/library-src/$(dirname "$f")"

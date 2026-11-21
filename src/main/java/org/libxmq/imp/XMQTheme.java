@@ -364,7 +364,7 @@ public class XMQTheme
         else sb.append(hex(def.r, def.g, def.b));
 
         sb.append(";border:solid 1px ").append(dark ? "#555555" : "#888888")
-          .append(";display:inline-block;padding:1em;color:#");
+          .append(";display:block;width:fit-content;margin-left:auto;margin-right:auto;padding:1em;color:#");
 
         // The fg color (or default when not overridden).
         def = colors[XMQ_COLOR_FG_INDEX];
