@@ -146,6 +146,20 @@ list {
                    }'
     }
     lang {
+        name    = SXML
+        info    = 'An abstract syntax tree of an XML document, the XML Infoset as Scheme S-expressions.'
+        year    = 2000
+        url     = https://okmij.org/ftp/Scheme/SXML.html
+        by      = 'Oleg Kiselyov, Kirill Lisovsky'
+        example = '
+                   (*TOP*
+                     (*PI* xml "version=\"1.0\"")
+                     (WEIGHT (@ (unit "pound"))
+                       (NET (@ (certified)) 67)
+                       (GROSS 95)))
+                   '
+    }
+    lang {
         name    = YAML
         info    = 'Human-friendly data serialization language.'
         year    = 2001
@@ -173,6 +187,24 @@ list {
                          quantity    : 1
                          description : Super Hoop
                          price       : 2392.00'
+    }
+    lang {
+        name    = SOX
+        info    = 'Simple Outline XML, an indentation based alternative syntax for XML.'
+        year    = 2001
+        url     = https://web.archive.org/web/20200201103956/http://www.langdale.com.au/SOX/
+        by      = 'Arnold deVos, Langdale Consultants'
+        example = '
+                   html>
+                       head>
+                           title> My Home Page
+                       body>
+                           h1> Contact Details
+                           p>  I can be contacted at
+                               a>  href=mailto:me@myplace.net
+                                   this address
+                               except when on vacation.
+                   '
     }
     lang {
         name    = OGDL
@@ -757,6 +789,25 @@ list {
                    >'
     }
     lang {
+        name    = JSON5
+        year    = 2012
+        by      = 'Aseem Kishore, Jordan Tucker'
+        info    = 'The JSON5 Data Interchange Format is a proposed extension to JSON that aims to make it easier for humans to write and maintain by hand.'
+        url     = https://json5.org/
+        example = '''{
+                       // comments
+                       unquoted: 'and you can quote me on that',
+                       singleQuotes: 'I can use "double quotes" here',
+                       lineBreaks: "Look, Mom! \
+                     No \\n's!",
+                       hexadecimal: 0xdecaf,
+                       leadingDecimalPoint: .8675309, andTrailing: 8675309.,
+                       positiveSign: +1,
+                       trailingComma: 'in objects', andIn: ['arrays',],
+                       "backwardsCompatible": "with JSON",
+                     }'''
+    }
+    lang {
         name    = TOML
         info    = "Tom's Obvious Minimal Language."
         url     = https://toml.io/en/
@@ -1283,25 +1334,6 @@ list {
                            "tree" = (2(7 2 1 (6 5 8)) (5 (9 4)))
                        }
                    ]'
-    }
-    lang {
-        name    = JSON5
-        year    = 2018
-        by      = 'Aseem Kishore, Jordan Tucker'
-        info    = 'The JSON5 Data Interchange Format is a proposed extension to JSON that aims to make it easier for humans to write and maintain by hand.'
-        url     = https://spec.json5.org/
-        example = '''{
-                       // comments
-                       unquoted: 'and you can quote me on that',
-                       singleQuotes: 'I can use "double quotes" here',
-                       lineBreaks: "Look, Mom! \
-                     No \\n's!",
-                       hexadecimal: 0xdecaf,
-                       leadingDecimalPoint: .8675309, andTrailing: 8675309.,
-                       positiveSign: +1,
-                       trailingComma: 'in objects', andIn: ['arrays',],
-                       "backwardsCompatible": "with JSON",
-                     }'''
     }
     lang {
         name    = Nickel
