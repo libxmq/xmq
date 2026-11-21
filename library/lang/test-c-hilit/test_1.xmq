@@ -1,0 +1,172 @@
+c {
+    comment = '/* A test. */'
+    &#10;
+    preproc {
+        pp = #include
+        ' '
+        header = <stdio.h>
+    }
+    &#10;
+    preproc {
+        pp = #include
+        ' '
+        string = '"xmq.h"'
+    }
+    &#10;
+    preproc {
+        pp = #define
+        ' '
+        macro = MAX
+        '('
+        name = a
+        ', '
+        name = b
+        ') (('
+        name = a
+        ') > ('
+        name = b
+        ') ? ('
+        name = a
+        ') : ('
+        name = b
+        '))'
+    }
+    &#10;
+    preproc {
+        pp = #define
+        ' '
+        macro = LONG_MACRO
+        '('
+        name = x
+        ') \'
+        &#10;
+        '    '
+        keyword = do
+        ' { '
+        name = x
+        '++; } '
+        keyword = while
+        ' ('
+        number = 0
+        ')'
+    }
+    &#10;
+    preproc {
+        pp = #ifdef
+        ' '
+        name = __cplusplus
+    }
+    &#10;
+    preproc {
+        pp = #endif
+    }
+    '
+
+
+    '
+    keyword = typedef
+    ' '
+    keyword = struct
+    ' '
+    type = XMQDoc
+    ' '
+    type = XMQDoc
+    ';
+
+
+    '
+    comment = '// Main entry.'
+    &#10;
+    keyword = static
+    ' '
+    primitive = int
+    ' '
+    function = count_nodes
+    '('
+    type = XMQDoc
+    ' *'
+    name = doc
+    ', '
+    keyword = const
+    ' '
+    primitive = char
+    ' *'
+    name = name
+    ', '
+    primitive = uint32_t
+    ' '
+    name = n
+    ')
+     {'
+    &#10;
+    '    '
+    primitive = int
+    ' '
+    name = i
+    ' = '
+    number = 0x1f
+    ' + '
+    number = 1.5e3f
+    ';'
+    &#10;
+    '    '
+    primitive = char
+    ' '
+    name = c
+    ' = '
+    char = "'\n'"
+    ';'
+    &#10;
+    '    '
+    keyword = if
+    ' ('
+    name = doc
+    ' == '
+    macro = NULL
+    ') '
+    keyword = return
+    ' '
+    macro = MAX
+    '('
+    name = i
+    ', '
+    number = 2
+    ') / '
+    number = 2
+    ';'
+    &#10;
+    '    '
+    function = printf
+    '('
+    string = '"hello \"%s\"\n"'
+    ', '
+    name = name
+    ');'
+    &#10;
+    '    '
+    primitive = bool
+    ' '
+    name = ok
+    ' = '
+    keyword = true
+    ';'
+    &#10;
+    '    '
+    keyword = return
+    ' '
+    keyword = sizeof
+    ' ('
+    primitive = int
+    ') + '
+    function = count_nodes
+    ' ('
+    name = doc
+    ', '
+    name = name
+    ', '
+    name = n
+    ');
+     }
+
+    '
+}

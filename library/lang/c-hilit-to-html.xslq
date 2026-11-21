@@ -1,0 +1,77 @@
+// v1a Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.
+// Fredrik Öhrström (c) 2026 spdx: MIT
+//
+//   xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+//
+// The page follows the light/dark preference of the browser, like ixml2html. The title
+// can be set with --stringparam=title=foo.c (transform with a file) and the elements
+// are spans with a class, eg <span class="keyword">return</span>.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = no)
+
+    xsl:param(name = title) = 'C source'
+
+    xsl:template(match = '/')
+    {
+        html {
+            head {
+                meta(charset = utf-8)
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                title {
+                    xsl:value-of(select = $title)
+                }
+                style = ':root {
+                           --bg: #fffcf2; --fg: #073642; --comment: #596a6e; --keyword: #a8390c;
+                           --primitive: #1a64a0; --type: #0f6e66; --macro: #5a4eae; --function: #7d5100;
+                           --string: #4a6600; --number: #b81d1b; --preproc: #a8215f;
+                         }
+                         @media (prefers-color-scheme: dark) {
+                           :root {
+                             --bg: #002b36; --fg: #e6dfca; --comment: #93a8aa; --keyword: #ec8550;
+                             --primitive: #5aaeea; --type: #45c4b8; --macro: #a3a7ea; --function: #e3b341;
+                             --string: #adc03a; --number: #ff7a75; --preproc: #ee72ad;
+                           }
+                         }
+                         html, body { background-color: var(--bg); color: var(--fg); margin: 0; padding: 1em; min-height: 100vh; font-size: 16px; }
+                         pre { margin: 0; }
+                         .comment { color: var(--comment); font-style: italic; }
+                         .keyword { color: var(--keyword); font-weight: bold; }
+                         .primitive { color: var(--primitive); }
+                         .type { color: var(--type); }
+                         .macro { color: var(--macro); }
+                         .function { color: var(--function); }
+                         .string, .char, .header { color: var(--string); }
+                         .number { color: var(--number); }
+                         .pp { color: var(--preproc); font-weight: bold; }
+                         .preproc .macro { font-weight: bold; }'
+            }
+            body {
+                pre {
+                    xsl:apply-templates
+                }
+            }
+        }
+    }
+
+    // The root element, its content is the source.
+    xsl:template(match = '/*')
+    {
+        xsl:apply-templates
+    }
+
+    // A syntax element is a span with the element name as class.
+    xsl:template(match = '*')
+    {
+        span(class = '{local-name()}') {
+            xsl:apply-templates
+        }
+    }
+}

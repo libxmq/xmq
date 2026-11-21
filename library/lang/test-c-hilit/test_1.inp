@@ -1,0 +1,21 @@
+/* A test. */
+#include <stdio.h>
+#include "xmq.h"
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define LONG_MACRO(x) \
+    do { x++; } while (0)
+#ifdef __cplusplus
+#endif
+
+typedef struct XMQDoc XMQDoc;
+
+// Main entry.
+static int count_nodes(XMQDoc *doc, const char *name, uint32_t n)
+{
+    int i = 0x1f + 1.5e3f;
+    char c = '\n';
+    if (doc == NULL) return MAX(i, 2) / 2;
+    printf("hello \"%s\"\n", name);
+    bool ok = true;
+    return sizeof (int) + count_nodes (doc, name, n);
+}

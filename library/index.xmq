@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-21T22:26:50Z)
+library(created = 2026-11-21T23:21:27Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -516,6 +516,186 @@ library(created = 2026-11-21T22:26:50Z)
          version     = 1a
          summary     = 'Create a table/tr/td from a file with lines containing tab separated values.'
          description = 'Create a table/tr/td from a file with lines containing tab separated values.')
+    file(path        = lang/c-hilit-to-html.xslq
+         size        = 3274
+         sha256      = 9161d55a9b17f18133910e1d7cb7586326b2816af881726fc196f30ebe2597bb
+         mtime       = 2026-11-21T23:19:51Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.'
+         description = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=foo.c (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/c-hilit-to-html_v1.xslq
+         size        = 3274
+         sha256      = 9161d55a9b17f18133910e1d7cb7586326b2816af881726fc196f30ebe2597bb
+         mtime       = 2026-11-21T23:19:51Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.'
+         description = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=foo.c (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/c-hilit-to-html_v1a.xslq
+         size        = 3274
+         sha256      = 9161d55a9b17f18133910e1d7cb7586326b2816af881726fc196f30ebe2597bb
+         mtime       = 2026-11-21T23:19:51Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.'
+         description = 'Render C source, parsed with lang/c-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=foo.c (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/c-hilit-to-terminal.xslq
+         size        = 2021
+         sha256      = b187a92674d4735d148888ecfd2ce8ba155893e9b4af4227edca22dda4b5326a
+         mtime       = 2026-11-21T23:20:31Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.'
+         description = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/c-hilit-to-terminal_v1.xslq
+         size        = 2021
+         sha256      = b187a92674d4735d148888ecfd2ce8ba155893e9b4af4227edca22dda4b5326a
+         mtime       = 2026-11-21T23:20:31Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.'
+         description = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/c-hilit-to-terminal_v1a.xslq
+         size        = 2021
+         sha256      = b187a92674d4735d148888ecfd2ce8ba155893e9b4af4227edca22dda4b5326a
+         mtime       = 2026-11-21T23:20:31Z
+         version     = 1a
+         summary     = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.'
+         description = 'Render C source, parsed with lang/c-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text
+                          xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/c-hilit.ixml
+         size        = 5995
+         sha256      = 1cd2a1c1306f72bbf3af4afd022744378beefcd1dc04ca2ef0dd52e508800ece
+         mtime       = 2026-11-21T23:16:42Z
+         version     = 1a
+         summary     = 'Find the syntax elements of C source code, for syntax highlighting.'
+         description = '''Find the syntax elements of C source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike c.ixml this grammar parses the raw source, before the preprocessor, and
+                          every character of the source is kept, so the text of the parse is the source.
+                          Whitespace and punctuation are plain text, the rest is marked up:
+
+                            comment    /* ... */ and // ...
+                            preproc    a preprocessor line, with the directive as pp, eg #include,
+                                       the included file as header and a defined name as macro
+                            string     "..."            char       '...'
+                            number     12, 0x1f, 1.5e3f
+                            keyword    if, return, struct, typedef...
+                            primitive  int, char, bool, size_t, uint32_t...
+                            type       a name starting with an upper case letter that has a lower case
+                                       letter, eg XMQDoc
+                            macro      a name with only upper case letters, digits and _, eg NULL, XMQ_ATTRS
+                            function   a lower case name followed by (, eg a call or a declaration
+                            name       the other names, eg variables
+
+                          Since it is the source before the preprocessor, the markup is a guess, eg a type
+                          name in lower case is a name. Render it with lang/c-hilit-to-html or
+                          lang/c-hilit-to-terminal:
+
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text''')
+    file(path        = lang/c-hilit_v1.ixml
+         size        = 5995
+         sha256      = 1cd2a1c1306f72bbf3af4afd022744378beefcd1dc04ca2ef0dd52e508800ece
+         mtime       = 2026-11-21T23:16:42Z
+         version     = 1a
+         summary     = 'Find the syntax elements of C source code, for syntax highlighting.'
+         description = '''Find the syntax elements of C source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike c.ixml this grammar parses the raw source, before the preprocessor, and
+                          every character of the source is kept, so the text of the parse is the source.
+                          Whitespace and punctuation are plain text, the rest is marked up:
+
+                            comment    /* ... */ and // ...
+                            preproc    a preprocessor line, with the directive as pp, eg #include,
+                                       the included file as header and a defined name as macro
+                            string     "..."            char       '...'
+                            number     12, 0x1f, 1.5e3f
+                            keyword    if, return, struct, typedef...
+                            primitive  int, char, bool, size_t, uint32_t...
+                            type       a name starting with an upper case letter that has a lower case
+                                       letter, eg XMQDoc
+                            macro      a name with only upper case letters, digits and _, eg NULL, XMQ_ATTRS
+                            function   a lower case name followed by (, eg a call or a declaration
+                            name       the other names, eg variables
+
+                          Since it is the source before the preprocessor, the markup is a guess, eg a type
+                          name in lower case is a name. Render it with lang/c-hilit-to-html or
+                          lang/c-hilit-to-terminal:
+
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text''')
+    file(path        = lang/c-hilit_v1a.ixml
+         size        = 5995
+         sha256      = 1cd2a1c1306f72bbf3af4afd022744378beefcd1dc04ca2ef0dd52e508800ece
+         mtime       = 2026-11-21T23:16:42Z
+         version     = 1a
+         summary     = 'Find the syntax elements of C source code, for syntax highlighting.'
+         description = '''Find the syntax elements of C source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike c.ixml this grammar parses the raw source, before the preprocessor, and
+                          every character of the source is kept, so the text of the parse is the source.
+                          Whitespace and punctuation are plain text, the rest is marked up:
+
+                            comment    /* ... */ and // ...
+                            preproc    a preprocessor line, with the directive as pp, eg #include,
+                                       the included file as header and a defined name as macro
+                            string     "..."            char       '...'
+                            number     12, 0x1f, 1.5e3f
+                            keyword    if, return, struct, typedef...
+                            primitive  int, char, bool, size_t, uint32_t...
+                            type       a name starting with an upper case letter that has a lower case
+                                       letter, eg XMQDoc
+                            macro      a name with only upper case letters, digits and _, eg NULL, XMQ_ATTRS
+                            function   a lower case name followed by (, eg a call or a declaration
+                            name       the other names, eg variables
+
+                          Since it is the source before the preprocessor, the markup is a guess, eg a type
+                          name in lower case is a name. Render it with lang/c-hilit-to-html or
+                          lang/c-hilit-to-terminal:
+
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+                            xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text''')
     file(path        = lang/c.ixml
          size        = 20335
          sha256      = 5e9c21aa93ddede7d62e3c5428e23a1f444f7c16257e60437b349dfb38c808d5
