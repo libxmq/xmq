@@ -1,0 +1,78 @@
+// v1a Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.
+// Fredrik Öhrström (c) 2026 spdx: MIT
+//
+//   xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+//
+// The page follows the light/dark preference of the browser, like ixml2html. The title
+// can be set with --stringparam=title=Foo.java (transform with a file) and the elements
+// are spans with a class, eg <span class="keyword">return</span>.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method         = html
+               doctype-system = about:legacy-compat
+               encoding       = utf-8
+               indent         = no)
+
+    xsl:param(name = title) = 'Java source'
+
+    xsl:template(match = '/')
+    {
+        html {
+            head {
+                meta(charset = utf-8)
+                meta(name    = viewport
+                     content = 'width=device-width, initial-scale=1')
+                meta(name    = color-scheme
+                     content = 'light dark')
+                title {
+                    xsl:value-of(select = $title)
+                }
+                style = ':root {
+                           --bg: #fffcf2; --fg: #073642; --comment: #596a6e; --keyword: #a8390c;
+                           --primitive: #1a64a0; --type: #0f6e66; --constant: #5a4eae; --function: #7d5100;
+                           --string: #4a6600; --number: #b81d1b; --annotation: #a8215f;
+                         }
+                         @media (prefers-color-scheme: dark) {
+                           :root {
+                             --bg: #002b36; --fg: #e6dfca; --comment: #93a8aa; --keyword: #ec8550;
+                             --primitive: #5aaeea; --type: #45c4b8; --constant: #a3a7ea; --function: #e3b341;
+                             --string: #adc03a; --number: #ff7a75; --annotation: #ee72ad;
+                           }
+                         }
+                         html, body { background-color: var(--bg); color: var(--fg); margin: 0; padding: 1em; min-height: 100vh; font-size: 16px; }
+                         pre { margin: 0; }
+                         .comment, .javadoc { color: var(--comment); font-style: italic; }
+                         .tag { font-weight: bold; }
+                         .annotation { color: var(--annotation); }
+                         .keyword { color: var(--keyword); font-weight: bold; }
+                         .primitive { color: var(--primitive); }
+                         .type { color: var(--type); }
+                         .constant { color: var(--constant); }
+                         .function { color: var(--function); }
+                         .string, .char { color: var(--string); }
+                         .number { color: var(--number); }
+'
+            }
+            body {
+                pre {
+                    xsl:apply-templates
+                }
+            }
+        }
+    }
+
+    // The root element, its content is the source.
+    xsl:template(match = '/*')
+    {
+        xsl:apply-templates
+    }
+
+    // A syntax element is a span with the element name as class.
+    xsl:template(match = '*')
+    {
+        span(class = '{local-name()}') {
+            xsl:apply-templates
+        }
+    }
+}

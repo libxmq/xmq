@@ -1,0 +1,155 @@
+java {
+    keyword = package
+    ' '
+    name = org
+    '.'
+    name = example
+    ';
+
+
+    '
+    keyword = import
+    ' '
+    name = java
+    '.'
+    name = util
+    '.'
+    type = List
+    ';
+
+
+    '
+    javadoc {
+        '/**
+          * A test class, see {'
+        tag = @code
+        ' Foo}.
+          * '
+        tag = @param
+        ' <T> the type
+          */'
+    }
+    &#10;
+    annotation = @Deprecated
+    &#10;
+    keyword = public
+    ' '
+    keyword = final
+    ' '
+    keyword = class
+    ' '
+    type = T
+    '<'
+    type = K
+    '> '
+    keyword = extends
+    ' '
+    type = Base
+    ' '
+    keyword = implements
+    ' '
+    type = Runnable
+    ' {'
+    &#10;
+    '    '
+    keyword = public
+    ' '
+    keyword = static
+    ' '
+    keyword = final
+    ' '
+    primitive = int
+    ' '
+    constant = MAX_VALUE
+    ' = '
+    number = 1_000
+    ';'
+    &#10;
+    '    '
+    keyword = private
+    ' '
+    type = String
+    ' '
+    name = name
+    ' = '
+    string = '"a \"b\""'
+    '; '
+    comment = '// the name'
+    &#10;
+    '    '
+    comment = '/* block */'
+    ' '
+    primitive = char
+    ' '
+    name = c
+    ' = '
+    char = "'\n'"
+    ';'
+    &#10;
+    '    '
+    type = String
+    ' '
+    name = block
+    ' = '
+    string = '"""
+                      Hello "there"
+                      """'
+    ';'
+    &#10;
+    '    '
+    annotation = @java.lang.Override
+    &#10;
+    '    '
+    keyword = public
+    ' '
+    primitive = void
+    ' '
+    function = run
+    '() {'
+    &#10;
+    '        '
+    keyword = var
+    ' '
+    name = list
+    ' = '
+    type = List
+    '.'
+    function = of
+    '('
+    number = 1
+    ', '
+    number = 2.5f
+    ', '
+    number = 0x1fL
+    ');'
+    &#10;
+    '        '
+    keyword = if
+    ' ('
+    name = name
+    ' != '
+    keyword = null
+    ' && '
+    name = list
+    '.'
+    function = size
+    '() > '
+    number = 0
+    ') { '
+    type = System
+    '.'
+    name = out
+    '.'
+    function = println
+    '('
+    name = name
+    '); }'
+    &#10;
+    '        '
+    keyword = return
+    ';
+         }
+     }
+
+    '
+}

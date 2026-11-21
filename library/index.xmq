@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-21T23:21:27Z)
+library(created = 2026-11-21T23:27:00Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -940,6 +940,183 @@ library(created = 2026-11-21T23:21:27Z)
                           - sizeof(T) with a lone typedef name is parsed as sizeof of an expression.
                           - An expression statement has a cost, so T *p; in a block is a declaration.
                           - The dangling else binds to the closest if, using !kw_else.')
+    file(path        = lang/java-hilit-to-html.xslq
+         size        = 3296
+         sha256      = 99f547bf32f13e20bb02af52db289f7dcca9ea8283d7d841f9a7fc97de7e6195
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.'
+         description = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=Foo.java (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/java-hilit-to-html_v1.xslq
+         size        = 3296
+         sha256      = 99f547bf32f13e20bb02af52db289f7dcca9ea8283d7d841f9a7fc97de7e6195
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.'
+         description = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=Foo.java (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/java-hilit-to-html_v1a.xslq
+         size        = 3296
+         sha256      = 99f547bf32f13e20bb02af52db289f7dcca9ea8283d7d841f9a7fc97de7e6195
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.'
+         description = 'Render Java source, parsed with lang/java-hilit, as a syntax highlighted web page.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+
+                        The page follows the light/dark preference of the browser, like ixml2html. The title
+                        can be set with --stringparam=title=Foo.java (transform with a file) and the elements
+                        are spans with a class, eg <span class="keyword">return</span>.')
+    file(path        = lang/java-hilit-to-terminal.xslq
+         size        = 2505
+         sha256      = c4eb9dfc9db3f1a37e4d3c966892caed5fdf041ad77fcbd753cb99a425541b32
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.'
+         description = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/java-hilit-to-terminal_v1.xslq
+         size        = 2505
+         sha256      = c4eb9dfc9db3f1a37e4d3c966892caed5fdf041ad77fcbd753cb99a425541b32
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.'
+         description = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/java-hilit-to-terminal_v1a.xslq
+         size        = 2505
+         sha256      = c4eb9dfc9db3f1a37e4d3c966892caed5fdf041ad77fcbd753cb99a425541b32
+         mtime       = 2026-11-21T23:26:42Z
+         version     = 1a
+         summary     = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.'
+         description = 'Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.
+                        Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text
+                          xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text | less -R
+
+                        The colors are the 16 standard ansi colors, so they follow the palette of the
+                        terminal and work on both dark and light backgrounds.')
+    file(path        = lang/java-hilit.ixml
+         size        = 5259
+         sha256      = 460a8413628ad3eea22b26f812931f4f9755dccf7bef6542c967ffcdbb392110
+         mtime       = 2026-11-21T23:25:29Z
+         version     = 1a
+         summary     = 'Find the syntax elements of Java source code, for syntax highlighting.'
+         description = '''Find the syntax elements of Java source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike java.ixml this grammar does not parse the structure, every character of the
+                          source is kept, so the text of the parse is the source. Whitespace and punctuation
+                          are plain text, the rest is marked up:
+
+                            comment     /* ... */ and // ...
+                            javadoc     /** ... */ with the block and inline tags as tag, eg @param
+                            annotation  @Override, @java.lang.Deprecated
+                            string      "..." and text blocks """..."""
+                            char        'x'
+                            number      12, 0x1f, 1_000L, 1.5e3f
+                            keyword     if, return, class, public, new, var, record, true, null...
+                            primitive   boolean, byte, char, short, int, long, float, double, void
+                            type        a name starting with an upper case letter that has a lower case
+                                        letter, or a single upper case letter, eg String or T
+                            constant    a name with only upper case letters, digits and _, eg MAX_VALUE
+                            function    a lower case name followed by (, eg a method call or declaration
+                            name        the other names, eg variables, fields and packages
+
+                          Render it with lang/java-hilit-to-html or lang/java-hilit-to-terminal:
+
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text''')
+    file(path        = lang/java-hilit_v1.ixml
+         size        = 5259
+         sha256      = 460a8413628ad3eea22b26f812931f4f9755dccf7bef6542c967ffcdbb392110
+         mtime       = 2026-11-21T23:25:29Z
+         version     = 1a
+         summary     = 'Find the syntax elements of Java source code, for syntax highlighting.'
+         description = '''Find the syntax elements of Java source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike java.ixml this grammar does not parse the structure, every character of the
+                          source is kept, so the text of the parse is the source. Whitespace and punctuation
+                          are plain text, the rest is marked up:
+
+                            comment     /* ... */ and // ...
+                            javadoc     /** ... */ with the block and inline tags as tag, eg @param
+                            annotation  @Override, @java.lang.Deprecated
+                            string      "..." and text blocks """..."""
+                            char        'x'
+                            number      12, 0x1f, 1_000L, 1.5e3f
+                            keyword     if, return, class, public, new, var, record, true, null...
+                            primitive   boolean, byte, char, short, int, long, float, double, void
+                            type        a name starting with an upper case letter that has a lower case
+                                        letter, or a single upper case letter, eg String or T
+                            constant    a name with only upper case letters, digits and _, eg MAX_VALUE
+                            function    a lower case name followed by (, eg a method call or declaration
+                            name        the other names, eg variables, fields and packages
+
+                          Render it with lang/java-hilit-to-html or lang/java-hilit-to-terminal:
+
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text''')
+    file(path        = lang/java-hilit_v1a.ixml
+         size        = 5259
+         sha256      = 460a8413628ad3eea22b26f812931f4f9755dccf7bef6542c967ffcdbb392110
+         mtime       = 2026-11-21T23:25:29Z
+         version     = 1a
+         summary     = 'Find the syntax elements of Java source code, for syntax highlighting.'
+         description = '''Find the syntax elements of Java source code, for syntax highlighting.
+                          Fredrik Öhrström (c) 2026 spdx: MIT
+
+                          Unlike java.ixml this grammar does not parse the structure, every character of the
+                          source is kept, so the text of the parse is the source. Whitespace and punctuation
+                          are plain text, the rest is marked up:
+
+                            comment     /* ... */ and // ...
+                            javadoc     /** ... */ with the block and inline tags as tag, eg @param
+                            annotation  @Override, @java.lang.Deprecated
+                            string      "..." and text blocks """..."""
+                            char        'x'
+                            number      12, 0x1f, 1_000L, 1.5e3f
+                            keyword     if, return, class, public, new, var, record, true, null...
+                            primitive   boolean, byte, char, short, int, long, float, double, void
+                            type        a name starting with an upper case letter that has a lower case
+                                        letter, or a single upper case letter, eg String or T
+                            constant    a name with only upper case letters, digits and _, eg MAX_VALUE
+                            function    a lower case name followed by (, eg a method call or declaration
+                            name        the other names, eg variables, fields and packages
+
+                          Render it with lang/java-hilit-to-html or lang/java-hilit-to-terminal:
+
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+                            xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text''')
     file(path        = lang/java.ixml
          size        = 27620
          sha256      = 757644f6a1307a6b3058f97faf0522f2a962be04e29cb762c28b697f8ee4fa34

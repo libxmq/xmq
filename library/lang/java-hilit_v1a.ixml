@@ -1,0 +1,102 @@
+{ v1a Find the syntax elements of Java source code, for syntax highlighting.
+  Fredrik Öhrström (c) 2026 spdx: MIT
+
+  Unlike java.ixml this grammar does not parse the structure, every character of the
+  source is kept, so the text of the parse is the source. Whitespace and punctuation
+  are plain text, the rest is marked up:
+
+    comment     /* ... */ and // ...
+    javadoc     /** ... */ with the block and inline tags as tag, eg @param
+    annotation  @Override, @java.lang.Deprecated
+    string      "..." and text blocks """..."""
+    char        'x'
+    number      12, 0x1f, 1_000L, 1.5e3f
+    keyword     if, return, class, public, new, var, record, true, null...
+    primitive   boolean, byte, char, short, int, long, float, double, void
+    type        a name starting with an upper case letter that has a lower case
+                letter, or a single upper case letter, eg String or T
+    constant    a name with only upper case letters, digits and _, eg MAX_VALUE
+    function    a lower case name followed by (, eg a method call or declaration
+    name        the other names, eg variables, fields and packages
+
+  Render it with lang/java-hilit-to-html or lang/java-hilit-to-terminal:
+
+    xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-html to-html > Foo.html
+    xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text }
+
+java = item*.
+
+-item = space | comment | javadoc | annotation | string | textblock | char | number | word | other.
+
+{ A run of whitespace, all of it, so that it is not split ambiguously. }
+-space = [Zs; #9; #a; #d; #c]+, ![Zs; #9; #a; #d; #c].
+
+{ Punctuation and operators, a / that does not start a comment. }
+-other = ~[Zs; #9; #a; #d; #c; 'a'-'z'; 'A'-'Z'; '0'-'9'; '_'; '$'; '"'; "'"; '@'; '/']
+       | '/', !['/*']
+       | '@', !idstart.
+
+comment = '/*', !'*', (~['*'] | '*', !'/')*, '*/'
+        | '/**/'
+        | '//', ~[#a]*, !~[#a].
+
+javadoc = '/**', !'/', (~['*'; '@'] | '*', !'/' | tag | '@', !['a'-'z'])*, '*/'.
+tag = '@', ['a'-'z'], ['a'-'z'; 'A'-'Z']*, !['a'-'z'; 'A'-'Z'].
+
+annotation = '@', idstart, idchar*, ('.', idstart, idchar*)*, !idchar, !dotid.
+-dotid = '.', ['A'-'Z'; 'a'-'z'; '_'; '$'].
+
+string = '"', !'""', (~['"'; '\'; #a] | '\', ~[])*, '"'.
+textblock>string = '"""', (~['"'; '\'] | '\', ~[] | '"', !'""')*, '"""'.
+char = "'", (~["'"; '\'; #a] | '\', ~[])+, "'".
+
+number = ['0'-'9'], (['0'-'9'; 'a'-'z'; 'A'-'Z'; '_'; '.'] | ['eEpP'], ['+-'])*, !idnum.
+-idnum = ['0'-'9'; 'a'-'z'; 'A'-'Z'; '_'; '.'].
+
+{ Names. }
+-word = keyword | primitive | upper | lowerword.
+
+keyword = ('abstract' | 'assert' | 'break' | 'case' | 'catch' | 'class' | 'const'
+          | 'continue' | 'default' | 'do' | 'else' | 'enum' | 'extends' | 'final'
+          | 'finally' | 'for' | 'goto' | 'if' | 'implements' | 'import' | 'instanceof'
+          | 'interface' | 'native' | 'new' | 'package' | 'private' | 'protected' | 'public'
+          | 'return' | 'static' | 'strictfp' | 'super' | 'switch' | 'synchronized' | 'this'
+          | 'throw' | 'throws' | 'transient' | 'try' | 'volatile' | 'while'
+          | 'var' | 'record' | 'yield' | 'sealed' | 'permits'
+          | 'true' | 'false' | 'null'), !idchar.
+
+primitive = ('boolean' | 'byte' | 'char' | 'short' | 'int' | 'long' | 'float' | 'double'
+            | 'void'), !idchar.
+
+{ A word that is a keyword or a primitive. }
+-reserved = 'abstract', notid | 'assert', notid | 'break', notid | 'case', notid
+          | 'catch', notid | 'class', notid | 'const', notid | 'continue', notid
+          | 'default', notid | 'do', notid | 'else', notid | 'enum', notid
+          | 'extends', notid | 'final', notid | 'finally', notid | 'for', notid
+          | 'goto', notid | 'if', notid | 'implements', notid | 'import', notid
+          | 'instanceof', notid | 'interface', notid | 'native', notid | 'new', notid
+          | 'package', notid | 'private', notid | 'protected', notid | 'public', notid
+          | 'return', notid | 'static', notid | 'strictfp', notid | 'super', notid
+          | 'switch', notid | 'synchronized', notid | 'this', notid | 'throw', notid
+          | 'throws', notid | 'transient', notid | 'try', notid | 'volatile', notid
+          | 'while', notid | 'var', notid | 'record', notid | 'yield', notid
+          | 'sealed', notid | 'permits', notid | 'true', notid | 'false', notid
+          | 'null', notid
+          | 'boolean', notid | 'byte', notid | 'char', notid | 'short', notid
+          | 'int', notid | 'long', notid | 'float', notid | 'double', notid | 'void', notid.
+-notid = ~['A'-'Z'; 'a'-'z'; '0'-'9'; '_'; '$'].
+
+{ Upper case start: a constant if it has only upper case letters, digits and _ (and at
+  least two characters), otherwise a type. }
+-upper = type | constant.
+type = ['A'-'Z'], !idchar
+     | ['A'-'Z'], ['A'-'Z'; '0'-'9'; '_'; '$']*, ['a'-'z'], idchar*, !idchar.
+constant = ['A'-'Z'], ['A'-'Z'; '0'-'9'; '_'; '$']+, !idchar.
+
+{ Lower case (or _ $) start: a function if followed by a parenthesis, otherwise a name. }
+-lowerword = function, ' '?, '(' | name.
+function = !reserved, lower, idchar*, !idchar.
+name = !reserved, lower, idchar*, !idchar, !'(', !' ('.
+-lower = ['a'-'z'; '_'; '$'].
+-idstart = ['A'-'Z'; 'a'-'z'; '_'; '$'].
+-idchar = ['A'-'Z'; 'a'-'z'; '0'-'9'; '_'; '$'].

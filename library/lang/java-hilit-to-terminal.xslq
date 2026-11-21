@@ -1,0 +1,71 @@
+// v1a Render Java source, parsed with lang/java-hilit, with ansi colors in the terminal.
+// Fredrik Öhrström (c) 2026 spdx: MIT
+//
+//   xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text
+//   xmq ixml:lang/java-hilit Foo.java xsl:lang/java-hilit-to-terminal to-text | less -R
+//
+// The colors are the 16 standard ansi colors, so they follow the palette of the
+// terminal and work on both dark and light backgrounds.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method = text)
+
+    // The escape character that starts an ansi color code.
+    xsl:variable(name = esc) = &#27;
+
+    xsl:template(match = '/*')
+    {
+        xsl:apply-templates
+    }
+
+    xsl:template(match = 'text()')
+    {
+        xsl:value-of(select = '.')
+    }
+
+    // A syntax element with its color, after it the color of the element around it is
+    // restored, eg in a javadoc the tags are bold and the rest has the color of the javadoc.
+    xsl:template(match = '*')
+    {
+        xsl:variable(name = color) {
+            xsl:call-template(name = color)
+        }
+        xsl:variable(name = outer) {
+            xsl:for-each(select = '..') {
+                xsl:call-template(name = color)
+            }
+        }
+        xsl:choose {
+            xsl:when(test = '$color = "0"') {
+                xsl:apply-templates
+            }
+            xsl:otherwise {
+                xsl:value-of(select = 'concat($esc, "[", $color, "m")')
+                xsl:apply-templates
+                xsl:value-of(select = 'concat($esc, "[0m")')
+                xsl:if(test = '$outer != "0"') {
+                    xsl:value-of(select = 'concat($esc, "[", $outer, "m")')
+                }
+            }
+        }
+    }
+
+    // The ansi color of an element, 0 for none.
+    xsl:template(name = color)
+    {
+        xsl:choose {
+            xsl:when(test = 'self::comment or self::javadoc') { '2;3' }
+            xsl:when(test = 'self::tag') { '1;2;3' }
+            xsl:when(test = 'self::annotation') { '35' }
+            xsl:when(test = 'self::keyword') { '1;33' }
+            xsl:when(test = 'self::primitive') { '34' }
+            xsl:when(test = 'self::type') { '36' }
+            xsl:when(test = 'self::constant') { '35' }
+            xsl:when(test = 'self::function') { '1' }
+            xsl:when(test = 'self::string or self::char') { '32' }
+            xsl:when(test = 'self::number') { '31' }
+            xsl:otherwise { '0' }
+        }
+    }
+}

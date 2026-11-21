@@ -1,0 +1,23 @@
+package org.example;
+
+import java.util.List;
+
+/**
+ * A test class, see {@code Foo}.
+ * @param <T> the type
+ */
+@Deprecated
+public final class T<K> extends Base implements Runnable {
+    public static final int MAX_VALUE = 1_000;
+    private String name = "a \"b\""; // the name
+    /* block */ char c = '\n';
+    String block = """
+        Hello "there"
+        """;
+    @java.lang.Override
+    public void run() {
+        var list = List.of(1, 2.5f, 0x1fL);
+        if (name != null && list.size() > 0) { System.out.println(name); }
+        return;
+    }
+}
