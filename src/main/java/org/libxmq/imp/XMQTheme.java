@@ -312,7 +312,7 @@ public class XMQTheme
 
         StringBuilder style_pre = new StringBuilder();
         style_pre.append("@media screen and (orientation: portrait) { pre { font-size: 2vw; } }")
-                .append("@media screen and (orientation: landscape) { pre { max-width: 98%; } }");
+                .append("@media screen and (orientation: landscape) { pre { max-width: 98%; font-size: 1rem; } }");
 
         body = new XMQThemeStrings("<body class=\"" + bgModeClass(bg) + "\">", "</body>");
 

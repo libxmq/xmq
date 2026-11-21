@@ -67,7 +67,7 @@ textarea {
 }
 
 pre {
-    font-family: monospace;
+    font-family: Mononoki, monospace;
     white-space:pre-wrap;
     word-break: break-all;
 }
@@ -123,10 +123,10 @@ body.dark span.code {
     }
 
     pre.w40 {
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
 
     pre.w80 {
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
 }

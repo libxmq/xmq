@@ -8695,7 +8695,7 @@ void setup_html_coloring(XMQOutputSettings *os, XMQTheme *theme, bool dark_mode,
 
         membuffer_append(style_pre,
                          "@media screen and (orientation: portrait) { pre { font-size: 2vw; } }"
-                         "@media screen and (orientation: landscape) { pre { max-width: 98%; } }");
+                         "@media screen and (orientation: landscape) { pre { max-width: 98%; font-size: 1rem; } }");
 
         // Body class used on the <body> element.
         {
