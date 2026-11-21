@@ -540,6 +540,30 @@ list {
                      }'''
     }
     lang {
+        name    = Turtle
+        info    = 'Terse RDF Triple Language, a compact text syntax for RDF graphs.'
+        year    = 2004
+        url     = https://www.w3.org/TR/turtle/
+        by      = 'David Beckett, Tim Berners-Lee'
+        example = '
+                   @base <http://example.org/> .
+                   @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+                   @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+                   @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+                   @prefix rel: <http://www.perceive.net/schemas/relationship/> .
+
+                   <#green-goblin>
+                       rel:enemyOf <#spiderman> ;
+                       a foaf:Person ;    # in the context of the Marvel universe
+                       foaf:name "Green Goblin" .
+
+                   <#spiderman>
+                       rel:enemyOf <#green-goblin> ;
+                       a foaf:Person ;
+                       foaf:name "Spiderman", "Человек-паук"@ru .
+                   '
+    }
+    lang {
         name    = HAML
         info    = 'Beautifully DRY, well-indented, clear markup: templating haiku.'
         by      = 'Hampton Catlin'
@@ -806,6 +830,23 @@ list {
                        trailingComma: 'in objects', andIn: ['arrays',],
                        "backwardsCompatible": "with JSON",
                      }'''
+    }
+    lang {
+        name    = EDN
+        info    = 'Extensible Data Notation, the data subset of Clojure with sets, keywords and tagged elements.'
+        year    = 2012
+        url     = https://github.com/edn-format/edn
+        by      = 'Rich Hickey'
+        example = '
+                   {:ship/name      "Vasa"
+                    :ship/launched  1627
+                    :ship/type      :warship
+                    :ship/tags      #{:historic :preserved}
+                    :ship/museum    {:name "The Vasa Museum"
+                                     :city "Stockholm"}
+                    :visits         [{:at    #inst "2024-08-11T10:00:00Z"
+                                      :group "Maritime history club"}]}
+                   '
     }
     lang {
         name    = TOML
