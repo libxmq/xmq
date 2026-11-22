@@ -8035,6 +8035,10 @@ struct XMQParseState
     // When fixing ixml and using --lines the already added unicode chars
     // are stored here between lines.
     char *used_unicodes;
+
+    // The ixml grammar source is parsed from this NUL terminated copy, since the
+    // ixml grammar parser reads the character at stop.
+    char *ixml_source_copy;
 };
 
 /**
@@ -10548,6 +10552,8 @@ void xmqFreeParseState(XMQParseState *state)
         free(state->used_unicodes);
         state->used_unicodes = NULL;
     }
+    free(state->ixml_source_copy);
+    state->ixml_source_copy = NULL;
     free(state);
 }
 
@@ -13890,6 +13896,15 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     if (xmqDebugging()) run->debug = run->verbose = true;
     if (xmqTracing()) run->trace = run->debug = run->verbose = true;
 
+    // The buffer api does not require a NUL at stop, but the ixml grammar parser
+    // looks at the character at stop. Parse a NUL terminated copy, kept with the state.
+    size_t len = stop - start;
+    state->ixml_source_copy = (char*)malloc(len+1);
+    memcpy(state->ixml_source_copy, start, len);
+    state->ixml_source_copy[len] = 0;
+    start = state->ixml_source_copy;
+    stop = start + len;
+
     // Lets parse the ixml source to construct a yaep grammar.
     // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
     ixml_build_yaep_grammar((YaepParseRun*)ixml_grammar->yaep_parse_run_,
@@ -14380,6 +14395,56 @@ static size_t ixml_element_depth_ = 0;
 
 #define IXML_TOO_DEEP_MSG "dynamic error: nesting is too deep, the output has more than 10000 nested elements"
 
+// The parse tree can be as deep as the input is long, it is walked using an explicit
+// stack of work, not recursion, so that a deeply nested input does not exhaust the stack.
+typedef struct
+{
+    YaepTreeNode *n;
+    YaepTreeNode *parent;
+    XMQNode *node;
+    int depth;
+    int index;
+    bool end_element; // The children of an element are done.
+} IXMLDomWork;
+
+typedef struct
+{
+    IXMLDomWork *items;
+    size_t size;
+    size_t capacity;
+} IXMLDomWorkStack;
+
+static void dom_work_push(IXMLDomWorkStack *s, YaepTreeNode *n, YaepTreeNode *parent, XMQNode *node, int depth, int index, bool end_element)
+{
+    if (s->size == s->capacity)
+    {
+        s->capacity = s->capacity ? s->capacity*2 : 256;
+        s->items = (IXMLDomWork*)realloc(s->items, s->capacity*sizeof(IXMLDomWork));
+        assert(s->items);
+    }
+    IXMLDomWork *w = &s->items[s->size++];
+    w->n = n;
+    w->parent = parent;
+    w->node = node;
+    w->depth = depth;
+    w->index = index;
+    w->end_element = end_element;
+}
+
+static void collect_text_one(IXMLDomWorkStack *work, YaepTreeNode *n, MemBuffer *mb);
+static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
+
+/** Reverse the work pushed from position from, so that it is popped in the order it was pushed. */
+static void dom_work_reverse_from(IXMLDomWorkStack *s, size_t from)
+{
+    for (size_t a = from, b = s->size; a + 1 < b; ++a, --b)
+    {
+        IXMLDomWork tmp = s->items[a];
+        s->items[a] = s->items[b-1];
+        s->items[b-1] = tmp;
+    }
+}
+
 /** Remember the first dynamic error, eg ixml_dynamic_error("D02", "the attribute %s ...", name). */
 static void ixml_dynamic_error(const char *code, const char *format, ...)
 {
@@ -14423,6 +14488,18 @@ static void ixml_check_name(const char *name)
 void collect_text(YaepTreeNode *n, MemBuffer *mb)
 {
     if (n == NULL) return;
+    IXMLDomWorkStack work = { NULL, 0, 0 };
+    dom_work_push(&work, n, NULL, NULL, 0, 0, false);
+    while (work.size > 0)
+    {
+        YaepTreeNode *nn = work.items[--work.size].n;
+        if (nn) collect_text_one(&work, nn, mb);
+    }
+    free(work.items);
+}
+
+static void collect_text_one(IXMLDomWorkStack *work, YaepTreeNode *n, MemBuffer *mb)
+{
     if (n->type == YAEP_ANODE)
     {
         YaepAbstractNode *an = &n->val.anode;
@@ -14447,12 +14524,13 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
         }
         else
         {
-            // Normal node, recurse into it.
+            // Normal node, collect its children, in order.
+            size_t from = work->size;
             for (int i=0; an->children[i] != NULL; ++i)
             {
-                YaepTreeNode *nn = an->children[i];
-                collect_text(nn, mb);
+                dom_work_push(work, an->children[i], NULL, NULL, 0, 0, false);
             }
+            dom_work_reverse_from(work, from);
         }
     }
     else
@@ -14498,6 +14576,24 @@ static void ixml_add_top(XmlDom *doc, XMQNode *n)
 }
 
 void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
+{
+    IXMLDomWorkStack work = { NULL, 0, 0 };
+    dom_work_push(&work, n, parent, node, depth, index, false);
+    while (work.size > 0)
+    {
+        IXMLDomWork w = work.items[--work.size];
+        if (w.end_element)
+        {
+            ixml_element_depth_--;
+            continue;
+        }
+        generate_dom_from_yaep_one(doc, &work, w.node, w.n, w.parent, w.depth, w.index);
+    }
+    free(work.items);
+}
+
+/** Generate the dom for the tree node n, the work for its children is pushed in order. */
+static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_TERM && n->val.terminal.code == -1) return;
@@ -14592,22 +14688,25 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                         xml_node_add_child(node, new_node);
                     }
 
+                    // The element depth is decremented when the children are done.
+                    dom_work_push(work, NULL, NULL, NULL, 0, 0, true);
+                    size_t from = work->size;
                     for (int i=0; an->children[i] != NULL; ++i)
                     {
-                        YaepTreeNode *nn = an->children[i];
-                        generate_dom_from_yaep_node(doc, new_node, nn, n, depth+1, i);
+                        dom_work_push(work, an->children[i], n, new_node, depth+1, i, false);
                     }
-                    ixml_element_depth_--;
+                    dom_work_reverse_from(work, from);
                 }
             }
             else
             {
                 // Skip anonymous node whose name starts with / and deleted nodes with mark=-
+                size_t from = work->size;
                 for (int i=0; an->children[i] != NULL; ++i)
                 {
-                    YaepTreeNode *nn = an->children[i];
-                    generate_dom_from_yaep_node(doc, node, nn, n, depth+1, i);
+                    dom_work_push(work, an->children[i], n, node, depth+1, i, false);
                 }
+                dom_work_reverse_from(work, from);
             }
         }
     }
@@ -14639,15 +14738,17 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
 
         YaepTreeNode *alt = n;
 
-        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
+        size_t from = work->size;
+        dom_work_push(work, alt->val.alt.node, n, new_node, depth+1, 0, false);
 
         alt = alt->val.alt.next;
 
         while (alt && alt->type == YAEP_ALT)
         {
-            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
+            dom_work_push(work, alt->val.alt.node, n, new_node, depth+1, 0, false);
             alt = alt->val.alt.next;
         }
+        dom_work_reverse_from(work, from);
     }
     else
     if (n->type == YAEP_TERM)
@@ -14838,12 +14939,61 @@ XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
     return trace;
 }
 
+/**
+    The content parsed with an ixml grammar must be valid UTF-8 (with code points up to #10ffff),
+    since the content scan and the yaep tokenizer index tables by code point.
+    If not, the doc gets a failure document (unless fail silent) and an error, true is returned.
+*/
+static bool ixml_reject_invalid_utf8(XMQDoc *doc, const char *start, const char *stop, int flags)
+{
+    size_t bad_len = 0;
+    const char *bad = find_invalid_utf8(start, stop, &bad_len);
+    if (!bad) return false;
+
+    int line = 1, col = 1, pos = 1;
+    for (const char *k = start; k < bad; ++k)
+    {
+        if ((*k & 0xc0) == 0x80) continue;
+        pos++;
+        if (*k == '\n') { line++; col = 1; }
+        else col++;
+    }
+    char buf[128];
+    int n = snprintf(buf, sizeof(buf), "ixml:%d:%d: invalid UTF-8:", line, col);
+    for (size_t k = 0; k < bad_len && n > 0 && (size_t)n < sizeof(buf); ++k)
+    {
+        n += snprintf(buf+n, sizeof(buf)-n, " 0x%02X", (unsigned char)bad[k]);
+    }
+
+    XmlDom *new_doc = xml_dom_new();
+    if (!(flags & XMQ_FLAG_IXML_FAIL_SILENT))
+    {
+        XMQNode *root = xml_node_new_element(new_doc, "ixml", NULL);
+        xml_dom_set_root_element(new_doc, root);
+        XmlNs *ns = xml_ns_declare(root, "ixml", "http://invisiblexml.org/NS");
+        xml_node_set_attr(root, "state", ns, "failed");
+        add_key_string(new_doc, root, "info", buf);
+        add_key_number(new_doc, root, "line", line);
+        add_key_number(new_doc, root, "column", col);
+        add_key_number(new_doc, root, "pos", pos);
+    }
+    xml_dom_free(doc->dom_);
+    xmq_set_dom(doc, new_doc);
+
+    free((void*)doc->error_);
+    doc->error_ = strdup(buf);
+    doc->errno_ = XMQ_ERROR_INVALID_UTF8;
+    return true;
+}
+
 bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
     bool ok = false;
 
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
+
+    if (ixml_reject_invalid_utf8(doc, start, stop, flags)) return false;
 
     XMQParseState *state = xmq_get_xmq_parse_state(ixml_grammar);
 
@@ -14928,7 +15078,16 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     char *completions = doc->ixml_completions_;
     doc->ixml_completions_ = NULL;
 
-    if (rc)
+    if (rc && !run->failure)
+    {
+        // A yaep error that is not a syntax error has no failure document.
+        xmqClearDoc(doc);
+        free((void*)doc->error_);
+        doc->error_ = strdup(yaep_error_message(grammar));
+        doc->errno_ = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        ok = false;
+    }
+    else if (rc)
     {
         // There was an error, pick the generated error tree.
         if (flags & XMQ_FLAG_IXML_FAIL_SILENT)
@@ -16693,11 +16852,11 @@ bool installTheme(XMQTheme *theme, const char *theme_spec)
     // Split into dark light
     size_t len = strlen(theme_spec);
 
-    // Avoid overly long themes.
-    if (len > 2048) return false;
-
     char first[2048];
     char second[2048];
+
+    // Avoid overly long themes, the spec and its NUL must fit in first.
+    if (len >= sizeof(first)) return false;
 
     const char *i = strchr(theme_spec, ',');
     if (i)
@@ -17650,6 +17809,9 @@ void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
+// The maximum depth of nested groups ( ( ( ... ) ) ) in an ixml grammar.
+#define IXML_MAX_GROUP_DEPTH 1000
+
 /** Stop reading the grammar with an ixml grammar error, eg "S03 the rule S is defined more than once". */
 static void ixml_grammar_error(XMQParseState *state, const char *format, ...)
 {
@@ -18323,6 +18485,9 @@ void parse_ixml_comment(XMQParseState *state)
 
     EAT(comment_start, 1);
 
+    // Comments nest, count the depth instead of recursing, a deeply nested
+    // comment must not exhaust the stack.
+    size_t depth = 1;
     for (;;)
     {
         if (is_ixml_eob(state))
@@ -18331,11 +18496,9 @@ void parse_ixml_comment(XMQParseState *state)
             state->error_info = "comment is not closed";
             longjmp(state->error_handler, 1);
         }
-        if (*(state->i) == '{')
-        {
-            parse_ixml_comment(state);
-        }
-        if (*(state->i) == '}') break;
+        char c = *(state->i);
+        if (c == '{') depth++;
+        else if (c == '}' && --depth == 0) break;
         EAT(comment_inside, 1);
     }
     EAT(comment_stop, 1);
@@ -18460,6 +18623,12 @@ void parse_ixml_group(XMQParseState *state)
     IXML_STEP(group, state);
     ASSERT(is_ixml_group_start(state));
 
+    // Every nested group recurses through alts, alt, term and factor.
+    if (++state->nesting_depth > IXML_MAX_GROUP_DEPTH)
+    {
+        ixml_grammar_error(state, "groups are nested too deep, more than %d", IXML_MAX_GROUP_DEPTH);
+    }
+
     EAT(left_par, 1);
 
     parse_ixml_whitespace(state);
@@ -18491,6 +18660,7 @@ void parse_ixml_group(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
     EAT(right_par, 1);
+    state->nesting_depth--;
 
     parse_ixml_whitespace(state);
 
@@ -19286,12 +19456,14 @@ void skip_comment(const char **i)
 {
     const char *j = *i;
     ASSERT(*j == '{');
+    // Comments nest, count the depth instead of recursing.
+    size_t depth = 1;
     for (;;)
     {
         j++;
-        if (*j == '{') skip_comment(&j);
-        if (*j == '}') break;
         if (*j == 0) return;
+        if (*j == '{') depth++;
+        else if (*j == '}' && --depth == 0) break;
     }
     j++;
     *i = j;
@@ -19960,12 +20132,10 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         int uc = 0;
         size_t len = 0;
         bool ok = decode_utf8(i, stop, &uc, &len);
-        if (!ok)
-        {
-            fprintf(stderr, "xmq: broken utf8\n");
-            exit(1);
-        }
         i += len;
+        // The content was checked to be valid UTF-8 before the scan, never index
+        // the tables beyond the last code point #10ffff.
+        if (!ok || uc < 0 || uc > 0x10ffff) continue;
 
         if (!already_used[uc])
         {
@@ -105386,8 +105556,9 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         || dotted_rule->rule->lhs != ps->run.grammar->axiom || dotted_rule->dot_j != dotted_rule->rule->rhs_len)
     {
         /* It is possible only if error recovery is switched off.
-           Because we always adds rule `axiom: error $eof'.*/
-        assert(!ps->run.grammar->error_recovery_p);
+           Because we always adds rule `axiom: error $eof'.
+           Or if the parse stopped at a syntax error after the recovery.*/
+        assert(!ps->run.grammar->error_recovery_p || ps->run.failed_p);
         return NULL;
     }
     bool saved_one_parse_p = ps->run.grammar->one_parse_p;
@@ -106131,7 +106302,7 @@ static void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, in
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool nullable_here(YaepParseState *ps, YaepSymbol *symb, int n);
 static int default_read_token(YaepParseRun *ps, void **attr);
-static void error_recovery(YaepParseState *ps, int *start, int *stop);
+static bool error_recovery(YaepParseState *ps, int *start, int *stop);
 static void error_recovery_init(YaepParseState *ps);
 static void free_error_recovery(YaepParseState *ps);
 static size_t memusage(YaepParseState *ps);
@@ -108818,35 +108989,25 @@ static int try_to_recover(YaepParseState *ps)
        and reduce is always NULL. */
 
     saved_tok_i = ps->tok_i;
+    start = stop = -1;
     if (ps->run.grammar->error_recovery_p)
     {
         fprintf(stderr, "Attempting error recovery...\n");
-        error_recovery(ps, &start, &stop);
-        ps->run.syntax_error(
-            (YaepParseRun*)ps,
-            saved_tok_i,
-            ps->input[saved_tok_i].attr,
-            start,
-            ps->input[start].attr,
-            stop,
-            ps->input[stop].attr);
-        return 1;
+        // The recovery finds the tokens to ignore. The parse can not continue from
+        // the recovered state, since the parse expects the state set index to be
+        // the token index, the parse stops here with a syntax error.
+        if (!error_recovery(ps, &start, &stop)) start = stop = -1;
     }
-    else
-    {
-        ps->run.failed_p = true;
-        ps->run.syntax_error(
-            (YaepParseRun*)ps,
-            saved_tok_i,
-            ps->input[saved_tok_i].attr,
-            -1,
-            NULL,
-            -1,
-            NULL);
-        return 2;
-    }
-
-    return 0;
+    ps->run.failed_p = true;
+    ps->run.syntax_error(
+        (YaepParseRun*)ps,
+        saved_tok_i,
+        ps->input[saved_tok_i].attr,
+        start,
+        start >= 0 ? ps->input[start].attr : NULL,
+        stop,
+        stop >= 0 ? ps->input[stop].attr : NULL);
+    return 2;
 }
 
 static YaepStateSetTermLookAhead *lookup_cached_set_term_lookahead(YaepParseState *ps,
@@ -109307,140 +109468,177 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
     }
 }
 
-static void free_tree_reduce(YaepTreeNode *node)
+// The parse tree can be as deep as the input is long, it is walked using an explicit
+// stack, not recursion, so that a deeply nested input does not exhaust the stack.
+typedef struct
 {
-    YaepTreeNodeType type;
+    YaepTreeNode **nodes;
+    size_t size;
+    size_t capacity;
+} YaepTreeNodeStack;
+
+static void tree_stack_push(YaepTreeNodeStack *s, YaepTreeNode *node)
+{
+    if (s->size == s->capacity)
+    {
+        s->capacity = s->capacity ? s->capacity*2 : 256;
+        s->nodes = (YaepTreeNode**)realloc(s->nodes, s->capacity*sizeof(YaepTreeNode*));
+        assert(s->nodes);
+    }
+    s->nodes[s->size++] = node;
+}
+
+/* Mark the node as visited and push it, a visited node is pushed only once. */
+static void free_tree_reduce_push(YaepTreeNodeStack *s, YaepTreeNode *node)
+{
+    assert((node->type & _yaep_VISITED) == 0);
+    node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
+    tree_stack_push(s, node);
+}
+
+/* Reduce the DAG to a tree: every node is reached from one place only,
+   all other references to it are cleared. */
+static void free_tree_reduce(YaepTreeNode *root)
+{
+    YaepTreeNodeStack stack = { NULL, 0, 0 };
     YaepTreeNode **childp;
     size_t numChildren, pos, freePos;
 
-    assert(node != NULL);
-    assert((node->type & _yaep_VISITED) == 0);
+    assert(root != NULL);
+    free_tree_reduce_push(&stack, root);
 
-    type = node->type;
-    node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
-
-    switch(type)
+    while (stack.size > 0)
     {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-    case YAEP_TERM:
-        break;
+        YaepTreeNode *node = stack.nodes[--stack.size];
+        YaepTreeNodeType type = (YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
-    case YAEP_ANODE:
-        if (node->val.anode.name[0] == '\0')
+        switch(type)
         {
-            /* We have already seen the node name*/
-            node->val.anode.name = NULL;
-        }
-        else
-        {
-            /* Mark the node name as seen*/
-            node->val._anode_name.name[0] = '\0';
-        }
-        for(numChildren = 0, childp = node->val.anode.children;
-            *childp != NULL; ++numChildren, ++childp)
-        {
-            if ((*childp)->type & _yaep_VISITED)
+        case YAEP_NIL:
+        case YAEP_ERROR:
+        case YAEP_TERM:
+            break;
+
+        case YAEP_ANODE:
+            if (node->val.anode.name[0] == '\0')
             {
-               *childp = NULL;
+                /* We have already seen the node name*/
+                node->val.anode.name = NULL;
             }
             else
             {
-                free_tree_reduce(*childp);
+                /* Mark the node name as seen*/
+                node->val._anode_name.name[0] = '\0';
             }
-        }
-        /* Compactify children array*/
-        for(freePos = 0, pos = 0; pos != numChildren; ++pos)
-        {
-            if (node->val.anode.children[pos] != NULL)
+            for(numChildren = 0, childp = node->val.anode.children;
+                *childp != NULL; ++numChildren, ++childp)
             {
-                if (freePos < pos)
+                if ((*childp)->type & _yaep_VISITED)
                 {
-                    node->val.anode.children[freePos] =
-                        node->val.anode.children[pos];
-                    node->val.anode.children[pos] = NULL;
+                    *childp = NULL;
                 }
-                ++freePos;
+                else
+                {
+                    free_tree_reduce_push(&stack, *childp);
+                }
             }
-        }
-        break;
+            /* Compactify children array*/
+            for(freePos = 0, pos = 0; pos != numChildren; ++pos)
+            {
+                if (node->val.anode.children[pos] != NULL)
+                {
+                    if (freePos < pos)
+                    {
+                        node->val.anode.children[freePos] =
+                            node->val.anode.children[pos];
+                        node->val.anode.children[pos] = NULL;
+                    }
+                    ++freePos;
+                }
+            }
+            break;
 
-    case YAEP_ALT:
-        if (node->val.alt.node->type & _yaep_VISITED)
-        {
-            node->val.alt.node = NULL;
-        }
-        else
-        {
-            free_tree_reduce(node->val.alt.node);
-        }
-        while((node->val.alt.next != NULL)
-               &&(node->val.alt.next->type & _yaep_VISITED))
-        {
-            assert(node->val.alt.next->type ==(YAEP_ALT | _yaep_VISITED));
-            node->val.alt.next = node->val.alt.next->val.alt.next;
-        }
-        if (node->val.alt.next != NULL)
-        {
-            assert((node->val.alt.next->type & _yaep_VISITED) == 0);
-            free_tree_reduce(node->val.alt.next);
-        }
-        break;
+        case YAEP_ALT:
+            if (node->val.alt.node->type & _yaep_VISITED)
+            {
+                node->val.alt.node = NULL;
+            }
+            else
+            {
+                free_tree_reduce_push(&stack, node->val.alt.node);
+            }
+            if (node->val.alt.next != NULL)
+            {
+                if (node->val.alt.next->type & _yaep_VISITED)
+                {
+                    /* The rest of the alternatives is reached from the visited alternative.*/
+                    assert(node->val.alt.next->type ==(YAEP_ALT | _yaep_VISITED));
+                    node->val.alt.next = NULL;
+                }
+                else
+                {
+                    free_tree_reduce_push(&stack, node->val.alt.next);
+                }
+            }
+            break;
 
-    default:
-        assert("This should not happen" == NULL);
+        default:
+            assert("This should not happen" == NULL);
+        }
     }
+    free(stack.nodes);
 }
 
-static void free_tree_sweep(YaepTreeNode *node,
+static void free_tree_sweep(YaepTreeNode *root,
                             void(*parse_free)(void*),
                             void(*termcb)(YaepTerminalNode*))
 {
-    YaepTreeNodeType type;
-    YaepTreeNode *next;
+    YaepTreeNodeStack stack = { NULL, 0, 0 };
     YaepTreeNode **childp;
 
-    if (node == NULL)
+    if (root != NULL) tree_stack_push(&stack, root);
+
+    while (stack.size > 0)
     {
-        return;
-    }
+        YaepTreeNode *node = stack.nodes[--stack.size];
 
-    assert(node->type & _yaep_VISITED);
-    type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
+        assert(node->type & _yaep_VISITED);
+        YaepTreeNodeType type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
-    switch(type)
-    {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-        break;
-
-    case YAEP_TERM:
-        if (termcb != NULL)
+        switch(type)
         {
-            termcb(&node->val.terminal);
-        }
-        break;
+        case YAEP_NIL:
+        case YAEP_ERROR:
+            break;
 
-    case YAEP_ANODE:
-        parse_free(node->val._anode_name.name);
-        for(childp = node->val.anode.children;*childp != NULL; ++childp)
+        case YAEP_TERM:
+            if (termcb != NULL)
+            {
+                termcb(&node->val.terminal);
+            }
+            break;
+
+        case YAEP_ANODE:
         {
-            free_tree_sweep(*childp, parse_free, termcb);
+            parse_free(node->val._anode_name.name);
+            size_t n = 0;
+            for(childp = node->val.anode.children;*childp != NULL; ++childp) n++;
+            /* Pushed in reverse, the children are freed in order.*/
+            while (n > 0) tree_stack_push(&stack, node->val.anode.children[--n]);
+            break;
         }
-        break;
+        case YAEP_ALT:
+            if (node->val.alt.next != NULL) tree_stack_push(&stack, node->val.alt.next);
+            if (node->val.alt.node != NULL) tree_stack_push(&stack, node->val.alt.node);
+            break;
 
-    case YAEP_ALT:
-        free_tree_sweep(node->val.alt.node, parse_free, termcb);
-        next = node->val.alt.next;
+        default:
+            assert("This should not happen" == NULL);
+        }
+
         parse_free(node);
-        free_tree_sweep(next, parse_free, termcb);
-        return;                        /* Tail recursion*/
-
-    default:
-        assert("This should not happen" == NULL);
     }
-
-    parse_free(node);
+    free(stack.nodes);
 }
 
 void yaepFreeTree(YaepTreeNode *root, void (*parse_free)(void*), void (*termcb)(YaepTerminalNode*))
@@ -109469,12 +109667,9 @@ static int default_read_token(YaepParseRun *ps, void **attr)
 
     int uc = 0;
     size_t len = 0;
-    bool ok = decode_utf8(ps->buffer_i, ps->buffer_stop, &uc, &len);
-    if (!ok)
-    {
-        fprintf(stderr, "xmq: broken utf8\n");
-        exit(1);
-    }
+    // Broken utf8 gives the code 1 which is not a token of the grammar, that is
+    // reported as an error by yaep, instead of exiting.
+    decode_utf8(ps->buffer_i, ps->buffer_stop, &uc, &len);
     ps->buffer_i += len;
 
     return uc;
@@ -109485,12 +109680,14 @@ static int default_read_token(YaepParseRun *ps, void **attr)
    in the parameter number of start token which is ignored and number
    of the first token which is not ignored.  If the number of ignored
    tokens is zero,*START will be equal to*STOP and number of token
-   on which the error occurred.*/
-static void error_recovery(YaepParseState *ps, int *start, int *stop)
+   on which the error occurred. The original state sets are restored
+   afterwards. If no recovery was found, false is returned.*/
+static bool error_recovery(YaepParseState *ps, int *start, int *stop)
 {
+    bool found = false;
     YaepStateSet*set;
     YaepCoreSymbToPredComps*core_symb_to_predcomps;
-    YaepRecoveryState best_state, state;
+    YaepRecoveryState state;
     int best_cost, cost, num_matched_input;
     int back_to_frontier_move_cost, backward_move_cost;
 
@@ -109713,14 +109910,11 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                     fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
                 }
                 best_cost = cost;
+                found = true;
                 if (ps->tok_i == ps->input_len)
                 {
                     ps->tok_i--;
                 }
-                best_state = new_recovery_state(ps, state.last_original_state_set_el,
-                                                 /* It may be any constant here
-                                                    because it is not used.*/
-                                                 0);
                *start = ps->recovery_start_tok_i - state.backward_move_cost;
                *stop = *start + cost;
             }
@@ -109736,9 +109930,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     }
 
     if (ps->run.debug)
-        fprintf(stderr, "\n++Finishing error recovery: Restore best state\n");
+        fprintf(stderr, "\n++Finishing error recovery: Restore original state\n");
 
-    set_recovery_state(ps, &best_state);
+    // The best recovery found, if any, is only reported, restore the original state.
+    restore_original_sets(ps, ps->recovery_start_set_k);
+    ps->state_set_k = ps->recovery_start_set_k;
+    ps->tok_i = ps->recovery_start_tok_i;
 
     if (ps->run.debug)
     {
@@ -109753,6 +109950,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     }
 
     OS_DELETE(ps->recovery_state_tail_sets);
+    return found;
 }
 
 /* Initialize work with error recovery.*/

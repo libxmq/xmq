@@ -40,7 +40,9 @@ echo "}" >> "$TMP/javaapi.xmq"
 mkdir -p "$(dirname "$OUT")"
 TODAY=$(date +'%Y-%m-%d %H:%M')
 "$XMQ" "$TMP/javaapi.xmq" "$@" \
-       transform --stringparam=date="$TODAY" web/resources/genjavaapi.xslq \
+       transform --stringparam=date="$TODAY" \
+                 --stringparam=examples="$(pwd)/examples/java/examples.xmq" \
+                 web/resources/genjavaapi.xslq \
        to-html > "$OUT.tmp" || { rm -f "$OUT.tmp"; exit 1; }
 mv "$OUT.tmp" "$OUT"
 echo "Wrote $OUT"

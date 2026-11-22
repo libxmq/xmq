@@ -344,7 +344,8 @@ generate_parsers: build/xmqj
 test_xmq_grammar: release
 	@for x in $(BUILDDIRS); do ./tests/test_xmq_grammar.sh $${x}release/xmq build/xmqj $${x}release/test_output/xmq_grammar || exit 1 ; done
 
-# Build and run the C examples in examples/c and compare their output.
+# Build and run the C and Java examples in examples and compare their output,
+# the Java examples are skipped unless make xmqj has been run.
 test_examples: release
 	@./tests/test_examples.sh build/default/release build/test_examples
 

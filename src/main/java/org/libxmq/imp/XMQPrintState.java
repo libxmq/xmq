@@ -81,6 +81,15 @@ public class XMQPrintState
     }
 
     /**
+     * Sets the output settings used when printing, compact, indentation etc.
+     * @param os The output settings.
+     */
+    public void setOutputSettings(OutputSettings os)
+    {
+        output_settings = os;
+    }
+
+    /**
      * Installs the default theme.
      */
     public void defaultTheme()

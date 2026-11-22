@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import org.libxmq.imp.XMQParseIntoDOM;
@@ -37,8 +36,11 @@ import org.libxmq.imp.XMQPrintState;
 import org.libxmq.imp.XMQPrinter;
 import org.libxmq.imp.xml.HtmlSave;
 import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlDomApi;
 import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlNs;
 import org.libxmq.imp.xml.XmlSave;
+import org.libxmq.imp.xml.XmlText;
 
 /**
    The XMQ class is used to parse/print/render XMQ/XML/HTML/JSON documents.
@@ -106,6 +108,188 @@ public class XMQ
     }
 
     /**
+       Create a new empty document, like xmqNewDoc.
+       @return The document.
+     */
+    public XmlDocument newDoc()
+    {
+        return XmlDomApi.domNew();
+    }
+
+    /**
+       Set the doctype of the document, eg html, like xmqSetDocType.
+       @param doc The document.
+       @param name The doctype name.
+     */
+    public void setDocType(XmlDocument doc, String name)
+    {
+        XmlDomApi.domSetDtd(doc, name, null, null);
+    }
+
+    /**
+       Add the root element to the document, like xmqAddRootElement.
+       @param doc The document.
+       @param name The element name.
+       @param ns The namespace, NS.NONE or NS.here(uri). NS.PARENT is the same as NS.NONE here.
+       @return The root element.
+       @throws IllegalArgumentException if the namespace is invalid.
+     */
+    public XmlElement addRootElement(XmlDocument doc, String name, NS ns)
+    {
+        XmlElement e = (XmlElement)XmlDomApi.nodeNewElement(doc, name, null);
+        XmlDomApi.domSetRootElement(doc, e);
+        if (ns.action() != XmlDomApi.NS_PARENT) applyNs(e, ns);
+        return e;
+    }
+
+    /**
+       Declare a namespace with a prefix on an element, without using it for the
+       element itself, like xmqAddNamespace. Use it in children with NS.ancestor(uri).
+       @param element The element.
+       @param ns The namespace, NS.here("{prefix}uri"), the prefix is required.
+       @throws IllegalArgumentException if the namespace is not NS.here with a prefix,
+               or if the prefix is already declared on the element for another uri.
+     */
+    public void addNamespace(XmlElement element, NS ns)
+    {
+        String[] pu = ns.action() == XmlDomApi.NS_HERE ? XmlDomApi.nsSplitPuri(ns.uri()) : null;
+        if (pu == null || pu[0] == null)
+        {
+            throw new IllegalArgumentException("addNamespace needs NS.here(\"{prefix}uri\")");
+        }
+        XmlNs found = XmlDomApi.nsLookupPrefix(element, pu[0]);
+        if (found == null || found.href() == null || !found.href().equals(pu[1]))
+        {
+            if (XmlDomApi.nsDeclare(element, pu[0], pu[1]) == null)
+            {
+                throw new IllegalArgumentException("The prefix " + pu[0] + " is already declared on " + element.name());
+            }
+        }
+    }
+
+    /**
+       Add an element as the last child of parent, like xmqAddElement.
+       @param parent The parent element.
+       @param name The element name.
+       @param ns The namespace, NS.NONE, NS.PARENT, NS.here(uri) or NS.ancestor(uri).
+       @return The new element.
+       @throws IllegalArgumentException if the namespace is invalid.
+     */
+    public XmlElement addElement(XmlElement parent, String name, NS ns)
+    {
+        // The new element is in the namespace of the parent, unless ns says otherwise.
+        XmlElement e = (XmlElement)XmlDomApi.nodeNewElement(parent.doc(), name, parent.ns());
+        XmlDomApi.nodeAppendChild(parent, e);
+        if (ns.action() != XmlDomApi.NS_PARENT) applyNs(e, ns);
+        return e;
+    }
+
+    /**
+       Add an element with attributes, like xmqAddElementWithAttrs.
+       @param parent The parent element.
+       @param name The element name.
+       @param ns The namespace, see addElement.
+       @param attrs The attributes as name, value pairs, eg "href", "https://libxmq.org".
+       @return The new element.
+     */
+    public XmlElement addElementWithAttrs(XmlElement parent, String name, NS ns, String... attrs)
+    {
+        XmlElement e = addElement(parent, name, ns);
+        setAttrs(e, attrs);
+        return e;
+    }
+
+    /**
+       Add an element with a text value, key=value in xmq, like xmqAddKeyValue.
+       @param parent The parent element.
+       @param key The element name.
+       @param value The text, an empty or null value gives an empty element.
+       @param ns The namespace, see addElement.
+       @return The new element.
+     */
+    public XmlElement addKeyValue(XmlElement parent, String key, String value, NS ns)
+    {
+        XmlElement e = addElement(parent, key, ns);
+        if (value != null && !value.isEmpty()) XmlDomApi.nodeAppendChild(e, XmlDomApi.nodeNewText(parent.doc(), value));
+        return e;
+    }
+
+    /**
+       Add an element with a text value and attributes, like xmqAddKeyValueWithAttrs.
+       @param parent The parent element.
+       @param key The element name.
+       @param value The text.
+       @param ns The namespace, see addElement.
+       @param attrs The attributes as name, value pairs.
+       @return The new element.
+     */
+    public XmlElement addKeyValueWithAttrs(XmlElement parent, String key, String value, NS ns, String... attrs)
+    {
+        XmlElement e = addKeyValue(parent, key, value, ns);
+        setAttrs(e, attrs);
+        return e;
+    }
+
+    private static void applyNs(XmlElement e, NS ns)
+    {
+        if (!XmlDomApi.nodeApplyXmqns(e, ns.action(), ns.uri()))
+        {
+            throw new IllegalArgumentException("Bad namespace " + ns.uri() + " for element " + e.name());
+        }
+    }
+
+    private static void setAttrs(XmlElement e, String... attrs)
+    {
+        if (attrs.length % 2 != 0) throw new IllegalArgumentException("The attributes must be name, value pairs.");
+        for (int i = 0; i < attrs.length; i += 2)
+        {
+            e.setAttribute(attrs[i], attrs[i + 1] == null ? "" : attrs[i + 1]);
+        }
+    }
+
+    /**
+       Compile an ixml grammar, to parse inputs with parseBufferWithIXML. Like parsing
+       the grammar with xmqParseBufferWithType and XMQ_CONTENT_IXML.
+       @param grammar The ixml grammar source.
+       @return The compiled grammar.
+       @throws ParseException if the grammar has a syntax error.
+     */
+    public IXML compileIXML(String grammar) throws ParseException
+    {
+        return IXML.compile(grammar);
+    }
+
+    /**
+       Parse a buffer with an ixml grammar, like xmqParseBufferWithIXML.
+       @param buffer The input to parse.
+       @param ixml The compiled grammar.
+       @return The parse tree.
+       @throws ParseException if the input is rejected by the grammar.
+     */
+    public XmlDocument parseBufferWithIXML(String buffer, IXML ixml) throws ParseException
+    {
+        return ixml.parse(buffer);
+    }
+
+    /**
+       Quote a value as xmq on a single line, eg 'car go' or ('howdy'&amp;#10;'dowdy'),
+       like xmqCompactQuote.
+       @param content The value.
+       @return The quoted value.
+     */
+    public String compactQuote(String content)
+    {
+        if (content == null || content.isEmpty()) return "''";
+        XmlDocument d = XmlDomApi.domNew();
+        XmlElement e = (XmlElement)XmlDomApi.nodeNewElement(d, "x", null);
+        XmlDomApi.domSetRootElement(d, e);
+        XmlDomApi.nodeAppendChild(e, new XmlText(content));
+        String s = toXMQ(d, new OutputSettings().setCompact(true).setEscapeNewlines(true));
+        // Remove x= and the newline.
+        return s.substring(2, s.length() - 1);
+    }
+
+    /**
        Print the document as XMQ.
        @param doc Document to print.
        @param os  Settings for printing.
@@ -114,10 +298,11 @@ public class XMQ
     public String toXMQ(Object doc, OutputSettings os)
     {
         XMQPrintState ps = new XMQPrintState();
+        ps.setOutputSettings(os != null ? os : new OutputSettings());
         ps.defaultTheme();
         XMQPrinter pr = new XMQPrinter();
         pr.print_node(ps, doc, 0);
-        return ps.buffer().toString();
+        return ps.buffer().toString() + "\n";
     }
 
     /**

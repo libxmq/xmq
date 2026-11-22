@@ -11,6 +11,8 @@ xsl:stylesheet(version   = 1.0
                encoding       = utf-8
                indent         = no)
     xsl:param(name = date)
+    // The path to examples/java/examples.xmq, the Java examples linked from the page.
+    xsl:param(name = examples)
 
     xsl:variable(name = nl) {
         xsl:text = &#10;
@@ -90,6 +92,50 @@ xsl:stylesheet(version   = 1.0
                                       oninput     = 'siteFilterLibrary(this.value);')
                                 span(id        = libcount
                                      aria-live = polite)
+                            }
+                        }
+                    }
+                    xsl:if(test = '$examples')
+                    {
+                        section(class = band
+                                id    = examples)
+                        {
+                            div(class = wrap)
+                            {
+                                h2 = Examples
+                                p(class = lead) {
+                                    'Small programs using the api, in '
+                                    a(href = 'https://github.com/libxmq/xmq/tree/master/examples/java') = examples/java
+                                    '. Build and run one with '
+                                    span(class = code) = 'make run'
+                                    ' in its directory, it uses the xmq jar built in the xmq source tree.'
+                                }
+                                div(class = examples)
+                                {
+                                    xsl:for-each(select = 'document($examples)/examples/example')
+                                    {
+                                        div(class = example
+                                            id    = 'example-{@name}')
+                                        {
+                                            h3 {
+                                                xsl:value-of(select = title)
+                                            }
+                                            p {
+                                                xsl:value-of(select = summary)
+                                            }
+                                            div(class = buttons)
+                                            {
+                                                a(class = 'btn primary'
+                                                  href  = 'examples/java/{@name}/{@class}.java.html') {
+                                                    xsl:value-of(select = '@class')
+                                                    '.java'
+                                                }
+                                                a(class = btn
+                                                  href  = 'examples/java/{@name}/Makefile.txt') = Makefile
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

@@ -203,6 +203,20 @@ do
          to-html > "$out/$name.c.html"
 done
 
+# The Java examples, linked from the Java api page, rendered with ixml:lang/java-hilit.
+for d in examples/java/*/
+do
+    name=$(basename "$d")
+    class=$(sed -n 's/^PROG = //p' "$d/Makefile")
+    out="build/web/examples/java/$name"
+    mkdir -p "$out"
+    find "$d" -maxdepth 1 -type f ! -name '*.class' -exec cp {} "$out" \;
+    mv "$out/Makefile" "$out/Makefile.txt"
+    $XMQ library/lang/java-hilit.ixml "$d$class.java" \
+         transform --stringparam=title="$class.java" library/lang/java-hilit-to-html.xslq \
+         to-html > "$out/$class.java.html"
+done
+
 # The C api page for xmq.h, made from xmq.h parsed with ixml:lang/c.
 cp web/resources/genapi.xslq build/web/resources/genapi.xslq
 scripts/generate_xmq_h_api_doc.sh build/web/c-api.html "$XMQ" > /dev/null

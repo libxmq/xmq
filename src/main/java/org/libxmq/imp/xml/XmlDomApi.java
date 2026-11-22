@@ -1294,6 +1294,107 @@ public final class XmlDomApi
         }
     }
 
+    // xmq.h XMQNS support ////////////////////////////////////////////
+
+    /** The namespace actions of the C XMQNSAction: no namespace. */
+    public static final int NS_NONE = 0;
+    /** Use the namespace of the parent. */
+    public static final int NS_PARENT = 1;
+    /** Declare the namespace on the element itself. */
+    public static final int NS_HERE = 2;
+    /** Use a namespace declared on an ancestor, declare it on the top element if not found. */
+    public static final int NS_ANCESTOR = 3;
+
+    /**
+     * Split a namespace written as {prefix}uri into the prefix and the uri (xml_ns_split_puri).
+     * @param puri The uri, optionally with a {prefix} first.
+     * @return The prefix (null if none) and the uri, or null if the } is missing.
+     */
+    public static String[] nsSplitPuri(String puri)
+    {
+        if (puri == null) return null;
+        if (!puri.startsWith("{")) return new String[] { null, puri };
+        int rb = puri.indexOf('}');
+        if (rb < 0) return null;
+        return new String[] { puri.substring(1, rb), puri.substring(rb + 1) };
+    }
+
+    // The declaration of {prefix}uri found on node or an ancestor, otherwise
+    // declared on the top element (xml_ns_prep_ancestor).
+    private static XmlNs nsPrepAncestor(XmlNode node, String uri, String prefix)
+    {
+        XmlNs ns = prefix != null ? nsLookupPrefix(node, prefix) : nsLookupHref(node, uri);
+        if (ns != null) return ns;
+
+        XmlNode top = node instanceof XmlAttr ? node.parent_ : node;
+        while (top.parent_ instanceof XmlElement) top = top.parent_;
+
+        if (prefix == null) return declareUnique(node, top, uri);
+        ns = nsDeclare(top, prefix, uri);
+        if (ns == null) ns = declareUnique(node, top, uri);
+        return ns;
+    }
+
+    /**
+     * Set the namespace of an element added to the dom, as the C xmqAddElement does with an
+     * XMQNS (xml_node_apply_xmqns).
+     * @param element The element, already added to its parent.
+     * @param action NS_NONE, NS_PARENT, NS_HERE or NS_ANCESTOR.
+     * @param puri The uri for NS_HERE and NS_ANCESTOR, optionally with a {prefix} first.
+     * @return True if ok, false if the uri is malformed or the prefix is already
+     *         declared on the element for another uri.
+     */
+    public static boolean nodeApplyXmqns(XmlNode element, int action, String puri)
+    {
+        if (!(element instanceof XmlElement e)) return false;
+        XmlNs pns = e.parent_ instanceof XmlElement p ? p.ns() : null;
+
+        switch (action)
+        {
+        case NS_PARENT -> {
+            e.setNs(pns);
+            return true;
+        }
+        case NS_NONE -> {
+            if (pns != null && pns.href() != null && !pns.href().isEmpty())
+            {
+                // The parent has a namespace, explicitly undeclare the default namespace.
+                XmlNs d = nsDeclare(e, null, "");
+                if (d == null) d = nsLookupPrefix(e, null);
+                e.setNs(d);
+            }
+            else
+            {
+                e.setNs(null);
+            }
+            return true;
+        }
+        case NS_HERE -> {
+            String[] pu = nsSplitPuri(puri);
+            if (pu == null) return false;
+            XmlNs d = nsDeclare(e, pu[0], pu[1]);
+            if (d == null)
+            {
+                // Already declared here, accept it if it is the same uri.
+                XmlNs x = nsLookupPrefix(e, pu[0]);
+                if (x == null || !Objects.equals(x.href(), pu[1])) return false;
+                d = x;
+            }
+            e.setNs(d);
+            return true;
+        }
+        case NS_ANCESTOR -> {
+            String[] pu = nsSplitPuri(puri);
+            if (pu == null) return false;
+            e.setNs(nsPrepAncestor(e, pu[1], pu[0]));
+            return true;
+        }
+        default -> {
+            return false;
+        }
+        }
+    }
+
     private static void reconcileOne(XmlNode root, XmlNode n)
     {
         XmlNs ns = nodeNs(n);
