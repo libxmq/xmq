@@ -3296,140 +3296,177 @@ void yaepFreeGrammar(YaepParseRun *pr, YaepGrammar *g)
     }
 }
 
-static void free_tree_reduce(YaepTreeNode *node)
+// The parse tree can be as deep as the input is long, it is walked using an explicit
+// stack, not recursion, so that a deeply nested input does not exhaust the stack.
+typedef struct
 {
-    YaepTreeNodeType type;
+    YaepTreeNode **nodes;
+    size_t size;
+    size_t capacity;
+} YaepTreeNodeStack;
+
+static void tree_stack_push(YaepTreeNodeStack *s, YaepTreeNode *node)
+{
+    if (s->size == s->capacity)
+    {
+        s->capacity = s->capacity ? s->capacity*2 : 256;
+        s->nodes = (YaepTreeNode**)realloc(s->nodes, s->capacity*sizeof(YaepTreeNode*));
+        assert(s->nodes);
+    }
+    s->nodes[s->size++] = node;
+}
+
+/* Mark the node as visited and push it, a visited node is pushed only once. */
+static void free_tree_reduce_push(YaepTreeNodeStack *s, YaepTreeNode *node)
+{
+    assert((node->type & _yaep_VISITED) == 0);
+    node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
+    tree_stack_push(s, node);
+}
+
+/* Reduce the DAG to a tree: every node is reached from one place only,
+   all other references to it are cleared. */
+static void free_tree_reduce(YaepTreeNode *root)
+{
+    YaepTreeNodeStack stack = { NULL, 0, 0 };
     YaepTreeNode **childp;
     size_t numChildren, pos, freePos;
 
-    assert(node != NULL);
-    assert((node->type & _yaep_VISITED) == 0);
+    assert(root != NULL);
+    free_tree_reduce_push(&stack, root);
 
-    type = node->type;
-    node->type =(YaepTreeNodeType)(node->type | _yaep_VISITED);
-
-    switch(type)
+    while (stack.size > 0)
     {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-    case YAEP_TERM:
-        break;
+        YaepTreeNode *node = stack.nodes[--stack.size];
+        YaepTreeNodeType type = (YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
-    case YAEP_ANODE:
-        if (node->val.anode.name[0] == '\0')
+        switch(type)
         {
-            /* We have already seen the node name*/
-            node->val.anode.name = NULL;
-        }
-        else
-        {
-            /* Mark the node name as seen*/
-            node->val._anode_name.name[0] = '\0';
-        }
-        for(numChildren = 0, childp = node->val.anode.children;
-            *childp != NULL; ++numChildren, ++childp)
-        {
-            if ((*childp)->type & _yaep_VISITED)
+        case YAEP_NIL:
+        case YAEP_ERROR:
+        case YAEP_TERM:
+            break;
+
+        case YAEP_ANODE:
+            if (node->val.anode.name[0] == '\0')
             {
-               *childp = NULL;
+                /* We have already seen the node name*/
+                node->val.anode.name = NULL;
             }
             else
             {
-                free_tree_reduce(*childp);
+                /* Mark the node name as seen*/
+                node->val._anode_name.name[0] = '\0';
             }
-        }
-        /* Compactify children array*/
-        for(freePos = 0, pos = 0; pos != numChildren; ++pos)
-        {
-            if (node->val.anode.children[pos] != NULL)
+            for(numChildren = 0, childp = node->val.anode.children;
+                *childp != NULL; ++numChildren, ++childp)
             {
-                if (freePos < pos)
+                if ((*childp)->type & _yaep_VISITED)
                 {
-                    node->val.anode.children[freePos] =
-                        node->val.anode.children[pos];
-                    node->val.anode.children[pos] = NULL;
+                    *childp = NULL;
                 }
-                ++freePos;
+                else
+                {
+                    free_tree_reduce_push(&stack, *childp);
+                }
             }
-        }
-        break;
+            /* Compactify children array*/
+            for(freePos = 0, pos = 0; pos != numChildren; ++pos)
+            {
+                if (node->val.anode.children[pos] != NULL)
+                {
+                    if (freePos < pos)
+                    {
+                        node->val.anode.children[freePos] =
+                            node->val.anode.children[pos];
+                        node->val.anode.children[pos] = NULL;
+                    }
+                    ++freePos;
+                }
+            }
+            break;
 
-    case YAEP_ALT:
-        if (node->val.alt.node->type & _yaep_VISITED)
-        {
-            node->val.alt.node = NULL;
-        }
-        else
-        {
-            free_tree_reduce(node->val.alt.node);
-        }
-        while((node->val.alt.next != NULL)
-               &&(node->val.alt.next->type & _yaep_VISITED))
-        {
-            assert(node->val.alt.next->type ==(YAEP_ALT | _yaep_VISITED));
-            node->val.alt.next = node->val.alt.next->val.alt.next;
-        }
-        if (node->val.alt.next != NULL)
-        {
-            assert((node->val.alt.next->type & _yaep_VISITED) == 0);
-            free_tree_reduce(node->val.alt.next);
-        }
-        break;
+        case YAEP_ALT:
+            if (node->val.alt.node->type & _yaep_VISITED)
+            {
+                node->val.alt.node = NULL;
+            }
+            else
+            {
+                free_tree_reduce_push(&stack, node->val.alt.node);
+            }
+            if (node->val.alt.next != NULL)
+            {
+                if (node->val.alt.next->type & _yaep_VISITED)
+                {
+                    /* The rest of the alternatives is reached from the visited alternative.*/
+                    assert(node->val.alt.next->type ==(YAEP_ALT | _yaep_VISITED));
+                    node->val.alt.next = NULL;
+                }
+                else
+                {
+                    free_tree_reduce_push(&stack, node->val.alt.next);
+                }
+            }
+            break;
 
-    default:
-        assert("This should not happen" == NULL);
+        default:
+            assert("This should not happen" == NULL);
+        }
     }
+    free(stack.nodes);
 }
 
-static void free_tree_sweep(YaepTreeNode *node,
+static void free_tree_sweep(YaepTreeNode *root,
                             void(*parse_free)(void*),
                             void(*termcb)(YaepTerminalNode*))
 {
-    YaepTreeNodeType type;
-    YaepTreeNode *next;
+    YaepTreeNodeStack stack = { NULL, 0, 0 };
     YaepTreeNode **childp;
 
-    if (node == NULL)
+    if (root != NULL) tree_stack_push(&stack, root);
+
+    while (stack.size > 0)
     {
-        return;
-    }
+        YaepTreeNode *node = stack.nodes[--stack.size];
 
-    assert(node->type & _yaep_VISITED);
-    type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
+        assert(node->type & _yaep_VISITED);
+        YaepTreeNodeType type =(YaepTreeNodeType)(node->type & ~_yaep_VISITED);
 
-    switch(type)
-    {
-    case YAEP_NIL:
-    case YAEP_ERROR:
-        break;
-
-    case YAEP_TERM:
-        if (termcb != NULL)
+        switch(type)
         {
-            termcb(&node->val.terminal);
-        }
-        break;
+        case YAEP_NIL:
+        case YAEP_ERROR:
+            break;
 
-    case YAEP_ANODE:
-        parse_free(node->val._anode_name.name);
-        for(childp = node->val.anode.children;*childp != NULL; ++childp)
+        case YAEP_TERM:
+            if (termcb != NULL)
+            {
+                termcb(&node->val.terminal);
+            }
+            break;
+
+        case YAEP_ANODE:
         {
-            free_tree_sweep(*childp, parse_free, termcb);
+            parse_free(node->val._anode_name.name);
+            size_t n = 0;
+            for(childp = node->val.anode.children;*childp != NULL; ++childp) n++;
+            /* Pushed in reverse, the children are freed in order.*/
+            while (n > 0) tree_stack_push(&stack, node->val.anode.children[--n]);
+            break;
         }
-        break;
+        case YAEP_ALT:
+            if (node->val.alt.next != NULL) tree_stack_push(&stack, node->val.alt.next);
+            if (node->val.alt.node != NULL) tree_stack_push(&stack, node->val.alt.node);
+            break;
 
-    case YAEP_ALT:
-        free_tree_sweep(node->val.alt.node, parse_free, termcb);
-        next = node->val.alt.next;
+        default:
+            assert("This should not happen" == NULL);
+        }
+
         parse_free(node);
-        free_tree_sweep(next, parse_free, termcb);
-        return;                        /* Tail recursion*/
-
-    default:
-        assert("This should not happen" == NULL);
     }
-
-    parse_free(node);
+    free(stack.nodes);
 }
 
 void yaepFreeTree(YaepTreeNode *root, void (*parse_free)(void*), void (*termcb)(YaepTerminalNode*))

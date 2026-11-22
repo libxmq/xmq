@@ -130,6 +130,49 @@ if has_feature json; then check json; else echo "SKIP: max depth json (needs jso
 if has_feature yaml; then check yaml; else echo "SKIP: max depth yaml (needs yaml)"; fi
 if has_feature ixml; then check ixml; else echo "SKIP: max depth ixml (needs ixml)"; fi
 
+# chars <char> <count>, the char repeated count times.
+chars()
+{
+    head -c "$2" /dev/zero | tr '\0' "$1"
+}
+
+# no_crash <name> <expected output> <command...>, the command must not crash (exhaust
+# the stack) and must print the expected output.
+no_crash()
+{
+    local name=$1 expect=$2
+    shift 2
+    "$@" > "$OUTPUT/$name.out" 2> "$OUTPUT/$name.err"
+    local rc=$?
+    if [ "$rc" -gt 128 ]
+    then
+        echo "ERR: max depth $name crashed (exit code $rc)"
+        failed=$((failed+1))
+    elif ! grep -q -- "$expect" "$OUTPUT/$name.out" "$OUTPUT/$name.err"
+    then
+        echo "ERR: max depth $name did not report: $expect"
+        failed=$((failed+1))
+    fi
+}
+
+if has_feature ixml
+then
+    # Nested comments in an ixml grammar are counted, not parsed recursively.
+    { chars '{' 200000; chars '}' 200000; echo ' s: "x".'; } > "$OUTPUT/comments.ixml"
+    printf 'x' > "$OUTPUT/x.txt"
+    no_crash ixml_nested_comments 's = x' "$PROG" "$OUTPUT/comments.ixml" "$OUTPUT/x.txt" to-xmq
+    # Nested groups in an ixml grammar are limited.
+    { printf 's: '; chars '(' 1001; printf '"x"'; chars ')' 1001; echo '.'; } > "$OUTPUT/groups.ixml"
+    no_crash ixml_nested_groups 'groups are nested too deep' "$PROG" "$OUTPUT/groups.ixml" "$OUTPUT/x.txt" to-xmq
+    { printf 's: '; chars '(' 1000; printf '"x"'; chars ')' 1000; echo '.'; } > "$OUTPUT/groups_ok.ixml"
+    no_crash ixml_nested_groups_ok 's = x' "$PROG" "$OUTPUT/groups_ok.ixml" "$OUTPUT/x.txt" to-xmq
+    # A hidden recursive rule gives a deep parse tree without elements, the tree is
+    # walked when generating the dom and freed without recursion.
+    printf "s: -'(', -s, -')'; 'x'.\n" > "$OUTPUT/hidden.ixml"
+    { chars '(' 200000; printf 'x'; chars ')' 200000; } > "$OUTPUT/hidden.txt"
+    no_crash ixml_hidden_recursion 's = x' "$PROG" "$OUTPUT/hidden.ixml" "$OUTPUT/hidden.txt" to-xmq
+fi
+
 if [ "$failed" = "0" ]
 then
     echo "OK: max depth parsers ($passed languages accept $MAX and reject $((MAX+1)) nested elements)"

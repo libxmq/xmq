@@ -6158,6 +6158,56 @@ static size_t ixml_element_depth_ = 0;
 
 #define IXML_TOO_DEEP_MSG "dynamic error: nesting is too deep, the output has more than 10000 nested elements"
 
+// The parse tree can be as deep as the input is long, it is walked using an explicit
+// stack of work, not recursion, so that a deeply nested input does not exhaust the stack.
+typedef struct
+{
+    YaepTreeNode *n;
+    YaepTreeNode *parent;
+    XMQNode *node;
+    int depth;
+    int index;
+    bool end_element; // The children of an element are done.
+} IXMLDomWork;
+
+typedef struct
+{
+    IXMLDomWork *items;
+    size_t size;
+    size_t capacity;
+} IXMLDomWorkStack;
+
+static void dom_work_push(IXMLDomWorkStack *s, YaepTreeNode *n, YaepTreeNode *parent, XMQNode *node, int depth, int index, bool end_element)
+{
+    if (s->size == s->capacity)
+    {
+        s->capacity = s->capacity ? s->capacity*2 : 256;
+        s->items = (IXMLDomWork*)realloc(s->items, s->capacity*sizeof(IXMLDomWork));
+        assert(s->items);
+    }
+    IXMLDomWork *w = &s->items[s->size++];
+    w->n = n;
+    w->parent = parent;
+    w->node = node;
+    w->depth = depth;
+    w->index = index;
+    w->end_element = end_element;
+}
+
+static void collect_text_one(IXMLDomWorkStack *work, YaepTreeNode *n, MemBuffer *mb);
+static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index);
+
+/** Reverse the work pushed from position from, so that it is popped in the order it was pushed. */
+static void dom_work_reverse_from(IXMLDomWorkStack *s, size_t from)
+{
+    for (size_t a = from, b = s->size; a + 1 < b; ++a, --b)
+    {
+        IXMLDomWork tmp = s->items[a];
+        s->items[a] = s->items[b-1];
+        s->items[b-1] = tmp;
+    }
+}
+
 /** Remember the first dynamic error, eg ixml_dynamic_error("D02", "the attribute %s ...", name). */
 static void ixml_dynamic_error(const char *code, const char *format, ...)
 {
@@ -6201,6 +6251,18 @@ static void ixml_check_name(const char *name)
 void collect_text(YaepTreeNode *n, MemBuffer *mb)
 {
     if (n == NULL) return;
+    IXMLDomWorkStack work = { NULL, 0, 0 };
+    dom_work_push(&work, n, NULL, NULL, 0, 0, false);
+    while (work.size > 0)
+    {
+        YaepTreeNode *nn = work.items[--work.size].n;
+        if (nn) collect_text_one(&work, nn, mb);
+    }
+    free(work.items);
+}
+
+static void collect_text_one(IXMLDomWorkStack *work, YaepTreeNode *n, MemBuffer *mb)
+{
     if (n->type == YAEP_ANODE)
     {
         YaepAbstractNode *an = &n->val.anode;
@@ -6225,12 +6287,13 @@ void collect_text(YaepTreeNode *n, MemBuffer *mb)
         }
         else
         {
-            // Normal node, recurse into it.
+            // Normal node, collect its children, in order.
+            size_t from = work->size;
             for (int i=0; an->children[i] != NULL; ++i)
             {
-                YaepTreeNode *nn = an->children[i];
-                collect_text(nn, mb);
+                dom_work_push(work, an->children[i], NULL, NULL, 0, 0, false);
             }
+            dom_work_reverse_from(work, from);
         }
     }
     else
@@ -6276,6 +6339,24 @@ static void ixml_add_top(XmlDom *doc, XMQNode *n)
 }
 
 void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
+{
+    IXMLDomWorkStack work = { NULL, 0, 0 };
+    dom_work_push(&work, n, parent, node, depth, index, false);
+    while (work.size > 0)
+    {
+        IXMLDomWork w = work.items[--work.size];
+        if (w.end_element)
+        {
+            ixml_element_depth_--;
+            continue;
+        }
+        generate_dom_from_yaep_one(doc, &work, w.node, w.n, w.parent, w.depth, w.index);
+    }
+    free(work.items);
+}
+
+/** Generate the dom for the tree node n, the work for its children is pushed in order. */
+static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQNode* node, YaepTreeNode *n, YaepTreeNode *parent, int depth, int index)
 {
     if (n == NULL) return;
     if (n->type == YAEP_TERM && n->val.terminal.code == -1) return;
@@ -6370,22 +6451,25 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
                         xml_node_add_child(node, new_node);
                     }
 
+                    // The element depth is decremented when the children are done.
+                    dom_work_push(work, NULL, NULL, NULL, 0, 0, true);
+                    size_t from = work->size;
                     for (int i=0; an->children[i] != NULL; ++i)
                     {
-                        YaepTreeNode *nn = an->children[i];
-                        generate_dom_from_yaep_node(doc, new_node, nn, n, depth+1, i);
+                        dom_work_push(work, an->children[i], n, new_node, depth+1, i, false);
                     }
-                    ixml_element_depth_--;
+                    dom_work_reverse_from(work, from);
                 }
             }
             else
             {
                 // Skip anonymous node whose name starts with / and deleted nodes with mark=-
+                size_t from = work->size;
                 for (int i=0; an->children[i] != NULL; ++i)
                 {
-                    YaepTreeNode *nn = an->children[i];
-                    generate_dom_from_yaep_node(doc, node, nn, n, depth+1, i);
+                    dom_work_push(work, an->children[i], n, node, depth+1, i, false);
                 }
+                dom_work_reverse_from(work, from);
             }
         }
     }
@@ -6417,15 +6501,17 @@ void generate_dom_from_yaep_node(XmlDom* doc, XMQNode* node, YaepTreeNode *n, Ya
 
         YaepTreeNode *alt = n;
 
-        generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
+        size_t from = work->size;
+        dom_work_push(work, alt->val.alt.node, n, new_node, depth+1, 0, false);
 
         alt = alt->val.alt.next;
 
         while (alt && alt->type == YAEP_ALT)
         {
-            generate_dom_from_yaep_node(doc, new_node, alt->val.alt.node, n, depth+1, 0);
+            dom_work_push(work, alt->val.alt.node, n, new_node, depth+1, 0, false);
             alt = alt->val.alt.next;
         }
+        dom_work_reverse_from(work, from);
     }
     else
     if (n->type == YAEP_TERM)

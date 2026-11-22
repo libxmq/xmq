@@ -210,6 +210,9 @@ void make_last_term_repeat_zero_infix(XMQParseState *state);
 
 //////////////////////////////////////////////////////////////////////////////////////
 
+// The maximum depth of nested groups ( ( ( ... ) ) ) in an ixml grammar.
+#define IXML_MAX_GROUP_DEPTH 1000
+
 /** Stop reading the grammar with an ixml grammar error, eg "S03 the rule S is defined more than once". */
 static void ixml_grammar_error(XMQParseState *state, const char *format, ...)
 {
@@ -883,6 +886,9 @@ void parse_ixml_comment(XMQParseState *state)
 
     EAT(comment_start, 1);
 
+    // Comments nest, count the depth instead of recursing, a deeply nested
+    // comment must not exhaust the stack.
+    size_t depth = 1;
     for (;;)
     {
         if (is_ixml_eob(state))
@@ -891,11 +897,9 @@ void parse_ixml_comment(XMQParseState *state)
             state->error_info = "comment is not closed";
             longjmp(state->error_handler, 1);
         }
-        if (*(state->i) == '{')
-        {
-            parse_ixml_comment(state);
-        }
-        if (*(state->i) == '}') break;
+        char c = *(state->i);
+        if (c == '{') depth++;
+        else if (c == '}' && --depth == 0) break;
         EAT(comment_inside, 1);
     }
     EAT(comment_stop, 1);
@@ -1020,6 +1024,12 @@ void parse_ixml_group(XMQParseState *state)
     IXML_STEP(group, state);
     ASSERT(is_ixml_group_start(state));
 
+    // Every nested group recurses through alts, alt, term and factor.
+    if (++state->nesting_depth > IXML_MAX_GROUP_DEPTH)
+    {
+        ixml_grammar_error(state, "groups are nested too deep, more than %d", IXML_MAX_GROUP_DEPTH);
+    }
+
     EAT(left_par, 1);
 
     parse_ixml_whitespace(state);
@@ -1051,6 +1061,7 @@ void parse_ixml_group(XMQParseState *state)
         longjmp(state->error_handler, 1);
     }
     EAT(right_par, 1);
+    state->nesting_depth--;
 
     parse_ixml_whitespace(state);
 
@@ -1846,12 +1857,14 @@ void skip_comment(const char **i)
 {
     const char *j = *i;
     ASSERT(*j == '{');
+    // Comments nest, count the depth instead of recursing.
+    size_t depth = 1;
     for (;;)
     {
         j++;
-        if (*j == '{') skip_comment(&j);
-        if (*j == '}') break;
         if (*j == 0) return;
+        if (*j == '{') depth++;
+        else if (*j == '}' && --depth == 0) break;
     }
     j++;
     *i = j;
