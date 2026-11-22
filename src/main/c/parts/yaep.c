@@ -120,7 +120,7 @@ static void check_leading_dotted_rules(YaepParseState *ps, YaepStateSet *set, in
 static bool has_lookahead(YaepParseState *ps, YaepSymbol *symb, int n);
 static bool nullable_here(YaepParseState *ps, YaepSymbol *symb, int n);
 static int default_read_token(YaepParseRun *ps, void **attr);
-static void error_recovery(YaepParseState *ps, int *start, int *stop);
+static bool error_recovery(YaepParseState *ps, int *start, int *stop);
 static void error_recovery_init(YaepParseState *ps);
 static void free_error_recovery(YaepParseState *ps);
 static size_t memusage(YaepParseState *ps);
@@ -2807,35 +2807,25 @@ static int try_to_recover(YaepParseState *ps)
        and reduce is always NULL. */
 
     saved_tok_i = ps->tok_i;
+    start = stop = -1;
     if (ps->run.grammar->error_recovery_p)
     {
         fprintf(stderr, "Attempting error recovery...\n");
-        error_recovery(ps, &start, &stop);
-        ps->run.syntax_error(
-            (YaepParseRun*)ps,
-            saved_tok_i,
-            ps->input[saved_tok_i].attr,
-            start,
-            ps->input[start].attr,
-            stop,
-            ps->input[stop].attr);
-        return 1;
+        // The recovery finds the tokens to ignore. The parse can not continue from
+        // the recovered state, since the parse expects the state set index to be
+        // the token index, the parse stops here with a syntax error.
+        if (!error_recovery(ps, &start, &stop)) start = stop = -1;
     }
-    else
-    {
-        ps->run.failed_p = true;
-        ps->run.syntax_error(
-            (YaepParseRun*)ps,
-            saved_tok_i,
-            ps->input[saved_tok_i].attr,
-            -1,
-            NULL,
-            -1,
-            NULL);
-        return 2;
-    }
-
-    return 0;
+    ps->run.failed_p = true;
+    ps->run.syntax_error(
+        (YaepParseRun*)ps,
+        saved_tok_i,
+        ps->input[saved_tok_i].attr,
+        start,
+        start >= 0 ? ps->input[start].attr : NULL,
+        stop,
+        stop >= 0 ? ps->input[stop].attr : NULL);
+    return 2;
 }
 
 static YaepStateSetTermLookAhead *lookup_cached_set_term_lookahead(YaepParseState *ps,
@@ -3508,12 +3498,14 @@ static int default_read_token(YaepParseRun *ps, void **attr)
    in the parameter number of start token which is ignored and number
    of the first token which is not ignored.  If the number of ignored
    tokens is zero,*START will be equal to*STOP and number of token
-   on which the error occurred.*/
-static void error_recovery(YaepParseState *ps, int *start, int *stop)
+   on which the error occurred. The original state sets are restored
+   afterwards. If no recovery was found, false is returned.*/
+static bool error_recovery(YaepParseState *ps, int *start, int *stop)
 {
+    bool found = false;
     YaepStateSet*set;
     YaepCoreSymbToPredComps*core_symb_to_predcomps;
-    YaepRecoveryState best_state, state;
+    YaepRecoveryState state;
     int best_cost, cost, num_matched_input;
     int back_to_frontier_move_cost, backward_move_cost;
 
@@ -3736,14 +3728,11 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
                     fprintf(stderr, "++++Ignore %d tokens(the best recovery now): Save it:\n", cost);
                 }
                 best_cost = cost;
+                found = true;
                 if (ps->tok_i == ps->input_len)
                 {
                     ps->tok_i--;
                 }
-                best_state = new_recovery_state(ps, state.last_original_state_set_el,
-                                                 /* It may be any constant here
-                                                    because it is not used.*/
-                                                 0);
                *start = ps->recovery_start_tok_i - state.backward_move_cost;
                *stop = *start + cost;
             }
@@ -3759,9 +3748,12 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     }
 
     if (ps->run.debug)
-        fprintf(stderr, "\n++Finishing error recovery: Restore best state\n");
+        fprintf(stderr, "\n++Finishing error recovery: Restore original state\n");
 
-    set_recovery_state(ps, &best_state);
+    // The best recovery found, if any, is only reported, restore the original state.
+    restore_original_sets(ps, ps->recovery_start_set_k);
+    ps->state_set_k = ps->recovery_start_set_k;
+    ps->tok_i = ps->recovery_start_tok_i;
 
     if (ps->run.debug)
     {
@@ -3776,6 +3768,7 @@ static void error_recovery(YaepParseState *ps, int *start, int *stop)
     }
 
     OS_DELETE(ps->recovery_state_tail_sets);
+    return found;
 }
 
 /* Initialize work with error recovery.*/

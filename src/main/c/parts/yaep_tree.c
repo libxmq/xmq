@@ -1085,8 +1085,9 @@ YaepTreeNode *build_parse_tree(YaepParseState *ps, bool *ambiguous_p)
         || dotted_rule->rule->lhs != ps->run.grammar->axiom || dotted_rule->dot_j != dotted_rule->rule->rhs_len)
     {
         /* It is possible only if error recovery is switched off.
-           Because we always adds rule `axiom: error $eof'.*/
-        assert(!ps->run.grammar->error_recovery_p);
+           Because we always adds rule `axiom: error $eof'.
+           Or if the parse stopped at a syntax error after the recovery.*/
+        assert(!ps->run.grammar->error_recovery_p || ps->run.failed_p);
         return NULL;
     }
     bool saved_one_parse_p = ps->run.grammar->one_parse_p;

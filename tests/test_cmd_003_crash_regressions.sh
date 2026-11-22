@@ -178,6 +178,16 @@ $PROG $OUTPUT/undefent.xmq to-clines > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
 check "undefined entity attribute to-clines" 0 '/alfa/@c=""
 /alfa/x="1"' ''
 
+# An ixml parse with error recovery used an uninitialized recovery state and
+# aborted on asserts, the parse now stops at the syntax error.
+printf 'doc: item+. item: "x", "y".' > $OUTPUT/recover.ixml
+printf 'xyq' > $OUTPUT/recover.txt
+$PROG --ixml=$OUTPUT/recover.ixml --ixml-try-to-recover $OUTPUT/recover.txt to-xmq --compact > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "ixml try to recover" 1 "ixml(ixml:state=failed xmlns:ixml=http://invisiblexml.org/NS){info=('ixml:1:3: syntax error'&#10;'xyq'&#10;'  ^'&#10;\"expected item: 'xy'\"&#10;'expected end of input')line=1 column=3 pos=3 expected(rule=item)=\"'xy'\"expected='end of input'}" IGNORE
+printf 'q' > $OUTPUT/recover_none.txt
+$PROG --ixml=$OUTPUT/recover.ixml --ixml-try-to-recover $OUTPUT/recover_none.txt to-xmq --compact > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
+check "ixml try to recover at start" 1 IGNORE IGNORE
+
 if [ "$FAILED" = "0" ]
 then
     echo "OK: test cmd 003 crash regressions"
