@@ -2427,8 +2427,7 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
 {
     MemBuffer *mb = new_membuffer();
     YaepSymbol *symb = symb_find_by_term_id(ps, lookahead_term_id);
-    const char *hr = symb->hr;
-    if (!symb) hr = "?";
+    const char *hr = symb ? symb->hr : "?";
     membuffer_printf(mb, "look bitset %s (%d) %s blocked by ", info, lookahead_term_id, hr);
     print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0, 0);
     membuffer_append(mb, "\n");

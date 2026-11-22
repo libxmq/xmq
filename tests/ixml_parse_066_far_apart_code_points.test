@@ -1,0 +1,14 @@
+START
+s = letter, tag, letter.
+letter = ["a"-"z"].
+tag = [#e0000-#e007f].
+INPUT
+a󠀁b
+OUTPUT
+s {
+    letter = a
+    tag    = 󠀁
+    letter = b
+}
+END
+ARGS=

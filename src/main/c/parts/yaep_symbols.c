@@ -136,7 +136,7 @@ YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
 
 YaepSymbol *symb_find_by_term_id(YaepParseState *ps, int term_id)
 {
-    return symb_find_by_code(ps, term_id+ps->run.grammar->symbs_ptr->symb_code_trans_vect_start);
+    return term_get(ps, term_id);
 }
 
 /* The function creates new terminal symbol and returns reference for
@@ -274,7 +274,17 @@ void symb_finish_adding_terms(YaepParseState *ps)
         if (i == 0 || max_code < symb->u.terminal.code) max_code = symb->u.terminal.code;
     }
     assert(i != 0);
-    assert((max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
+
+    if ((max_code - min_code) >= MAX_SYMB_CODE_TRANS_VECT_SIZE)
+    {
+        // The codes are too far apart for a translation vector, eg the input to an
+        // ixml grammar has an a (0x61) and a tag character (0xe0001). The symbols
+        // are then found with the hash table map_code_to_symb, see symb_find_by_code.
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect = NULL;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect_start = 0;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = 0;
+        return;
+    }
 
     ps->run.grammar->symbs_ptr->symb_code_trans_vect_start = min_code;
     ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = max_code + 1;
