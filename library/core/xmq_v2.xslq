@@ -1,4 +1,4 @@
-/* v2a Build the xmq document from the parse tree of xmq.ixml.
+/* v2b Build the xmq document from the parse tree of xmq.ixml.
    by Fredrik Öhrström (c) 2024-2026 spdx: MIT
 
        xmq xmq.ixml input.xmq transform xmq.xslq
@@ -168,7 +168,7 @@ xsl:stylesheet(version   = 1.0
                         }
                     }
                 }
-                xsl:apply-templates(select = '(ancestor-or-self::*[self::element or self::keyvalue]/attributes/attr[@name = string($decl)])[last()]/*'
+                xsl:apply-templates(select = '(ancestor-or-self::*[self::element or self::keyvalue]/attributes/attr[@name = string($decl) and *])[last()]/*'
                                     mode   = string)
             }
         }
@@ -215,6 +215,10 @@ xsl:stylesheet(version   = 1.0
                                 mode   = value)
         }
     }
+    /* A declaration without a value (xmlns:a without = uri) declares nothing,
+       like in xmq, it is not output. */
+    xsl:template(match = 'attr[not(*)]'
+                 mode  = xmlns)
     xsl:template(match = attr
                  mode  = xmlns)
     {
