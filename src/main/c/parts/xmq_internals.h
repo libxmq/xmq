@@ -418,6 +418,10 @@ struct XMQParseState
     // When fixing ixml and using --lines the already added unicode chars
     // are stored here between lines.
     char *used_unicodes;
+
+    // The ixml grammar source is parsed from this NUL terminated copy, since the
+    // ixml grammar parser reads the character at stop.
+    char *ixml_source_copy;
 };
 
 /**

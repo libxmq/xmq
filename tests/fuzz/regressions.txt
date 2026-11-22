@@ -1,6 +1,7 @@
 # Inputs found by the fuzzer (make run_fuzz_clang), replayed by tests/test_fuzz_regressions.sh.
 # Each line is name|printf format of the input. The first byte selects the content type:
-# \000 xmq, \001 xml, \002 html, \003 json, \004 yaml (see fuzz_xmq.c).
+# \000 xmq, \001 xml, \002 html, \003 json, \004 yaml, \005 ixml grammar,
+# \006 ixml grammar NUL content (see fuzz_xmq.c).
 xmq_read_at_stop|\000alfa(x=1)\n
 xmq_attr_key_not_a_name_hang|\000a(b;
 xmq_attr_key_non_ascii_hang|\000a(\303\245=1)
@@ -33,3 +34,6 @@ xmq_to_json_empty_string_in_array|\000_(A) { _(S) }
 xmq_too_large_code_point_message|\000\364\212\212\237
 json_string_leak_on_bad_doctype|\003{"!DOCTYPE":":ml"}
 json_unsafe_key_with_colon_freed_root|\003{"//":"","s:?":{"_c":"","e":"x"}}
+ixml_grammar_at_stop|\005s = ['a'-'z']+ .
+ixml_grammar_name_at_stop|\005s: a
+ixml_grammar_hex_at_stop|\005s: #4

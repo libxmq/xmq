@@ -2315,6 +2315,8 @@ void xmqFreeParseState(XMQParseState *state)
         free(state->used_unicodes);
         state->used_unicodes = NULL;
     }
+    free(state->ixml_source_copy);
+    state->ixml_source_copy = NULL;
     free(state);
 }
 
@@ -5656,6 +5658,15 @@ bool xmq_parse_buffer_ixml(XMQDoc *ixml_grammar,
     if (xmqVerbose()) run->verbose = true;
     if (xmqDebugging()) run->debug = run->verbose = true;
     if (xmqTracing()) run->trace = run->debug = run->verbose = true;
+
+    // The buffer api does not require a NUL at stop, but the ixml grammar parser
+    // looks at the character at stop. Parse a NUL terminated copy, kept with the state.
+    size_t len = stop - start;
+    state->ixml_source_copy = (char*)malloc(len+1);
+    memcpy(state->ixml_source_copy, start, len);
+    state->ixml_source_copy[len] = 0;
+    start = state->ixml_source_copy;
+    stop = start + len;
 
     // Lets parse the ixml source to construct a yaep grammar.
     // This yaep grammar is cached in ixml_grammar->yaep_grammar_.
