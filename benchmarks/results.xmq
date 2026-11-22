@@ -3,4 +3,59 @@
 // includes the start of the jvm. N/A means that xmqj cannot run the benchmark yet.
 // See benchmarks/run_benchmarks.sh.
 benchmarks {
+    run {
+        date   = '2026-11-22 18:29'
+        commit = ce1befbe
+        dirty  = true
+        host   = 'landscape6'
+        cpu    = 'Intel(R) Xeon(R) Gold 6138 CPU @ 2.00GHz'
+        repeat = 3
+        benchmark(name = ixml_lines) {
+            c    = 1.365
+            java = 0.491
+        }
+        benchmark(name = ixml_words) {
+            c    = 0.307
+            java = N/A
+        }
+        benchmark(name = xml_to_xmq) {
+            c    = 0.151
+            java = 0.625
+        }
+        benchmark(name = xmq_to_json) {
+            c    = 0.136
+            java = 0.397
+        }
+        benchmark(name = xslt_sort) {
+            c    = 0.446
+            java = 2.401
+        }
+    }
+    run {
+        date   = '2026-11-22 18:58'
+        commit = abb3eb3d
+        host   = 'landscape6'
+        cpu    = 'Intel(R) Xeon(R) Gold 6138 CPU @ 2.00GHz'
+        repeat = 3
+        benchmark(name = ixml_lines) {
+            c    = 0.919
+            java = 0.490
+        }
+        benchmark(name = ixml_words) {
+            c    = 0.303
+            java = N/A
+        }
+        benchmark(name = xml_to_xmq) {
+            c    = 0.149
+            java = 0.610
+        }
+        benchmark(name = xmq_to_json) {
+            c    = 0.137
+            java = 0.393
+        }
+        benchmark(name = xslt_sort) {
+            c    = 0.442
+            java = 2.529
+        }
+    }
 }
