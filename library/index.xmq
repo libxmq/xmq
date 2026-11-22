@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-21T23:27:00Z)
+library(created = 2026-11-22T10:03:01Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -301,10 +301,10 @@ library(created = 2026-11-21T23:27:00Z)
                         xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
                         eg nbsp or #10.')
     file(path        = core/xmq.xslq
-         size        = 30253
-         sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 2a
+         size        = 30451
+         sha256      = 800d0c87104ded8b242e4cad89d052437490d0a5c5f16d947e910198856f41b5
+         mtime       = 2026-11-22T10:03:01Z
+         version     = 2b
          summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
@@ -354,10 +354,10 @@ library(created = 2026-11-21T23:27:00Z)
                         xmq.xslq like the xmq parser does. An entity keeps its name without & and ;
                         eg nbsp or #10.')
     file(path        = core/xmq_v2.xslq
-         size        = 30253
-         sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
-         mtime       = 2026-11-20T20:49:16Z
-         version     = 2a
+         size        = 30451
+         sha256      = 800d0c87104ded8b242e4cad89d052437490d0a5c5f16d947e910198856f41b5
+         mtime       = 2026-11-22T10:03:01Z
+         version     = 2b
          summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
@@ -411,6 +411,26 @@ library(created = 2026-11-21T23:27:00Z)
          sha256      = ab1b945432145775d5eda9fbb1250c9b425a94029b5482e5eeb160a58028b579
          mtime       = 2026-11-20T20:49:16Z
          version     = 2a
+         summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
+         description = 'Build the xmq document from the parse tree of xmq.ixml.
+                        by Fredrik Öhrström (c) 2024-2026 spdx: MIT
+
+                            xmq xmq.ixml input.xmq transform xmq.xslq
+
+                        gives the same document as xmq input.xmq. The element and attribute
+                        names come from the name attributes, the namespaces from the xmlns
+                        declarations, quotes and comments get their incidental indentation
+                        removed with the same rules as xmq_trim_quote in xmq.c.
+
+                        What xslt 1.0 cannot create (entity references, the doctype, embedded
+                        xml, empty texts, unused namespace declarations, undeclared prefixes) is
+                        output as marker elements in the namespace https://libxmq.org/xmq/markers
+                        that xmq replaces after the transform, see xmq_replace_transform_markers.')
+    file(path        = core/xmq_v2b.xslq
+         size        = 30451
+         sha256      = 800d0c87104ded8b242e4cad89d052437490d0a5c5f16d947e910198856f41b5
+         mtime       = 2026-11-22T10:03:01Z
+         version     = 2b
          summary     = 'Build the xmq document from the parse tree of xmq.ixml.'
          description = 'Build the xmq document from the parse tree of xmq.ixml.
                         by Fredrik Öhrström (c) 2024-2026 spdx: MIT
