@@ -1,0 +1,44 @@
+// The C examples, listed on the C api page (c-api.html) by web/resources/genapi.xslq.
+// Each example is a directory with name.c and a Makefile.
+examples {
+    example(name = load_config_file) {
+        title = 'Load a config file'
+        summary = 'Parse car.xmq and read strings, integers and doubles with xpaths.'
+    }
+    example(name = create_dom) {
+        title = 'Create a document'
+        summary = 'Build a small document from scratch and print it as compact xmq.'
+    }
+    example(name = create_html) {
+        title = 'Create html'
+        summary = 'Build a page with a doctype, elements and attributes, print it as html.'
+    }
+    example(name = create_json) {
+        title = 'Create json'
+        summary = 'Build a document with a string and an array, print it as json.'
+    }
+    example(name = default_namespace) {
+        title = 'Default namespace'
+        summary = 'Declare a default namespace on the root and inherit it in the children.'
+    }
+    example(name = namespace_prefixes) {
+        title = 'Namespace prefixes'
+        summary = 'Mix namespaces with prefixes and elements in no namespace.'
+    }
+    example(name = add_namespace) {
+        title = 'Add a namespace'
+        summary = 'Declare an extra namespace with xmqAddNamespace and use it with NS_ANCESTOR.'
+    }
+    example(name = generated_prefixes) {
+        title = 'Generated prefixes'
+        summary = 'NS_ANCESTOR with an undeclared namespace declares it on the root as ns1, ns2...'
+    }
+    example(name = parse_with_ixml) {
+        title = 'Parse with ixml'
+        summary = 'Parse text with an ixml grammar, sum the values with xmqForeach and time it.'
+    }
+    example(name = line_printf) {
+        title = 'Log lines'
+        summary = 'Print xmq log lines with xmqLinePrintf, or the same lines human readable.'
+    }
+}

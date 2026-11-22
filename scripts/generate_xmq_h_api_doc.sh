@@ -8,12 +8,13 @@
 # line markers, so the system headers are dropped). This is parsed with the ixml grammar
 # library/lang/c.ixml, which keeps comments and defines as elements, and transformed with
 # web/resources/genapi.xslq into a page listing the functions, types, enums and defines
-# that start with xmq or XMQ, with their doxygen doc comments.
+# that start with xmq or XMQ, with their doxygen doc comments. The C examples listed in
+# examples/c/examples.xmq are linked from the page, scripts/build_web.sh renders them.
 #
 # Usage: scripts/generate_xmq_h_api_doc.sh [output.html] [xmq binary]
-# The defaults are build/web/api.html and build/default/release/xmq.
+# The defaults are build/web/c-api.html and build/default/release/xmq.
 
-OUT=${1:-build/web/api.html}
+OUT=${1:-build/web/c-api.html}
 XMQ=${2:-build/default/release/xmq}
 CC=${CC:-gcc}
 
@@ -37,7 +38,9 @@ awk '/^# [0-9]+ "/ { keep = ($3 ~ /xmq\.h"$/); print; next } keep' "$TMP/api.i" 
 mkdir -p "$(dirname "$OUT")"
 TODAY=$(date +'%Y-%m-%d %H:%M')
 "$XMQ" library/lang/c.ixml "$TMP/xmq_h.i" \
-       transform --stringparam=date="$TODAY" web/resources/genapi.xslq \
+       transform --stringparam=date="$TODAY" \
+                 --stringparam=examples="$(pwd)/examples/c/examples.xmq" \
+                 web/resources/genapi.xslq \
        to-html > "$OUT.tmp" || { rm -f "$OUT.tmp"; exit 1; }
 mv "$OUT.tmp" "$OUT"
 echo "Wrote $OUT"

@@ -556,7 +556,21 @@ details.libdir > .body { padding: 1rem 1rem 0.4rem; }
 details.libdir details.libentry { background: var(--bg); }
 details.libdir details.libentry > summary:hover { background: var(--bg-alt); }
 
-/* The C api page (api.html). */
+/* The C api page (c-api.html). */
+.examples { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); margin-top: 1.4rem; }
+.example {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 1rem 1.1rem;
+}
+.example h3 { font-size: 1.05rem; margin: 0 0 0.3rem; }
+.example p { color: var(--muted); margin: 0 0 0.9rem; flex: 1; font-size: 0.95rem; }
+.example .buttons { flex-wrap: nowrap; }
+.example .buttons .btn { font-size: 0.85rem; padding: 0.35rem 0.75rem; white-space: nowrap; }
+.example .buttons .btn.primary { font-family: var(--mono); font-weight: 500; }
 pre.apisig {
     background: var(--bg);
     border: 1px solid var(--border);

@@ -188,9 +188,24 @@ done
 cp web/resources/genlibrary.xslq build/web/resources/genlibrary.xslq
 $XMQ library/index.xmq transform --stringparam=date="$TODAY" web/resources/genlibrary.xslq to-html > build/web/library.html
 
+# The C examples, linked from the C api page, the sources rendered with ixml:lang/c-hilit.
+rm -rf build/web/examples
+for d in examples/c/*/
+do
+    name=$(basename "$d")
+    out="build/web/examples/c/$name"
+    mkdir -p "$out"
+    # The sources, not any built binary.
+    find "$d" -maxdepth 1 -type f ! -perm -u+x -exec cp {} "$out" \;
+    mv "$out/Makefile" "$out/Makefile.txt"
+    $XMQ library/lang/c-hilit.ixml "$d$name.c" \
+         transform --stringparam=title="$name.c" library/lang/c-hilit-to-html.xslq \
+         to-html > "$out/$name.c.html"
+done
+
 # The C api page for xmq.h, made from xmq.h parsed with ixml:lang/c.
 cp web/resources/genapi.xslq build/web/resources/genapi.xslq
-scripts/generate_xmq_h_api_doc.sh build/web/api.html "$XMQ" > /dev/null
+scripts/generate_xmq_h_api_doc.sh build/web/c-api.html "$XMQ" > /dev/null
 
 # The Java api page for org.libxmq, made from the sources parsed with ixml:lang/java.
 cp web/resources/genjavaapi.xslq build/web/resources/genjavaapi.xslq

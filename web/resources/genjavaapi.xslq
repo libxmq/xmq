@@ -53,7 +53,7 @@ xsl:stylesheet(version   = 1.0
                         }
                         a(href = 'index.html#try') = Playground
                         a(href = library.html) = Library
-                        a(href = api.html) = 'C api'
+                        a(href = c-api.html) = 'C api'
                         a(href = javaapi.html) = 'Java api'
                         a(href = https://github.com/libxmq/xmq) = GitHub
                         button(id      = themebutton
