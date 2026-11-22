@@ -21,7 +21,8 @@ html(lang      = en
                   &nbsp;
                   'and more,
                    a new line.' )
-        pre   = "A quote with 'quotes' inside
+        pre   = "
+                 A quote with 'quotes' inside
                    and indentation"
         empty = ''
         nothing

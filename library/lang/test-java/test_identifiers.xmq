@@ -1,8 +1,11 @@
 compilation_unit {
     class(name = classes)
     {
-        javadoc = ' Identifiers: the contextual keywords, $ _ and Unicode are names.
-                       The keywords are not, eg classes and if_x are identifiers. '
+        javadoc = ( '
+                      Identifiers: the contextual keywords, $ _ and Unicode are names.
+                         The keywords are not, eg classes and if_x are identifiers.
+                     '
+                    ' ' )
         body {
             field {
                 type {

@@ -939,6 +939,12 @@ public class XMQPrinter
             return true;
         }
 
+        if (!compact && !v.isEmpty() && find_next_char_that_needs_escape(ps, v, 0, v.length(), use_dquotes[0]) < v.length())
+        {
+            // The quote is split, eg spaces at the end of a line are escaped.
+            return true;
+        }
+
         if (compact)
         {
             // In compact form newlines must be escaped: &#10;
@@ -1068,10 +1074,40 @@ public class XMQPrinter
             pre_stop++;
         }
 
+        // Spaces and tabs at the end of a line in a multiline quote are removed by the parser,
+        // so they are escaped. Also at the end of a multiline text where every line is indented,
+        // since then the closing quote is put on its own line (see print_quote_lines_and_color_uwhitespace).
+        boolean escape_trailing = false;
+        if (!compact && stop > from && (v.charAt(stop - 1) == ' ' || v.charAt(stop - 1) == '\t')
+            && v.substring(from, stop).indexOf('\n') >= 0)
+        {
+            escape_trailing = all_lines_indented(v, from, stop);
+        }
+
         int i = from;
         while (i < stop)
         {
             char c = v.charAt(i);
+            if (!compact && (c == ' ' || c == '\t'))
+            {
+                int j = i;
+                while (j < stop && (v.charAt(j) == ' ' || v.charAt(j) == '\t')) j++;
+                if (j < stop && (v.charAt(j) == '\n' || v.charAt(j) == '\r'))
+                {
+                    // Only if the newline is inside the quote, ie the next line continues the quote.
+                    int k = j;
+                    if (v.charAt(k) == '\r' && k + 1 < stop && v.charAt(k + 1) == '\n') k++;
+                    k++;
+                    if (k < stop)
+                    {
+                        char n = v.charAt(k);
+                        boolean next_escaped = (newlines && n == '\n') || (non7bit && n > 126)
+                            || (n < 32 && n != '\t' && n != '\n') || (n == '\t' && escape_tabs);
+                        if (!next_escaped) return i;
+                    }
+                }
+                if (j == stop && escape_trailing) return i;
+            }
             if ((compact && c == q && i == pre_stop)
                 || (newlines && c == '\n')
                 || (non7bit && c > 126)
@@ -1154,6 +1190,54 @@ public class XMQPrinter
     }
 
     /**
+     * Mirrors C continuation_lines_indented: true if the content has lines after the first
+     * and every such line with content starts with a space, eg x\n y, then the parser would
+     * remove the space as incidental indentation.
+     */
+    static boolean continuation_lines_indented(String v, int start, int stop)
+    {
+        boolean found = false;
+        int i = start;
+        while (i < stop && v.charAt(i) != '\n') i++;
+        while (i < stop)
+        {
+            i++;
+            int line_start = i;
+            while (i < stop && v.charAt(i) == ' ') i++;
+            if (i < stop && v.charAt(i) != '\n' && v.charAt(i) != '\r')
+            {
+                if (i == line_start) return false;
+                found = true;
+            }
+            while (i < stop && v.charAt(i) != '\n') i++;
+        }
+        return found;
+    }
+
+    /**
+     * Mirrors C all_lines_indented: true if every line of the content with content starts
+     * with a space (the leading empty lines are skipped).
+     */
+    static boolean all_lines_indented(String v, int start, int stop)
+    {
+        boolean found = false;
+        int i = start;
+        while (i < stop)
+        {
+            int line_start = i;
+            while (i < stop && v.charAt(i) == ' ') i++;
+            if (i < stop && v.charAt(i) != '\n' && v.charAt(i) != '\r')
+            {
+                if (i == line_start) return false;
+                found = true;
+            }
+            while (i < stop && v.charAt(i) != '\n') i++;
+            if (i < stop) i++;
+        }
+        return found;
+    }
+
+    /**
      * Mirrors C print_quote_lines_and_color_uwhitespace: prints the content
      * of a quote, each line wrapped in the color. A color without a post
      * string (ansi) is restarted on every new line.
@@ -1169,10 +1253,20 @@ public class XMQPrinter
         if (post == null) ps.restart_line = pre;
         else ps.restart_line = null;
 
+        // The parser removes the incidental indentation, the smallest indentation of the lines
+        // after the first. If every such line with content starts with a space, eg 'x\n y',
+        // that space would be removed too. Then the content starts on its own line, where the
+        // parser takes the indentation of the closing quote line as the incidental indentation.
+        boolean lead_nl = v.charAt(0) == '\n' || continuation_lines_indented(v, 0, v.length());
+
         // We are leading with a newline, print an extra into the quote, which will be trimmed away during parse.
         if (v.charAt(0) == '\n')
         {
             print_nl(ps, pre, post);
+        }
+        else if (lead_nl)
+        {
+            print_nl_and_indent(ps, pre, post);
         }
 
         boolean all_newlines = true;
@@ -1197,9 +1291,12 @@ public class XMQPrinter
             }
         }
         // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
+        // When the content started on its own line (lead_nl), the closing quote is aligned with
+        // the content, otherwise with the quote. Only newlines, the indentation does not matter.
         if (v.charAt(v.length() - 1) == '\n')
         {
-            ps.line_indent--;
+            boolean align_with_quote = !lead_nl || all_newlines;
+            if (align_with_quote) ps.line_indent--;
             if (!all_newlines)
             {
                 print_nl_and_indent(ps, null, post);
@@ -1210,9 +1307,16 @@ public class XMQPrinter
                 ps.last_char = 0;
                 print_white_spaces(ps, ps.line_indent);
             }
-            ps.line_indent++;
+            if (align_with_quote) ps.line_indent++;
         }
-        if (v.charAt(v.length() - 1) != '\n') write(ps, post);
+        // The content started on its own line and every line is indented, then the closing quote
+        // is put on its own line, aligned with the content, to give the incidental indentation.
+        // The parser drops this last newline.
+        if (lead_nl && v.charAt(v.length() - 1) != '\n' && all_lines_indented(v, 0, v.length()))
+        {
+            print_nl_and_indent(ps, null, post);
+        }
+        else if (v.charAt(v.length() - 1) != '\n') write(ps, post);
         ps.restart_line = old_restart_line;
     }
 

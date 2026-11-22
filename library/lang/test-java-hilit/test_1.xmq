@@ -20,14 +20,20 @@ java {
 
     '
     javadoc {
-        '/**
+        '
+         /**
           * A test class, see {'
         tag = @code
-        ' Foo}.
-          * '
+        '
+          Foo}.
+          *
+         '
+        ' '
         tag = @param
-        ' <T> the type
-          */'
+        '
+          <T> the type
+          */
+         '
     }
     &#10;
     annotation = @Deprecated
@@ -91,7 +97,8 @@ java {
     ' '
     name = block
     ' = '
-    string = '"""
+    string = '
+              """
                       Hello "there"
                       """'
     ';'

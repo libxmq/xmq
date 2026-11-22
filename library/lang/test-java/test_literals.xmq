@@ -233,9 +233,11 @@ compilation_unit {
                 }
                 variable(name = t1)
                 {
-                    TEXT_BLOCK = '        Hello "world" and ""two"" quotes, { ; , }
+                    TEXT_BLOCK = '
+                                          Hello "world" and ""two"" quotes, { ; , }
                                           a line continuation \
-                                          and an escape \t.'
+                                          and an escape \t.
+                                  '
                 }
             }
             field {

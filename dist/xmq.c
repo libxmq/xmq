@@ -101649,6 +101649,51 @@ void print_attributes(XMQPrintState *ps,
     ps->line_indent = line_indent;
 }
 
+// True if the content has lines after the first and every such line with content starts
+// with a space, eg x\n y, then the parser would remove the space as incidental indentation.
+static bool continuation_lines_indented(const char *start, const char *stop)
+{
+    bool found = false;
+    const char *i = start;
+    while (i < stop && *i != '\n') i++;
+    while (i < stop)
+    {
+        // At a newline, look at the next line.
+        i++;
+        const char *line_start = i;
+        while (i < stop && *i == ' ') i++;
+        if (i < stop && *i != '\n' && *i != '\r')
+        {
+            if (i == line_start) return false; // A line with content and no indentation.
+            found = true;
+        }
+        while (i < stop && *i != '\n') i++;
+    }
+    return found;
+}
+
+// True if every line of the content with content starts with a space (the leading empty
+// lines are skipped), then the parser would remove the space as incidental indentation if
+// there is no closing quote line that gives the indentation.
+static bool all_lines_indented(const char *start, const char *stop)
+{
+    bool found = false;
+    const char *i = start;
+    while (i < stop)
+    {
+        const char *line_start = i;
+        while (i < stop && *i == ' ') i++;
+        if (i < stop && *i != '\n' && *i != '\r')
+        {
+            if (i == line_start) return false;
+            found = true;
+        }
+        while (i < stop && *i != '\n') i++;
+        if (i < stop) i++;
+    }
+    return found;
+}
+
 void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
                                              XMQColor color,
                                              const char *start,
@@ -101667,10 +101712,20 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
     if (!post) ps->restart_line = pre;
     else ps->restart_line = NULL;
 
+    // The parser removes the incidental indentation, the smallest indentation of the lines
+    // after the first. If every such line with content starts with a space, eg 'x\n y',
+    // that space would be removed too. Then the content starts on its own line, where the
+    // parser takes the indentation of the closing quote line as the incidental indentation.
+    bool lead_nl = (*start == '\n') || continuation_lines_indented(start, stop);
+
     // We are leading with a newline, print an extra into the quote, which will be trimmed away during parse.
     if (*start == '\n')
     {
         print_nl(ps, pre, post);
+    }
+    else if (lead_nl)
+    {
+        print_nl_and_indent(ps, pre, post);
     }
 
     bool all_newlines = true;
@@ -101695,9 +101750,18 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
         }
     }
     // We are ending with a newline, print an extra into the quote, which will be trimmed away during parse.
+    // When the content started on its own line (lead_nl), the parser takes the indentation of the
+    // closing quote line as the incidental indentation, then the closing quote is aligned with
+    // the content. Otherwise the content is one column after the quote and so is the closing
+    // quote line, eg 'a\n    b\n' is printed as:
+    // 'a
+    //  b
+    // '
     if (*(stop-1) == '\n')
     {
-        ps->line_indent--;
+        // Only newlines, the indentation does not matter, the closing quote is aligned with the quote.
+        bool align_with_quote = !lead_nl || all_newlines;
+        if (align_with_quote) ps->line_indent--;
         if (!all_newlines)
         {
             print_nl_and_indent(ps, NULL, post);
@@ -101708,9 +101772,16 @@ void print_quote_lines_and_color_uwhitespace(XMQPrintState *ps,
             ps->last_char = 0;
             print_white_spaces(ps, ps->line_indent);
         }
-        ps->line_indent++;
+        if (align_with_quote) ps->line_indent++;
     }
-    if (*(stop-1) != '\n' && post) write(writer_state, post, NULL);
+    // The content started on its own line and every line is indented, then the closing quote
+    // is put on its own line, aligned with the content, to give the incidental indentation.
+    // The parser drops this last newline.
+    if (lead_nl && *(stop-1) != '\n' && all_lines_indented(start, stop))
+    {
+        print_nl_and_indent(ps, NULL, post);
+    }
+    else if (*(stop-1) != '\n' && post) write(writer_state, post, NULL);
     ps->restart_line = old_restart_line;
 }
 
@@ -101836,6 +101907,8 @@ const char *find_next_line_end(XMQPrintState *ps, const char *start, const char 
 
 const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *start, const char *stop, bool using_dquotes)
 {
+    if (start >= stop) return start;
+
     bool compact = ps->output_settings->compact;
     bool newlines = ps->output_settings->escape_newlines;
     bool escape_tabs = ps->output_settings->escape_tabs;
@@ -101852,9 +101925,38 @@ const char *find_next_char_that_needs_escape(XMQPrintState *ps, const char *star
         pre_stop++;
     }
 
+    // Spaces and tabs at the end of a line in a multiline quote are removed by the parser,
+    // so they are escaped. Also at the end of a multiline text where every line is indented,
+    // since then the closing quote is put on its own line (see print_quote_lines_and_color_uwhitespace).
+    bool escape_trailing = false;
+    if (!compact && (*(stop-1) == ' ' || *(stop-1) == '\t') && memchr(start, '\n', stop-start))
+    {
+        escape_trailing = all_lines_indented(start, stop);
+    }
+
     while (i < stop)
     {
         int c = (int)((unsigned char)*i);
+        if (!compact && (c == ' ' || c == '\t'))
+        {
+            const char *j = i;
+            while (j < stop && (*j == ' ' || *j == '\t')) j++;
+            if (j < stop && (*j == '\n' || *j == '\r'))
+            {
+                // Only if the newline is inside the quote, ie the next line continues the quote.
+                const char *k = j;
+                if (*k == '\r' && k+1 < stop && *(k+1) == '\n') k++;
+                k++;
+                if (k < stop)
+                {
+                    int n = (int)((unsigned char)*k);
+                    bool next_escaped = (newlines && n == '\n') || (non7bit && n > 126) ||
+                                        (n < 32 && n != '\t' && n != '\n') || (n == '\t' && escape_tabs);
+                    if (!next_escaped) break;
+                }
+            }
+            if (j == stop && escape_trailing) break;
+        }
         if (compact && c == q && i == pre_stop) break;
         if (newlines && c == '\n') break;
         if (non7bit && c > 126) break;
@@ -102117,6 +102219,12 @@ bool quote_needs_compounded(XMQPrintState *ps, const char *start, const char *st
     size_t only_ending_newlines = 0;
     const char *es = has_ending_nl_space(start, stop, &only_ending_newlines);
     if (es != NULL && only_ending_newlines == 0) return true;
+
+    if (!compact && start < stop && find_next_char_that_needs_escape(ps, start, stop, *use_dquotes) < stop)
+    {
+        // The quote is split, eg spaces at the end of a line are escaped.
+        return true;
+    }
 
     if (compact)
     {
