@@ -325,9 +325,16 @@ public final class IXMLGrammar {
         if (c == '*') head.alternatives.add(List.of());
         return call(head);
     }
+    // The maximum depth of nested groups, the same as IXML_MAX_GROUP_DEPTH in ixml.c.
+    private static final int MAX_GROUP_DEPTH = 1000;
+    private int group_depth = 0;
     private Term factor() {
         if (eat('(')) {
-            whitespace(); Rule r = generated(); r.alternatives.addAll(alts()); expect(')'); return call(r);
+            // Like the C parser, limit nested groups ( ( ( ... ) ) ), each recurses through alts, term and factor.
+            if (++group_depth > MAX_GROUP_DEPTH) throw error("groups are nested too deep, more than " + MAX_GROUP_DEPTH);
+            whitespace(); Rule r = generated(); r.alternatives.addAll(alts()); expect(')');
+            group_depth--;
+            return call(r);
         }
         if (eat('+')) {
             whitespace(); Term t = new Term(); t.insertion = literal(); whitespace(); return t;
