@@ -6616,12 +6616,61 @@ XMQDoc *xmqTakeIXMLTrace(XMQDoc *doc)
     return trace;
 }
 
+/**
+    The content parsed with an ixml grammar must be valid UTF-8 (with code points up to #10ffff),
+    since the content scan and the yaep tokenizer index tables by code point.
+    If not, the doc gets a failure document (unless fail silent) and an error, true is returned.
+*/
+static bool ixml_reject_invalid_utf8(XMQDoc *doc, const char *start, const char *stop, int flags)
+{
+    size_t bad_len = 0;
+    const char *bad = find_invalid_utf8(start, stop, &bad_len);
+    if (!bad) return false;
+
+    int line = 1, col = 1, pos = 1;
+    for (const char *k = start; k < bad; ++k)
+    {
+        if ((*k & 0xc0) == 0x80) continue;
+        pos++;
+        if (*k == '\n') { line++; col = 1; }
+        else col++;
+    }
+    char buf[128];
+    int n = snprintf(buf, sizeof(buf), "ixml:%d:%d: invalid UTF-8:", line, col);
+    for (size_t k = 0; k < bad_len && n > 0 && (size_t)n < sizeof(buf); ++k)
+    {
+        n += snprintf(buf+n, sizeof(buf)-n, " 0x%02X", (unsigned char)bad[k]);
+    }
+
+    XmlDom *new_doc = xml_dom_new();
+    if (!(flags & XMQ_FLAG_IXML_FAIL_SILENT))
+    {
+        XMQNode *root = xml_node_new_element(new_doc, "ixml", NULL);
+        xml_dom_set_root_element(new_doc, root);
+        XmlNs *ns = xml_ns_declare(root, "ixml", "http://invisiblexml.org/NS");
+        xml_node_set_attr(root, "state", ns, "failed");
+        add_key_string(new_doc, root, "info", buf);
+        add_key_number(new_doc, root, "line", line);
+        add_key_number(new_doc, root, "column", col);
+        add_key_number(new_doc, root, "pos", pos);
+    }
+    xml_dom_free(doc->dom_);
+    xmq_set_dom(doc, new_doc);
+
+    free((void*)doc->error_);
+    doc->error_ = strdup(buf);
+    doc->errno_ = XMQ_ERROR_INVALID_UTF8;
+    return true;
+}
+
 bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XMQDoc *ixml_grammar, int flags)
 {
     bool ok = false;
 
     if (!doc || !start || !ixml_grammar) return false;
     if (!stop) stop = start+strlen(start);
+
+    if (ixml_reject_invalid_utf8(doc, start, stop, flags)) return false;
 
     XMQParseState *state = xmq_get_xmq_parse_state(ixml_grammar);
 
@@ -6706,7 +6755,16 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
     char *completions = doc->ixml_completions_;
     doc->ixml_completions_ = NULL;
 
-    if (rc)
+    if (rc && !run->failure)
+    {
+        // A yaep error that is not a syntax error has no failure document.
+        xmqClearDoc(doc);
+        free((void*)doc->error_);
+        doc->error_ = strdup(yaep_error_message(grammar));
+        doc->errno_ = XMQ_ERROR_IXML_SYNTAX_ERROR;
+        ok = false;
+    }
+    else if (rc)
     {
         // There was an error, pick the generated error tree.
         if (flags & XMQ_FLAG_IXML_FAIL_SILENT)

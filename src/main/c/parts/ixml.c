@@ -2520,12 +2520,10 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         int uc = 0;
         size_t len = 0;
         bool ok = decode_utf8(i, stop, &uc, &len);
-        if (!ok)
-        {
-            fprintf(stderr, "xmq: broken utf8\n");
-            exit(1);
-        }
         i += len;
+        // The content was checked to be valid UTF-8 before the scan, never index
+        // the tables beyond the last code point #10ffff.
+        if (!ok || uc < 0 || uc > 0x10ffff) continue;
 
         if (!already_used[uc])
         {

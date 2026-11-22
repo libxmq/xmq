@@ -37,3 +37,5 @@ json_unsafe_key_with_colon_freed_root|\003{"//":"","s:?":{"_c":"","e":"x"}}
 ixml_grammar_at_stop|\005s = ['a'-'z']+ .
 ixml_grammar_name_at_stop|\005s: a
 ixml_grammar_hex_at_stop|\005s: #4
+ixml_content_beyond_10ffff|\006s = ['a'-'z']+ .\000\364\220\200\200
+ixml_content_broken_utf8|\006s = ['a'-'z']+ .\000a\377

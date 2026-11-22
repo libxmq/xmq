@@ -3458,12 +3458,9 @@ static int default_read_token(YaepParseRun *ps, void **attr)
 
     int uc = 0;
     size_t len = 0;
-    bool ok = decode_utf8(ps->buffer_i, ps->buffer_stop, &uc, &len);
-    if (!ok)
-    {
-        fprintf(stderr, "xmq: broken utf8\n");
-        exit(1);
-    }
+    // Broken utf8 gives the code 1 which is not a token of the grammar, that is
+    // reported as an error by yaep, instead of exiting.
+    decode_utf8(ps->buffer_i, ps->buffer_stop, &uc, &len);
     ps->buffer_i += len;
 
     return uc;
