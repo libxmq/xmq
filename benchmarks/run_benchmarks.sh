@@ -73,7 +73,8 @@ previous()
 
 COMMIT=$(git rev-parse --short HEAD 2> /dev/null || echo unknown)
 DIRTY=false
-if [ -n "$(git status --porcelain --untracked-files=no 2> /dev/null)" ]; then DIRTY=true; fi
+# Uncommitted changes to tracked files, except the stored results themselves.
+if [ -n "$(git status --porcelain --untracked-files=no -- . ":(exclude)$RESULTS" 2> /dev/null)" ]; then DIRTY=true; fi
 HOST=$(hostname 2> /dev/null || uname -n)
 CPU=$(sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo 2> /dev/null | head -n 1)
 if [ -z "$CPU" ]; then CPU=$(sysctl -n machdep.cpu.brand_string 2> /dev/null || uname -m); fi
