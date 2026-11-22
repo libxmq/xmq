@@ -2951,6 +2951,18 @@ XMQStatus do_attr_ns(XMQParseState *state,
     return XMQ_OK;
 }
 
+// A namespace declaration without a value, eg xmlns:abc without = uri, declares nothing.
+// It ends at the next attribute (or the closing parenthesis), so that the value of the next
+// attribute is not taken as its uri. The namespace keeps no uri, like an undeclared prefix.
+static void end_valueless_ns_declaration(XMQParseState *state)
+{
+    if (state->declaring_xmlns)
+    {
+        state->declaring_xmlns = false;
+        state->declaring_xmlns_namespace = NULL;
+    }
+}
+
 XMQStatus do_ns_declaration(XMQParseState *state,
                        size_t line,
                        size_t col,
@@ -2958,6 +2970,8 @@ XMQStatus do_ns_declaration(XMQParseState *state,
                        const char *stop,
                        const char *suffix)
 {
+    end_valueless_ns_declaration(state);
+
     // We found a namespace declaration attribute. It is either a default declaration xmlns=... or xmlns:prefix=...
     //
     // We can see the difference here since the parser will invoke with suffix
@@ -3063,6 +3077,7 @@ XMQStatus do_attr_key(XMQParseState *state,
                  const char *stop,
                  const char *suffix)
 {
+    end_valueless_ns_declaration(state);
     size_t n = stop - start;
     char *key = (char*)malloc(n+1);
     memcpy(key, start, n);
@@ -3423,6 +3438,7 @@ XMQStatus do_apar_right(XMQParseState *state,
                   const char *stop,
                   const char *suffix)
 {
+    end_valueless_ns_declaration(state);
     state->element_last = stack_pop(state->element_stack);
     return XMQ_OK;
 }

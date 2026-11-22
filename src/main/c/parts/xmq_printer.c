@@ -270,6 +270,17 @@ size_t find_element_key_max_width(XMQNode* element, XMQNode* *restart_find_at_no
 /**
   Scan the namespace links and find the max unicode character width.
 */
+// True if the node has a namespace declaration to print, ie with a uri (a namespace
+// without a uri is an undeclared prefix, which has no declaration).
+static bool has_printable_namespace_defs(XMQNode *node)
+{
+    for (XmlNs *ns = xml_first_namespace_def(node); ns; ns = xml_next_namespace_def(ns))
+    {
+        if (xml_namespace_href(ns) != NULL) return true;
+    }
+    return false;
+}
+
 size_t find_namespace_max_u_width(size_t max, XmlNs *ns)
 {
     while (ns)
@@ -278,8 +289,8 @@ size_t find_namespace_max_u_width(size_t max, XmlNs *ns)
         size_t total_u_len;
         namespace_strlen_prefix(ns, &prefix, &total_u_len);
 
-        // Print only new/overriding namespaces.
-        if (total_u_len > max) max = total_u_len;
+        // Print only new/overriding namespaces, an undeclared prefix (no uri) is not printed.
+        if (xml_namespace_href(ns) != NULL && total_u_len > max) max = total_u_len;
         ns = xml_ns_next_decl(ns);
     }
 
@@ -474,7 +485,7 @@ size_t print_element_name_and_attributes(XMQPrintState *ps, XMQNode *node)
         print_utf8(ps, name_color, 1, name, NULL);
     }
 
-    bool has_non_empty_ns = xml_has_non_empty_namespace_defs(node);
+    bool has_non_empty_ns = has_printable_namespace_defs(node);
 
     if (xml_first_attribute(node) || has_non_empty_ns)
     {
@@ -1074,7 +1085,9 @@ void print_attribute(XMQPrintState *ps, XMQAttr *a, size_t align)
 
 void print_namespace_declaration(XMQPrintState *ps, XmlNs *ns, size_t align)
 {
-    //if (!xml_non_empty_namespace(ns)) return;
+    // A namespace without a uri is an undeclared prefix, eg local:thing without xmlns:local,
+    // there is no declaration to print (like the xml printer). The prefix stays in the names.
+    if (xml_namespace_href(ns) == NULL) return;
 
     check_space_before_attribute(ps);
 

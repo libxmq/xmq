@@ -505,8 +505,23 @@ public class XMQParseIntoDOM extends XMQParser
         push(element_last_);
     }
 
+    /**
+     * Mirrors C end_valueless_ns_declaration: a namespace declaration without a value, eg
+     * xmlns:abc without = uri, declares nothing. It ends at the next attribute (or the closing
+     * parenthesis), so that the value of the next attribute is not taken as its uri.
+     */
+    void end_valueless_ns_declaration()
+    {
+        if (declaring_xmlns_)
+        {
+            declaring_xmlns_ = false;
+            declaring_xmlns_namespace_ = null;
+        }
+    }
+
     protected void do_apar_right(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        end_valueless_ns_declaration();
         element_last_ = pop();
     }
 
@@ -601,6 +616,7 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_ns_declaration(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        end_valueless_ns_declaration();
         // We found a namespace declaration attribute. It is either a default
         // declaration xmlns=... or xmlns:prefix=... We can see the difference
         // since stop_suffix is either stop (xmlns=) or after stop (xmlns:foo=).
@@ -651,6 +667,7 @@ public class XMQParseIntoDOM extends XMQParser
 
     protected void do_attr_key(int start_line, int start_col, int start, int stop, int stop_suffix)
     {
+        end_valueless_ns_declaration();
         String key = buffer_.substring(start, stop);
         XmlNode parent = top();
         if (!(parent instanceof XmlElement element))

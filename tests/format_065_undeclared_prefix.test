@@ -1,0 +1,14 @@
+START
+r{local:thing(local:attr=1)local:x local:y=2 p(xmlns:a class=xml)}
+COMPACT
+r{local:thing(local:attr=1)local:x local:y=2 p(class=xml)}
+XMQ
+r {
+    local:thing(local:attr = 1)
+    local:x
+    local:y = 2
+    p(class = xml)
+}
+END
+ARGS
+CMDS to-xmq

@@ -418,10 +418,22 @@ public class XMQPrinter
         }
         for (XmlNs ns : element.nsDefs())
         {
+            // An undeclared prefix (no uri) is not printed.
+            if (ns.href() == null) continue;
             int len = 5 + (ns.prefix() != null ? u_len(ns.prefix()) + 1 : 0);
             if (len > max) max = len;
         }
         return max;
+    }
+
+    /** Mirrors C has_printable_namespace_defs: a namespace declaration with a uri. */
+    static boolean has_printable_namespace_defs(XmlElement element)
+    {
+        for (XmlNs ns : element.nsDefs())
+        {
+            if (ns.href() != null) return true;
+        }
+        return false;
     }
 
     /** The number of unicode code points in a string, like C str_b_u_len. */
@@ -485,6 +497,9 @@ public class XMQPrinter
     /** Mirrors C print_namespace_declaration. */
     void print_namespace_declaration(XMQPrintState ps, XmlNs ns, int align)
     {
+        // A namespace without a uri is an undeclared prefix, eg local:thing without xmlns:local,
+        // there is no declaration to print (like the xml printer). The prefix stays in the names.
+        if (ns.href() == null) return;
         check_space_before_attribute(ps);
 
         String prefix = ns.prefix();
@@ -1557,7 +1572,7 @@ public class XMQPrinter
         XMQColor c = (is_key_value_node(node) && node.attributes().isEmpty()) ? key_color : name_color;
         print_utf8(ps, c, name);
 
-        if (!node.attributes().isEmpty() || !node.nsDefs().isEmpty())
+        if (!node.attributes().isEmpty() || has_printable_namespace_defs(node))
         {
             print_utf8(ps, XMQColor.COLOR_apar_left, "(");
             print_attributes(ps, node);

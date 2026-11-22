@@ -35,8 +35,7 @@ html(lang      = en
             svg:rect(x = 1
                      y = 2)
         }
-        local:thing(local:attr  = 1
-                    xmlns:local)
+        local:thing(local:attr = 1)
         p(class = xml)
         {
             'Embedded '
