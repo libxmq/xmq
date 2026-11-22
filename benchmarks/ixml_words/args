@@ -1,0 +1,1 @@
+@DIR@/words.ixml @DATA@/words.txt to-text

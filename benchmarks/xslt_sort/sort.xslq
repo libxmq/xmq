@@ -1,0 +1,18 @@
+// Sort the items by price and print the name and price of each.
+xsl:stylesheet(version   = 1.0
+               xmlns:xsl = http://www.w3.org/1999/XSL/Transform)
+{
+    xsl:output(method = text)
+    xsl:template(match = /items)
+    {
+        xsl:for-each(select = item)
+        {
+            xsl:sort(select    = price
+                     data-type = number)
+            xsl:value-of(select = '@name')
+            xsl:text = ' '
+            xsl:value-of(select = price)
+            xsl:text = &#10;
+        }
+    }
+}

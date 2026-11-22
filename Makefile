@@ -349,6 +349,11 @@ test_xmq_grammar: release
 test_examples: release
 	@./tests/test_examples.sh build/default/release build/test_examples
 
+# Run the benchmarks in benchmarks/ with xmq and xmqj (if built), the results are
+# written to benchmarks/results_temporary.xmq. SAVE=true stores them in results.xmq.
+run_benchmarks: release
+	@SAVE=$(SAVE) $(if $(REPEAT),REPEAT=$(REPEAT)) ./benchmarks/run_benchmarks.sh
+
 test_library:
 	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
 	./tests/test_library.sh ./xmq build/test_library_output kaffepot
@@ -491,7 +496,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_generate_parser test_xmq_grammar test_examples generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

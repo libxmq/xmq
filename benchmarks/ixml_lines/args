@@ -1,0 +1,1 @@
+--lines @DIR@/line.ixml @DATA@/words.txt to-text

@@ -1,0 +1,6 @@
+// The stored results of the benchmarks, one run per make run_benchmarks SAVE=true.
+// The times are the best wall clock time in seconds of repeat runs, the Java time
+// includes the start of the jvm. N/A means that xmqj cannot run the benchmark yet.
+// See benchmarks/run_benchmarks.sh.
+benchmarks {
+}
