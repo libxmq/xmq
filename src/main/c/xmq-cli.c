@@ -172,6 +172,7 @@ struct XMQCliCommand
     bool ixml_complete; // --complete print what could follow the input, for completion.
     const char *ixml_trace_file; // --traceixml=file writes a trace of the ixml parse to this file.
     bool ixml_trace_terminal; // --traceixml=terminal shows the trace in the terminal, saved in trace_grammar.xmq.
+    bool ixml_trace_browser; // --traceixml=br shows the trace in the browser, saved in trace_grammar.xmq and .html.
     bool ixml_all_parses; // Print all possible parses when parse is ambiguous.
     bool ixml_try_to_recover; // Try to recover when parsing with an ixml grammar.
     bool build_xml_of_ixml; // Generate xml directly from ixml.
@@ -1973,18 +1974,20 @@ bool handle_global_option(const char *arg, XMQCliCommand *command)
     }
     if (!strncmp(arg, "--traceixml=", 12))
     {
-        // A file ending in .xmq .xml or .json, or terminal to show the trace in the terminal.
+        // A file ending in .xmq .xml or .json, terminal to show the trace in the terminal
+        // or br to show it in the browser.
         const char *value = arg+12;
         size_t len = strlen(value);
         bool is_file = (len > 4 && (!strcmp(value+len-4, ".xmq") || !strcmp(value+len-4, ".xml"))) ||
                        (len > 5 && !strcmp(value+len-5, ".json"));
-        if (!is_file && strcmp(value, "terminal"))
+        if (!is_file && strcmp(value, "terminal") && strcmp(value, "br"))
         {
-            fprintf(stderr, "xmq: --traceixml= takes a file ending in .xmq .xml or .json, or terminal\n");
+            fprintf(stderr, "xmq: --traceixml= takes a file ending in .xmq .xml or .json, terminal or br\n");
             exit(1);
         }
         command->ixml_trace_file = value;
-        command->ixml_trace_terminal = !is_file;
+        command->ixml_trace_terminal = !strcmp(value, "terminal");
+        command->ixml_trace_browser = !strcmp(value, "br");
         return true;
     }
     if (!strcmp(arg, "--complete"))
@@ -2153,6 +2156,7 @@ bool cmd_help(XMQCliCommand *cmd)
            "  --traceixml=trace.xmq Write a trace of the ixml parse (rules, Earley items, tree) to the file (.xmq .xml or .json),\n"
            "             render it with xsl:xmq-utils/render-trace-to-html, -to-tex or -to-terminal.\n"
            "  --traceixml=terminal Show the trace in the terminal, it is saved in trace_grammar.xmq.\n"
+           "  --traceixml=br Show the trace in the browser, it is saved in trace_grammar.xmq and trace_grammar.html.\n"
            "  -z         Do not read from stdin nor from a file. Start with an empty dom.\n"
            "  -i \"a=2\" Do not read from a file, use the next argument as the content to parse.\n"
            "\n"
@@ -2402,12 +2406,23 @@ static const char *self_exe()
 }
 
 /** Run xmq with the arguments, the output goes to the terminal. Returns true if it exited with 0. */
-static bool run_xmq(const char **args)
+static bool run_xmq(const char **args, const char *out_file)
 {
 #ifndef PLATFORM_WINAPI
     pid_t pid = fork();
     if (pid == 0)
     {
+        if (out_file)
+        {
+            // Write stdout to the file, but do not follow a symbolic link.
+            int fd = open(out_file, O_CREAT | O_TRUNC | O_NOFOLLOW | O_WRONLY, 0666);
+            if (fd < 0 || dup2(fd, 1) < 0)
+            {
+                fprintf(stderr, "xmq: could not write %s\n", out_file);
+                _exit(127);
+            }
+            close(fd);
+        }
         execvp(args[0], (char**)args);
         fprintf(stderr, "xmq: could not run %s\n", args[0]);
         _exit(127);
@@ -2418,6 +2433,7 @@ static bool run_xmq(const char **args)
     return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 #else
     (void)args;
+    (void)out_file;
     fprintf(stderr, "xmq: running xmq again is not yet implemented on Windows.\n");
     return false;
 #endif
@@ -2426,14 +2442,17 @@ static bool run_xmq(const char **args)
 /** Write the trace of the ixml parse to the --traceixml file, as xml or json if the file
     ends with .xml or .json, else as xmq. With --traceixml=terminal the trace is saved in
     trace_grammar.xmq (after the grammar file name) and shown with
-    xmq trace_grammar.xmq transform xsl:xmq-utils/render-trace-to-terminal to-text */
+    xmq trace_grammar.xmq transform xsl:xmq-utils/render-trace-to-terminal to-text
+    With --traceixml=br it is rendered with render-trace-to-html into trace_grammar.html,
+    which is opened in the browser. */
 void save_ixml_trace(XMQCliCommand *command)
 {
     XMQDoc *trace = xmqTakeIXMLTrace(command->env->doc);
     if (!trace) return;
     const char *file = command->ixml_trace_file;
     char terminal_file[1024];
-    if (command->ixml_trace_terminal)
+    char html_file[1024];
+    if (command->ixml_trace_terminal || command->ixml_trace_browser)
     {
         // trace_formula.xmq for the grammar dir/formula.ixml
         const char *g = command->ixml_filename ? command->ixml_filename : "grammar";
@@ -2442,6 +2461,7 @@ void save_ixml_trace(XMQCliCommand *command)
         const char *dot = strrchr(base, '.');
         int base_len = dot ? (int)(dot-base) : (int)strlen(base);
         snprintf(terminal_file, sizeof(terminal_file), "trace_%.*s.xmq", base_len, base);
+        snprintf(html_file, sizeof(html_file), "trace_%.*s.html", base_len, base);
         file = terminal_file;
     }
     size_t len = strlen(file);
@@ -2468,10 +2488,22 @@ void save_ixml_trace(XMQCliCommand *command)
     if (command->ixml_trace_terminal)
     {
         const char *args[] = { self_exe(), file, "transform", "xsl:xmq-utils/render-trace-to-terminal", "to-text", NULL };
-        if (!run_xmq(args))
+        if (!run_xmq(args, NULL))
         {
             fprintf(stderr, "xmq: could not show the ixml trace %s in the terminal\n", file);
         }
+    }
+
+    if (command->ixml_trace_browser)
+    {
+        const char *args[] = { self_exe(), file, "transform", "xsl:xmq-utils/render-trace-to-html", "to-html", NULL };
+        if (!run_xmq(args, html_file))
+        {
+            fprintf(stderr, "xmq: could not render the ixml trace %s to %s\n", file, html_file);
+            return;
+        }
+        verbose_("xmq=", "wrote the ixml trace as html to %s", html_file);
+        open_browser(html_file);
     }
 }
 

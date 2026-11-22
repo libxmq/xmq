@@ -131,7 +131,7 @@ Try to recover a parse even if the first attempt fails.
 Do not warn if an ixml parse fails.
 
 .TP
-.BR \-\-traceixml=FILE|terminal
+.BR \-\-traceixml=FILE|terminal|br
 Write a trace of the ixml parse to FILE: the grammar rules, the input tokens,
 every Earley item and the nodes added to the tree, in the order the tree is built,
 with their costs and whether they are in the chosen tree. The trace is xmq, or xml or
@@ -151,6 +151,9 @@ Render the trace as a web page, as LaTeX or in the terminal with colors:
 With \fB\-\-traceixml=terminal\fP the trace is saved in trace_GRAMMAR.xmq, after the
 name of the grammar file, and shown in the terminal when the parse is done, like the
 last command above.
+With \fB\-\-traceixml=br\fP the trace is also saved in trace_GRAMMAR.xmq, rendered
+as a web page into trace_GRAMMAR.html, like the first render command above, and opened
+in the default browser.
 .RE
 
 .TP

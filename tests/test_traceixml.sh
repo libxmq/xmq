@@ -96,6 +96,19 @@ then
     [ -s "$OUTPUT/trace_formula.xmq" ] || fail "--traceixml=terminal did not save trace_formula.xmq"
     grep -q 'the chosen tree' "$OUTPUT/terminal.txt" || fail "--traceixml=terminal did not show the trace"
     grep -q $'\x1b\[' "$OUTPUT/terminal.txt" || fail "--traceixml=terminal has no colors"
+
+    # --traceixml=br saves trace_formula.xmq, renders it to trace_formula.html and opens it
+    # in the browser. A fake open (the command used to start the browser) records the file.
+    ABS_OUT=$(cd "$OUTPUT" && pwd)
+    mkdir -p "$OUTPUT/fakebin"
+    printf '#!/bin/sh\necho "$1" > "%s/opened.txt"\n' "$ABS_OUT" > "$OUTPUT/fakebin/open"
+    chmod +x "$OUTPUT/fakebin/open"
+    rm -f "$OUTPUT/trace_formula.xmq" "$OUTPUT/trace_formula.html" "$OUTPUT/opened.txt"
+    (cd "$OUTPUT" && PATH="$ABS_OUT/fakebin:$PATH" XMQ_LIBRARY="$ROOT/library" "$ABS_PROG" --traceixml=br formula.ixml -i '1+2*3+4' > br.txt) || fail "--traceixml=br failed"
+    [ -s "$OUTPUT/trace_formula.xmq" ] || fail "--traceixml=br did not save trace_formula.xmq"
+    grep -q 'the chosen tree' "$OUTPUT/trace_formula.html" || fail "--traceixml=br did not render trace_formula.html"
+    [ "$(cat "$OUTPUT/opened.txt" 2>/dev/null)" = "trace_formula.html" ] || fail "--traceixml=br did not open trace_formula.html in the browser"
+    grep -q '1+2\*3+4\|S {' "$OUTPUT/br.txt" || fail "--traceixml=br did not print the parse"
     "$PROG" --traceixml=bad "$OUTPUT/formula.ixml" -i 1 > /dev/null 2>&1 && fail "--traceixml=bad is accepted"
     "$PROG" --traceixml="$OUTPUT/trace.json" "$OUTPUT/formula.ixml" -i 1 > /dev/null || fail "--traceixml=trace.json failed"
     head -c 1 "$OUTPUT/trace.json" | grep -q '{' || fail "trace.json is not json"
