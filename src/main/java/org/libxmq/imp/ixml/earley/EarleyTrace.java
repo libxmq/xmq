@@ -64,7 +64,7 @@ public final class EarleyTrace
         t.writeSet(chart, 0);
         for (int k = 0; k < chart.length(); k++)
         {
-            String token = Grammar.quote(chart.input[k]);
+            String token = Grammar.quote(chart.codepoint(k));
             out.println("(ixml.pa.token) @" + k + " " + token);
             out.println("(ixml.pa.view) @" + k + " READ " + token);
             t.writeSet(chart, k + 1);
@@ -119,7 +119,7 @@ public final class EarleyTrace
         }
         for (int k = 0; k <= chart.length(); k++)
         {
-            String token = k < chart.length() ? tokenText(chart.input[k]) : "ω";
+            String token = k < chart.length() ? tokenText(chart.codepoint(k)) : "ω";
             XmlElement e = child(input, "token");
             e.setAttribute("pos", Integer.toString(k));
             e.appendRaw(new XmlText(token));

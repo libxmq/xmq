@@ -98,6 +98,7 @@ final class Cli
     String in_format;        // null = detect, else xmq xml html text
     String in;              // file name, "-" for stdin, or the content with -i
     String ixml_source;      // --ixml=grammar.ixml or a positional grammar
+    org.libxmq.imp.ixml.earley.Grammar earley_grammar; // The Earley grammar for --traceixml, shared by the lines.
     final List<Command> commands = new ArrayList<>();
     boolean yaml_input;      // The input was loaded as yaml.
     String loaded_content;   // The content of the current document.
@@ -424,6 +425,11 @@ final class Cli
             commands.add(print);
         }
 
+        if (ixml_source != null && ixml_trace_file != null)
+        {
+            performOnBytes();
+            return;
+        }
         String content = readInput();
         IXMLAnalyzer ixml = null;
         // With --traceixml the Earley parser is used instead (see load), it takes any grammar.
@@ -455,10 +461,41 @@ final class Cli
         if (ixml_failed) throw new Exit(1);
     }
 
+    /** With --traceixml the input is parsed by the Earley parser, which decodes the code points
+     * directly from the UTF-8 bytes of the input, the input is not turned into a String. With
+     * --lines each line is a slice of the bytes, and all lines are parsed with the same grammar,
+     * which keeps the tokens of the code points of the earlier lines (like C). */
+    void performOnBytes() throws Exit
+    {
+        byte[] b = no_input ? null : in_is_content ? in.getBytes(StandardCharsets.UTF_8) : readInputBytes();
+        if (b == null || !lines)
+        {
+            performOn(null, b, 0, b == null ? 0 : b.length, null);
+            if (ixml_failed) throw new Exit(1);
+            return;
+        }
+        int start = 0;
+        while (start < b.length)
+        {
+            int stop = start;
+            while (stop < b.length && b[stop] != '\n') stop++;
+            performOn(null, b, start, stop, null);
+            start = stop + 1;
+        }
+        if (ixml_failed) throw new Exit(1);
+    }
+
     String readInput() throws Exit
     {
         if (no_input) return null;
         if (in_is_content) return in;
+        // Invalid UTF-8 becomes U+FFFD, the xml parser gets the bytes and reports it.
+        return new String(readInputBytes(), StandardCharsets.UTF_8);
+    }
+
+    /** Read the input file or stdin, the bytes are also kept in input_bytes. */
+    byte[] readInputBytes() throws Exit
+    {
         try
         {
             byte[] b = (in == null || in.equals("-")) ? System.in.readAllBytes() : Files.readAllBytes(Path.of(in));
@@ -468,8 +505,7 @@ final class Cli
                 throw new Exit(1);
             }
             input_bytes = b;
-            // Invalid UTF-8 becomes U+FFFD, the xml parser gets the bytes and reports it.
-            return new String(b, StandardCharsets.UTF_8);
+            return b;
         }
         catch (IOException e)
         {
@@ -479,6 +515,18 @@ final class Cli
 
     void performOn(String content, IXMLAnalyzer ixml) throws Exit
     {
+        performOn(content, null, 0, 0, ixml);
+    }
+
+    /** Load the content and run the commands on it. The content is a String, or for the
+     * Earley parser (--traceixml) the UTF-8 bytes start to stop of buf, then content is null
+     * and is only decoded if a command needs the text. */
+    void performOn(String content, byte[] buf, int start, int stop, IXMLAnalyzer ixml) throws Exit
+    {
+        if (content == null && buf != null && commandsNeedText())
+        {
+            content = new String(buf, start, stop - start, StandardCharsets.UTF_8);
+        }
         String source = in == null || (!in_is_content && in.equals("-")) ? "stdin" : in_is_content ? "-i argument" : in;
         loaded_content = content;
         // Like C, tokenize works on the content and nothing is loaded before it.
@@ -490,7 +538,7 @@ final class Cli
                 return;
             }
         }
-        XmlDocument doc = load(content, source, ixml);
+        XmlDocument doc = buf != null ? loadWithEarleyTrace(buf, start, stop) : load(content, source, ixml);
         if (doc == null) throw new Exit(1);
         String output = null;
         for (Command c : commands)
@@ -523,13 +571,27 @@ final class Cli
         }
     }
 
-    /** Parse with the Earley parser and write the trace to the --traceixml file, as xml if
-     * the file ends with .xml, else as xmq. A rejected input gives the failure document. */
-    XmlDocument loadWithEarleyTrace(String content) throws Exit
+    /** The commands that work on the text of the content: tokenize and expand-entities. */
+    boolean commandsNeedText()
+    {
+        for (Command c : commands)
+        {
+            if (c.name.equals("tokenize") || c.name.equals("expand-entities")) return true;
+        }
+        return false;
+    }
+
+    /** Parse the UTF-8 bytes start to stop of buf with the Earley parser and write the trace to
+     * the --traceixml file, as xml if the file ends with .xml, else as xmq. A rejected input
+     * gives the failure document. */
+    XmlDocument loadWithEarleyTrace(byte[] buf, int start, int stop) throws Exit
     {
         Earley.Result[] result = new Earley.Result[1];
         // Composing the tree recurses as deep as the tree, use a large stack.
-        Thread t = new Thread(null, () -> result[0] = Earley.parse(ixml_source, content), "earley", 1L << 30);
+        Thread t = new Thread(null, () -> {
+            if (earley_grammar == null) earley_grammar = Earley.grammar(ixml_source);
+            result[0] = Earley.parse(earley_grammar, buf, start, stop);
+        }, "earley", 1L << 30);
         t.start();
         try
         {
@@ -540,6 +602,13 @@ final class Cli
             throw new Exit(1);
         }
         Earley.Result r = result[0];
+        if (r.chart() == null)
+        {
+            // Invalid UTF-8, like C nothing is parsed and no trace is written.
+            ixml_failed = true;
+            if (ixml_fail_silent) return new XmlDocument();
+            return IXMLAnalyzer.failureDocument(buf, start, stop, r.position(), r.error(), r.expected());
+        }
         XmlDocument trace = EarleyTrace.toXml(r.grammar(), r.chart(), r.steps());
         String text = ixml_trace_file.endsWith(".xml") ? XmlSave.docDump(trace, "utf-8") : XMQPrinter.toXmq(trace) + "\n";
         try
@@ -553,13 +622,12 @@ final class Cli
         if (r.error() == null) return r.doc();
         ixml_failed = true;
         if (ixml_fail_silent) return new XmlDocument();
-        return IXMLAnalyzer.failureDocument(content, r.position(), r.error(), r.expected());
+        return IXMLAnalyzer.failureDocument(buf, start, stop, r.position(), r.error(), r.expected());
     }
 
     XmlDocument load(String content, String source, IXMLAnalyzer ixml) throws Exit
     {
         if (content == null) return new XmlDocument();
-        if (ixml_source != null && ixml_trace_file != null) return loadWithEarleyTrace(content);
         if (ixml != null)
         {
             // A rejected input is output as a failure document, ixml(ixml:state=failed){info=...},

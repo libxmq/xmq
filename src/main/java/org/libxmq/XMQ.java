@@ -272,6 +272,19 @@ public class XMQ
     }
 
     /**
+       Parse an UTF-8 buffer with an ixml grammar, like xmqParseBufferWithIXML. The
+       Earley parser decodes the code points directly from the bytes.
+       @param buffer The input to parse, UTF-8.
+       @param ixml The compiled grammar.
+       @return The parse tree.
+       @throws ParseException if the input is rejected by the grammar, or is not valid UTF-8.
+     */
+    public XmlDocument parseBufferWithIXML(byte[] buffer, IXML ixml) throws ParseException
+    {
+        return ixml.parse(buffer);
+    }
+
+    /**
        Quote a value as xmq on a single line, eg 'car go' or ('howdy'&amp;#10;'dowdy'),
        like xmqCompactQuote.
        @param content The value.

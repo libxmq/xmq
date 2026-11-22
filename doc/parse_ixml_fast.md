@@ -86,6 +86,33 @@ rules are still added in the same order as before, so the grammar and the traces
 The benchmark `ixml_lines` (`make run_benchmarks`, 3000 lines parsed with `--lines`)
 went from 1.365 s to 0.912 s, the scan went from 23% of the run time to 0.1%.
 
+## The Java Earley parser does the same
+
+The Java Earley parser (`src/main/java/org/libxmq/imp/ixml/earley`) reads the input
+as UTF-8 bytes. The input is never turned into a String (two bytes per char) or an
+int[] of code points (four bytes per code point).
+
+- `Utf8.decode` decodes one code point from a `byte[]` and rejects invalid UTF-8 like
+  `find_invalid_utf8`. The failure document is the same as the one from C.
+- `Tokens` gives each used code point a dense token number, like the yaep `term_id`.
+  The single character literals of the grammar get their tokens first. A code point
+  of the input that has no token gets the next free number. Code points are looked up
+  in a two level table (page, then offset), so code points far apart are no problem.
+- `Chart` is built by one scan of the bytes. It does the UTF-8 check and the token
+  lookup in the same pass, and each Earley set stores the token at its position. The
+  code points that the grammar has not seen before are sorted and added to the token
+  sets of the charsets that contain them (`Grammar.addUsed`), like
+  `scan_content_fixup_charsets`.
+- Every terminal (`Grammar.Chars`) has a `BitSet` of the tokens it matches, one bit
+  per token. The scan step of the parser tests the token, not the code point.
+- The grammar keeps its tokens between parses, like `used_unicodes`. `IXML` keeps one
+  Earley grammar per compiled grammar, and `xmqj --lines --traceixml` uses one grammar
+  for all lines.
+
+The token sets are not used yet to prune the predictions. Since they are small, the
+next step is a first set of tokens per rule, so that a rule is only predicted if the
+next token can start it.
+
 ## Future performance improvements
 
 Measured with `perf` on the benchmark `ixml_lines`, where C (0.91 s) is still slower

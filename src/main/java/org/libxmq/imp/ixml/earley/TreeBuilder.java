@@ -231,10 +231,10 @@ public final class TreeBuilder
         {
             // A terminal matched the code point just before to.
             int at = to - 1;
-            if (at >= from && chars.matches(chart.input[at]) && chart.set(at).contains(before))
+            if (at >= from && chars.matchesToken(chart.token(at)) && chart.set(at).contains(before))
             {
                 Children c = prefix(p, count - 1, from, at);
-                if (c != null) best = c.plus(Tree.character(last, chart.input[at], at));
+                if (c != null) best = c.plus(Tree.character(last, chart.codepoint(at), at));
             }
         }
         else

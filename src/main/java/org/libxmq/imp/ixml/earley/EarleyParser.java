@@ -51,12 +51,16 @@ public final class EarleyParser
         this.grammar = grammar;
     }
 
-    /** Run the recognizer over the input.
-     * @param input the input as code points
-     * @return the chart, check accepted() for the result */
-    public Chart recognize(int[] input)
+    /** Run the recognizer over the input. The input is read directly from its UTF-8 bytes,
+     * see Chart.
+     * @param buf the input bytes
+     * @param start the first byte of the input
+     * @param stop the end of the input, exclusive
+     * @return the chart, check accepted() for the result
+     * @throws Chart.InvalidUtf8 if the input is not valid UTF-8 */
+    public Chart recognize(byte[] buf, int start, int stop)
     {
-        Chart chart = new Chart(input);
+        Chart chart = new Chart(grammar, buf, start, stop);
 
         // The start rule may begin at position 0.
         for (Production p : grammar.start.productions)
@@ -64,7 +68,7 @@ public final class EarleyParser
             chart.set(0).add(new Item(p, 0, 0));
         }
 
-        for (int k = 0; k <= input.length; k++)
+        for (int k = 0; k <= chart.length(); k++)
         {
             EarleySet set = chart.set(k);
             // The set grows while we work through it, new items are handled too.
@@ -262,10 +266,10 @@ public final class EarleyParser
         if (grammar.isNullable(rule)) set.add(item.advance());
     }
 
-    /** The item expects a terminal: if it matches the code point at k, it continues in set k+1. */
+    /** The item expects a terminal: if it matches the token at k, it continues in set k+1. */
     private static void scan(Chart chart, Item item, Chars chars, int k)
     {
-        if (k < chart.length() && chars.matches(chart.input[k]))
+        if (k < chart.length() && chars.matchesToken(chart.token(k)))
         {
             chart.set(k + 1).add(item.advance());
         }

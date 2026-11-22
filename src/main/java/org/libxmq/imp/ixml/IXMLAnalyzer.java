@@ -12,6 +12,7 @@ import org.libxmq.imp.ixml.IXMLGrammar.Rule;
 import org.libxmq.imp.ixml.IXMLGrammar.Term;
 import org.libxmq.imp.ixml.earley.Earley;
 import org.libxmq.imp.ixml.earley.EarleyParser;
+import org.libxmq.imp.ixml.earley.Utf8;
 
 /** Character-level LL(*) analysis and parser-description DOM. Every decision gets a
  *  lookahead DFA, see IXMLLookahead. */
@@ -111,7 +112,8 @@ public final class IXMLAnalyzer {
         List<EarleyParser.Expected> expected = List.of();
         if (!error.startsWith("dynamic error"))
         {
-            expected = Earley.expectedAt(grammar.source(), input, Math.min(failed_at, input.codePointCount(0, input.length())));
+            expected = Earley.expectedAt(grammar.source(), input.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                                         Math.min(failed_at, input.codePointCount(0, input.length())));
         }
         return failureDocument(input, failed_at, error, expected);
     }
@@ -126,15 +128,7 @@ public final class IXMLAnalyzer {
      * @return the failure document
      */
     public static XmlDocument failureDocument(String input, int failed_at, String error, List<EarleyParser.Expected> expected) {
-        XmlDocument d = new XmlDocument();
-        XmlElement root = new XmlElement("ixml");
-        d.appendRaw(root);
-        XmlNs ns = root.declareNs("ixml", IXML_NS);
-        root.addAttribute(new XmlAttr("state", "failed")).setNs(ns);
-        if (error.startsWith("dynamic error")) {
-            addKey(root, "info", error);
-            return d;
-        }
+        if (error.startsWith("dynamic error")) return dynamicErrorDocument(error);
         // Like the C version: the line and column of the failing character, and the
         // input around it with a ^ below the failing character.
         int[] cps = input.codePoints().toArray();
@@ -144,9 +138,85 @@ public final class IXMLAnalyzer {
             if (cps[i] == '\n') { line++; col = 1; } else col++;
         }
         int start = Math.max(0, at - 20);
+        String around = new String(cps, start, Math.min(cps.length, at + 20) - start);
+        return syntaxErrorDocument(line, col, at, around, at - start, expected);
+    }
+
+    /** The failure document of a rejected input, like failureDocument for a String, but the
+     * input is UTF-8 bytes, only the code points up to the failure and around it are decoded.
+     * An error starting with Earley.INVALID_UTF8 gives the failure document of the C version
+     * for an input that is not valid UTF-8, the error is then at the invalid bytes.
+     * @param buf the input as UTF-8
+     * @param begin the first byte of the input
+     * @param stop the end of the input, exclusive
+     * @param failed_at the code point position of the failure
+     * @param error the error message
+     * @param expected what the parser could read at the position, see EarleyParser.expected
+     * @return the failure document
+     */
+    public static XmlDocument failureDocument(byte[] buf, int begin, int stop, int failed_at, String error,
+                                              List<EarleyParser.Expected> expected) {
+        if (error.startsWith("dynamic error")) return dynamicErrorDocument(error);
+        // The line and column of the failing character, and the byte offset of the
+        // code point 20 before it, where the text around it starts.
+        int line = 1, col = 1, at = 0, i = begin, around_offset = begin;
+        while (at < failed_at && i < stop) {
+            if (at == failed_at - 20) around_offset = i;
+            int d = Utf8.decode(buf, i, stop);
+            if (d < 0) break;
+            if (Utf8.codepoint(d) == '\n') { line++; col = 1; } else col++;
+            i += Utf8.length(d);
+            at++;
+        }
+        if (error.startsWith(Earley.INVALID_UTF8)) {
+            // Like ixml_reject_invalid_utf8: ixml:1:3: invalid UTF-8: 0xC3 0x28
+            XmlDocument d = failedDocument();
+            XmlElement root = d.rootElement();
+            addKey(root, "info", "ixml:" + line + ":" + col + ": " + error);
+            addKey(root, "line", Integer.toString(line));
+            addKey(root, "column", Integer.toString(col));
+            addKey(root, "pos", Integer.toString(at + 1));
+            return d;
+        }
+        // The text around the failing character, up to 20 code points after it.
+        StringBuilder around = new StringBuilder();
+        int caret = 0;
+        for (int k = Math.max(0, at - 20), j = around_offset; k < at + 20 && j < stop; k++) {
+            int d = Utf8.decode(buf, j, stop);
+            if (d < 0) break;
+            if (k < at) caret++;
+            around.appendCodePoint(Utf8.codepoint(d));
+            j += Utf8.length(d);
+        }
+        return syntaxErrorDocument(line, col, at, around.toString(), caret, expected);
+    }
+
+    /** ixml(ixml:state=failed) */
+    private static XmlDocument failedDocument() {
+        XmlDocument d = new XmlDocument();
+        XmlElement root = new XmlElement("ixml");
+        d.appendRaw(root);
+        XmlNs ns = root.declareNs("ixml", IXML_NS);
+        root.addAttribute(new XmlAttr("state", "failed")).setNs(ns);
+        return d;
+    }
+
+    /** A dynamic error, eg D02, has only the info. */
+    private static XmlDocument dynamicErrorDocument(String error) {
+        XmlDocument d = failedDocument();
+        addKey(d.rootElement(), "info", error);
+        return d;
+    }
+
+    /** The failure document of a syntax error at the code point position at, on line:col.
+     * around is the input around it, with the failing character caret code points in. */
+    private static XmlDocument syntaxErrorDocument(int line, int col, int at, String around, int caret,
+                                                   List<EarleyParser.Expected> expected) {
+        XmlDocument d = failedDocument();
+        XmlElement root = d.rootElement();
         StringBuilder info = new StringBuilder("ixml:" + line + ":" + col + ": syntax error\n");
-        info.append(new String(cps, start, Math.min(cps.length, at + 20) - start)).append('\n');
-        info.append(" ".repeat(at - start)).append('^');
+        info.append(around).append('\n');
+        info.append(" ".repeat(caret)).append('^');
         // Then: expected verb: 'gives', 'goes' or 'is'
         info.append(EarleyParser.expectedLines(expected));
         addKey(root, "info", info.toString());

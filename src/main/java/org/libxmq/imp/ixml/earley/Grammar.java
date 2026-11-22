@@ -124,8 +124,11 @@ public final class Grammar
     /** A terminal: one code point from a set. A hidden terminal, -'x', is not output.
      * @param set the code points matched
      * @param hidden true if the terminal is hidden
-     * @param text how the terminal is written in the grammar, eg 'a' or ['a'-'z'; #a] */
-    public record Chars(BitSet set, boolean hidden, String text) implements Symbol
+     * @param text how the terminal is written in the grammar, eg 'a' or ['a'-'z'; #a]
+     * @param tokens the tokens matched (see Tokens), one bit per token: the token of a literal,
+     *        or for a charset the tokens of the code points in set that have been seen in the
+     *        inputs so far. Shared by the terminals with the same set. */
+    public record Chars(BitSet set, boolean hidden, String text, BitSet tokens) implements Symbol
     {
         /** Returns true if the code point is in the set.
          * @param codepoint the code point
@@ -133,6 +136,14 @@ public final class Grammar
         public boolean matches(int codepoint)
         {
             return set.get(codepoint);
+        }
+
+        /** Returns true if the token is matched.
+         * @param token the token
+         * @return true on a match */
+        public boolean matchesToken(int token)
+        {
+            return tokens.get(token);
         }
     }
 
@@ -151,6 +162,12 @@ public final class Grammar
     public final Map<String, Rule> rules = new LinkedHashMap<>();
     /** All productions, numbered from 0. */
     public final List<Production> productions = new ArrayList<>();
+    /** The tokens: the code points of the literals of the grammar and of the inputs parsed so far. */
+    public final Tokens tokens = new Tokens();
+    /** The token sets of the charsets (the terminals that match more than one code point),
+     * by their code point set, in grammar order. A new code point of an input is added to
+     * the token sets of the charsets that contain it, see addUsed. */
+    private final Map<BitSet, BitSet> charset_tokens = new LinkedHashMap<>();
 
     /** Build the Earley grammar from an ixml grammar.
      * @param ixml the grammar read by IXMLGrammar (without left recursion elimination)
@@ -192,9 +209,47 @@ public final class Grammar
     private Symbol symbolOf(IXMLGrammar.Term t)
     {
         if (t.ref != null) return new Call(rules.get(t.ref), markOf(t.mark), t.alias.isEmpty() ? null : t.alias);
-        if (t.chars != null) return new Chars(t.chars, t.mark.equals("-"), t.chars_text != null ? t.chars_text : describe(t.chars));
+        if (t.chars != null)
+        {
+            String text = t.chars_text != null ? t.chars_text : describe(t.chars);
+            return new Chars(t.chars, t.mark.equals("-"), text, tokensOf(t.chars));
+        }
         if (t.insertion != null) return new Insertion(t.insertion);
         return new Not(t.not);
+    }
+
+    /** The token set of a terminal. A literal, a single code point, gets its token now, like
+     * the terminals of the grammar in yaep. A charset gets an empty token set that grows with
+     * the code points of the inputs. */
+    private BitSet tokensOf(BitSet set)
+    {
+        int first = set.nextSetBit(0);
+        if (first >= 0 && set.nextSetBit(first + 1) < 0)
+        {
+            BitSet b = new BitSet();
+            b.set(tokens.tokenOrAdd(first));
+            return b;
+        }
+        return charset_tokens.computeIfAbsent(set, s -> new BitSet());
+    }
+
+    /** Add the code points that are new in an input (seen for the first time by this grammar)
+     * to the token sets of the charsets that contain them, like scan_content_fixup_charsets in C.
+     * Each new code point is tested against each charset, the work is proportional to the new
+     * code points, not to the size of the charsets.
+     * @param codes the new code points, they have tokens
+     * @param count the number of new code points */
+    void addUsed(int[] codes, int count)
+    {
+        if (count == 0) return;
+        for (Map.Entry<BitSet, BitSet> e : charset_tokens.entrySet())
+        {
+            BitSet set = e.getKey(), toks = e.getValue();
+            for (int i = 0; i < count; i++)
+            {
+                if (set.get(codes[i])) toks.set(tokens.token(codes[i]));
+            }
+        }
     }
 
     private static char markOf(String mark)

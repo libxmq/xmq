@@ -18,12 +18,15 @@ public final class EarleySet
 {
     /** The input position of this set. */
     public final int position;
+    /** The token read at this position (see Tokens), -1 in the last set, at the end of the input. */
+    public final int token;
     private final List<Item> items = new ArrayList<>();
     private final Set<Item> seen = new HashSet<>();
 
-    EarleySet(int position)
+    EarleySet(int position, int token)
     {
         this.position = position;
+        this.token = token;
     }
 
     /** Add the item, unless it is already in the set.
