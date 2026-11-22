@@ -197,11 +197,11 @@ bool installTheme(XMQTheme *theme, const char *theme_spec)
     // Split into dark light
     size_t len = strlen(theme_spec);
 
-    // Avoid overly long themes.
-    if (len > 2048) return false;
-
     char first[2048];
     char second[2048];
+
+    // Avoid overly long themes, the spec and its NUL must fit in first.
+    if (len >= sizeof(first)) return false;
 
     const char *i = strchr(theme_spec, ',');
     if (i)
