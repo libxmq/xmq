@@ -20098,20 +20098,42 @@ char *ixml_text_from_xml_grammar(XmlDom *dom, char **error)
     return free_membuffer_but_return_trimmed_content(x.mb);
 }
 
+static int compare_code_points(const void *a, const void *b)
+{
+    int x = *(const int*)a;
+    int y = *(const int*)b;
+    return (x > y) - (x < y);
+}
+
+// Is the code point in the part (a range or a unicode category) of a charset?
+static bool charset_part_has_code(IXMLCharsetPart *p, int c)
+{
+    if (!p->category[0]) return c >= p->from && c <= p->to;
+
+    const char **cat_part = unicode_lookup_category_parts(p->category);
+    for (; *cat_part; ++cat_part)
+    {
+        int *cat = NULL;
+        size_t cat_len = 0;
+        if (!unicode_get_category_part(*cat_part, &cat, &cat_len))
+        {
+            fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
+            exit(1);
+        }
+        if (category_has_code(c, cat, cat_len)) return true;
+    }
+    return false;
+}
+
 void scan_content_fixup_charsets(XMQParseState *state, const char *start, const char *stop)
 {
-    const char *i = start;
-    // We allocate a byte for every possible unicode.
-    // 17*65536 = 0x11000 = 1 MB
-    char *used = (char*)malloc(0x110000);
-    memset(used, 0, 0x110000);
-
+    // A byte for every possible unicode code point, 0x110000 = 1 MB, set when the code
+    // point has been seen in the content of this or an earlier parse with this grammar.
     if (state->used_unicodes == NULL)
     {
         state->used_unicodes = (char*)malloc(0x110000);
         memset(state->used_unicodes, 0, 0x110000);
     }
-
     char *already_used = state->used_unicodes;
 
     /* If we are parsing using --lines, ie each input line in the file is reparsed using the ixml grammar.
@@ -20125,8 +20147,17 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
        then the first line adds "H e j a" to the charset [L].
        the second line adds nothing more.
        the third line adds "b" to the charset [L].
+
+       Only the code points that are new in this content are collected and tested against
+       the charsets, so the work is proportional to the new code points, not to the size
+       of the charsets (eg [L] has more than 100000 code points) or to all unicode code points.
     */
 
+    int *new_codes = NULL;
+    size_t num_new = 0;
+    size_t new_size = 0;
+
+    const char *i = start;
     while (i < stop)
     {
         int uc = 0;
@@ -20140,7 +20171,14 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         if (!already_used[uc])
         {
             already_used[uc] = 1;
-            used[uc] = 1;
+            if (num_new == new_size)
+            {
+                new_size = new_size ? new_size*2 : 64;
+                new_codes = (int*)realloc(new_codes, new_size*sizeof(int));
+                check_malloc(new_codes);
+            }
+            new_codes[num_new++] = uc;
+
             char buf[16];
             snprintf(buf,16, "#%x", uc);
             IXMLTerminal *t = (IXMLTerminal*)hashmap_get(state->ixml_terminals_map, buf);
@@ -20157,121 +20195,81 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
         }
     }
 
-    for (size_t i = 0; i < state->ixml_non_terminals->size; ++i)
-    {
-        IXMLNonTerminal *nt = (IXMLNonTerminal*)vector_element_at(state->ixml_non_terminals, i);
-        if (nt->charset)
-        {
-            bool include = nt->name[0] != '~';
-            char tmark = 0;
-            if ((nt->name[0] == '[' && nt->name[1] == '-') ||
-                (nt->name[1] == '[' && nt->name[2] == '-'))
-            {
-                tmark = '-';
-            }
+    // No new code points, the charset rules from earlier parses are already complete.
+    if (num_new == 0) return;
 
-            if (include)
+    // The rules are added in code point order within each part of a charset.
+    qsort(new_codes, num_new, sizeof(int), compare_code_points);
+
+    for (size_t n = 0; n < state->ixml_non_terminals->size; ++n)
+    {
+        IXMLNonTerminal *nt = (IXMLNonTerminal*)vector_element_at(state->ixml_non_terminals, n);
+        if (!nt->charset) continue;
+
+        bool include = nt->name[0] != '~';
+        char tmark = 0;
+        if ((nt->name[0] == '[' && nt->name[1] == '-') ||
+            (nt->name[1] == '[' && nt->name[2] == '-'))
+        {
+            tmark = '-';
+        }
+
+        if (include)
+        {
+            // Including, the new code points in each part of the charset, a category
+            // one category part (eg Lu Ll Lt Lm Lo for L) at a time.
+            for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
             {
-                // Including...
-                for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
+                if (!p->category[0])
                 {
-                    if (!p->category[0])
+                    for (size_t k = 0; k < num_new; ++k)
                     {
-                        // Not a category, test a range.
-                        // All characters within the range that have been used
-                        // should be tested for.
-                        for (int c = p->from; c <= p->to; ++c)
-                        {
-                            if (c >= 0 && c <= 0x10ffff && used[c])
-                            {
-                                add_single_char_rule(state, nt, c, '-', tmark);
-                            }
-                        }
+                        int c = new_codes[k];
+                        if (c >= p->from && c <= p->to) add_single_char_rule(state, nt, c, '-', tmark);
                     }
-                    else
+                    continue;
+                }
+                const char **cat_part = unicode_lookup_category_parts(p->category);
+                for (; *cat_part; ++cat_part)
+                {
+                    int *cat = NULL;
+                    size_t cat_len = 0;
+                    if (!unicode_get_category_part(*cat_part, &cat, &cat_len))
                     {
-                        const char **cat_part = unicode_lookup_category_parts(p->category);
-                        for (; *cat_part; ++cat_part)
-                        {
-                            int *cat = NULL;
-                            size_t cat_len = 0;
-                            bool ok = unicode_get_category_part(*cat_part, &cat, &cat_len);
-                            if (!ok)
-                            {
-                                fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
-                                exit(1);
-                            }
-                            // All characters in the category that have been used
-                            // should be tested for.
-                            for (size_t i = 0; i < cat_len; ++i)
-                            {
-                                int c = cat[i];
-                                if (c >= 0 && c <= 0x10ffff && used[c])
-                                {
-                                    add_single_char_rule(state, nt, c, '-', tmark);
-                                }
-                            }
-                        }
+                        fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
+                        exit(1);
+                    }
+                    for (size_t k = 0; k < num_new; ++k)
+                    {
+                        int c = new_codes[k];
+                        if (category_has_code(c, cat, cat_len)) add_single_char_rule(state, nt, c, '-', tmark);
                     }
                 }
             }
-            else
+        }
+        else
+        {
+            // Excluding, the new code points that are in no part of the charset.
+            for (size_t k = 0; k < num_new; ++k)
             {
-                // Excluding....
-                // Scan all actually used characters in the input content.
-                for (int c = 0; c <= 0x10ffff; ++c)
+                bool should_add = true;
+                for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
                 {
-                    if (!used[c]) continue;
-                    bool should_add = true;
-                    for (IXMLCharsetPart *p = nt->charset->first; p; p = p->next)
+                    if (charset_part_has_code(p, new_codes[k]))
                     {
-                        if (p->category[0])
-                        {
-                            const char **cat_part = unicode_lookup_category_parts(p->category);
-                            for (; *cat_part; ++cat_part)
-                            {
-                                int *cat = NULL;
-                                size_t cat_len = 0;
-                                bool ok = unicode_get_category_part(*cat_part, &cat, &cat_len);
-                                if (!ok)
-                                {
-                                    fprintf(stderr, "Invalid unicode category: %s\n", *cat_part);
-                                    exit(1);
-                                }
-                                // Is the used character in the category set?
-                                if (category_has_code(c, cat, cat_len))
-                                {
-                                    // Yes it is.
-                                    // Do not add the used character! We do not want to match against
-                                    // it since it is excluded.
-                                    should_add = false;
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Is the used character in the range?
-                            if (c >= p->from && c <= p->to)
-                            {
-                                // Yes it is.
-                                // Do not add the used character! We do not want to match against
-                                // it since it is excluded.
-                                should_add= false;
-                                break;
-                            }
-                        }
+                        should_add = false;
+                        break;
                     }
-                    if (should_add)
-                    {
-                        add_single_char_rule(state, nt, c, '-', tmark);
-                    }
+                }
+                if (should_add)
+                {
+                    add_single_char_rule(state, nt, new_codes[k], '-', tmark);
                 }
             }
         }
     }
 
-    free(used);
+    free(new_codes);
 }
 
 void add_yaep_tmp_terminals_to_rule(XMQParseState *state, IXMLRule *rule, char mark)
@@ -104043,7 +104041,7 @@ YaepSymbol *symb_find_by_code(YaepParseState *ps, int code)
 
 YaepSymbol *symb_find_by_term_id(YaepParseState *ps, int term_id)
 {
-    return symb_find_by_code(ps, term_id+ps->run.grammar->symbs_ptr->symb_code_trans_vect_start);
+    return term_get(ps, term_id);
 }
 
 /* The function creates new terminal symbol and returns reference for
@@ -104181,7 +104179,17 @@ void symb_finish_adding_terms(YaepParseState *ps)
         if (i == 0 || max_code < symb->u.terminal.code) max_code = symb->u.terminal.code;
     }
     assert(i != 0);
-    assert((max_code - min_code) < MAX_SYMB_CODE_TRANS_VECT_SIZE);
+
+    if ((max_code - min_code) >= MAX_SYMB_CODE_TRANS_VECT_SIZE)
+    {
+        // The codes are too far apart for a translation vector, eg the input to an
+        // ixml grammar has an a (0x61) and a tag character (0xe0001). The symbols
+        // are then found with the hash table map_code_to_symb, see symb_find_by_code.
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect = NULL;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect_start = 0;
+        ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = 0;
+        return;
+    }
 
     ps->run.grammar->symbs_ptr->symb_code_trans_vect_start = min_code;
     ps->run.grammar->symbs_ptr->symb_code_trans_vect_end = max_code + 1;
@@ -108609,8 +108617,7 @@ static void trace_lookahead_predicts_no_match(YaepParseState *ps, int lookahead_
 {
     MemBuffer *mb = new_membuffer();
     YaepSymbol *symb = symb_find_by_term_id(ps, lookahead_term_id);
-    const char *hr = symb->hr;
-    if (!symb) hr = "?";
+    const char *hr = symb ? symb->hr : "?";
     membuffer_printf(mb, "look bitset %s (%d) %s blocked by ", info, lookahead_term_id, hr);
     print_dotted_rule(mb, ps, ps->tok_i-1, new_dotted_rule, 0, 0);
     membuffer_append(mb, "\n");

@@ -1,4 +1,4 @@
-{ v1a Find the syntax elements of C source code, for syntax highlighting.
+{ v1b Find the syntax elements of C source code, for syntax highlighting.
   Fredrik Öhrström (c) 2026 spdx: MIT
 
   Unlike c.ixml this grammar parses the raw source, before the preprocessor, and
@@ -42,7 +42,7 @@ comment = '/*', (~['*'] | '*', !'/')*, '*/'
 string = '"', (~['"'; '\'; #a] | '\', ~[])*, '"'.
 char = "'", (~["'"; '\'; #a] | '\', ~[])+, "'".
 
-number = ['0'-'9'], (['0'-'9'; 'a'-'z'; 'A'-'Z'; '_'; '.'] | ['eEpP'], ['+-'])*, !idnum.
+number = ['0'-'9'], (['0'-'9'; 'a'-'d'; 'f'-'o'; 'q'-'z'; 'A'-'D'; 'F'-'O'; 'Q'-'Z'; '_'; '.'] | ['eEpP'], !['+-'] | ['eEpP'], ['+-'])*, !idnum.
 -idnum = ['0'-'9'; 'a'-'z'; 'A'-'Z'; '_'; '.'].
 
 { Preprocessor lines, to the end of the line (a \ at the end of a line continues it). }

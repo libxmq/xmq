@@ -1,0 +1,115 @@
+{ v1b Find the syntax elements of C source code, for syntax highlighting.
+  Fredrik Öhrström (c) 2026 spdx: MIT
+
+  Unlike c.ixml this grammar parses the raw source, before the preprocessor, and
+  every character of the source is kept, so the text of the parse is the source.
+  Whitespace and punctuation are plain text, the rest is marked up:
+
+    comment    /* ... */ and // ...
+    preproc    a preprocessor line, with the directive as pp, eg #include,
+               the included file as header and a defined name as macro
+    string     "..."            char       '...'
+    number     12, 0x1f, 1.5e3f
+    keyword    if, return, struct, typedef...
+    primitive  int, char, bool, size_t, uint32_t...
+    type       a name starting with an upper case letter that has a lower case
+               letter, eg XMQDoc
+    macro      a name with only upper case letters, digits and _, eg NULL, XMQ_ATTRS
+    function   a lower case name followed by (, eg a call or a declaration
+    name       the other names, eg variables
+
+  Since it is the source before the preprocessor, the markup is a guess, eg a type
+  name in lower case is a name. Render it with lang/c-hilit-to-html or
+  lang/c-hilit-to-terminal:
+
+    xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-html to-html > foo.html
+    xmq ixml:lang/c-hilit foo.c xsl:lang/c-hilit-to-terminal to-text }
+
+c = item*.
+
+-item = space | comment | preproc | string | char | number | word | other.
+
+{ A run of whitespace, all of it, so that it is not split ambiguously. }
+-space = [Zs; #9; #a; #d; #c]+, ![Zs; #9; #a; #d; #c].
+
+{ Punctuation and operators, a / that does not start a comment. }
+-other = ~[Zs; #9; #a; #d; #c; 'a'-'z'; 'A'-'Z'; '0'-'9'; '_'; '"'; "'"; '#'; '/']
+       | '/', !['/*'].
+
+comment = '/*', (~['*'] | '*', !'/')*, '*/'
+        | '//', ~[#a]*, !~[#a].
+
+string = '"', (~['"'; '\'; #a] | '\', ~[])*, '"'.
+char = "'", (~["'"; '\'; #a] | '\', ~[])+, "'".
+
+number = ['0'-'9'], (['0'-'9'; 'a'-'d'; 'f'-'o'; 'q'-'z'; 'A'-'D'; 'F'-'O'; 'Q'-'Z'; '_'; '.'] | ['eEpP'], !['+-'] | ['eEpP'], ['+-'])*, !idnum.
+-idnum = ['0'-'9'; 'a'-'z'; 'A'-'Z'; '_'; '.'].
+
+{ Preprocessor lines, to the end of the line (a \ at the end of a line continues it). }
+preproc = include | define | directive.
+-include = ip>pp, hspace*, (header | string), rest.
+-define = dp>pp, hspace+, dname>macro, rest.
+-directive = op>pp, rest.
+ip = '#', hspace*, 'include', !idchar.
+dp = '#', hspace*, 'define', !idchar.
+{ Another directive, eg #ifdef, #endif or #pragma. }
+op = '#', hspace*, !hspace, !'include', !'define', (lower, idchar*)?, !idchar.
+-hspace = [' '; #9].
+-hspaces = [' '; #9]+, ![' '; #9].
+header = '<', ~['>'; #a]*, '>'.
+{ The rest of a preprocessor line, it must reach the end of the line. }
+-rest = pitem*, !~[#a].
+-pitem = hspaces | comment | string | char | number | word | pother | '#' | '\', #a | '\', #d, #a.
+-pother = ~[Zs; #9; #a; #d; #c; 'a'-'z'; 'A'-'Z'; '0'-'9'; '_'; '"'; "'"; '#'; '/'; '\']
+        | '/', !['/*']
+        | '\', !#a, !#d.
+dname = ['A'-'Z'; 'a'-'z'; '_'], idchar*, !idchar.
+
+{ Names. A name is a keyword, a primitive type, a type (upper case start, with a
+  lower case letter), a macro (upper case), a function (lower case, followed by a
+  parenthesis) or another name. }
+-word = keyword | primitive | upper | lowerword.
+
+keyword = ('auto' | 'break' | 'case' | 'const' | 'continue' | 'default' | 'do' | 'else'
+          | 'enum' | 'extern' | 'for' | 'goto' | 'if' | 'inline' | 'register' | 'restrict'
+          | 'return' | 'sizeof' | 'static' | 'struct' | 'switch' | 'typedef' | 'union'
+          | 'volatile' | 'while' | '_Alignas' | '_Alignof' | '_Atomic' | '_Generic'
+          | '_Noreturn' | '_Static_assert' | '_Thread_local' | 'true' | 'false'), !idchar.
+
+primitive = ('void' | 'char' | 'short' | 'int' | 'long' | 'float' | 'double' | 'signed'
+            | 'unsigned' | 'bool' | '_Bool' | '_Complex' | 'size_t' | 'ssize_t'
+            | 'ptrdiff_t' | 'intptr_t' | 'uintptr_t' | 'wchar_t' | 'off_t' | 'va_list'
+            | 'int8_t' | 'int16_t' | 'int32_t' | 'int64_t'
+            | 'uint8_t' | 'uint16_t' | 'uint32_t' | 'uint64_t'), !idchar.
+
+{ A word that is a keyword or a primitive. }
+-reserved = 'auto', notid | 'break', notid | 'case', notid | 'const', notid
+          | 'continue', notid | 'default', notid | 'do', notid | 'else', notid
+          | 'enum', notid | 'extern', notid | 'for', notid | 'goto', notid | 'if', notid
+          | 'inline', notid | 'register', notid | 'restrict', notid | 'return', notid
+          | 'sizeof', notid | 'static', notid | 'struct', notid | 'switch', notid
+          | 'typedef', notid | 'union', notid | 'volatile', notid | 'while', notid
+          | 'true', notid | 'false', notid
+          | 'void', notid | 'char', notid | 'short', notid | 'int', notid | 'long', notid
+          | 'float', notid | 'double', notid | 'signed', notid | 'unsigned', notid
+          | 'bool', notid | 'size_t', notid | 'ssize_t', notid | 'ptrdiff_t', notid
+          | 'intptr_t', notid | 'uintptr_t', notid | 'wchar_t', notid | 'off_t', notid
+          | 'va_list', notid | 'int8_t', notid | 'int16_t', notid | 'int32_t', notid
+          | 'int64_t', notid | 'uint8_t', notid | 'uint16_t', notid | 'uint32_t', notid
+          | 'uint64_t', notid
+          | '_Alignas', notid | '_Alignof', notid | '_Atomic', notid | '_Generic', notid
+          | '_Noreturn', notid | '_Static_assert', notid | '_Thread_local', notid
+          | '_Bool', notid | '_Complex', notid.
+-notid = ~['A'-'Z'; 'a'-'z'; '0'-'9'; '_'].
+
+{ Upper case start: a type if it has a lower case letter, otherwise a macro. }
+-upper = type | macro.
+type = ['A'-'Z'], ['A'-'Z'; '0'-'9'; '_']*, ['a'-'z'], idchar*, !idchar.
+macro = ['A'-'Z'], ['A'-'Z'; '0'-'9'; '_']*, !idchar.
+
+{ Lower case (or _) start: a function if followed by a parenthesis, otherwise a name. }
+-lowerword = function, ' '?, '(' | name.
+function = !reserved, lower, idchar*, !idchar.
+name = !reserved, lower, idchar*, !idchar, !'(', !' ('.
+-lower = ['a'-'z'; '_'].
+-idchar = ['A'-'Z'; 'a'-'z'; '0'-'9'; '_'].

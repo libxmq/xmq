@@ -1,0 +1,5 @@
+#define XP_UPPER_DOUBLE 1E9
+#define XP_LOWER_DOUBLE 1E-5
+double a = 1E-5 + 1e+3 - 2.5e-3f + 0x1p-4;
+long b = 0x1E-5;
+int c = x-1 + 0x1f - 12UL - 0xE+1;
