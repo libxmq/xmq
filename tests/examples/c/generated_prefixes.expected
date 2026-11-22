@@ -1,0 +1,1 @@
+box(xmlns=urn:blue xmlns:ns1=urn:soft xmlns:ns2=urn:bar){ns1:flower=many ns1:power=123 ns2:soft=petal}

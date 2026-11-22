@@ -1,0 +1,1 @@
+krf:robot(xmlns:krf=urn:kraftwerk){krf:who='we are'krf:the=robots c:car(xmlns:c=urn:cargo){c:model=escargo}box(xmlns=''){color=blue}}

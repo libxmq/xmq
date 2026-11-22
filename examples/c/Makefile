@@ -3,7 +3,9 @@
 
 EXAMPLES = $(patsubst %/Makefile,%,$(wildcard */Makefile))
 
-all:
+all: run
+
+build:
 	@for e in $(EXAMPLES); do $(MAKE) -s -C $$e || exit 1; done
 
 run:
@@ -12,4 +14,4 @@ run:
 clean:
 	@for e in $(EXAMPLES); do $(MAKE) -s -C $$e clean; done
 
-.PHONY: all run clean
+.PHONY: all build run clean
