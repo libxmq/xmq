@@ -16,6 +16,8 @@
 # directory to library/ is enough to get it tested.
 #
 # Usage: tests/test_library.sh [XMQ_BINARY] [OUTPUT_DIR]
+# With XMQ_IXML_ENGINE=markup-blitz (or another external ixml engine) the inputs are parsed
+# with that engine and the results compared by meaning, see tests/compare_ixml_engine.py.
 
 PROG=${1:-./build/x86_64-pc-linux-gnu/release/xmq}
 OUTPUT=${2:-build/x86_64-pc-linux-gnu/release/test_output}
@@ -127,8 +129,12 @@ do
         if [ -f "$exp" ]; then
             if diff -q $xmqout $exp > /dev/null; then
                 pass "$name xmq $kind";
+            elif [ -n "$XMQ_IXML_ENGINE" ] && [ -n "$ixml" ] && reason=$(python3 tests/compare_ixml_engine.py $PROG $exp $xmqout); then
+                # With an external ixml engine (XMQ_IXML_ENGINE) the result is compared by meaning.
+                pass "$name xmq $kind (same meaning with $XMQ_IXML_ENGINE)";
             else
                 diff $xmqout $exp
+                [ -n "$XMQ_IXML_ENGINE" ] && [ -n "$ixml" ] && echo "$XMQ_IXML_ENGINE: $reason"
                 fail "$name xmq $kind";
             fi
         else

@@ -34,11 +34,18 @@ sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST
 
 $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input > $OUTPUT/${TEST_NAME}.output 2>&1 || true
 
-if diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output
+# With an external ixml engine (XMQ_IXML_ENGINE) the result is compared by meaning, eg a
+# failure must be at the same position but the message is the engine's own.
+if diff -q $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output > /dev/null
 then
     echo "OK: test ${TEST_NAME}"
+elif [ -n "$XMQ_IXML_ENGINE" ] && REASON=$(python3 tests/compare_ixml_engine.py $PROG $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output)
+then
+    echo "OK: test ${TEST_NAME} (same meaning with $XMQ_IXML_ENGINE)"
 else
+    diff $OUTPUT/${TEST_NAME}.expected $OUTPUT/${TEST_NAME}.output
     echo ERR: $TEST_NAME
+    [ -n "$XMQ_IXML_ENGINE" ] && echo "$XMQ_IXML_ENGINE: $REASON"
     echo "......................................"
     cat $OUTPUT/${TEST_NAME}.ixml
     echo "......................................"
