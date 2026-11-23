@@ -1,6 +1,6 @@
-{ v1b Render an ixml grammar as html, from the ixml specification.
+{ v1c Render an ixml grammar as html, from the ixml specification.
   Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
-  =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+  =<< and negative lookahead !factor.
   The characters < and & are escaped. }
 {version 2022-06-07}
          ixml:  +"<HTML>", HEADER, +"<BODY><PRE>", s, prolog?, rule++RS, s, +"</PRE></BODY></HTML>".
@@ -19,9 +19,8 @@
       -prolog: version, s.
      -version: "ixml", RS, "version", RS, string, s, -'.' .
 
-        -rule: (rmark, s)?, +'<SPAN CLASS="rule">', name, +"</SPAN>", s, alias?, ["=:"], cost, s, -alts, ".".
+        -rule: (mark, s)?, +'<SPAN CLASS="rule">', name, +"</SPAN>", s, alias?, ["=:"], cost, s, -alts, ".".
         -mark: +'<SPAN CLASS="mark">', ["@^-"], +'</SPAN>'.
-       -rmark: +'<SPAN CLASS="mark">', ["@^-*"], +'</SPAN>'.
        -alias: ">", s, +'<SPAN CLASS="rule">', name, +"</SPAN>", s.
         -cost: (+'<SPAN CLASS="mark">', lt+, +'</SPAN>')?.
         -alts: alt++([";|"], s).

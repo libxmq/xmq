@@ -1,5 +1,5 @@
 // The library index, made by scripts/build_library_index.py, see xmq help list-library.
-library(created = 2026-11-22T20:50:54Z)
+library(created = 2026-11-23T12:24:28Z)
 {
     file(path        = conf/crontab.ixml
          size        = 728
@@ -178,24 +178,24 @@ library(created = 2026-11-22T20:50:54Z)
          sha256      = 31e7c9fd5fad0585fcf2d4ac50fe7830c252ab0a9fb2a64ac95c118e5a5046da
          mtime       = 2026-11-22T15:18:11Z)
     file(path        = core/ixml2html.ixml
-         size        = 4362
-         sha256      = 7973ebea3b156ad1a6571d1d95d8124e88461d2a88682a443177bded0abc1ee7
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1b
+         size        = 4263
+         sha256      = b0fa4def725415938d416836fc955529c158ba9e7dd01ed36d5524d5d7d81963
+         mtime       = 2026-11-23T12:24:28Z
+         version     = 1c
          summary     = 'Render an ixml grammar as html, from the ixml specification.'
          description = 'Render an ixml grammar as html, from the ixml specification.
                         Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
-                        =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+                        =<< and negative lookahead !factor.
                         The characters < and & are escaped.')
     file(path        = core/ixml2html_v1.ixml
-         size        = 4362
-         sha256      = 7973ebea3b156ad1a6571d1d95d8124e88461d2a88682a443177bded0abc1ee7
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1b
+         size        = 4263
+         sha256      = b0fa4def725415938d416836fc955529c158ba9e7dd01ed36d5524d5d7d81963
+         mtime       = 2026-11-23T12:24:28Z
+         version     = 1c
          summary     = 'Render an ixml grammar as html, from the ixml specification.'
          description = 'Render an ixml grammar as html, from the ixml specification.
                         Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
-                        =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
+                        =<< and negative lookahead !factor.
                         The characters < and & are escaped.')
     file(path        = core/ixml2html_v1a.ixml
          size        = 3596
@@ -214,6 +214,16 @@ library(created = 2026-11-22T20:50:54Z)
                         Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
                         =<<, the controlled ambiguity mark *rule and negative lookahead !factor.
                         The characters < and & are escaped.')
+    file(path        = core/ixml2html_v1c.ixml
+         size        = 4263
+         sha256      = b0fa4def725415938d416836fc955529c158ba9e7dd01ed36d5524d5d7d81963
+         mtime       = 2026-11-23T12:24:28Z
+         version     = 1c
+         summary     = 'Render an ixml grammar as html, from the ixml specification.'
+         description = 'Render an ixml grammar as html, from the ixml specification.
+                        Extended with the xmq ixml extensions: renaming name>alias, rule costs =< and
+                        =<< and negative lookahead !factor.
+                        The characters < and & are escaped.')
     file(path        = core/ixml_v1.ixml
          size        = 2345
          sha256      = c084f98bfea23f8b94f68c013067ce48961a7770d757ec0aec643a6deb032182
@@ -229,29 +239,29 @@ library(created = 2026-11-22T20:50:54Z)
          summary     = 'The ixml grammar for ixml, from the ixml specification.'
          description = 'The ixml grammar for ixml, from the ixml specification.')
     file(path        = core/ixmlnotcost.ixml
-         size        = 3068
-         sha256      = 556aedebe641b55272c2e257a34a3f8cfdbe75b39cf4d250816b7b8c0cc84978
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1a
+         size        = 2968
+         sha256      = 08fd8a8bdf2c114e87267dec52b896217a865cad0732b90c18eb65124250b8bc
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
          summary     = 'The ixml grammar for ixml with the xmq extensions.'
          description = 'The ixml grammar for ixml with the xmq extensions.
-                        The extensions are the negative lookahead !factor, the rule costs =< and =<<,
-                        renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
-                        as comment elements, so that they can be deleted, eg to compare two versions of
-                        a grammar ignoring changes in the comments:
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<
+                        and renaming name>alias. Comments are kept as comment elements, so that they can
+                        be deleted, eg to compare two versions of a grammar ignoring changes in the
+                        comments:
                           xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
                         Based on the ixml grammar for ixml from the ixml specification.')
     file(path        = core/ixmlnotcost_v1.ixml
-         size        = 3068
-         sha256      = 556aedebe641b55272c2e257a34a3f8cfdbe75b39cf4d250816b7b8c0cc84978
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1a
+         size        = 2968
+         sha256      = 08fd8a8bdf2c114e87267dec52b896217a865cad0732b90c18eb65124250b8bc
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
          summary     = 'The ixml grammar for ixml with the xmq extensions.'
          description = 'The ixml grammar for ixml with the xmq extensions.
-                        The extensions are the negative lookahead !factor, the rule costs =< and =<<,
-                        renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
-                        as comment elements, so that they can be deleted, eg to compare two versions of
-                        a grammar ignoring changes in the comments:
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<
+                        and renaming name>alias. Comments are kept as comment elements, so that they can
+                        be deleted, eg to compare two versions of a grammar ignoring changes in the
+                        comments:
                           xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
                         Based on the ixml grammar for ixml from the ixml specification.')
     file(path        = core/ixmlnotcost_v1a.ixml
@@ -265,6 +275,19 @@ library(created = 2026-11-22T20:50:54Z)
                         renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
                         as comment elements, so that they can be deleted, eg to compare two versions of
                         a grammar ignoring changes in the comments:
+                          xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
+                        Based on the ixml grammar for ixml from the ixml specification.')
+    file(path        = core/ixmlnotcost_v1b.ixml
+         size        = 2968
+         sha256      = 08fd8a8bdf2c114e87267dec52b896217a865cad0732b90c18eb65124250b8bc
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
+         summary     = 'The ixml grammar for ixml with the xmq extensions.'
+         description = 'The ixml grammar for ixml with the xmq extensions.
+                        The extensions are the negative lookahead !factor, the rule costs =< and =<<
+                        and renaming name>alias. Comments are kept as comment elements, so that they can
+                        be deleted, eg to compare two versions of a grammar ignoring changes in the
+                        comments:
                           xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
                         Based on the ixml grammar for ixml from the ixml specification.')
     file(path        = core/xmq.ixml
@@ -2488,17 +2511,17 @@ library(created = 2026-11-22T20:50:54Z)
                         Not supported: the old validity periods with 6 digits (eg 051212), the
                         military icing and turbulence groups and the QNH groups.')
     file(path        = misc/testmeter.ixml
-         size        = 1580
-         sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1a
+         size        = 1579
+         sha256      = dabb614735431922e9958564adcec4ab6ee803a336ce041ac10a82ffbcc1b2d8
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
          summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = misc/testmeter_v1.ixml
-         size        = 1580
-         sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
-         mtime       = 2026-11-22T15:18:11Z
-         version     = 1a
+         size        = 1579
+         sha256      = dabb614735431922e9958564adcec4ab6ee803a336ce041ac10a82ffbcc1b2d8
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
          summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = misc/testmeter_v1a.ixml
@@ -2506,6 +2529,13 @@ library(created = 2026-11-22T20:50:54Z)
          sha256      = 4582f8f283937e208061e4a7f6c91c06a8d4231e0d33f45b086d10a016c6a88c
          mtime       = 2026-11-22T15:18:11Z
          version     = 1a
+         summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
+         description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
+    file(path        = misc/testmeter_v1b.ixml
+         size        = 1579
+         sha256      = dabb614735431922e9958564adcec4ab6ee803a336ce041ac10a82ffbcc1b2d8
+         mtime       = 2026-11-23T12:24:23Z
+         version     = 1b
          summary     = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.'
          description = 'Parse a wireless mbus telegram from a test meter, the example telegram follows.')
     file(path        = xmq-utils/parse-trace.ixml

@@ -6484,19 +6484,8 @@ static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQN
         }
         else
         {
-            YaepAbstractNode *an = NULL;
-
-            if (parent) an = &parent->val.anode;
-
-            if (!an || an->mark != '*')
-            {
-                new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
-                xml_node_add_child(node, new_node);
-            }
-            else
-            {
-                new_node = node;
-            }
+            new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
+            xml_node_add_child(node, new_node);
         }
 
         YaepTreeNode *alt = n;
@@ -6807,14 +6796,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
         // Enable cost calculations...
         yaep_set_cost_flag(xmq_get_yaep_grammar(ixml_grammar), true);
-    }
-
-    if (state->ixml_controlled_ambiguity_enabled)
-    {
-        verbose("xmq=", "ixml controlled ambiguity enabled");
-        // We have found *rule = ... the grammar, ie that a rule expects ambiguity.
-        // Keep parsing, finding all parses....
-        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
     }
 
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);

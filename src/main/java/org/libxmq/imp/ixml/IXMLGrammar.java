@@ -12,7 +12,6 @@ public final class IXMLGrammar {
     public static final int EOF = 0x110000;
     /** The rules, in grammar order, followed by the generated rules /1, /2, ... */
     public final Map<String, Rule> rules = new LinkedHashMap<>();
-    final Set<String> extensions = new LinkedHashSet<>();
     /** The name of the start rule, the first rule of the grammar. */
     public String start;
     private final String source;
@@ -122,7 +121,7 @@ public final class IXMLGrammar {
             for (List<Term> alt : rec) {
                 Term t = alt.get(0);
                 String m = !t.mark.isEmpty() ? t.mark : !a.mark.isEmpty() ? a.mark : "^";
-                if (alt.size() == 1 || m.equals("@") || m.equals("*")) { ok = false; break; }
+                if (alt.size() == 1 || m.equals("@")) { ok = false; break; }
                 wraps.add(m.equals("-") ? null : !t.alias.isEmpty() ? t.alias : !a.alias.isEmpty() ? a.alias : a.name);
             }
             if (!ok) continue;
@@ -255,9 +254,8 @@ public final class IXMLGrammar {
     }
     private String mark() {
         int c = peek();
-        if (c == '@' || c == '^' || c == '-' || c == '*') {
+        if (c == '@' || c == '^' || c == '-') {
             take(); whitespace();
-            if (c == '*') extensions.add("controlled ambiguity (*)");
             return Character.toString(c);
         }
         return "";
@@ -360,7 +358,7 @@ public final class IXMLGrammar {
         } else {
             t = Term.call(name()); t.alias = alias(); t.mark = m; return t;
         }
-        if (m.equals("@") || m.equals("*")) throw error("terminal mark must be ^ or -");
+        if (m.equals("@")) throw error("terminal mark must be ^ or -");
         if (t.ref == null) t.mark = m;
         whitespace(); return t;
     }

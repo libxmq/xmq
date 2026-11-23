@@ -388,8 +388,6 @@ struct XMQParseState
     // Has the cost marker "=<" or ":<" or "=<<<" etc been used for a rule in this ixml grammar?
     bool ixml_costs_enabled;
     bool ixml_version_mismatch; // The grammar declares a version other than 1.0 and 1.1 (ixml version "1.3").
-    // Has a rule been marked with "*" which means we want all parses!
-    bool ixml_controlled_ambiguity_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41

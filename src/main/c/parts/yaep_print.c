@@ -80,8 +80,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
         && rule->mark != ' '
         && rule->mark != '-'
         && rule->mark != '@'
-        && rule->mark != '^'
-        && rule->mark != '*')
+        && rule->mark != '^')
     {
         membuffer_append(mb, "\n(yaep) internal error bad rule: ");
         print_symbol(mb, rule->lhs, false);

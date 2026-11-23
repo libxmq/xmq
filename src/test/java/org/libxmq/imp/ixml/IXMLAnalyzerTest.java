@@ -129,7 +129,6 @@ public class IXMLAnalyzerTest {
         accepts("s: ~['x'; #a], [#1f600-#1f64f].", "y😀");
         accepts("s: [Nd]+.", "123");
         accepts("s: #0.", "\u0000");
-        conflict("*s: 'a'.", "unsupported-extension");
     }
     @Test public void existingCGrammarFixtures() throws Exception {
         try (var paths = java.nio.file.Files.walk(java.nio.file.Path.of("tests/ixml/correct"))) {
@@ -142,7 +141,7 @@ public class IXMLAnalyzerTest {
     }
     @Test public void malformedGrammar() {
         String[] invalid = {"", "s: 'x'", "s: missing.", "s: 'a'. s: 'b'.", "s: 'a'. garbage",
-            "s: [#110000].", "s: #d800.", "s: ['z'-'a'].", "s: [Xx].", "s: 'x'. {", "s: 'unterminated", "s: 'a', ."};
+            "s: [#110000].", "s: #d800.", "s: ['z'-'a'].", "s: [Xx].", "s: 'x'. {", "s: 'unterminated", "s: 'a', .", "*s: 'a'."};
         for (String g : invalid) {
             try { analyze(g, ""); fail("Should reject: " + g); }
             catch (IllegalArgumentException expected) { assertTrue(expected.getMessage().startsWith("ixml:")); }

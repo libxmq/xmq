@@ -8005,8 +8005,6 @@ struct XMQParseState
     // Has the cost marker "=<" or ":<" or "=<<<" etc been used for a rule in this ixml grammar?
     bool ixml_costs_enabled;
     bool ixml_version_mismatch; // The grammar declares a version other than 1.0 and 1.1 (ixml version "1.3").
-    // Has a rule been marked with "*" which means we want all parses!
-    bool ixml_controlled_ambiguity_enabled;
     // The most recently parsed mark.
     char ixml_mark;
     // The most recently parsed encoded value #41
@@ -14721,19 +14719,8 @@ static void generate_dom_from_yaep_one(XmlDom* doc, IXMLDomWorkStack *work, XMQN
         }
         else
         {
-            YaepAbstractNode *an = NULL;
-
-            if (parent) an = &parent->val.anode;
-
-            if (!an || an->mark != '*')
-            {
-                new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
-                xml_node_add_child(node, new_node);
-            }
-            else
-            {
-                new_node = node;
-            }
+            new_node = xml_node_new_element(doc, "AMBIGUOUS", NULL);
+            xml_node_add_child(node, new_node);
         }
 
         YaepTreeNode *alt = n;
@@ -15044,14 +15031,6 @@ bool xmqParseBufferWithIXML(XMQDoc *doc, const char *start, const char *stop, XM
         yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
         // Enable cost calculations...
         yaep_set_cost_flag(xmq_get_yaep_grammar(ixml_grammar), true);
-    }
-
-    if (state->ixml_controlled_ambiguity_enabled)
-    {
-        verbose("xmq=", "ixml controlled ambiguity enabled");
-        // We have found *rule = ... the grammar, ie that a rule expects ambiguity.
-        // Keep parsing, finding all parses....
-        yaep_set_one_parse_flag(xmq_get_yaep_grammar(ixml_grammar), 0);
     }
 
     YaepParseRun *run = xmq_get_yaep_parse_run(ixml_grammar);
@@ -17971,8 +17950,7 @@ bool is_ixml_mark_char(char c)
     return
         c == '@' || // Add as attribute.
         c == '^' || // Add as element (default but can be used to override attribute).
-        c == '-' || // Do not generate node.
-        c == '*';   // Controlled ambiguity test.
+        c == '-';   // Do not generate node.
 }
 
 // ixml spec (see 3rdparty/ixml/tests/reference/ixml.ixml):
@@ -18867,11 +18845,6 @@ void parse_ixml_naming(XMQParseState *state,
     {
         *mark = (*(state->i));
         EAT(naming_mark, 1);
-
-        if (*mark == '*')
-        {
-            state->ixml_controlled_ambiguity_enabled = true;
-        }
     }
     else
     {
@@ -105761,8 +105734,7 @@ void rule_print(MemBuffer *mb, YaepParseState *ps, YaepRule *rule, bool trans_p)
         && rule->mark != ' '
         && rule->mark != '-'
         && rule->mark != '@'
-        && rule->mark != '^'
-        && rule->mark != '*')
+        && rule->mark != '^')
     {
         membuffer_append(mb, "\n(yaep) internal error bad rule: ");
         print_symbol(mb, rule->lhs, false);

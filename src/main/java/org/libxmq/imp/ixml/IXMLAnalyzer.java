@@ -378,7 +378,6 @@ public final class IXMLAnalyzer {
     }
     private void prepare() {
         findReachable();
-        for (String extension : grammar.extensions) diagnose("unsupported-extension", grammar.start, extension);
         computeSets(); checkRules();
     }
     private XmlDocument analyze(String input) {

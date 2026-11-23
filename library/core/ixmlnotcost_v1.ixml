@@ -1,8 +1,8 @@
-{ v1a The ixml grammar for ixml with the xmq extensions.
-  The extensions are the negative lookahead !factor, the rule costs =< and =<<,
-  renaming name>alias and the controlled ambiguity mark *rule. Comments are kept
-  as comment elements, so that they can be deleted, eg to compare two versions of
-  a grammar ignoring changes in the comments:
+{ v1b The ixml grammar for ixml with the xmq extensions.
+  The extensions are the negative lookahead !factor, the rule costs =< and =<<
+  and renaming name>alias. Comments are kept as comment elements, so that they can
+  be deleted, eg to compare two versions of a grammar ignoring changes in the
+  comments:
     xmq ixml:core/ixmlnotcost grammar.ixml delete //comment to-xmq
   Based on the ixml grammar for ixml from the ixml specification. }
 {version 2022-06-07}
@@ -20,9 +20,8 @@
        prolog: version, s.
       version: -"ixml", RS, -"version", RS, string, s, -'.' .
 
-         rule: (rmark, s)?, name, s, (-">", s, alias, s)?, -["=:"], cost?, s, -alts, -".".
+         rule: (mark, s)?, name, s, (-">", s, alias, s)?, -["=:"], cost?, s, -alts, -".".
         @mark: ["@^-"].
-  @rmark>mark: ["@^-*"]. {* is the controlled ambiguity mark}
         @cost: "<"+. {=< and =<< are rule costs}
          alts: alt++(-[";|"], s).
           alt: term**(-",", s).

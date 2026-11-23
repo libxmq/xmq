@@ -372,8 +372,7 @@ bool is_ixml_mark_char(char c)
     return
         c == '@' || // Add as attribute.
         c == '^' || // Add as element (default but can be used to override attribute).
-        c == '-' || // Do not generate node.
-        c == '*';   // Controlled ambiguity test.
+        c == '-';   // Do not generate node.
 }
 
 // ixml spec (see 3rdparty/ixml/tests/reference/ixml.ixml):
@@ -1268,11 +1267,6 @@ void parse_ixml_naming(XMQParseState *state,
     {
         *mark = (*(state->i));
         EAT(naming_mark, 1);
-
-        if (*mark == '*')
-        {
-            state->ixml_controlled_ambiguity_enabled = true;
-        }
     }
     else
     {
