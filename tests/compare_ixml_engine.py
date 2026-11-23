@@ -10,12 +10,16 @@
 #   - A failed parse (ixml:state="failed") must fail for both. The engines report the failure
 #     in their own words, but where xmq gives the line and column of the failure, the engine
 #     must report the same position ("at line N, column M"), and where xmq gives a dynamic
-#     error (eg D02), the engine must report the same error code (ixml:error-code).
+#     error (eg D02), the engine must report the same error code (ixml:error-code, or in
+#     the text of an engine that reports the error as text, eg coffeepot).
+#     XMQ_IXML_ENGINE_COMPARE_POSITION=no skips the position, for an engine that counts
+#     it differently.
 #
 # Usage: tests/compare_ixml_engine.py <xmq binary> <expected file> <actual file>
 # The files are xmq, xml or json, anything xmq reads. Exits 0 if they are equivalent,
 # otherwise 1 with the reason on stdout.
 
+import os
 import re
 import subprocess
 import sys
@@ -69,9 +73,14 @@ def error_code(e):
     return m.group(1) if m else None
 
 
-def compare(expected, actual):
+def compare(expected, actual, actual_text):
     if expected is None:
         return 'cannot read the expected result'
+    if actual is None or ('failed' in state(expected) and 'failed' not in state(actual)):
+        # An engine can report a dynamic error as text, eg coffeepot: Unknown error: D02: w
+        exp_code = error_code(expected) if 'failed' in state(expected) else None
+        if exp_code and re.search(r'\b' + exp_code + r'\b', actual_text):
+            return None
     if actual is None:
         return 'the engine gave no result (did it crash?)'
 
@@ -83,7 +92,8 @@ def compare(expected, actual):
             return f'xmq fails with {exp_code} but the engine with {error_code(actual)}'
         exp_pos = failure_position(expected)
         act_pos = failure_position(actual)
-        if exp_code is None and exp_pos and act_pos and exp_pos != act_pos:
+        compare_position = os.environ.get('XMQ_IXML_ENGINE_COMPARE_POSITION', 'yes') != 'no'
+        if compare_position and exp_code is None and exp_pos and act_pos and exp_pos != act_pos:
             return f'xmq fails at line {exp_pos[0]} column {exp_pos[1]} but the engine at line {act_pos[0]} column {act_pos[1]}'
         return None
     if 'failed' in state(actual):
@@ -109,7 +119,11 @@ def main():
         print('Usage: tests/compare_ixml_engine.py <xmq binary> <expected file> <actual file>')
         sys.exit(2)
     xmq, exp_path, act_path = sys.argv[1:]
-    reason = compare(load(xmq, exp_path), load(xmq, act_path))
+    try:
+        actual_text = open(act_path, encoding='utf-8', errors='replace').read()
+    except OSError:
+        actual_text = ''
+    reason = compare(load(xmq, exp_path), load(xmq, act_path), actual_text)
     if reason:
         print(reason)
         sys.exit(1)

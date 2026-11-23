@@ -1,0 +1,3 @@
+# Known differences of the external ixml engines (make test_markup_blitz, make test_kaffepot)
+# that are not about the extensions ! and =<. Each line is: engine test reason
+kaffepot unicode-version-diagnostic coffeepot uses the Unicode 16.0 tables of its JVM, xmq uses Unicode 17.0

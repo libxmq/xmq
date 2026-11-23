@@ -307,6 +307,14 @@ test_ixml_standard_markup_blitz:
 test_markup_blitz: release
 	@for x in $(BUILDDIRS); do FILTER="$(FILTER)" ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/markup_blitz markup-blitz || exit 1 ; done
 
+# The same with kaffepot, a script around coffeepot with the same command line as
+# markup-blitz (kaffepot grammar.ixml input.txt). coffeepot does not support ! and =<,
+# the tests whose grammar uses them are expected to fail.
+# coffeepot counts the position of a failure differently (eg column 2 for the ! in hi!,
+# where xmq and markup-blitz say column 3), so only that both fail is compared.
+test_kaffepot: release
+	@for x in $(BUILDDIRS); do XMQ_IXML_ENGINE_COMPARE_POSITION=no FILTER="$(FILTER)" ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/kaffepot kaffepot || exit 1 ; done
+
 # Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
 # kaffepot is just a script around coffepot where -g: and -i are automatically added.
 # Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
@@ -504,7 +512,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_kaffepot test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

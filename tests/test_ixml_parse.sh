@@ -42,7 +42,9 @@ sed -n '/^OUTPUT$/,/^END$/p' $TEST_FILE | tail -n +2 | sed '$d' > $OUTPUT/${TEST
 $PROG --ixml=$OUTPUT/${TEST_NAME}.ixml $ARGS $OUTPUT/${TEST_NAME}.input $CMDS > $OUTPUT/${TEST_NAME}.output 2>/dev/null
 RC=$?
 
-if [ "$EXIT" != "any" ] && [ "$RC" != "$EXIT" ]
+# With an external ixml engine the exit code depends on how the engine reports a failure
+# (eg as text instead of a failure document), the compare by meaning below decides.
+if [ "$EXIT" != "any" ] && [ "$RC" != "$EXIT" ] && [ -z "$XMQ_IXML_ENGINE" ]
 then
     echo "ERR: $TEST_NAME exit code $RC expected $EXIT"
     exit 1

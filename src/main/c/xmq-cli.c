@@ -2538,21 +2538,63 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     }
 
     char buf[1024];
-    snprintf(buf, 1024, "%s %s %s > %s", engine, command->ixml_filename, tmp_in, tmp_out);
+    // The error messages of the engine are kept, they are the info of the failure if the
+    // engine does not print a document.
+    char tmp_err[300];
+    snprintf(tmp_err, sizeof(tmp_err), "%s.err", tmp_out);
+    snprintf(buf, 1024, "%s %s %s > %s 2> %s", engine, command->ixml_filename, tmp_in, tmp_out, tmp_err);
 
     verbose_("xmq=", "using: %s", buf);
 
     invoke_cmd(buf);
 
+    // An ixml engine prints the result as xml, anything else is the error message of the engine.
     bool ok = xmqParseFileWithType(command->env->doc,
                                    tmp_out,
                                    NULL,
-                                   XMQ_CONTENT_DETECT,
+                                   XMQ_CONTENT_XML,
                                    XMQ_FLAG_TRIM_NONE);
 
     if (!ok)
     {
         verbose_("xmq=", "cmd-load-external-ixml-tool parse failed: %s", xmqDocError(command->env->doc));
+        // The engine did not print a document, eg coffeepot prints the error
+        // Unknown error: D02: w as text. Like a failed parse with the internal engine, the
+        // result is a failure document, with the output of the engine as info.
+        char *msg = NULL;
+        size_t msg_len = 0;
+        FILE *o = fopen(tmp_err, "rb");
+        if (o)
+        {
+            char chunk[4096];
+            size_t n;
+            while ((n = fread(chunk, 1, sizeof(chunk), o)) > 0)
+            {
+                char *m = (char*)realloc(msg, msg_len+n+1);
+                if (!m) break;
+                msg = m;
+                memcpy(msg+msg_len, chunk, n);
+                msg_len += n;
+                msg[msg_len] = 0;
+            }
+            fclose(o);
+        }
+        while (msg_len > 0 && (msg[msg_len-1] == '\n' || msg[msg_len-1] == '\r' || msg[msg_len-1] == ' '))
+        {
+            msg[--msg_len] = 0;
+        }
+        char *quoted = xmqCompactQuote(msg_len > 0 ? msg : "the ixml engine gave no result");
+        const char *head = "ixml(xmlns:ixml = http://invisiblexml.org/NS ixml:state = failed) { info = ";
+        size_t len = strlen(head) + strlen(quoted) + 3;
+        char *failure = (char*)malloc(len);
+        snprintf(failure, len, "%s%s }", head, quoted);
+        xmqFreeDoc(command->env->doc);
+        XMQReturnDoc rd = xmqNewDoc();
+        command->env->doc = rd.doc;
+        xmqParseBuffer(command->env->doc, failure, failure+strlen(failure), NULL, 0);
+        free(failure);
+        free(quoted);
+        free(msg);
     }
     else
     {
@@ -2560,7 +2602,20 @@ void load_using_external_ixml_engine(XMQCliCommand *command, const char *engine,
     }
 
     unlink(tmp_in);
+    if (ok)
+    {
+        // The engine succeeded, show any messages (eg warnings) it printed.
+        FILE *e = fopen(tmp_err, "rb");
+        if (e)
+        {
+            char chunk[4096];
+            size_t n;
+            while ((n = fread(chunk, 1, sizeof(chunk), e)) > 0) fwrite(chunk, 1, n, stderr);
+            fclose(e);
+        }
+    }
     unlink(tmp_out);
+    unlink(tmp_err);
 }
 
 bool cmd_load(XMQCliCommand *command, bool *no_more_data)
