@@ -30,7 +30,11 @@ else
     exit 1
 fi
 
-"$javaexe" -Dsun.misc.URLClassPath.disableJarChecking=true -ea $JAVA_OPTS --enable-preview -jar "$jarfile" $RUN_ARGS "$@"
+# The jvm prints its warnings on stdout, where they corrupt the output, eg in a pipe
+# xmqj a.xml to-json | xmqj ... a warning that the hsperfdata file is locked by another
+# process. -XX:-UsePerfData skips that file (only used by monitoring tools like jstat) and
+# the jvm warnings are printed on stderr instead.
+"$javaexe" -XX:-UsePerfData -Xlog:disable -Xlog:all=warning:stderr -Dsun.misc.URLClassPath.disableJarChecking=true -ea $JAVA_OPTS --enable-preview -jar "$jarfile" $RUN_ARGS "$@"
 RC="$?"
 
 if [ "$RC" != "0" ]
@@ -38,7 +42,7 @@ then
     if [ -n "$DEBUG" ]
     then
         echo Failure when executing command:
-        echo "$javaexe" -Dsun.misc.URLClassPath.disableJarChecking=true -ea $JAVA_OPTS --enable-preview -jar "$jarfile" $RUN_ARGS "$@"
+        echo "$javaexe" -XX:-UsePerfData -Xlog:disable -Xlog:all=warning:stderr -Dsun.misc.URLClassPath.disableJarChecking=true -ea $JAVA_OPTS --enable-preview -jar "$jarfile" $RUN_ARGS "$@"
     fi
 fi
 
