@@ -84,6 +84,7 @@ ings in this Software without prior written authorization from him.
 #include<limits.h>
 #include<math.h>
 #include<setjmp.h>
+#include<stddef.h>
 #include<stdint.h>
 #include<stdio.h>
 #include<string.h>
@@ -15281,9 +15282,71 @@ char *xmqLineDoc(XMQLineConfig *lc, XMQDoc *doc)
     return start;
 }
 
-char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
-char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap)
+/**
+    Advance *ap past the arguments that the printf format consumes. A va_list given to
+    vsnprintf is indeterminate afterwards (it is advanced on x86_64 linux but not on arm64
+    macos), so the format is printed from a copy and the arguments are skipped here.
+*/
+static void skip_printf_args(const char *format, va_list *ap)
 {
+    for (const char *i = format; *i; i++)
+    {
+        if (*i != '%') continue;
+        i++;
+        if (*i == '%') continue;
+        // Flags.
+        while (*i && strchr("-+ #0'", *i)) i++;
+        // Width.
+        if (*i == '*') { (void)va_arg(*ap, int); i++; }
+        else while (*i >= '0' && *i <= '9') i++;
+        // Precision.
+        if (*i == '.')
+        {
+            i++;
+            if (*i == '*') { (void)va_arg(*ap, int); i++; }
+            else while (*i >= '0' && *i <= '9') i++;
+        }
+        // Length modifier.
+        int len = 0; // 0 int, 1 long, 2 long long, 3 size_t, 4 intmax_t, 5 ptrdiff_t, 6 long double
+        if (*i == 'h') { i++; if (*i == 'h') i++; }
+        else if (*i == 'l') { i++; len = 1; if (*i == 'l') { i++; len = 2; } }
+        else if (*i == 'z') { i++; len = 3; }
+        else if (*i == 'j') { i++; len = 4; }
+        else if (*i == 't') { i++; len = 5; }
+        else if (*i == 'L') { i++; len = 6; }
+        // Conversion.
+        switch (*i)
+        {
+        case 'd': case 'i': case 'o': case 'u': case 'x': case 'X': case 'c':
+            if (len == 1) (void)va_arg(*ap, long);
+            else if (len == 2) (void)va_arg(*ap, long long);
+            else if (len == 3) (void)va_arg(*ap, size_t);
+            else if (len == 4) (void)va_arg(*ap, intmax_t);
+            else if (len == 5) (void)va_arg(*ap, ptrdiff_t);
+            else (void)va_arg(*ap, int);
+            break;
+        case 'f': case 'F': case 'e': case 'E': case 'g': case 'G': case 'a': case 'A':
+            if (len == 6) (void)va_arg(*ap, long double);
+            else (void)va_arg(*ap, double);
+            break;
+        case 's': case 'p': case 'n':
+            (void)va_arg(*ap, void*);
+            break;
+        case 0:
+            return;
+        default:
+            break;
+        }
+    }
+}
+
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap);
+char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list ap_in)
+{
+    // A local copy, so that its address can be given to skip_printf_args.
+    va_list ap;
+    va_copy(ap, ap_in);
+
     // Lets check that last character. We can have:
     // 1) A complete xmq object.
     //    debug("xmq{", "alfa=", "%d", 42, "}");
@@ -15315,6 +15378,7 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
             format = va_arg(ap, const char *);
         }
         char *buf = buf_vsnprintf(format, ap);
+        va_end(ap);
         membuffer_append(mb, buf);
         free(buf);
         membuffer_prefix_lines(mb, module);
@@ -15341,8 +15405,8 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
         if (!first)
         {
             membuffer_append(mb, " ");
-            first = false;
         }
+        first = false;
 
         if (key[kl-1] != '=')
         {
@@ -15354,25 +15418,14 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
         membuffer_append(mb, ":");
 
         const char *format = va_arg(ap, const char *);
-        for (;;)
-        {
-            size_t n = vsnprintf(buf, buf_size, format, ap);
-
-            if (n < buf_size)
-            {
-                // The generated output fitted in the allocated buffer.
-                break;
-            }
-
-            buf_size *= 2;
-            free(buf);
-            buf = (char*)malloc(buf_size);
-            memset(buf, 0, buf_size);
-        }
+        free(buf);
+        buf = buf_vsnprintf(format, ap);
+        skip_printf_args(format, &ap);
         membuffer_append(mb, buf);
     }
 
     free(buf);
+    va_end(ap);
 
     membuffer_prefix_lines(mb, module);
     membuffer_append_null(mb);
@@ -15381,8 +15434,12 @@ char *xmq_line_vprintf_hr(XMQLineConfig *lc, const char *element_name, va_list a
 }
 
 char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap);
-char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap)
+char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list ap_in)
 {
+    // A local copy, so that its address can be given to skip_printf_args.
+    va_list ap;
+    va_copy(ap, ap_in);
+
     // Lets check that last character. We can have:
     // 1) A complete xmq object.
     //    debug("xmq.cli{", "alfa=", "%d", 42, "}");
@@ -15412,6 +15469,7 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
             membuffer_append(mb, element_name);
         }
         char *buf = buf_vsnprintf(format, ap);
+        va_end(ap);
         char *q = xmqCompactQuote(buf);
         free(buf);
         membuffer_append(mb, q);
@@ -15448,21 +15506,9 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
         // The key has an = sign at the end. E.g. size=
         membuffer_append(mb, key);
         const char *format = va_arg(ap, const char *);
-        for (;;)
-        {
-            size_t n = vsnprintf(buf, buf_size, format, ap);
-
-            if (n < buf_size)
-            {
-                // The generated output fitted in the allocated buffer.
-                break;
-            }
-
-            buf_size *= 2;
-            free(buf);
-            buf = (char*)malloc(buf_size);
-            memset(buf, 0, buf_size);
-        }
+        free(buf);
+        buf = buf_vsnprintf(format, ap);
+        skip_printf_args(format, &ap);
 
         char *quote = xmqCompactQuote(buf);
         membuffer_append(mb, quote);
@@ -15470,6 +15516,7 @@ char *xmq_line_vprintf_xmq(XMQLineConfig *lc, const char *element_name, va_list 
     }
 
     free(buf);
+    va_end(ap);
     membuffer_append(mb, "}");
     membuffer_append_null(mb);
 

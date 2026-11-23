@@ -48,6 +48,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 #include<sys/stat.h>
 #include<fcntl.h>
+#include<stdlib.h>
+#ifdef __APPLE__
+#include<mach-o/dyld.h>
+#endif
 
 #ifdef PLATFORM_WINAPI
 #include<windows.h>
@@ -2402,6 +2406,16 @@ static const char *self_exe()
         return path;
     }
 #endif
+#ifdef __APPLE__
+    // There is no /proc on macos, ask dyld for the path of the executable.
+    char exe[4096];
+    uint32_t size = sizeof(exe);
+    if (_NSGetExecutablePath(exe, &size) == 0 && realpath(exe, path) != NULL)
+    {
+        return path;
+    }
+#endif
+    // Hope that xmq is in the PATH.
     return "xmq";
 }
 
