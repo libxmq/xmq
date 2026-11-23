@@ -308,15 +308,13 @@ test_markup_blitz: release
 	@for x in $(BUILDDIRS); do FILTER="$(FILTER)" ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/markup_blitz markup-blitz || exit 1 ; done
 
 # The same with kaffepot, a script around coffeepot with the same command line as
-# markup-blitz (kaffepot grammar.ixml input.txt). coffeepot does not support ! and =<,
-# the tests whose grammar uses them are expected to fail.
+# markup-blitz (kaffepot grammar.ixml input.txt). If the coffeepot used does not support
+# ! and =< (found with a probe grammar), the tests whose grammar uses them are expected to fail.
 # coffeepot counts the position of a failure differently (eg column 2 for the ! in hi!,
 # where xmq and markup-blitz say column 3), so only that both fail is compared.
 test_kaffepot: release
 	@for x in $(BUILDDIRS); do XMQ_IXML_ENGINE_COMPARE_POSITION=no FILTER="$(FILTER)" ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/kaffepot kaffepot || exit 1 ; done
 
-# Check that the library ixml files execute identically with xmq,coffepot and markup-blitz
-# kaffepot is just a script around coffepot where -g: and -i are automatically added.
 # Parse all of xmq's own preprocessed C source (the .o.source files created by the build)
 # using the C grammar library/lang/c.ixml. Takes a few minutes, therefore not part of make test.
 # Only test some files: make test_c_parse_myself FILTER=ixml.c or FILTER=ixml.c,xmq.c
@@ -370,9 +368,20 @@ test_examples: release
 run_benchmarks: release
 	@SAVE=$(SAVE) $(if $(REPEAT),REPEAT=$(REPEAT)) ./benchmarks/run_benchmarks.sh
 
-test_library:
-	./tests/test_library.sh ./xmq build/test_library_output markup-blitz
-	./tests/test_library.sh ./xmq build/test_library_output kaffepot
+# Check that the library ixml files execute identically with xmq, markup-blitz and coffeepot:
+# the library tests with xmq's own ixml engine, then with markup-blitz and kaffepot as the
+# engine (XMQ_IXML_ENGINE), compared by meaning, see tests/test_ixml_external_engine.sh.
+# kaffepot is a script around coffeepot where -g: and -i: are added. If an engine does not
+# support ! and =< (found with a probe grammar), the tests whose grammar uses them are
+# expected to fail. All three are run, the target fails if any of them fails.
+test_library: release
+	@status=0; \
+	for x in $(BUILDDIRS); do \
+	    ./tests/test_library.sh $${x}release/xmq $${x}release/test_output/library || status=1; \
+	    FILTER=library ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/library_markup_blitz markup-blitz || status=1; \
+	    XMQ_IXML_ENGINE_COMPARE_POSITION=no FILTER=library ./tests/test_ixml_external_engine.sh $${x}release/xmq $${x}release/test_output/library_kaffepot kaffepot || status=1; \
+	done; \
+	exit $$status
 
 test: test_release
 testd: test_debug
@@ -512,7 +521,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_kaffepot test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_kaffepot test_library test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi

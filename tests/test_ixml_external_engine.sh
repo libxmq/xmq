@@ -139,7 +139,11 @@ run_group()
     if [ $expected -gt 0 ]; then note="$note, $expected expected to fail (unsupported extension)"; fi
     if [ $known -gt 0 ]; then note="$note, $known known differences"; fi
     if [ $skipped -gt 0 ]; then note="$note, $skipped skipped (only the internal engine)"; fi
-    echo "$name: $ok passed, $failed failed$note"
+    # A group without any test run (eg FILTER=library) is not reported.
+    if [ $((ok+failed+skipped+expected+known)) -gt 0 ]
+    then
+        echo "$name: $ok passed, $failed failed$note"
+    fi
     total_ok=$((total_ok+ok))
     total_failed=$((total_failed+failed))
     total_expected=$((total_expected+expected))
