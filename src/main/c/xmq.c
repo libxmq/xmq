@@ -177,7 +177,7 @@ void cline_print_attributes(XMQPrintState *ps, XMQNode *node);
 void cline_print_attr(XMQPrintState *ps, XMQAttr *a);
 bool write_print_stderr(void *writer_state_ignored, const char *start, const char *stop);
 bool write_print_stdout(void *writer_state_ignored, const char *start, const char *stop);
-bool write_print_memory(void *writer_state_ignored, const char *start, const char *stop);
+bool write_print_memory(void *writer_state, const char *start, const char *stop);
 void write_safe_html(XMQWrite write, void *writer_state, const char *start, const char *stop);
 void write_safe_tex(XMQWrite write, void *writer_state, const char *start, const char *stop);
 bool xmqVerbose();
@@ -1008,9 +1008,11 @@ void xmqSetupPrintStdOutStdErr(XMQOutputSettings *ps)
     ps->error.write = write_print_stderr;
 }
 
-bool write_print_memory(void *writer_state_ignored, const char *start, const char *stop)
+bool write_print_memory(void *writer_state, const char *start, const char *stop)
 {
-    membuffer_append_region((MemBuffer*)writer_state_ignored, start, stop);
+    // No buffer when the output has been handed over, until xmqSetupPrintMemory is called again.
+    if (!writer_state) return false;
+    membuffer_append_region((MemBuffer*)writer_state, start, stop);
     return true;
 }
 
@@ -1139,6 +1141,8 @@ bool xmqTokenizeBuffer(XMQParseState *state, const char *start, const char *stop
         size_t size = membuffer_used(output_settings->output_buffer);
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         output_settings->output_buffer = NULL; // Handed over to the caller.
+        if (output_settings->content.write == write_print_memory) output_settings->content.writer_state = NULL;
+        if (output_settings->error.write == write_print_memory) output_settings->error.writer_state = NULL;
         *output_settings->output_buffer_start = buffer;
         *output_settings->output_buffer_stop = buffer+size;
     }
@@ -2193,7 +2197,7 @@ bool xmqMoveElement(XMQDoc *from_doq,
     if (from_doq == to_doq)
     {
         int rc = move_element(from_doq->dom_, element, to_parent, where, sibling);
-        return (rc != 0);
+        return rc == 0;
     }
     assert(false);
     return false;
@@ -3820,6 +3824,8 @@ void xmqPrint(XMQDoc *doq, XMQOutputSettings *output_settings)
         size_t size = membuffer_used(output_settings->output_buffer);
         char *buffer = free_membuffer_but_return_trimmed_content(output_settings->output_buffer);
         output_settings->output_buffer = NULL; // Handed over to the caller.
+        if (output_settings->content.write == write_print_memory) output_settings->content.writer_state = NULL;
+        if (output_settings->error.write == write_print_memory) output_settings->error.writer_state = NULL;
         *output_settings->output_buffer_start = buffer;
         // The output is NUL terminated, stop points to the NUL (not after it).
         *output_settings->output_buffer_stop = buffer+size-1;
@@ -4862,17 +4868,17 @@ int64_t xmqGetLongRel(XMQDoc *doq, const char *xpath, XMQNode *relative)
     if (content[0] == '0' &&
         content[1] == 'x')
     {
-        int64_t tmp = strtol(content, NULL, 16);
+        int64_t tmp = strtoll(content, NULL, 16);
         return tmp;
     }
 
     if (content[0] == '0')
     {
-        int64_t tmp = strtol(content, NULL, 8);
+        int64_t tmp = strtoll(content, NULL, 8);
         return tmp;
     }
 
-    return atol(content);
+    return atoll(content);
 }
 
 const char *xmqGetString(XMQDoc *doq, const char *xpath)
@@ -6989,9 +6995,9 @@ char *xmqCompactQuote(const char *content)
     os.escape_newlines = true;
     os.output_buffer = mb;
     os.content.writer_state = os.output_buffer;
-    os.content.write = (XMQWrite)(void*)membuffer_append_region;
+    os.content.write = write_print_memory;
     os.error.writer_state = os.output_buffer;
-    os.error.write = (XMQWrite)(void*)membuffer_append_region;
+    os.error.write = write_print_memory;
     os.explicit_space = " ";
     os.explicit_tab = "\t";
 

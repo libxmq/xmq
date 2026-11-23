@@ -2,10 +2,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 
 /**
@@ -14,14 +15,16 @@ import java.util.TreeSet;
  *
  * <p>Java port of the former scripts/gen_unicode_categories.py.</p>
  *
- * <p>The tables are looked up with binary_search_int (see category_has_code in
- * text.c), which requires the arrays to be sorted and duplicate-free.</p>
+ * <p>Each table is the sorted list of the ranges of code points of the category, as
+ * {@code {from,to}} pairs with from and to inclusive, adjacent code points are merged into
+ * one range. The tables are looked up with a binary search (see category_has_code in text.c),
+ * which requires the ranges to be sorted and not overlapping.</p>
  *
  * <p>Categories not present in DerivedGeneralCategory.txt are derived here:
  * Cs (surrogates) U+D800..U+DFFF, Co (private use) U+E000..U+F8FF and
  * U+F0000..U+10FFFF, and Cn (unassigned) from the noncharacters not
  * assigned to any other category. Compound categories (L, M, N, P, S, Z, C, LC)
- * are kept as {@code {-1}} placeholders: they are resolved at runtime through
+ * are kept as {@code { {-1,-1} }} placeholders: they are resolved at runtime through
  * unicode_lookup_category_parts().</p>
  *
  * <p>Usage: GenUnicodeCategories [DerivedGeneralCategory.txt] [src/main/c/parts/text.c]</p>
@@ -37,7 +40,7 @@ public class GenUnicodeCategories
             "Lu", "Ll", "Lt", "Lm", "Lo",
             "Mn", "Mc", "Me",
             "Nd", "Nl", "No",
-            "Pc", "Pd", "Pe", "Pf", "Pi", "Po",
+            "Pc", "Pd", "Ps", "Pe", "Pf", "Pi", "Po",
             "Sc", "Sk", "Sm", "So",
             "Zs", "Zl", "Zp",
             "Cc", "Cf", "Cs", "Co", "Cn"
@@ -162,23 +165,47 @@ public class GenUnicodeCategories
     }
 
     /**
-     * Formats a set of code points as a C array initializer,
-     * e.g. {@code { 0x0041, 0x0042 };}, sorted and without duplicates.
+     * Formats a code point as hex, eg 0x0041 or 0x1f600.
+     * @param v The code point.
+     * @return The hex text.
+     */
+    public static String hex(int v)
+    {
+        return v <= 0xFFFF ? String.format("0x%04x", v) : String.format("0x%05x", v);
+    }
+
+    /**
+     * Formats a set of code points as a C array initializer of sorted ranges, eight per line,
+     * e.g. {@code {\n    {0x0041,0x005a}, {0x00c0,0x00d6}\n};}
      * @param values The code points.
      * @return The C array initializer text.
      */
-    public static String formatArray(Collection<Integer> values)
+    public static String formatRanges(Collection<Integer> values)
     {
-        StringJoiner joiner = new StringJoiner(", ", " { ", " };");
-        TreeSet<Integer> sorted = new TreeSet<>(values);
-        for (int v : sorted)
+        List<String> ranges = new ArrayList<>();
+        int from = -1;
+        int to = -1;
+        for (int v : new TreeSet<>(values))
         {
-            if (v <= 0xFFFF)
-                joiner.add("0x" + String.format("%04x", v));
-            else
-                joiner.add("0x" + String.format("%05x", v));
+            if (from >= 0 && v == to + 1)
+            {
+                to = v;
+                continue;
+            }
+            if (from >= 0)
+                ranges.add("{" + hex(from) + "," + hex(to) + "}");
+            from = to = v;
         }
-        return joiner.toString();
+        if (from >= 0)
+            ranges.add("{" + hex(from) + "," + hex(to) + "}");
+
+        StringBuilder sb = new StringBuilder("{\n");
+        for (int i = 0; i < ranges.size(); i += 8)
+        {
+            sb.append("    ").append(String.join(", ", ranges.subList(i, Math.min(i + 8, ranges.size()))));
+            sb.append(i + 8 < ranges.size() ? ",\n" : "\n");
+        }
+        return sb.append("};").toString();
     }
 
     /**
@@ -192,14 +219,15 @@ public class GenUnicodeCategories
     {
         for (String cat : CATEGORIES)
         {
-            String label = "int unicode_" + cat + "[] = ";
+            String label = "UnicodeCategoryRange unicode_" + cat + "[] = ";
             int idx = source.indexOf(label);
             if (idx < 0)
-                throw new RuntimeException("ERROR: could not find `int unicode_" + cat + "[]`");
-            int end = source.indexOf(';', idx);
+                throw new RuntimeException("ERROR: could not find `UnicodeCategoryRange unicode_" + cat + "[]`");
+            int end = source.indexOf("};", idx);
             if (end < 0)
-                throw new RuntimeException("ERROR: could not find end of `int unicode_" + cat + "[]`");
-            String newArr = formatArray(cats.get(cat));
+                throw new RuntimeException("ERROR: could not find end of `UnicodeCategoryRange unicode_" + cat + "[]`");
+            end++;
+            String newArr = formatRanges(cats.get(cat));
             source = source.substring(0, idx + label.length()) + newArr + source.substring(end + 1);
             System.out.println(String.format("  %3s: %6d codepoints", cat, cats.get(cat).size()));
         }

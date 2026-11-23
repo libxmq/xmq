@@ -99,47 +99,45 @@ void test_quicksort()
 
 void test_binary_search()
 {
-    int empty[] = { 0 };
-    int a[] = { 1 };
-    int b[] = { 1, 2 };
+    // The code points 1 2 7 10 11 12 55 99 as ranges.
+    UnicodeCategoryRange c[] = { {1,2}, {7,7}, {10,12}, {55,55}, {99,99} };
+    size_t c_len = sizeof(c)/sizeof(c[0]);
+    for (int code = -1; code <= 101; ++code)
+    {
+        bool expected = code == 1 || code == 2 || code == 7 || (code >= 10 && code <= 12) || code == 55 || code == 99;
+        for (size_t len = 0; len <= c_len; ++len)
+        {
+            // Also the shorter lists of the first len ranges.
+            bool in_first = false;
+            for (size_t i = 0; i < len; ++i) if (code >= c[i].from && code <= c[i].to) in_first = true;
+            if (len == c_len && in_first != expected) { all_ok_ = false; printf("ERROR: bad test of %d.\n", code); }
+            if (category_has_code(code, c, len) != in_first)
+            {
+                all_ok_ = false;
+                printf("ERROR: expected %d %sin the first %zu ranges.\n", code, in_first ? "" : "not ", len);
+            }
+        }
+    }
 
-    bool found = category_has_code(1, empty, 0);
-    if (found) { all_ok_ = false; printf("ERROR: expected not found in [].\n"); }
-    found = category_has_code(1, a, 1);
-    if (!found) { all_ok_ = false; printf("ERROR: expected found 1 in [1].\n"); }
-    found = category_has_code(2, a, 1);
-    if (found) { all_ok_ = false; printf("ERROR: expected not 2 in [1].\n"); }
-    found = category_has_code(1, b, 2);
-    if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2].\n"); }
-    found = category_has_code(2, b, 2);
-    if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2].\n"); }
-    found = category_has_code(7, b, 2);
-    if (found) { all_ok_ = false; printf("ERROR: expected not 7 in [1, 2].\n"); }
-    found = category_has_code(0, b, 2);
-    if (found) { all_ok_ = false; printf("ERROR: expected not 0 in [1, 2].\n"); }
-
-    int c[] = { 1, 2, 7, 10, 11, 12, 55, 99 };
-    found = category_has_code(2, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 2 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(99, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 99 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(55, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 55 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(1, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 1 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(7, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 7 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(10, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 10 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(11, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(12, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 12 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-    found = category_has_code(11, c, sizeof(c)/sizeof(int));
-    if (!found) { all_ok_ = false; printf("ERROR: expected 11 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
-
-    found = category_has_code(13, c, sizeof(c)/sizeof(int));
-    if (found) { all_ok_ = false; printf("ERROR: expected not 13 in [1, 2, 7, 10, 11, 12, 55, 99].\n"); }
+    // A few real categories.
+    struct { const char *cat; int code; bool in; } checks[] = {
+        { "Ll", 'a', true }, { "Ll", 'z', true }, { "Ll", 'A', false }, { "Lu", 'A', true }, { "Lu", '@', false },
+        { "Nd", '0', true }, { "Nd", '9', true }, { "Nd", ':', false }, { "Zl", 0x2028, true }, { "Zp", 0x2029, true },
+        { "Zs", ' ', true }, { "Cs", 0xd800, true }, { "Cs", 0xdfff, true }, { "Cs", 0xe000, false },
+        { "Co", 0xe000, true }, { "Co", 0x10ffff, true }, { "Lo", 0x4e00, true }, { "Ll", 0x00e5, true },
+        { "Lu", 0x00c5, true }, { "Ps", '(', true }, { "Pe", ')', true }, { "L", 'a', false },
+    };
+    for (size_t i = 0; i < sizeof(checks)/sizeof(checks[0]); ++i)
+    {
+        UnicodeCategoryRange *cat = NULL;
+        size_t cat_len = 0;
+        if (!unicode_get_category_part(checks[i].cat, &cat, &cat_len) ||
+            category_has_code(checks[i].code, cat, cat_len) != checks[i].in)
+        {
+            all_ok_ = false;
+            printf("ERROR: expected U+%04X %sin %s.\n", checks[i].code, checks[i].in ? "" : "not ", checks[i].cat);
+        }
+    }
 }
 
 void test_stack()

@@ -83,11 +83,20 @@ const char *find_eol_or_stop(const char *start, const char *stop);
 // For input "L" this function returns the array  { "Lu","Ll","Lt","Lm","Lo",0 }
 const char **unicode_lookup_category_parts(const char *name);
 
-// Return an array of unicode code points for a given category name.
-// Ie. Ll=Letters lowercase, Lu=Letters uppercase etc.
-bool unicode_get_category_part(const char *part, int **out_cat, size_t *out_cat_len);
+// A range of unicode code points, from and to inclusive.
+typedef struct UnicodeCategoryRange UnicodeCategoryRange;
+struct UnicodeCategoryRange
+{
+    int from;
+    int to;
+};
 
-bool category_has_code(int code, int *cat, size_t cat_len);
+// Return the sorted, non overlapping, ranges of the unicode code points of a category.
+// Ie. Ll=Letters lowercase, Lu=Letters uppercase etc.
+bool unicode_get_category_part(const char *part, UnicodeCategoryRange **out_cat, size_t *out_cat_len);
+
+// True if the code point is in one of the ranges, a binary search.
+bool category_has_code(int code, UnicodeCategoryRange *cat, size_t cat_len);
 
 bool ends_with(const char *start, const char *stop, const char *pattern);
 

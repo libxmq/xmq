@@ -399,7 +399,7 @@ static bool is_ixml_name_follower_codepoint(int cp)
     const char *cats[] = {"L", "Lu", "Ll", "Lt", "Lm", "Lo", "Nd", "Mn"};
     for (size_t n = 0; n < sizeof(cats)/sizeof(cats[0]); ++n)
     {
-        int *cat = NULL;
+        UnicodeCategoryRange *cat = NULL;
         size_t cat_len = 0;
         if (unicode_get_category_part(cats[n], &cat, &cat_len) &&
             category_has_code(cp, cat, cat_len))
@@ -455,7 +455,7 @@ static bool is_ixml_name_start_codepoint(int cp)
     const char *cats[] = {"L", "Lu", "Ll", "Lt", "Lm", "Lo"};
     for (size_t n = 0; n < sizeof(cats)/sizeof(cats[0]); ++n)
     {
-        int *cat = NULL;
+        UnicodeCategoryRange *cat = NULL;
         size_t cat_len = 0;
         if (unicode_get_category_part(cats[n], &cat, &cat_len) &&
             category_has_code(cp, cat, cat_len))
@@ -2508,7 +2508,7 @@ static bool charset_part_has_code(IXMLCharsetPart *p, int c)
     const char **cat_part = unicode_lookup_category_parts(p->category);
     for (; *cat_part; ++cat_part)
     {
-        int *cat = NULL;
+        UnicodeCategoryRange *cat = NULL;
         size_t cat_len = 0;
         if (!unicode_get_category_part(*cat_part, &cat, &cat_len))
         {
@@ -2627,7 +2627,7 @@ void scan_content_fixup_charsets(XMQParseState *state, const char *start, const 
                 const char **cat_part = unicode_lookup_category_parts(p->category);
                 for (; *cat_part; ++cat_part)
                 {
-                    int *cat = NULL;
+                    UnicodeCategoryRange *cat = NULL;
                     size_t cat_len = 0;
                     if (!unicode_get_category_part(*cat_part, &cat, &cat_len))
                     {
