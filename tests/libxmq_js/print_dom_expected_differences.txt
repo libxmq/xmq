@@ -1,0 +1,6 @@
+# The files of test_007_print_dom.mjs where libxmq for javascript prints other xmq than C:
+# name|reason
+tests/ixml/correct/unicode-classes.output.xml|xmldom reads U+2028 and U+2029 as a newline (xml 1.1 line end normalization in an xml 1.0 document), the DOM differs, not the printer
+tests/libxml2/result/namespaces/err_9.xml|two attributes with the same namespace and local name (a:err and b:err, both bound to one uri): libxml2 keeps both, a W3C DOM keeps one
+tests/libxml2/test/namespaces/err_9.xml|two attributes with the same namespace and local name (a:err and b:err, both bound to one uri): libxml2 keeps both, a W3C DOM keeps one
+tests/libxml2/test/valid/objednavka.xml|C aligns the = of keys with non-ascii names by bytes, eg PSČ, Java and javascript by characters (a C bug, see doc/TODO.md)

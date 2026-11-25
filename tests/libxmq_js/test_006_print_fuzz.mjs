@@ -5,8 +5,10 @@
 // random text: quotes, newlines, CR, tabs, spaces at the ends of lines, nbsp and the other
 // unicode spaces, braces, & = / *, non-ascii and characters outside of the BMP.
 // A random document is written as xml (the text escaped as xml), read by the xmldom
-// DOMParser into the DOM that javascript prints, and read by C with
-// xmq --trim=none FILE.xml to-xmq OPTIONS, so that both have the same DOM. Many cases are
+// DOMParser into the DOM that javascript prints, and read by C. Every case is compared
+// twice: untrimmed, print(doc, { trim: false }) against xmq --trim=none FILE.xml to-xmq
+// OPTIONS, and trimmed (the default for a DOM that parse did not make) against
+// xmq FILE.xml to-xmq OPTIONS. Many cases are
 // one document, the children of the root element; when the document differs every case
 // of it is compared alone, to name the cases that differ. The cases are the same every
 // run (a fixed seed). Writes OUTPUT/print_fuzz/*.xml of the cases that differ.
@@ -141,7 +143,7 @@ const parser = new xmldom.DOMParser({ onError: (level, msg) => { if (level !== "
 function compare(xml, file, args, options)
 {
     fs.writeFileSync(file, xml);
-    const c = spawnSync(xmq, ["--trim=none", file, "to-xmq", ...args], { encoding: "utf8" });
+    const c = spawnSync(xmq, [...(options.trim === false ? ["--trim=none"] : []), file, "to-xmq", ...args], { encoding: "utf8" });
     if (c.status !== 0) return ["C FAILED " + c.stderr, ""];
     const doc = parser.parseFromString(xml, "text/xml");
     let js = lib.print(doc, options);
@@ -156,9 +158,15 @@ for (let i = 0; i < num_cases; i++) cases.push(random_case(0));
 
 let same = 0;
 const failures = [];
+const SETS = [];
 for (const [args, options] of OPTION_SETS)
 {
-    const opts = args.join(" ");
+    SETS.push([args, { ...options, trim: false }, "notrim"]);
+    SETS.push([args, options, "trim"]);
+}
+for (const [args, options, trim] of SETS)
+{
+    const opts = [trim, ...args].join(" ");
     for (let d = 0; d < cases.length; d += PER_DOCUMENT)
     {
         const part = cases.slice(d, d + PER_DOCUMENT);
@@ -177,7 +185,7 @@ for (const [args, options] of OPTION_SETS)
                 same++;
                 continue;
             }
-            const n = "case_" + (d + i) + (opts ? "_" + opts.replace(/[^a-z0-9]+/g, "_") : "");
+            const n = "case_" + (d + i) + "_" + opts.replace(/[^a-z0-9]+/g, "_");
             fs.writeFileSync(path.join(output, n + ".xml"), document([part[i]]));
             fs.writeFileSync(path.join(output, n + ".c"), r[0]);
             fs.writeFileSync(path.join(output, n + ".js"), r[1]);
@@ -187,7 +195,7 @@ for (const [args, options] of OPTION_SETS)
 }
 fs.rmSync(path.join(output, "doc.xml"), { force: true });
 
-const total = cases.length * OPTION_SETS.length;
+const total = cases.length * SETS.length;
 if (failures.length === 0)
 {
     console.log("OK: print fuzz (" + same + " of " + total + " random cases the same as " + xmq + ")");

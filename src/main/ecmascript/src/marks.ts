@@ -65,3 +65,18 @@ export function doctypeText(dt: DocumentType): string | undefined
 {
     return doctype_texts.get(dt);
 }
+
+/** The documents that the xmq parser created, they are printed without trimming. */
+const xmq_documents = new WeakSet<object>();
+
+/** Remember that the document was parsed from xmq. */
+export function markXmqDocument(d: Document): void
+{
+    xmq_documents.add(d);
+}
+
+/** True if the document was parsed from xmq by this library. */
+export function isXmqDocument(d: Document | null): boolean
+{
+    return d !== null && xmq_documents.has(d);
+}

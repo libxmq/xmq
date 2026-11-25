@@ -43,3 +43,11 @@ xmq (not the compact form yet) and convert a DOM to json.
   when porting a later change of that Java or C code, code that runs after the recursive
   call belongs in `close_body` or where the printer pops a frame. `test_004_depth.mjs`
   and the parse and print comparisons with C guard it.
+- **A DOM that was not parsed from xmq is printed trimmed.** C trims the xml and html it
+  reads (whitespace only text removed, the incidental indentation of text and comments
+  removed), never xmq. print does the same: it trims unless the document was made by
+  parse, and the option trim overrides it. A browser page then prints like `xmq
+  page.html`. The DOM is never changed, the printer skips and trims while printing.
+- **The DOM is printed as it is.** The printer does not emulate the html parser of C, eg
+  a browser's `disabled=""` prints as `disabled`, not as C's `disabled = disabled`. Such
+  differences come from the parsers and are listed as known differences.

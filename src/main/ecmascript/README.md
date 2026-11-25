@@ -4,8 +4,8 @@ A small part of [libxmq](https://libxmq.org) in javascript, with typescript type
 the browser and node:
 
 - parse xmq into a W3C DOM document,
-- print a DOM as xmq (not yet the compact form, nor a DOM that the browser loaded from
-  html),
+- print a DOM as xmq, also the DOM of the page that a browser loaded from html (not yet
+  the compact form),
 - convert a DOM to json, as a javascript value or as text (not yet).
 
 It is a port of the Java implementation of libxmq and gives the same result as the
@@ -33,6 +33,9 @@ console.log(print(doc));
 // preferDoubleQuotes.
 console.log(print(doc, { indent: 2 }));
 
+// In a browser: the page as xmq, trimmed like xmq page.html.
+console.log(print(document));
+
 try
 {
     parse("a = (x)", { source: "my.xmq" });
@@ -48,6 +51,12 @@ catch (e)
 
 `tokenize(xmq, "debugtokens" | "debugcontent")` gives the same output as `xmq
 tokenize --type=debugtokens` and `--type=debugcontent`.
+
+Printing trims the whitespace like the xmq command line does when it reads xml or html
+(the default `--trim`): the text nodes with only whitespace are skipped and the incidental
+indentation is removed from the text and the comments. The DOM is not changed. A document
+that `parse` made is printed untrimmed, as C never trims xmq; the option `trim: true` or
+`trim: false` decides it yourself.
 
 ## Differences from the C and Java libxmq
 
@@ -72,3 +81,7 @@ tokenize --type=debugtokens` and `--type=debugcontent`.
 - A W3C DOM has no internal subset of the doctype. The printer prints the declarations
   of the doctype text that parse read, each on its own line like C, but as they were
   written, not in the normalized form of libxml2.
+- A browser builds another DOM from html than the html parser of C: it adds `head`,
+  `body` and `tbody`, it gives `<input disabled>` an empty value (printed `disabled`, C
+  prints `disabled = disabled`), and C adds a doctype when there is none. The printer
+  prints the DOM it gets, the same as C prints the same DOM.

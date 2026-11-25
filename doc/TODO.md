@@ -100,6 +100,22 @@ open bodies (`close_body` in `src/main/ecmascript/src/parser.ts`), and `print_no
 `tests/test_max_depth_parsers.sh` and `tests/libxmq_js/test_004_depth.mjs` test the depth
 limit.
 
+## C aligns the = of names with non-ascii characters wrongly
+
+```sh
+printf '<r><PSČ>1</PSČ><abcde>2</abcde></r>\n' > a.xml
+xmq a.xml to-xmq     # PSČ  = 1 and abcde = 2, the = signs are not aligned
+xmqj a.xml to-xmq    # PSČ   = 1, aligned
+```
+
+`print_utf8_internal` in `src/main/c/parts/utf8.c` finds the end of a utf8 character with
+`while (j < stop && (*j & 0xc0) == 0x80) j++;`. A name is printed with `stop` NULL (a NUL
+terminated string), then `j < stop` is false, every byte counts as a character and
+`current_indent` grows by the number of bytes. `find_element_key_max_width` counts the
+characters, so the padding is too small by the number of extra utf8 bytes. Java and
+libxmq for javascript count characters. `tests/libxml2/test/valid/objednavka.xml` shows it,
+it is an expected difference of `tests/libxmq_js/test_007_print_dom.mjs`.
+
 ## The Java xmq quote trimming differs from C when a line starts with CR
 
 `printf "a = 'x\n\r y'\n" | xmq - tokenize --type=debugcontent` gives `{quote "x\n\r y"}`:
@@ -128,5 +144,10 @@ now has quotes with CR and tabs. Java needs the same fix.
   subset, the printer takes the declarations from the doctype text that parse read, one
   per line like C, but not normalized like libxml2 does (`<!ENTITY  a   "b">` prints as
   it is, C prints `<!ENTITY a "b">`).
+- **A DOM from a browser's html parser differs from the one of C.** Printing a browser page
+  gives what `xmq page.html` gives for the same DOM, but the html parsers differ: a browser
+  adds `head`, `body` and `tbody`, C adds a doctype (HTML 4.0 Transitional) when there is
+  none, lowercases the svg names (`foreignobject`), and gives a boolean attribute its name
+  as value (`<input disabled>` is `disabled = disabled` in C, `disabled` from a browser).
 - **Not implemented yet:** an `expandEntities` like the one of C. It is planned, the marks
   of the entity text nodes and the attribute parts are what it needs.

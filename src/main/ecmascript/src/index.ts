@@ -79,7 +79,9 @@ export function parse(xmq: string, options: ParseOptions = {}): Document
 /**
  * Print a DOM node as xmq, like xmq FILE to-xmq: a document or a fragment with all its
  * nodes, or a single node with its descendants. Not the compact form (yet). The text
- * nodes that parse created for entities are printed as entities.
+ * nodes that parse created for entities are printed as entities. A DOM that parse did not
+ * make, eg the page of a browser, is printed trimmed like xmq trims the xml and html it
+ * reads (see PrintOptions.trim), the elements of html with their lower case localName.
  * @param node The document, fragment, element or other node.
  * @param options The indentation and the escapes, as the to-xmq options of xmq.
  * @returns The xmq text, without a final newline.

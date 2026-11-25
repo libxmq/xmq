@@ -33,6 +33,26 @@ for (const [kind, lib] of [["esm", esm], ["cjs", cjs]])
     const doc = lib.parse("car(id=1){model=Volvo note='a b' nbsp=&nbsp;}", { dom });
     check(kind + " print", lib.print(doc), "car(id = 1)\n{\n    model = Volvo\n    note  = 'a b'\n    nbsp  = &nbsp;\n}");
     check(kind + " print node", lib.print(doc.documentElement.firstChild, { indent: 2 }), "model = Volvo");
+    // A browser like html document: upper case nodeName, whitespace text, trimmed like
+    // printf '<html><body>\n  <p>  Hi  </p>\n  <!--  c  -->\n</body></html>' | xmq --html - to-xmq
+    const h = dom.createHTMLDocument("");
+    while (h.firstChild !== null) h.removeChild(h.firstChild);
+    const mk = (name) =>
+    {
+        const e = h.createElement(name);
+        Object.defineProperty(e, "nodeName", { value: name.toUpperCase() });
+        return e;
+    };
+    const html = h.appendChild(mk("html")), body = html.appendChild(mk("body")), p = mk("p");
+    body.appendChild(h.createTextNode("\n  "));
+    body.appendChild(p).appendChild(h.createTextNode("  Hi  "));
+    body.appendChild(h.createTextNode("\n  "));
+    body.appendChild(h.createComment("  c  "));
+    body.appendChild(h.createTextNode("\n"));
+    check(kind + " print html", lib.print(h), "html {\n    body {\n        p = '  Hi  '\n        // c\n    }\n}");
+    // Untrimmed the whitespace is printed, with a leading newline like C prints a leading
+    // entity: printf '&#10;\n' | xmq --xmq - to-xmq
+    check(kind + " print html untrimmed", lib.print(p.parentNode.firstChild, { trim: false }), "\n&#10;\n'  '");
     check(kind + " tokens", lib.tokenize("a=1", "debugtokens"), '[element_key "a" 1:1][equals "=" 1:2][element_value_text "1" 1:3]\n');
 }
 

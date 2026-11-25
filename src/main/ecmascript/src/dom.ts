@@ -9,7 +9,7 @@
  */
 
 import { ParseErrorCode } from "./errors.js";
-import { markAttrParts, markDoctype, markEntity, type AttrPart } from "./marks.js";
+import { markAttrParts, markDoctype, markEntity, markXmqDocument, type AttrPart } from "./marks.js";
 import { XMQParser } from "./parser.js";
 import { TAttr, TDocument, TElement, TNode, TNs, XML_NS } from "./tree.js";
 import { unQuote } from "./trim.js";
@@ -759,6 +759,7 @@ export function tree_to_document(tdoc: TDocument, impl: DOMImplementation): Docu
     try
     {
         const doc = impl.createDocument(null, "", null);
+        markXmqDocument(doc);
         for (const c of tdoc.children)
         {
             if (c.kind === "dtd")

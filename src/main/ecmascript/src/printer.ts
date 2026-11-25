@@ -11,15 +11,22 @@
  *   can be enabled later (the compact setting is always false).
  * - print_nodes does not recurse into the elements, it keeps its own stack, since the
  *   stack of node and the browsers is too small for 10000 nested elements.
+ * A DOM that was not parsed from xmq, eg the DOM of a browser page, is printed trimmed,
+ * like C trims the xml and html it reads (xmqTrimWhitespace, Java XmlTrim): the DOM is
+ * not changed, the printer skips the whitespace only text and prints the text without
+ * its incidental indentation (see trimmed_text). The elements of an html document are
+ * printed with their localName, a browser has the nodeName in upper case.
  * The W3C DOM has no entity reference nodes: the text nodes that the xmq parser created
  * for entities (entityName) are printed as entities, and the attribute values with
  * entities or without a value use the parts the parser remembered (attrParts).
  */
 
 import { potentially_add_leading_ending_space } from "./dom.js";
-import { attrParts, doctypeText, entityName } from "./marks.js";
+import { attrParts, doctypeText, entityName, isXmqDocument } from "./marks.js";
+import { unQuote } from "./trim.js";
 
 const XMLNS_NS = "http://www.w3.org/2000/xmlns/";
+const XHTML_NS = "http://www.w3.org/1999/xhtml";
 
 /** The options of print, like the to-xmq options of the xmq command line. */
 export interface PrintOptions
@@ -34,6 +41,14 @@ export interface PrintOptions
     escapeTabs?: boolean;
     /** Use double quotes when single and double quotes are equally good (--prefer-double-quotes). */
     preferDoubleQuotes?: boolean;
+    /**
+     * Trim the whitespace like xmq does when it reads xml or html (the default --trim):
+     * skip the text nodes with only whitespace, remove the incidental indentation of the
+     * text and the comments, and the leading and ending spaces of the comments. The DOM
+     * is not changed. The default is to trim, unless the document was parsed from xmq by
+     * this library (xmq is never trimmed by C either).
+     */
+    trim?: boolean;
 }
 
 /** Java XMQPrinter.Level, C Level. */
@@ -69,9 +84,13 @@ class XMQPrintState
     escape_non_7bit: boolean;
     escape_tabs: boolean;
     prefer_double_quotes: boolean;
+    // Print as trimmed, the trimmed text of the text and comment nodes, null if skipped.
+    trim: boolean;
+    trimmed = new Map<Node, string | null>();
 
-    constructor(o: PrintOptions)
+    constructor(o: PrintOptions, trim: boolean)
     {
+        this.trim = trim;
         this.indent_amount = o.indent ?? 4;
         this.escape_newlines = o.escapeNewlines ?? false;
         this.escape_non_7bit = o.escapeNon7bit ?? false;
@@ -96,6 +115,87 @@ function char_count(c: number): number
 function write(ps: XMQPrintState, s: string | null): void
 {
     if (s !== null) ps.buffer += s;
+}
+
+/**
+ * The text of a text, cdata or comment node as it is printed: with trimming the text as C
+ * xmqTrimWhitespace leaves it (trim_text_node, Java XmlTrim.trim_text_node), or null if
+ * C removes the node. The entity text nodes of the xmq parser are never trimmed.
+ */
+function trimmed_text(ps: XMQPrintState, n: Node): string | null
+{
+    const data = (n as CharacterData).data;
+    if (!ps.trim || entityName(n) !== null) return data;
+    const cached = ps.trimmed.get(n);
+    if (cached !== undefined) return cached;
+    const t = trim_content(data, n.nodeType === 8);
+    ps.trimmed.set(n, t);
+    return t;
+}
+
+/** C trim_text_node: the trimmed text of a text or a comment, or null if it is removed. */
+function trim_content(data: string, is_comment: boolean): string | null
+{
+    // We remove any all whitespace node.
+    if (/^[ \t\n\r]*$/.test(data)) return null;
+    let start = 0;
+    let stop = data.length;
+    if (is_comment)
+    {
+        // For comments we always remove leading and ending spaces.
+        while (start < stop && data.charAt(start) === " ") start++;
+        while (stop > start && data.charAt(stop - 1) === " ") stop--;
+    }
+    // Remove the incidental indentation, like xmq_un_quote(start, stop, false, false).
+    const t = unQuote(data, start, stop, false, false);
+    return t === "" ? null : t;
+}
+
+/**
+ * True if the node is not printed: it is removed by the trimming, or it is whitespace
+ * directly in a document. A W3C Document cannot have text (xmldom keeps the whitespace
+ * between the top level nodes as text, a browser does not), C has none either.
+ */
+function skipped(ps: XMQPrintState, n: Node): boolean
+{
+    const k = n.nodeType;
+    if (k !== 3 && k !== 4 && k !== 8) return false;
+    if (k !== 8 && n.parentNode !== null && n.parentNode.nodeType === 9 && /^[ \t\n\r]*$/.test((n as CharacterData).data)) return true;
+    return ps.trim && trimmed_text(ps, n) === null;
+}
+
+/** The first child that is printed. */
+function first_child(ps: XMQPrintState, n: Node): Node | null
+{
+    let c = n.firstChild;
+    while (c !== null && skipped(ps, c)) c = c.nextSibling;
+    return c;
+}
+
+/** The next sibling that is printed. */
+function next_sibling(ps: XMQPrintState, n: Node): Node | null
+{
+    let c = n.nextSibling;
+    while (c !== null && skipped(ps, c)) c = c.nextSibling;
+    return c;
+}
+
+/** The last child that is printed. */
+function last_child(ps: XMQPrintState, n: Node): Node | null
+{
+    let c = n.lastChild;
+    while (c !== null && skipped(ps, c)) c = c.previousSibling;
+    return c;
+}
+
+/**
+ * The name of an element as xmq prints it, prefix:name. An html element (in the xhtml
+ * namespace without a prefix) has its localName, the nodeName is in upper case in the
+ * html document of a browser.
+ */
+function element_name(e: Element): string
+{
+    return e.namespaceURI === XHTML_NS && e.prefix === null && e.localName !== null ? e.localName : e.nodeName;
 }
 
 /** Java XMQPrinter.is_unicode_whitespace: nbsp and the en/em quads and spaces. */
@@ -289,14 +389,13 @@ function check_space_before_closing_brace(ps: XMQPrintState): void
 }
 
 /**
- * True if the attribute is a namespace declaration, xmlns or xmlns:prefix (Java keeps them
- * apart from the attributes, as nsDefs). A DOM built from html may have them without the
- * xmlns namespace.
+ * True if the attribute is a namespace declaration, xmlns or xmlns:prefix in the xmlns
+ * namespace (Java keeps them apart from the attributes, as nsDefs). In an html document an
+ * xmlns attribute has no namespace, it is an attribute like any other, also in C.
  */
 function is_ns_declaration(a: Attr): boolean
 {
-    if (a.namespaceURI === XMLNS_NS) return true;
-    return a.namespaceURI === null && (a.name === "xmlns" || a.name.startsWith("xmlns:"));
+    return a.namespaceURI === XMLNS_NS;
 }
 
 /** The attributes of an element that are not namespace declarations (Java XmlElement.attributes). */
@@ -452,7 +551,7 @@ function print_content_node(ps: XMQPrintState, node: CharacterData): void
 {
     // Do NOT trim: leading and ending spaces can be part of the value,
     // ie. key = ' x y z '
-    print_value_string(ps, node.data, Level.XMQ, false);
+    print_value_string(ps, trimmed_text(ps, node)!, Level.XMQ, false);
 }
 
 /** Java XMQPrinter.print_entity_node: prints &name; */
@@ -1418,7 +1517,7 @@ function print_element_name_and_attributes(ps: XMQPrintState, node: Element): nu
     check_space_before_key(ps);
 
     // The qualified name, prefix:name, also for an undeclared prefix.
-    const name = node.nodeName;
+    const name = element_name(node);
     const total_u_len = u_len(name);
 
     print_utf8(ps, name);
@@ -1433,14 +1532,14 @@ function print_element_name_and_attributes(ps: XMQPrintState, node: Element): nu
 }
 
 /** The children of a key = value element as value parts. */
-function child_value_parts(node: Element): ValuePart[]
+function child_value_parts(ps: XMQPrintState, node: Element): ValuePart[]
 {
     const parts: ValuePart[] = [];
-    for (let c = node.firstChild; c !== null; c = c.nextSibling)
+    for (let c = first_child(ps, node); c !== null; c = next_sibling(ps, c))
     {
         const e = entityName(c);
         if (e !== null) parts.push({ entity: e });
-        else parts.push({ text: (c as CharacterData).data });
+        else parts.push({ text: trimmed_text(ps, c)! });
     }
     return parts;
 }
@@ -1460,27 +1559,27 @@ function print_key_node(ps: XMQPrintState, node: Element, align: number): void
     print_utf8(ps, "=");
     if (!ps.compact) print_white_spaces(ps, 1);
 
-    print_value(ps, child_value_parts(node), Level.ELEMENT_VALUE);
+    print_value(ps, child_value_parts(ps, node), Level.ELEMENT_VALUE);
 }
 
 /**
  * Java XMQPrinter.find_element_key_max_width: scan the nodes until there is a node which
  * is not suitable for using the = sign, returns the max width and that node (or null).
  */
-function find_element_key_max_width(element: Node): [number, Node | null]
+function find_element_key_max_width(ps: XMQPrintState, element: Node): [number, Node | null]
 {
     let max = 0;
     let i: Node | null = element;
     while (i !== null)
     {
-        if (!is_key_value_node(i) || attributes(i as Element).length > 0)
+        if (!is_key_value_node(ps, i) || attributes(i as Element).length > 0)
         {
-            if (i === element) return [max, i.nextSibling];
+            if (i === element) return [max, next_sibling(ps, i)];
             return [max, i];
         }
-        const len = u_len((i as Element).nodeName);
+        const len = u_len(element_name(i as Element));
         if (len > max) max = len;
-        i = i.nextSibling;
+        i = next_sibling(ps, i);
     }
     return [max, null];
 }
@@ -1527,9 +1626,9 @@ function print_nodes(ps: XMQPrintState, from: Node | null, only_first = false): 
         const last = only_first && stack.length === 0;
         if (!ps.compact && i === restart_find_at_node && !last)
         {
-            [max, restart_find_at_node] = find_element_key_max_width(i);
+            [max, restart_find_at_node] = find_element_key_max_width(ps, i);
         }
-        if (i.nodeType === 1 && i.firstChild !== null && !is_key_value_node(i))
+        if (i.nodeType === 1 && first_child(ps, i) !== null && !is_key_value_node(ps, i))
         {
             // Java print_element_with_children.
             const element = i as Element;
@@ -1538,16 +1637,16 @@ function print_nodes(ps: XMQPrintState, from: Node | null, only_first = false): 
             check_space_before_opening_brace(ps);
             print_utf8(ps, "{");
 
-            stack.push({ next: last ? null : i.nextSibling, restart_find_at_node, max, old_line_indent: ps.line_indent });
+            stack.push({ next: last ? null : next_sibling(ps, i), restart_find_at_node, max, old_line_indent: ps.line_indent });
             ps.line_indent += ps.indent_amount;
 
-            i = element.firstChild;
+            i = first_child(ps, element);
             restart_find_at_node = i;
             max = 0;
             continue;
         }
         print_node(ps, i, max);
-        i = last ? null : i.nextSibling;
+        i = last ? null : next_sibling(ps, i);
     }
 }
 
@@ -1561,18 +1660,18 @@ function is_content_node(node: Node): boolean
  * Java XMQPrinter.is_key_value_node: a single content or entity child, or several text
  * or entity children.
  */
-function is_key_value_node(node: Node): boolean
+function is_key_value_node(ps: XMQPrintState, node: Node): boolean
 {
     if (node.nodeType !== 1) return false;
-    const from = node.firstChild;
-    const to = node.lastChild;
+    const from = first_child(ps, node);
+    const to = last_child(ps, node);
 
     // Single content or entity node.
     if (from !== null && from === to && (from.nodeType === 3 || from.nodeType === 4)) return true;
     if (from === null) return false;
 
     // Multiple text or entity nodes.
-    for (let i: Node | null = from; i !== null; i = i.nextSibling)
+    for (let i: Node | null = from; i !== null; i = next_sibling(ps, i))
     {
         if (i.nodeType !== 3) return false;
     }
@@ -1606,7 +1705,7 @@ function print_node(ps: XMQPrintState, n: Node, align: number): void
     else if (n.nodeType === 1)
     {
         const e = n as Element;
-        if (e.firstChild === null)
+        if (first_child(ps, e) === null)
         {
             // A node with no children, ie br
             print_element_name_and_attributes(ps, e);
@@ -1747,7 +1846,7 @@ function print_comment_lines(ps: XMQPrintState, content: string, compact: boolea
 /** Java XMQPrinter.print_comment_node */
 function print_comment_node(ps: XMQPrintState, comment: Comment): void
 {
-    const content = comment.data;
+    const content = trimmed_text(ps, comment)!;
 
     check_space_before_comment(ps);
 
@@ -1820,6 +1919,12 @@ function print_pi_node(ps: XMQPrintState, node: ProcessingInstruction): void
 /** A public or system id quoted like libxml2 xmlBufWriteQuotedString. */
 function quoted_id(s: string): string
 {
+    // @xmldom/xmldom keeps the quotes of the ids it parses, eg "-//W3C//DTD HTML 4.01//EN"
+    // with the quotes. An id cannot contain the quote that delimits it, so remove them.
+    if (s.length >= 2 && (s.charAt(0) === "\"" || s.charAt(0) === "'") && s.charAt(s.length - 1) === s.charAt(0))
+    {
+        s = s.substring(1, s.length - 1);
+    }
     if (s.indexOf("\"") < 0) return "\"" + s + "\"";
     if (s.indexOf("'") < 0) return "'" + s + "'";
     return "\"" + s.replace(/"/g, "&#x22;") + "\"";
@@ -1903,10 +2008,10 @@ function subset_parts(subset: string): string[]
  * The doctype as libxml2 dumps it (xmlDtdDumpOutput), without <!DOCTYPE and >: the name,
  * the public and system ids, and an internal subset as [, a newline, every declaration
  * on its own line and ]. A W3C DOM has no internal subset, it is taken from the doctype
- * text that the xmq parser read, and its declarations are printed as they were written
+ * text that the xmq parser read (or the internalSubset of a DOM level 2), and its declarations are printed as they were written
  * (libxml2 writes them in its own normalized form).
  */
-function doctype_content(node: DocumentType): string
+function doctype_content(ps: XMQPrintState, node: DocumentType): string
 {
     let c = node.name;
     if (node.publicId !== null && node.publicId !== "")
@@ -1918,13 +2023,23 @@ function doctype_content(node: DocumentType): string
     {
         c += " SYSTEM " + quoted_id(node.systemId);
     }
+    // The doctype text of the xmq parser, or the internalSubset of the DOM (DOM level 2,
+    // eg @xmldom/xmldom, a browser has none).
     const text = doctypeText(node);
-    const subset = text === undefined ? null : internal_subset(text);
+    const dom_subset = (node as { internalSubset?: string | null }).internalSubset;
+    const subset = text !== undefined ? internal_subset(text) : (dom_subset ? dom_subset : null);
     if (subset !== null)
     {
         c += " [\n";
-        for (const p of subset_parts(subset))
+        for (let p of subset_parts(subset))
         {
+            if (p.startsWith("<!--") && ps.trim)
+            {
+                // C trims the comments of the internal subset too, they are nodes of the dtd.
+                const t = trim_content(p.substring(4, p.endsWith("-->") ? p.length - 3 : p.length), true);
+                if (t === null) continue;
+                p = "<!--" + t + "-->";
+            }
             // libxml2 ends every declaration with a newline, but not a comment or a pi.
             c += p + (p.startsWith("<!--") || p.startsWith("<?") ? "" : "\n");
         }
@@ -1942,7 +2057,7 @@ function print_doctype(ps: XMQPrintState, node: DocumentType): void
     print_utf8(ps, "=");
     if (!ps.compact) print_white_spaces(ps, 1);
 
-    let c = doctype_content(node);
+    let c = doctype_content(ps, node);
     if (ps.compact) c = c.replace(/\n/g, " ");
     print_value_string(ps, c, Level.ELEMENT_VALUE, false);
 }
@@ -1953,16 +2068,17 @@ function print_doctype(ps: XMQPrintState, node: DocumentType): void
  */
 export function print_xmq(node: Node, options: PrintOptions): string
 {
-    const ps = new XMQPrintState(options);
+    const doc = node.nodeType === 9 ? node as Document : node.ownerDocument;
+    const ps = new XMQPrintState(options, options.trim ?? !isXmqDocument(doc));
     if (node.nodeType === 9 || node.nodeType === 11)
     {
-        print_nodes(ps, node.firstChild);
+        print_nodes(ps, first_child(ps, node));
     }
     else if (node.nodeType === 2)
     {
         throw new Error("libxmq: an attribute cannot be printed as xmq, print its element");
     }
-    else
+    else if (!skipped(ps, node))
     {
         // Only this node, not its following siblings, like Java print_node(ps, node, 0).
         print_nodes(ps, node, true);
