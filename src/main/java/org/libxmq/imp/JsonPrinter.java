@@ -131,6 +131,23 @@ public class JsonPrinter extends XMQPrinter
         return attr(n, name) != null;
     }
 
+    // json_attribute_value in C: the value of an attribute in json, the same as the
+    // content of an element (see fixup_json and print_value): the text with the
+    // character entities replaced, or, when it contains an unknown entity, the text with
+    // every entity kept as &name;. attr_value would drop the entities.
+    static String attribute_value(XmlAttr a)
+    {
+        String collapsed = collapse_text(a);
+        if (collapsed != null) return collapsed;
+        StringBuilder b = new StringBuilder();
+        for (XmlNode c = a.firstChild(); c != null; c = c.next())
+        {
+            if (c.type() == XmlNodeType.ENTITY_REF) b.append("&").append(c.name()).append(";");
+            else if (c.content() != null) b.append(c.content());
+        }
+        return b.toString();
+    }
+
     // The value of an attribute. Entities are never expanded implicitly: a reference
     // to an entity contributes nothing, a character reference kept as a node (#65 or
     // #x41) contributes its character. Like xml_node_string_value in the C version.
@@ -359,28 +376,23 @@ public class JsonPrinter extends XMQPrinter
         else
         {
             print(ps, "\"");
-            if (is_entity(node))
+            // The text and the entities (kept as &name; when the content could not be
+            // collapsed by fixup_json, ie it contains an unknown entity) from from to to.
+            do
             {
-                write(ps, "&" + node.name() + ";");
-            }
-            else
-            {
-                do
+                if (is_entity(node))
                 {
-                    if (is_entity(node))
-                    {
-                        print(ps, "&" + node.name() + ";");
-                    }
-                    else
-                    {
-                        String value = element_content(node);
-                        if (value != null) print(ps, quote(value, false));
-                    }
-                    if (node == to) break;
-                    node = node.next();
+                    print(ps, "&" + node.name() + ";");
                 }
-                while (node != null);
+                else
+                {
+                    String value = element_content(node);
+                    if (value != null) print(ps, quote(value, false));
+                }
+                if (node == to) break;
+                node = node.next();
             }
+            while (node != null);
             print(ps, "\"");
             ps.last_char = '"';
         }
@@ -425,7 +437,7 @@ public class JsonPrinter extends XMQPrinter
         if (!compact(ps)) print(ps, " ");
         if (a.firstChild() != null)
         {
-            print(ps, quote(attr_value(a), true));
+            print(ps, quote(attribute_value(a), true));
         }
         else
         {

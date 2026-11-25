@@ -158,10 +158,10 @@ do
     check "entity cycle $cmd" 0 IGNORE IGNORE
 done
 $PROG $OUTPUT/entcycle.xml to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
-# Entities are never expanded implicitly, the entity reference in the attribute
-# contributes nothing to the json string (xmqExpandEntities expands them), the
-# reference in the content is kept (it is not a character entity).
-check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"alfa","|[0]":"X","&":"&copy;","|[1]":"Y"}' ''
+# Entities are never expanded implicitly (xmqExpandEntities expands them): the references
+# in the attribute and in the content are kept, they are not character entities. An
+# attribute value is printed like the content of an element.
+check "entity cycle to-json output" 0 '{"!DOCTYPE":"goo [\n<!ENTITY copy \"&#169;\">\n<!ENTITY prutt \"PRUTT&copy;\">\n]","_":"goo","_x":"&prutt;alfa","|[0]":"X","&":"&copy;","|[1]":"Y"}' ''
 
 # An element whose only content is an entity reference that is not a character
 # entity: the json value printer read the (missing) content of the reference.
@@ -170,10 +170,11 @@ $PROG $OUTPUT/entonly.xmq to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
 check "entity only to-json output" 0 '{"_":"a","d":"&e;"}' ''
 
 # An attribute that is only an undefined entity reference: xmlNodeListGetString
-# returns NULL, which crashed the json and clines printers.
+# returns NULL, which crashed the json and clines printers. In json &nbsp; is the
+# non-breaking space, like in the content of an element.
 echo 'alfa(c = &nbsp;) { x = 1 }' > $OUTPUT/undefent.xmq
 $PROG $OUTPUT/undefent.xmq to-json > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
-check "undefined entity attribute to-json" 0 '{"_":"alfa","_c":"","x":1}' ''
+check "undefined entity attribute to-json" 0 '{"_":"alfa","_c":" ","x":1}' ''
 $PROG $OUTPUT/undefent.xmq to-clines > $OUTPUT/out 2> $OUTPUT/err ; RC=$?
 check "undefined entity attribute to-clines" 0 '/alfa/@c=""
 /alfa/x="1"' ''

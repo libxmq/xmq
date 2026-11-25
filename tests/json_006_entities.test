@@ -1,0 +1,33 @@
+INPUT
+a(x = &nbsp;
+  y = ( &lt;
+        'q' )
+  z = ( &lt;
+        'q'
+        &foo; )
+  w = ( &#65;
+        'b' ))
+{
+    e = ( &lt;
+          'q'
+          &foo; )
+    f = ( &foo;
+          &bar; )
+    g = ( &gt;
+          '1'
+          &amp; )
+}
+OUTPUT
+{
+  "_": "a",
+  "_x": " ",
+  "_y": "<q",
+  "_z": "&lt;q&foo;",
+  "_w": "Ab",
+  "e": "&lt;q&foo;",
+  "f": "&foo;&bar;",
+  "g": ">1&"
+}
+COMPACT
+{"_":"a","_x":" ","_y":"<q","_z":"&lt;q&foo;","_w":"Ab","e":"&lt;q&foo;","f":"&foo;&bar;","g":">1&"}
+END

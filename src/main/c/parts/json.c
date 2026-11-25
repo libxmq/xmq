@@ -1173,37 +1173,30 @@ XMQStatus json_print_value(XMQPrintState *ps, XMQNode *from, XMQNode *to, Level 
     {
         print_utf8(ps, COLOR_none, 1, "\"", NULL);
 
-        if (is_entity_node(node))
+        // The text and the entities (kept as &name; when the content could not be
+        // collapsed by fixup_json, ie it contains an unknown entity) from from to to.
+        do
         {
-            write(writer_state, "&", NULL);
-            write(writer_state, xml_node_name(node), NULL);
-            write(writer_state, ";", NULL);
-        }
-        else
-        {
-            do
+            if (is_entity_node(node))
             {
-                if (is_entity_node(node))
+                const char *name = xml_element_name(node);
+                print_utf8(ps, COLOR_none, 3, "&", NULL, name, NULL, ";", NULL);
+            }
+            else
+            {
+                const char *value = xml_element_content(node);
+                if (value)
                 {
-                    const char *name = xml_element_name(node);
-                    print_utf8(ps, COLOR_none, 3, "&", NULL, name, NULL, ";", NULL);
+                    XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
+                    if (rs.status != XMQ_OK) return rs.status;
+                    char *quoted_value = rs.string;
+                    print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
+                    free(quoted_value);
                 }
-                else
-                {
-                    const char *value = xml_element_content(node);
-                    if (value)
-                    {
-                        XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), false);
-                        if (rs.status != XMQ_OK) return rs.status;
-                        char *quoted_value = rs.string;
-                        print_utf8(ps, COLOR_none, 1, quoted_value, NULL);
-                        free(quoted_value);
-                    }
-                }
-                if (node == to) break;
-                node = xml_next_sibling(node);
-            } while (node);
-        }
+            }
+            if (node == to) break;
+            node = xml_next_sibling(node);
+        } while (node);
 
         print_utf8(ps, COLOR_none, 1, "\"", NULL);
         ps->last_char = '"';
@@ -1255,6 +1248,47 @@ void json_print_array_with_children(XMQPrintState *ps,
     ps->last_char = ']';
 }
 
+/** The value of an attribute in json, the same as the content of an element (see
+    fixup_json and json_print_value): the text with the character entities replaced,
+    or, when it contains an unknown entity, the text with every entity kept as &name;.
+    The string value of the attribute node would drop the entities. */
+static char *json_attribute_value(XMQAttr *a)
+{
+    XMQNode *node = xml_attr_node(a);
+    char *collapsed = xml_collapse_text(node);
+    if (collapsed) return collapsed;
+
+    size_t len = 0;
+    for (XMQNode *i = xml_first_child(node); i; i = xml_node_next(i))
+    {
+        if (xml_node_kind(i) == XML_DOM_ENTITY_REF) len += strlen(xml_node_name(i)) + 2;
+        else if (xml_node_content(i)) len += strlen(xml_node_content(i));
+    }
+    char *buf = (char*)malloc(len+1);
+    char *out = buf;
+    for (XMQNode *i = xml_first_child(node); i; i = xml_node_next(i))
+    {
+        if (xml_node_kind(i) == XML_DOM_ENTITY_REF)
+        {
+            const char *name = xml_node_name(i);
+            size_t l = strlen(name);
+            *out++ = '&';
+            memcpy(out, name, l);
+            out += l;
+            *out++ = ';';
+        }
+        else if (xml_node_content(i))
+        {
+            const char *c = xml_node_content(i);
+            size_t l = strlen(c);
+            memcpy(out, c, l);
+            out += l;
+        }
+    }
+    *out = 0;
+    return buf;
+}
+
 XMQStatus json_print_attribute(XMQPrintState *ps, XMQAttr *a)
 {
     const char *key;
@@ -1283,7 +1317,7 @@ XMQStatus json_print_attribute(XMQPrintState *ps, XMQAttr *a)
 
     if (xml_node_first_child(xml_attr_node(a)) != NULL)
     {
-        char *value = xml_node_string_value(xml_attr_node(a));
+        char *value = json_attribute_value(a);
         XMQReturnString rs = xmq_quote_as_c(value, value+strlen(value), true);
         if (rs.status != XMQ_OK) return rs.status;
         char *quoted_value = rs.string;
