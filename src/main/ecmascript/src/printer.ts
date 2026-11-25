@@ -65,7 +65,7 @@ enum Level
 type ValuePart = { text: string } | { entity: string };
 
 /** Java XMQPrintState with the OutputSettings that the printer uses. */
-class XMQPrintState
+export class XMQPrintState
 {
     current_indent = 0;
     line_indent = 0;
@@ -112,7 +112,7 @@ function char_count(c: number): number
 }
 
 /** Java XMQPrinter.write: a raw write that does not track the indentation. */
-function write(ps: XMQPrintState, s: string | null): void
+export function write(ps: XMQPrintState, s: string | null): void
 {
     if (s !== null) ps.buffer += s;
 }
@@ -122,7 +122,7 @@ function write(ps: XMQPrintState, s: string | null): void
  * xmqTrimWhitespace leaves it (trim_text_node, Java XmlTrim.trim_text_node), or null if
  * C removes the node. The entity text nodes of the xmq parser are never trimmed.
  */
-function trimmed_text(ps: XMQPrintState, n: Node): string | null
+export function trimmed_text(ps: XMQPrintState, n: Node): string | null
 {
     const data = (n as CharacterData).data;
     if (!ps.trim || entityName(n) !== null) return data;
@@ -156,7 +156,7 @@ function trim_content(data: string, is_comment: boolean): string | null
  * directly in a document. A W3C Document cannot have text (xmldom keeps the whitespace
  * between the top level nodes as text, a browser does not), C has none either.
  */
-function skipped(ps: XMQPrintState, n: Node): boolean
+export function skipped(ps: XMQPrintState, n: Node): boolean
 {
     const k = n.nodeType;
     if (k !== 3 && k !== 4 && k !== 8) return false;
@@ -165,7 +165,7 @@ function skipped(ps: XMQPrintState, n: Node): boolean
 }
 
 /** The first child that is printed. */
-function first_child(ps: XMQPrintState, n: Node): Node | null
+export function first_child(ps: XMQPrintState, n: Node): Node | null
 {
     let c = n.firstChild;
     while (c !== null && skipped(ps, c)) c = c.nextSibling;
@@ -173,15 +173,23 @@ function first_child(ps: XMQPrintState, n: Node): Node | null
 }
 
 /** The next sibling that is printed. */
-function next_sibling(ps: XMQPrintState, n: Node): Node | null
+export function next_sibling(ps: XMQPrintState, n: Node): Node | null
 {
     let c = n.nextSibling;
     while (c !== null && skipped(ps, c)) c = c.nextSibling;
     return c;
 }
 
+/** The previous sibling that is printed. */
+export function prev_sibling(ps: XMQPrintState, n: Node): Node | null
+{
+    let c = n.previousSibling;
+    while (c !== null && skipped(ps, c)) c = c.previousSibling;
+    return c;
+}
+
 /** The last child that is printed. */
-function last_child(ps: XMQPrintState, n: Node): Node | null
+export function last_child(ps: XMQPrintState, n: Node): Node | null
 {
     let c = n.lastChild;
     while (c !== null && skipped(ps, c)) c = c.previousSibling;
@@ -193,7 +201,7 @@ function last_child(ps: XMQPrintState, n: Node): Node | null
  * namespace without a prefix) has its localName, the nodeName is in upper case in the
  * html document of a browser.
  */
-function element_name(e: Element): string
+export function element_name(e: Element): string
 {
     return e.namespaceURI === XHTML_NS && e.prefix === null && e.localName !== null ? e.localName : e.nodeName;
 }
@@ -277,7 +285,7 @@ function need_separation_before_quote(c: string): boolean
 }
 
 /** Java XMQPrinter.print_white_spaces: indentation, printed with the indentation space string. */
-function print_white_spaces(ps: XMQPrintState, num: number): void
+export function print_white_spaces(ps: XMQPrintState, num: number): void
 {
     if (num > 0) write(ps, ps.indentation_space.repeat(num));
     ps.current_indent += num;
@@ -295,7 +303,7 @@ function print_nl(ps: XMQPrintState, prefix: string | null, postfix: string | nu
 }
 
 /** Java XMQPrinter.print_nl_and_indent */
-function print_nl_and_indent(ps: XMQPrintState, prefix: string | null, postfix: string | null): void
+export function print_nl_and_indent(ps: XMQPrintState, prefix: string | null, postfix: string | null): void
 {
     write(ps, postfix);
     write(ps, ps.explicit_nl);
@@ -399,7 +407,7 @@ function is_ns_declaration(a: Attr): boolean
 }
 
 /** The attributes of an element that are not namespace declarations (Java XmlElement.attributes). */
-function attributes(e: Element): Attr[]
+export function attributes(e: Element): Attr[]
 {
     const r: Attr[] = [];
     for (let i = 0; i < e.attributes.length; i++)
@@ -411,7 +419,7 @@ function attributes(e: Element): Attr[]
 }
 
 /** The namespace declarations of an element (Java XmlElement.nsDefs). */
-function ns_defs(e: Element): Attr[]
+export function ns_defs(e: Element): Attr[]
 {
     const r: Attr[] = [];
     for (let i = 0; i < e.attributes.length; i++)
@@ -423,7 +431,7 @@ function ns_defs(e: Element): Attr[]
 }
 
 /** The prefix of a namespace declaration, null for xmlns (Java XmlNs.prefix). */
-function ns_prefix(a: Attr): string | null
+export function ns_prefix(a: Attr): string | null
 {
     return a.name.startsWith("xmlns:") ? a.name.substring(6) : null;
 }
@@ -2011,7 +2019,7 @@ function subset_parts(subset: string): string[]
  * text that the xmq parser read (or the internalSubset of a DOM level 2), and its declarations are printed as they were written
  * (libxml2 writes them in its own normalized form).
  */
-function doctype_content(ps: XMQPrintState, node: DocumentType): string
+export function doctype_content(ps: XMQPrintState, node: DocumentType): string
 {
     let c = node.name;
     if (node.publicId !== null && node.publicId !== "")

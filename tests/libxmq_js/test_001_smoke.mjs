@@ -53,6 +53,9 @@ for (const [kind, lib] of [["esm", esm], ["cjs", cjs]])
     // Untrimmed the whitespace is printed, with a leading newline like C prints a leading
     // entity: printf '&#10;\n' | xmq --xmq - to-xmq
     check(kind + " print html untrimmed", lib.print(p.parentNode.firstChild, { trim: false }), "\n&#10;\n'  '");
+    // The same value as: printf "car(id=1){model=Volvo note='a b' nbsp=&nbsp;}\n" | xmq --xmq - to-json
+    check(kind + " json", JSON.stringify(lib.toJson(doc)), '{"_":"car","_id":"1","model":"Volvo","note":"a b","nbsp":"\u00a0"}');
+    check(kind + " json year", lib.toJson(lib.parse("car { year = 1999 ok = true }", { dom })).year, 1999);
     check(kind + " tokens", lib.tokenize("a=1", "debugtokens"), '[element_key "a" 1:1][equals "=" 1:2][element_value_text "1" 1:3]\n');
 }
 

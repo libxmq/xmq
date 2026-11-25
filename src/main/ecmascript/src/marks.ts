@@ -80,3 +80,29 @@ export function isXmqDocument(d: Document | null): boolean
 {
     return d !== null && xmq_documents.has(d);
 }
+
+/** A namespace declaration of an element, href null for a prefix that is never declared. */
+export interface NsDecl
+{
+    prefix: string | null;
+    href: string | null;
+}
+
+/**
+ * The namespace declarations of the elements that use a prefix that is never declared,
+ * in the order of the parser: a W3C DOM has no declaration without uri, C prints them as
+ * "_xmlns:p": null in json.
+ */
+const ns_decls = new WeakMap<object, NsDecl[]>();
+
+/** Remember all the namespace declarations of an element, also the undeclared prefixes. */
+export function markNsDecls(e: Element, decls: NsDecl[]): void
+{
+    ns_decls.set(e, decls);
+}
+
+/** The namespace declarations of an element with undeclared prefixes, or undefined. */
+export function nsDecls(e: Element): NsDecl[] | undefined
+{
+    return ns_decls.get(e);
+}

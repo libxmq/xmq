@@ -3,7 +3,7 @@
 // parsed into the DOM, 10001 are an error with the same message as the C xmq, and not a
 // stack overflow (node and the browsers have a much smaller stack than C and Java). The
 // 10000 nested elements also print as xmq, the same as xmq --xmq FILE to-xmq --indent=0
-// (with indentation the output is 400 MB).
+// (with indentation the output is 400 MB), and convert to json like xmq --xmq FILE to-json.
 //   node tests/libxmq_js/test_004_depth.mjs build/libxmq_js/package OUTPUT_DIR
 // The xmq binary is $XMQ, default build/default/release/xmq.
 import { spawnSync } from "node:child_process";
@@ -57,6 +57,29 @@ catch (e)
     err("print of " + MAX + " nested elements: " + e.message);
 }
 
+// Json: {"_":"a","a":{"a":...{"b":1}}}.
+try
+{
+    const cj = spawnSync(xmq, ["--xmq", ok_file, "to-json"], { encoding: "utf8", maxBuffer: 1 << 30 });
+    // JSON.stringify recurses, walk the value in a loop instead.
+    const expected = '{"_":"a",' + '"a":{'.repeat(MAX - 2) + '"b":1' + "}".repeat(MAX - 1);
+    let v = lib.toJson(lib.parse(ok_kv, { dom }));
+    let depth = 0;
+    if (v._ !== "a") err("json: no root name");
+    while (v !== undefined && v.a !== undefined && Object.keys(v).length <= 2)
+    {
+        v = v.a;
+        depth++;
+    }
+    if (cj.status !== 0) err("json: C failed " + cj.stderr);
+    else if (cj.stdout.trim() !== expected) err("json: C gives another json than expected");
+    else if (depth !== MAX - 2 || JSON.stringify(v) !== '{"b":1}') err("json of " + MAX + " nested elements differs from C, depth " + depth);
+}
+catch (e)
+{
+    err("json of " + MAX + " nested elements: " + e.message);
+}
+
 const deep = "a{".repeat(MAX + 1) + "}".repeat(MAX + 1) + "\n";
 const file = path.join(output, "deep.xmq");
 fs.writeFileSync(file, deep);
@@ -76,5 +99,5 @@ for (const [what, f] of [["parse", () => lib.parse(deep, { dom, source: file })]
     }
 }
 
-if (failed === 0) console.log("OK: depth (" + MAX + " nested elements parse and print, " + (MAX + 1) + " is the same error as " + xmq + ")");
+if (failed === 0) console.log("OK: depth (" + MAX + " nested elements parse, print and convert to json, " + (MAX + 1) + " is the same error as " + xmq + ")");
 process.exit(failed === 0 ? 0 : 1);

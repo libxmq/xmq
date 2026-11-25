@@ -6,13 +6,13 @@ the browser and node:
 - parse xmq into a W3C DOM document,
 - print a DOM as xmq, also the DOM of the page that a browser loaded from html (not yet
   the compact form),
-- convert a DOM to json, as a javascript value or as text (not yet).
+- convert a DOM to a javascript value with the json conventions of xmq.
 
 It is a port of the Java implementation of libxmq and gives the same result as the
 `xmq` command line, also the same error messages. It has no runtime dependencies.
 
 ```js
-import { parse, print, XMQParseError } from "libxmq";
+import { parse, print, toJson, XMQParseError } from "libxmq";
 
 // In a browser the DOM of the browser is used.
 const doc = parse("car { model = Volvo }");
@@ -36,6 +36,9 @@ console.log(print(doc, { indent: 2 }));
 // In a browser: the page as xmq, trimmed like xmq page.html.
 console.log(print(document));
 
+// { _: "car", model: "Volvo" }, the value of the json of xmq to-json.
+const car = toJson(doc);
+
 try
 {
     parse("a = (x)", { source: "my.xmq" });
@@ -57,6 +60,18 @@ Printing trims the whitespace like the xmq command line does when it reads xml o
 indentation is removed from the text and the comments. The DOM is not changed. A document
 that `parse` made is printed untrimmed, as C never trims xmq; the option `trim: true` or
 `trim: false` decides it yourself.
+
+`toJson` builds the javascript objects and arrays directly, with the conventions of `xmq
+to-json`: the root element name is `_`, an attribute `x` is `_x`, repeated names get `[0]`,
+`[1]`..., text between elements is `|`, a comment `//`, an array is an element with the
+attribute `A`. Numbers, `true`, `false` and `null` become javascript values unless the
+element has the attribute `S`. Where xmq prints something that is not one json value, the
+value is: a comment, text or entity at the top or in an array is an object of its own,
+eg `{ "//": "comment" }`, and several values at the top (eg a processing instruction
+before the root element) are an array. As javascript objects: a key that looks like an
+array index (eg `"12"`, possible through the `_` attribute) comes first in the object,
+two equal keys (an element `_x` and an attribute `x`) keep the last value, and a large
+integer loses precision like any javascript number.
 
 ## Differences from the C and Java libxmq
 

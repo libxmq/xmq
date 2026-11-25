@@ -1,0 +1,5 @@
+# The cases of test_008_json.mjs where toJson of libxmq for javascript gives another value than C:
+# name|reason
+tests/ixml/correct/unicode-classes.output.xml|xmldom reads U+2028 and U+2029 as a newline (xml 1.1 line end normalization in an xml 1.0 document), the DOM differs, not the conversion
+tests/libxml2/result/namespaces/err_9.xml|two attributes with the same namespace and local name (a:err and b:err, both bound to one uri): libxml2 keeps both, a W3C DOM keeps one
+tests/libxml2/test/namespaces/err_9.xml|two attributes with the same namespace and local name (a:err and b:err, both bound to one uri): libxml2 keeps both, a W3C DOM keeps one

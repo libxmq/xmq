@@ -9,7 +9,7 @@
  */
 
 import { ParseErrorCode } from "./errors.js";
-import { markAttrParts, markDoctype, markEntity, markXmqDocument, type AttrPart } from "./marks.js";
+import { markAttrParts, markDoctype, markEntity, markNsDecls, markXmqDocument, type AttrPart } from "./marks.js";
 import { XMQParser } from "./parser.js";
 import { TAttr, TDocument, TElement, TNode, TNs, XML_NS } from "./tree.js";
 import { unQuote } from "./trim.js";
@@ -674,11 +674,18 @@ function to_w3c_node(n: TNode, doc: Document): Node
         const href = t.ns !== null && t.ns.href !== null && t.ns.href !== "" ? t.ns.href : null;
         const e = href === null && t.ns !== null && t.ns.prefix !== null ? doc.createElement(q) : doc.createElementNS(href, q);
         // The namespace declarations first, like xml serializes them.
+        let undeclared = false;
         for (const d of t.nsDefs)
         {
-            if (d.href === null) continue;
+            if (d.href === null)
+            {
+                undeclared = true;
+                continue;
+            }
             e.setAttributeNS(XMLNS_NS, d.prefix === null ? "xmlns" : "xmlns:" + d.prefix, d.href);
         }
+        // The undeclared prefixes are not in the W3C DOM, remember them for json.
+        if (undeclared) markNsDecls(e, t.nsDefs.map(d => ({ prefix: d.prefix, href: d.href })));
         for (const a of t.attributes)
         {
             set_attribute(e, a);

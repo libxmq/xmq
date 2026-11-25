@@ -51,3 +51,9 @@ xmq (not the compact form yet) and convert a DOM to json.
 - **The DOM is printed as it is.** The printer does not emulate the html parser of C, eg
   a browser's `disabled=""` prints as `disabled`, not as C's `disabled = disabled`. Such
   differences come from the parsers and are listed as known differences.
+- **toJson builds javascript values, no json text.** The json conversion gives the
+  objects and arrays directly (the owner: "build real javascript objects, do not print
+  json"); there is no function that prints json text. The value is the one of the json
+  that `xmq to-json` prints. Where that text is not one json value, a comment, text or
+  entity at the top or in an array ("//":"c" without braces) is an object of its own,
+  and several values at the top (eg a pi before the root element) are an array.

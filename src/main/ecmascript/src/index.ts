@@ -8,12 +8,14 @@
 
 import { tree_to_document, XMQParseIntoDOM, type XmlTextParser } from "./dom.js";
 import { print_xmq, type PrintOptions } from "./printer.js";
+import { json_value, type JsonOptions, type JsonValue } from "./json.js";
 
 export { ParseErrorCode, parseErrorToString, XMQParseError } from "./errors.js";
 export { tokenize, type TokenizeType } from "./tokens.js";
 export { XMQDomError, type XmlTextParser } from "./dom.js";
 export { entityName, attrParts, doctypeText, type AttrPart } from "./marks.js";
 export { type PrintOptions } from "./printer.js";
+export { type JsonOptions, type JsonValue } from "./json.js";
 
 /** The options of parse. */
 export interface ParseOptions
@@ -89,4 +91,23 @@ export function parse(xmq: string, options: ParseOptions = {}): Document
 export function print(node: Node, options: PrintOptions = {}): string
 {
     return print_xmq(node, options);
+}
+
+/**
+ * Convert a DOM node to a javascript value with the json conventions of xmq, the value of
+ * the json that xmq FILE to-json prints: eg car { model = Volvo year = 1999 } gives
+ * { _: "car", model: "Volvo", year: 1999 }. The root element name is "_", attributes are
+ * "_name", repeated names get [n], text among elements is "|", a comment "//". Numbers
+ * become numbers, true false null become booleans and null. A DOM that parse did not make
+ * is trimmed like print trims it. Where xmq prints text that is not one json value: a
+ * comment, text or entity at the top or in an array is an object with its key, eg
+ * { "//": "comment" }, and several values at the top (eg a processing instruction before
+ * the root element) are an array.
+ * @param node The document, fragment or element.
+ * @param options trim, onWarning.
+ * @returns The value, undefined for an empty document.
+ */
+export function toJson(node: Node, options: JsonOptions = {}): JsonValue | undefined
+{
+    return json_value(node, options);
 }
