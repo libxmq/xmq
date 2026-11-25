@@ -75,6 +75,31 @@ attribute or decide which one is kept. In javascript the W3C DOM keeps only the 
 (`element(value = 123 value = 123)`); it is an expected difference of
 `tests/libxmq_js/test_005_print.mjs`.
 
+## Investigate an iterative xmq parser and printer in C
+
+The C xmq parser recurses once per nested body (`parse_xmq_element_internal` in
+`src/main/c/parts/xmq_parser.c`, limited by `XMQ_MAX_NESTING_DEPTH`, 10000). The xmq
+printer recurses through `print_nodes` and `print_element_with_children`
+(`src/main/c/parts/xmq_printer.c`), as does the json printer
+(`json_print_element_with_children` in `src/main/c/parts/json.c`). On a normal 8 MB stack
+this works for 10000 levels. A smaller stack does not: a thread, an embedded system, or
+the wasm build. `build/xmqjs` runs in a worker thread with a 64 MB stack for this reason.
+The Java CLI runs in a thread with a 1 GB stack (`Main.java`).
+
+libxmq for javascript has no recursion: the parse of a body is a loop with a counter of
+open bodies (`close_body` in `src/main/ecmascript/src/parser.ts`), and `print_nodes` in
+`printer.ts` keeps its own stack of the elements being printed. Investigate whether C
+(and then Java, they must stay identical) should do the same:
+
+- how much stack C uses per level today, for parse and print: measure with
+  `ulimit -s` and 10000 nested `a{`,
+- whether the same loops fit the C code without changing the output or the error
+  messages (`make test`, `make testcj`),
+- whether the wasm build could then use the normal stack and drop the worker thread.
+
+`tests/test_max_depth_parsers.sh` and `tests/libxmq_js/test_004_depth.mjs` test the depth
+limit.
+
 ## libxmq for javascript: limitations
 
 - **The doctype is not checked.** C and Java report `doctype could not be parsed`, the

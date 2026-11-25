@@ -29,3 +29,17 @@ xmq (not the compact form yet) and convert a DOM to json.
   gives the implicit root element (the `root` option of parse, like `--root` of the
   command line), and it is used as the root. Without it such xmq throws `XMQDomError`.
   There is no parse into a DocumentFragment.
+- **No recursion over the nesting levels.** The parser (`parse_xmq` in `parser.ts`), the
+  DOM building (`to_w3c` in `dom.ts`) and the printer (`print_nodes` in `printer.ts`)
+  loop instead of recursing once per nested element as Java and C do. The reason: the
+  mechanical port overflowed the stack of node at about 2500 levels, with a
+  `RangeError` instead of an xmq error. A browser's stack cannot be changed and differs
+  between engines, so a recursive library would fail at an engine dependent depth. The
+  iterative code is kept small: the parser needs only a counter of open bodies (after a
+  body Java does nothing but parse the `}`, now `close_body`), the printer a stack of
+  frames, the DOM building a worklist. So the javascript port accepts the same 10000
+  levels as C and Java, with the same error at 10001. The cost: these three places do
+  not read line for line like Java. Each has a comment naming the Java code it replaces;
+  when porting a later change of that Java or C code, code that runs after the recursive
+  call belongs in `close_body` or where the printer pops a frame. `test_004_depth.mjs`
+  and the parse and print comparisons with C guard it.
