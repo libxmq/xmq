@@ -548,6 +548,53 @@ public final class XmlParser
         final String qname;
         final int line;
         boolean prefixed; // The name has a namespace prefix.
+        boolean declares; // The element declares namespaces, it is in ns_open_.
+    }
+
+    /** The open elements that declare namespaces, innermost last, see lookup_ns. */
+    private final List<XmlElement> ns_open_ = new ArrayList<>();
+    /** The node that the content of parse_content_chunk is parsed into, null for a document. */
+    private XmlNode ns_below_;
+
+    void push_open(List<Open> stack, Open o)
+    {
+        stack.add(o);
+        o.declares = !o.e.nsDefs().isEmpty();
+        if (o.declares) ns_open_.add(o.e);
+    }
+
+    void pop_open(List<Open> stack)
+    {
+        Open o = stack.remove(stack.size() - 1);
+        if (o.declares) ns_open_.remove(ns_open_.size() - 1);
+    }
+
+    static XmlNs declared_on(XmlElement e, String prefix)
+    {
+        for (XmlNs ns : e.nsDefs())
+        {
+            if (java.util.Objects.equals(ns.prefix(), prefix)) return ns;
+        }
+        return null;
+    }
+
+    /**
+     * The namespace of prefix in scope at e, the element of the start tag being parsed (not yet
+     * pushed), like e.searchNs(prefix). That walks all the ancestors, which is quadratic in the
+     * depth of a deep document, here only the open elements that declare namespaces are visited,
+     * then the ancestors of the node that a content chunk is parsed into.
+     */
+    XmlNs lookup_ns(XmlElement e, String prefix)
+    {
+        if ("xml".equals(prefix)) return XmlElement.XML_NS;
+        XmlNs d = declared_on(e, prefix);
+        if (d != null) return d;
+        for (int k = ns_open_.size() - 1; k >= 0; k--)
+        {
+            d = declared_on(ns_open_.get(k), prefix);
+            if (d != null) return d;
+        }
+        return ns_below_ instanceof XmlElement b ? b.searchNs(prefix) : null;
     }
 
     void parse_element_tree() throws XmlParseException
@@ -556,7 +603,7 @@ public final class XmlParser
         open_depth_ = 0;
         Open root = parse_start_tag();
         if (root == null) return;
-        stack.add(root);
+        push_open(stack, root);
         while (!stack.isEmpty())
         {
             Open top = stack.get(stack.size() - 1);
@@ -571,7 +618,7 @@ public final class XmlParser
                 if (n == '/')
                 {
                     parse_end_tag(top);
-                    stack.remove(stack.size() - 1);
+                    pop_open(stack);
                     node_ = stack.isEmpty() ? doc_ : stack.get(stack.size() - 1).e;
                     if (!space_.isEmpty()) space_.remove(space_.size() - 1);
                 }
@@ -595,7 +642,7 @@ public final class XmlParser
                 {
                     open_depth_ = stack.size();
                     Open child = parse_start_tag();
-                    if (child != null) stack.add(child);
+                    if (child != null) push_open(stack, child);
                 }
             }
             else if (c == '&')
@@ -618,6 +665,7 @@ public final class XmlParser
     {
         doc_ = doc;
         node_ = parent;
+        ns_below_ = parent;
         XmlDtd dtd = doc.intSubset();
         has_external_subset_ = dtd != null && (dtd.systemId() != null || dtd.externalId() != null);
         has_pe_refs_ = dtd != null && dtd.has_pe_refs_;
@@ -633,7 +681,7 @@ public final class XmlParser
                     if (stack.isEmpty()) throw fatal("chunk is not well balanced");
                     Open top = stack.get(stack.size() - 1);
                     parse_end_tag(top);
-                    stack.remove(stack.size() - 1);
+                    pop_open(stack);
                     node_ = stack.isEmpty() ? parent : stack.get(stack.size() - 1).e;
                     if (!space_.isEmpty()) space_.remove(space_.size() - 1);
                 }
@@ -645,7 +693,7 @@ public final class XmlParser
                 {
                     open_depth_ = stack.size();
                     Open child = parse_start_tag();
-                    if (child != null) stack.add(child);
+                    if (child != null) push_open(stack, child);
                 }
             }
             else if (c == '&')
@@ -919,7 +967,7 @@ public final class XmlParser
         node_.appendRaw(e);
 
         // Resolve the element namespace.
-        XmlNs ens = e.searchNs(qn[0]);
+        XmlNs ens = lookup_ns(e, qn[0]);
         boolean eprefix_undefined = qn[0] != null && ens == null;
         if (eprefix_undefined)
         {
@@ -942,7 +990,7 @@ public final class XmlParser
             String uri = null;
             if (ra.prefix != null)
             {
-                XmlNs ans = e.searchNs(ra.prefix);
+                XmlNs ans = lookup_ns(e, ra.prefix);
                 if (ans == null)
                 {
                     message("namespace error", "Namespace prefix " + ra.prefix + " for " + ra.local + " on " + qn[1] + " is not defined", tag_end);
@@ -999,7 +1047,7 @@ public final class XmlParser
                 if (colon >= 0)
                 {
                     String apfx = d[0].substring(0, colon);
-                    ans = e.searchNs(apfx);
+                    ans = lookup_ns(e, apfx);
                     if (ans == null)
                     {
                         message("namespace error", "Namespace prefix " + apfx + " for " + local + " on " + qn[1] + " is not defined", tag_end);

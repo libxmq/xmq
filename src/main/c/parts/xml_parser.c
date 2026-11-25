@@ -71,6 +71,7 @@ typedef struct
     size_t line;
     int space;        // xml:space state: -1 default, 1 preserve, 0 default declared, -2 mixed content seen.
     bool prefixed;    // The name has a namespace prefix.
+    size_t ns_open;   // 1 + the index of the nearest open element, this or an enclosing one, that declares namespaces, 0 if none.
 } XmlOpen;
 
 typedef struct
@@ -117,6 +118,7 @@ typedef struct
     XmlOpen *stack;
     size_t depth;
     size_t stack_cap;
+    size_t ns_base_depth; // The open elements from this depth are the ones of the chunk being parsed, see xml_lookup_ns.
 
     XmlPBuf text;     // Pending character data for the current parent.
     bool has_text;
@@ -1294,6 +1296,7 @@ static void xml_push_open(XmlParser *p, XMQNode *e, const char *qname, size_t li
         p->stack = (XmlOpen*)realloc(p->stack, p->stack_cap * sizeof(XmlOpen));
     }
     XmlOpen *o = &p->stack[p->depth++];
+    o->ns_open = xml_node_first_ns_decl(e) ? p->depth : (p->depth > 1 ? p->stack[p->depth-2].ns_open : 0);
     o->element = e;
     o->qname = xml_parser_strdup(qname);
     o->line = line;
@@ -1303,6 +1306,37 @@ static void xml_push_open(XmlParser *p, XMQNode *e, const char *qname, size_t li
 static XmlOpen *xml_top(XmlParser *p)
 {
     return p->depth ? &p->stack[p->depth-1] : NULL;
+}
+
+static XmlNs *xml_ns_declared_on(const XMQNode *e, const char *prefix)
+{
+    for (XmlNs *d = xml_node_first_ns_decl(e); d; d = xml_ns_next_decl(d))
+    {
+        const char *dp = xml_ns_prefix(d);
+        if (dp == prefix || (dp && prefix && !strcmp(dp, prefix))) return d;
+    }
+    return NULL;
+}
+
+/** The namespace of prefix in scope at e, the element of the start tag being parsed (not yet
+    pushed), like xml_ns_lookup_prefix(e, prefix). That walks all the ancestors, which is
+    quadratic in the depth of a deep document, here only the open elements that declare
+    namespaces are visited (the ns_open chain), then the ancestors below the open elements of
+    the chunk being parsed (the document, or the node an entity is expanded into). */
+static XmlNs *xml_lookup_ns(XmlParser *p, XMQNode *e, const char *prefix)
+{
+    if (prefix && !strcmp(prefix, "xml")) return xml_ns_lookup_prefix(e, prefix);
+    XmlNs *d = xml_ns_declared_on(e, prefix);
+    if (d) return d;
+    size_t k = p->depth ? p->stack[p->depth-1].ns_open : 0;
+    while (k > p->ns_base_depth)
+    {
+        d = xml_ns_declared_on(p->stack[k-1].element, prefix);
+        if (d) return d;
+        k = k > 1 ? p->stack[k-2].ns_open : 0;
+    }
+    XMQNode *below = p->depth > p->ns_base_depth ? xml_node_parent(p->stack[p->ns_base_depth].element) : xml_node_parent(e);
+    return below ? xml_ns_lookup_prefix(below, prefix) : NULL;
 }
 
 static bool xml_raw_attr_is_xmlns(const XmlRawAttr *ra, XmlSlice *prefix)
@@ -1567,7 +1601,7 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     // Resolve the element namespace.
     const char *eprefix = qn.prefix.s ? xml_tmp_slice(p, 1, qn.prefix) : NULL;
-    XmlNs *ens = xml_ns_lookup_prefix(e, eprefix);
+    XmlNs *ens = xml_lookup_ns(p, e, eprefix);
     bool eprefix_undefined = eprefix && !ens;
     if (eprefix_undefined)
     {
@@ -1595,7 +1629,7 @@ static bool xml_parse_start_tag(XmlParser *p)
         if (ra->name.prefix.s)
         {
             const char *apfx = xml_tmp_slice(p, 0, ra->name.prefix);
-            ans = xml_ns_lookup_prefix(e, apfx);
+            ans = xml_lookup_ns(p, e, apfx);
             if (!ans)
             {
                 xml_parser_message(p, "namespace error", tag_end, "Namespace prefix %s for %s on %.*s is not defined",
@@ -1673,7 +1707,7 @@ static bool xml_parse_start_tag(XmlParser *p)
             if (colon)
             {
                 const char *apfx = xml_tmp(p, 0, d->attr, (size_t)(colon - d->attr));
-                ans = xml_ns_lookup_prefix(e, apfx);
+                ans = xml_lookup_ns(p, e, apfx);
                 if (!ans)
                 {
                     xml_parser_message(p, "namespace error", tag_end, "Namespace prefix %s for %s on %.*s is not defined",
@@ -3127,6 +3161,8 @@ static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
     xml_normalize_eol(p);
     XMQNode *base = p->node;
     size_t base_depth = p->depth;
+    size_t outer_ns_base_depth = p->ns_base_depth;
+    p->ns_base_depth = base_depth;
     while (!xml_eof(p))
     {
         char c = xml_cur(p);
@@ -3163,6 +3199,7 @@ static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
         XmlOpen *top = xml_top(p);
         xml_parser_fatal(p, p->i, "Premature end of data in tag %s line %zu", top->qname, top->line);
     }
+    p->ns_base_depth = outer_ns_base_depth;
     xml_flush_text(p);
 }
 
