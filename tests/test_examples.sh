@@ -45,12 +45,17 @@ check()
     fi
 }
 
+# Build the C examples with the compiler that built libxmq, CC in the spec.mk of the build
+# (build/<host>/spec.mk for build/<host>/release), eg filcc, otherwise gcc.
+CC=$(sed -n 's/^CC:=//p' "$(dirname "$LIBDIR")/spec.mk" 2>/dev/null)
+CC=${CC:-gcc}
+
 for d in "$OUT"/c/*/
 do
     name=$(basename "$d")
     # A binary copied from the source tree could look up to date, remove it.
     make -s -C "$d" clean > /dev/null
-    if ! make -s -C "$d" XMQ_ROOT="$ROOT" LIBDIR="$LIBDIR" CFLAGS="-g -O0 -Wall -Werror" > "$OUT/$name.c.build" 2>&1
+    if ! make -s -C "$d" CC="$CC" XMQ_ROOT="$ROOT" LIBDIR="$LIBDIR" CFLAGS="-g -O0 -Wall -Werror" > "$OUT/$name.c.build" 2>&1
     then
         echo "ERROR: C example $name failed to build"
         cat "$OUT/$name.c.build"

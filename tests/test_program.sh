@@ -39,8 +39,14 @@ then
     LDLIBS=""
 fi
 
-gcc $CFLAGS -c -I src/main/c -o $OUTPUT/test.o $TEST_FILE
-gcc $LDFLAGS -o $OUTPUT/test $OUTPUT/test.o $LDLIBS  $LIB -lxml2 -lm
+# Compile and link with the compiler that built libxmq, CC in the spec.mk of the build
+# (build/<host>/spec.mk for build/<host>/release/libxmq.a), eg filcc, otherwise gcc.
+SPEC="$(dirname "$(dirname "$LIB")")/spec.mk"
+CC=$(sed -n 's/^CC:=//p' "$SPEC" 2>/dev/null)
+CC=${CC:-gcc}
+
+$CC $CFLAGS -c -I src/main/c -o $OUTPUT/test.o $TEST_FILE
+$CC $LDFLAGS -o $OUTPUT/test $OUTPUT/test.o $LDLIBS $LIB -lm
 
 cp tests/${TEST_NAME}.* ${OUTPUT}
 rm -f ${OUTPUT}/test.gcda
