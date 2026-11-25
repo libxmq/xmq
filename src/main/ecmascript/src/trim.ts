@@ -104,7 +104,9 @@ function calculate_incidental_indent(b: string, start: number, stop: number): nu
         while (i < stop && b.charAt(i) !== "\n") i++;
         if (i >= stop) break;
     }
-    return indent;
+    // In C both no newline and no line with content are (size_t)-1, then nothing is
+    // trimmed. Java returns Long.MAX_VALUE for no line with content, and then trims.
+    return indent === SIZE_MAX ? -1 : indent;
 }
 
 /** XmqTrim.has_leading_space_nl (has_leading_space_nl in text.c): a newline before the content. */

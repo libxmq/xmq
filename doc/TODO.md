@@ -100,6 +100,18 @@ open bodies (`close_body` in `src/main/ecmascript/src/parser.ts`), and `print_no
 `tests/test_max_depth_parsers.sh` and `tests/libxmq_js/test_004_depth.mjs` test the depth
 limit.
 
+## The Java xmq quote trimming differs from C when a line starts with CR
+
+`printf "a = 'x\n\r y'\n" | xmq - tokenize --type=debugcontent` gives `{quote "x\n\r y"}`:
+C finds no line with content after the first (the line starting with CR does not count),
+so there is no incidental indentation and nothing is trimmed. For this input `xmqj ...
+to-xml` prints `<a>x\n\ny</a>`, C `<a>x\n&#13; y</a>`. The javascript port had the same
+code as Java and gave the same `x\n\ny`: in `calculate_incidental_indent` C returns `(size_t)-1`
+both when there is no newline and when no line has content, and both mean "do not trim".
+Java `XmqTrim.calculate_incidental_indent` returns `-1` for the first case but
+`Long.MAX_VALUE` for the second, and then trims. Fixed in javascript, `test_002_trim.mjs`
+now has quotes with CR and tabs. Java needs the same fix.
+
 ## libxmq for javascript: limitations
 
 - **The doctype is not checked.** C and Java report `doctype could not be parsed`, the
