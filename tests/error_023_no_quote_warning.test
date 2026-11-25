@@ -1,0 +1,9 @@
+START
+?xml-stylesheet = 'href="s.css"'
+config(id = 7) // A comment ends the element.
+{ a = 1 }
+ERROR
+.../error_023_no_quote_warning.input:3:1: error: unexpected character "{" U+7B
+{ a = 1 }
+ ^
+END

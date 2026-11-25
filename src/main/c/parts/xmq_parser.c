@@ -1371,10 +1371,15 @@ bool possibly_need_more_quotes(XMQParseState *state)
     // Any non-quote quote non-quote, is suspicios: for example: g's t's
     // or e'l or y'v etc....
     // But do not trigger on [space]'x since that is probably a valid quote start.
+    // A false ending is followed by the rest of the word, eg the s in There's, a
+    // proper ending is followed by whitespace, a parenthesis or a brace, eg
+    // ?xml-stylesheet = 'href="s.css"' is not suspicious.
     if (c0 != '\'' &&
         c0 != ' ' &&
         c1 == '\'' &&
-        c2 != '\'') return true;
+        c2 != '\'' &&
+        c2 != 0 &&
+        !strchr(" \t\r\n(){}", c2)) return true;
 
     return false;
 

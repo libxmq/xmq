@@ -27110,45 +27110,79 @@ static size_t xml_node_size(XmlNodeKind kind)
     }
 }
 
+/** Set the dom of the node, its attributes, descendants and notations. Iterative, not recursive,
+    so that a deeply nested tree does not overflow the stack: the stack (on the heap) holds the
+    first nodes of the sibling lists (children and attributes) still to visit. */
 static void xml_node_set_dom_recursive(XMQNode *n, XmlDom *dom)
 {
-    n->dom = dom;
-    for (XMQAttr *a = n->first_attr; a; a = (XMQAttr*)a->node.next) xml_node_set_dom_recursive(&a->node, dom);
-    for (XMQNode *c = n->first_child; c; c = c->next) xml_node_set_dom_recursive(c, dom);
-    if (n->kind == XML_DOM_DTD)
+    size_t cap = 64;
+    size_t len = 0;
+    XMQNode **stack = (XMQNode**)malloc(cap * sizeof(XMQNode*));
+    assert(stack);
+
+    XMQNode *x = n;
+    for (;;)
     {
-        for (XMQNode *c = ((XmlDtd*)n)->first_notation; c; c = c->next) c->dom = dom;
+        x->dom = dom;
+        if (x->kind == XML_DOM_DTD)
+        {
+            for (XMQNode *c = ((XmlDtd*)x)->first_notation; c; c = c->next) c->dom = dom;
+        }
+        XMQNode *push[3] = {
+            x != n ? x->next : NULL, // The siblings of n itself are not visited.
+            x->first_attr ? &x->first_attr->node : NULL,
+            x->first_child };
+        for (int i = 0; i < 3; ++i)
+        {
+            if (!push[i]) continue;
+            if (len == cap)
+            {
+                cap *= 2;
+                stack = (XMQNode**)realloc(stack, cap * sizeof(XMQNode*));
+                assert(stack);
+            }
+            stack[len++] = push[i];
+        }
+        if (len == 0) break;
+        x = stack[--len];
     }
+    free(stack);
 }
 
-static void xml_node_free_contents(XMQNode *n);
-
-static void xml_node_free_unlinked(XMQNode *n)
+/** Move the children, attributes and notations of n first onto the list (linked with next),
+    n no longer has any of them. */
+static XMQNode *xml_node_move_descendants_to_list(XMQNode *n, XMQNode *list)
 {
-    xml_node_free_contents(n);
-    free(n);
-}
-
-static void xml_node_free_contents(XMQNode *n)
-{
-    XMQNode *c = n->first_child;
-    while (c)
+    if (n->first_child)
     {
-        XMQNode *next = c->next;
-        xml_node_free_unlinked(c);
-        c = next;
+        n->last_child->next = list;
+        list = n->first_child;
     }
     n->first_child = n->last_child = NULL;
 
-    XMQAttr *a = n->first_attr;
-    while (a)
+    if (n->first_attr)
     {
-        XMQAttr *next = (XMQAttr*)a->node.next;
-        xml_node_free_unlinked(&a->node);
-        a = next;
+        n->last_attr->node.next = list;
+        list = &n->first_attr->node;
     }
     n->first_attr = n->last_attr = NULL;
 
+    if (n->kind == XML_DOM_DTD)
+    {
+        XmlDtd *dtd = (XmlDtd*)n;
+        if (dtd->first_notation)
+        {
+            dtd->last_notation->next = list;
+            list = dtd->first_notation;
+        }
+        dtd->first_notation = dtd->last_notation = NULL;
+    }
+    return list;
+}
+
+/** Free what the node owns except its children, attributes and notations. */
+static void xml_node_free_own(XMQNode *n)
+{
     XmlNs *d = n->ns_defs;
     while (d)
     {
@@ -27169,15 +27203,7 @@ static void xml_node_free_contents(XMQNode *n)
         XmlDtd *dtd = (XmlDtd*)n;
         free(dtd->public_id);
         free(dtd->system_id);
-        XMQNode *i = dtd->first_notation;
-        while (i)
-        {
-            XMQNode *next = i->next;
-            xml_node_free_unlinked(i);
-            i = next;
-        }
         dtd->public_id = dtd->system_id = NULL;
-        dtd->first_notation = dtd->last_notation = NULL;
         break;
     }
     case XML_DOM_ENTITY_DECL:
@@ -27204,6 +27230,29 @@ static void xml_node_free_contents(XMQNode *n)
     n->name = NULL;
     free(n->content);
     n->content = NULL;
+}
+
+/** Free the content of n (its descendants, attributes and what it owns), but not n itself.
+    Iterative, not recursive, so that a deeply nested document does not overflow the stack:
+    the nodes to free are kept in a list linked with next, each node freed first moves its
+    own children, attributes and notations onto the list. */
+static void xml_node_free_contents(XMQNode *n)
+{
+    XMQNode *list = xml_node_move_descendants_to_list(n, NULL);
+    while (list)
+    {
+        XMQNode *c = list;
+        list = xml_node_move_descendants_to_list(c, c->next);
+        xml_node_free_own(c);
+        free(c);
+    }
+    xml_node_free_own(n);
+}
+
+static void xml_node_free_unlinked(XMQNode *n)
+{
+    xml_node_free_contents(n);
+    free(n);
 }
 
 // Dom ////////////////////////////////////////////////////////////
@@ -28581,6 +28630,7 @@ typedef struct
     size_t line;
     int space;        // xml:space state: -1 default, 1 preserve, 0 default declared, -2 mixed content seen.
     bool prefixed;    // The name has a namespace prefix.
+    size_t ns_open;   // 1 + the index of the nearest open element, this or an enclosing one, that declares namespaces, 0 if none.
 } XmlOpen;
 
 typedef struct
@@ -28627,6 +28677,7 @@ typedef struct
     XmlOpen *stack;
     size_t depth;
     size_t stack_cap;
+    size_t ns_base_depth; // The open elements from this depth are the ones of the chunk being parsed, see xml_lookup_ns.
 
     XmlPBuf text;     // Pending character data for the current parent.
     bool has_text;
@@ -29804,6 +29855,7 @@ static void xml_push_open(XmlParser *p, XMQNode *e, const char *qname, size_t li
         p->stack = (XmlOpen*)realloc(p->stack, p->stack_cap * sizeof(XmlOpen));
     }
     XmlOpen *o = &p->stack[p->depth++];
+    o->ns_open = xml_node_first_ns_decl(e) ? p->depth : (p->depth > 1 ? p->stack[p->depth-2].ns_open : 0);
     o->element = e;
     o->qname = xml_parser_strdup(qname);
     o->line = line;
@@ -29813,6 +29865,37 @@ static void xml_push_open(XmlParser *p, XMQNode *e, const char *qname, size_t li
 static XmlOpen *xml_top(XmlParser *p)
 {
     return p->depth ? &p->stack[p->depth-1] : NULL;
+}
+
+static XmlNs *xml_ns_declared_on(const XMQNode *e, const char *prefix)
+{
+    for (XmlNs *d = xml_node_first_ns_decl(e); d; d = xml_ns_next_decl(d))
+    {
+        const char *dp = xml_ns_prefix(d);
+        if (dp == prefix || (dp && prefix && !strcmp(dp, prefix))) return d;
+    }
+    return NULL;
+}
+
+/** The namespace of prefix in scope at e, the element of the start tag being parsed (not yet
+    pushed), like xml_ns_lookup_prefix(e, prefix). That walks all the ancestors, which is
+    quadratic in the depth of a deep document, here only the open elements that declare
+    namespaces are visited (the ns_open chain), then the ancestors below the open elements of
+    the chunk being parsed (the document, or the node an entity is expanded into). */
+static XmlNs *xml_lookup_ns(XmlParser *p, XMQNode *e, const char *prefix)
+{
+    if (prefix && !strcmp(prefix, "xml")) return xml_ns_lookup_prefix(e, prefix);
+    XmlNs *d = xml_ns_declared_on(e, prefix);
+    if (d) return d;
+    size_t k = p->depth ? p->stack[p->depth-1].ns_open : 0;
+    while (k > p->ns_base_depth)
+    {
+        d = xml_ns_declared_on(p->stack[k-1].element, prefix);
+        if (d) return d;
+        k = k > 1 ? p->stack[k-2].ns_open : 0;
+    }
+    XMQNode *below = p->depth > p->ns_base_depth ? xml_node_parent(p->stack[p->ns_base_depth].element) : xml_node_parent(e);
+    return below ? xml_ns_lookup_prefix(below, prefix) : NULL;
 }
 
 static bool xml_raw_attr_is_xmlns(const XmlRawAttr *ra, XmlSlice *prefix)
@@ -30077,7 +30160,7 @@ static bool xml_parse_start_tag(XmlParser *p)
 
     // Resolve the element namespace.
     const char *eprefix = qn.prefix.s ? xml_tmp_slice(p, 1, qn.prefix) : NULL;
-    XmlNs *ens = xml_ns_lookup_prefix(e, eprefix);
+    XmlNs *ens = xml_lookup_ns(p, e, eprefix);
     bool eprefix_undefined = eprefix && !ens;
     if (eprefix_undefined)
     {
@@ -30105,7 +30188,7 @@ static bool xml_parse_start_tag(XmlParser *p)
         if (ra->name.prefix.s)
         {
             const char *apfx = xml_tmp_slice(p, 0, ra->name.prefix);
-            ans = xml_ns_lookup_prefix(e, apfx);
+            ans = xml_lookup_ns(p, e, apfx);
             if (!ans)
             {
                 xml_parser_message(p, "namespace error", tag_end, "Namespace prefix %s for %s on %.*s is not defined",
@@ -30183,7 +30266,7 @@ static bool xml_parse_start_tag(XmlParser *p)
             if (colon)
             {
                 const char *apfx = xml_tmp(p, 0, d->attr, (size_t)(colon - d->attr));
-                ans = xml_ns_lookup_prefix(e, apfx);
+                ans = xml_lookup_ns(p, e, apfx);
                 if (!ans)
                 {
                     xml_parser_message(p, "namespace error", tag_end, "Namespace prefix %s for %s on %.*s is not defined",
@@ -31637,6 +31720,8 @@ static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
     xml_normalize_eol(p);
     XMQNode *base = p->node;
     size_t base_depth = p->depth;
+    size_t outer_ns_base_depth = p->ns_base_depth;
+    p->ns_base_depth = base_depth;
     while (!xml_eof(p))
     {
         char c = xml_cur(p);
@@ -31673,6 +31758,7 @@ static void xml_parse_content_chunk(XmlParser *p, const char *s, size_t len)
         XmlOpen *top = xml_top(p);
         xml_parser_fatal(p, p->i, "Premature end of data in tag %s line %zu", top->qname, top->line);
     }
+    p->ns_base_depth = outer_ns_base_depth;
     xml_flush_text(p);
 }
 
@@ -101249,10 +101335,15 @@ bool possibly_need_more_quotes(XMQParseState *state)
     // Any non-quote quote non-quote, is suspicios: for example: g's t's
     // or e'l or y'v etc....
     // But do not trigger on [space]'x since that is probably a valid quote start.
+    // A false ending is followed by the rest of the word, eg the s in There's, a
+    // proper ending is followed by whitespace, a parenthesis or a brace, eg
+    // ?xml-stylesheet = 'href="s.css"' is not suspicious.
     if (c0 != '\'' &&
         c0 != ' ' &&
         c1 == '\'' &&
-        c2 != '\'') return true;
+        c2 != '\'' &&
+        c2 != 0 &&
+        !strchr(" \t\r\n(){}", c2)) return true;
 
     return false;
 
