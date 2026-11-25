@@ -2,6 +2,10 @@
 package org.libxmq.imp;
 
 import java.util.ArrayList;
+import org.libxmq.imp.xml.XmlDocument;
+import org.libxmq.imp.xml.XmlElement;
+import org.libxmq.imp.xml.XmlNode;
+import org.libxmq.imp.xml.XmlText;
 
 /**
  * Internal tests for the quote parsing utilities.
@@ -22,7 +26,38 @@ public class TestInternals
     {
         test_quote_removal();
         test_quotes();
+        test_deep_dom();
 
+    }
+
+    /**
+     * Tests moving a tree nested deeper than a recursive walk could handle into another
+     * document, the moved nodes (also the attributes) must get the new document.
+     */
+    public static void test_deep_dom()
+    {
+        final int depth = 200000;
+        XmlDocument from = new XmlDocument();
+        XmlElement root = new XmlElement("root");
+        from.appendRaw(root);
+        XmlNode n = root;
+        for (int i = 0; i < depth; i++)
+        {
+            XmlElement c = new XmlElement("a");
+            n.appendRaw(c);
+            c.setAttribute("id", "x");
+            c.appendRaw(new XmlText("t"));
+            n = c;
+        }
+        XmlDocument to = new XmlDocument();
+        XmlElement to_root = new XmlElement("to");
+        to.appendRaw(to_root);
+        to_root.appendRaw(root.firstChild());
+        if (n.doc() != to || ((XmlElement)n).attribute("id").doc() != to || n.firstChild().doc() != to)
+        {
+            System.err.println("ERROR: the moved deep tree did not get the new document.");
+            System.exit(1);
+        }
     }
 
     /**

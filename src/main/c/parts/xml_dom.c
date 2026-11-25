@@ -209,45 +209,79 @@ static size_t xml_node_size(XmlNodeKind kind)
     }
 }
 
+/** Set the dom of the node, its attributes, descendants and notations. Iterative, not recursive,
+    so that a deeply nested tree does not overflow the stack: the stack (on the heap) holds the
+    first nodes of the sibling lists (children and attributes) still to visit. */
 static void xml_node_set_dom_recursive(XMQNode *n, XmlDom *dom)
 {
-    n->dom = dom;
-    for (XMQAttr *a = n->first_attr; a; a = (XMQAttr*)a->node.next) xml_node_set_dom_recursive(&a->node, dom);
-    for (XMQNode *c = n->first_child; c; c = c->next) xml_node_set_dom_recursive(c, dom);
-    if (n->kind == XML_DOM_DTD)
+    size_t cap = 64;
+    size_t len = 0;
+    XMQNode **stack = (XMQNode**)malloc(cap * sizeof(XMQNode*));
+    assert(stack);
+
+    XMQNode *x = n;
+    for (;;)
     {
-        for (XMQNode *c = ((XmlDtd*)n)->first_notation; c; c = c->next) c->dom = dom;
+        x->dom = dom;
+        if (x->kind == XML_DOM_DTD)
+        {
+            for (XMQNode *c = ((XmlDtd*)x)->first_notation; c; c = c->next) c->dom = dom;
+        }
+        XMQNode *push[3] = {
+            x != n ? x->next : NULL, // The siblings of n itself are not visited.
+            x->first_attr ? &x->first_attr->node : NULL,
+            x->first_child };
+        for (int i = 0; i < 3; ++i)
+        {
+            if (!push[i]) continue;
+            if (len == cap)
+            {
+                cap *= 2;
+                stack = (XMQNode**)realloc(stack, cap * sizeof(XMQNode*));
+                assert(stack);
+            }
+            stack[len++] = push[i];
+        }
+        if (len == 0) break;
+        x = stack[--len];
     }
+    free(stack);
 }
 
-static void xml_node_free_contents(XMQNode *n);
-
-static void xml_node_free_unlinked(XMQNode *n)
+/** Move the children, attributes and notations of n first onto the list (linked with next),
+    n no longer has any of them. */
+static XMQNode *xml_node_move_descendants_to_list(XMQNode *n, XMQNode *list)
 {
-    xml_node_free_contents(n);
-    free(n);
-}
-
-static void xml_node_free_contents(XMQNode *n)
-{
-    XMQNode *c = n->first_child;
-    while (c)
+    if (n->first_child)
     {
-        XMQNode *next = c->next;
-        xml_node_free_unlinked(c);
-        c = next;
+        n->last_child->next = list;
+        list = n->first_child;
     }
     n->first_child = n->last_child = NULL;
 
-    XMQAttr *a = n->first_attr;
-    while (a)
+    if (n->first_attr)
     {
-        XMQAttr *next = (XMQAttr*)a->node.next;
-        xml_node_free_unlinked(&a->node);
-        a = next;
+        n->last_attr->node.next = list;
+        list = &n->first_attr->node;
     }
     n->first_attr = n->last_attr = NULL;
 
+    if (n->kind == XML_DOM_DTD)
+    {
+        XmlDtd *dtd = (XmlDtd*)n;
+        if (dtd->first_notation)
+        {
+            dtd->last_notation->next = list;
+            list = dtd->first_notation;
+        }
+        dtd->first_notation = dtd->last_notation = NULL;
+    }
+    return list;
+}
+
+/** Free what the node owns except its children, attributes and notations. */
+static void xml_node_free_own(XMQNode *n)
+{
     XmlNs *d = n->ns_defs;
     while (d)
     {
@@ -268,15 +302,7 @@ static void xml_node_free_contents(XMQNode *n)
         XmlDtd *dtd = (XmlDtd*)n;
         free(dtd->public_id);
         free(dtd->system_id);
-        XMQNode *i = dtd->first_notation;
-        while (i)
-        {
-            XMQNode *next = i->next;
-            xml_node_free_unlinked(i);
-            i = next;
-        }
         dtd->public_id = dtd->system_id = NULL;
-        dtd->first_notation = dtd->last_notation = NULL;
         break;
     }
     case XML_DOM_ENTITY_DECL:
@@ -303,6 +329,29 @@ static void xml_node_free_contents(XMQNode *n)
     n->name = NULL;
     free(n->content);
     n->content = NULL;
+}
+
+/** Free the content of n (its descendants, attributes and what it owns), but not n itself.
+    Iterative, not recursive, so that a deeply nested document does not overflow the stack:
+    the nodes to free are kept in a list linked with next, each node freed first moves its
+    own children, attributes and notations onto the list. */
+static void xml_node_free_contents(XMQNode *n)
+{
+    XMQNode *list = xml_node_move_descendants_to_list(n, NULL);
+    while (list)
+    {
+        XMQNode *c = list;
+        list = xml_node_move_descendants_to_list(c, c->next);
+        xml_node_free_own(c);
+        free(c);
+    }
+    xml_node_free_own(n);
+}
+
+static void xml_node_free_unlinked(XMQNode *n)
+{
+    xml_node_free_contents(n);
+    free(n);
 }
 
 // Dom ////////////////////////////////////////////////////////////

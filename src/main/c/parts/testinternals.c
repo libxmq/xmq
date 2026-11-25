@@ -27,6 +27,7 @@
     X(test_quicksort) \
     X(test_stack) \
     X(test_binary_search) \
+    X(test_deep_dom) \
     X(test_colors) \
     X(test_objstack) \
     X(test_theme) \
@@ -138,6 +139,36 @@ void test_binary_search()
             printf("ERROR: expected U+%04X %sin %s.\n", checks[i].code, checks[i].in ? "" : "not ", checks[i].cat);
         }
     }
+}
+
+void test_deep_dom()
+{
+    // Move and free a tree nested deeper than a recursive walk could handle, the moved
+    // nodes (also the attributes) must get the new dom.
+    const int depth = 1000000;
+    XmlDom *from = xml_dom_new();
+    XMQNode *root = xml_node_new_element(from, "root", NULL);
+    xml_dom_set_root_element(from, root);
+    XMQNode *n = root;
+    for (int i = 0; i < depth; ++i)
+    {
+        XMQNode *c = xml_node_new_element(from, "a", NULL);
+        xml_node_append_child(n, c);
+        xml_node_set_attr(c, "id", NULL, "x");
+        xml_node_append_child(c, xml_node_new_text(from, "t"));
+        n = c;
+    }
+    XmlDom *to = xml_dom_new();
+    XMQNode *to_root = xml_node_new_element(to, "to", NULL);
+    xml_dom_set_root_element(to, to_root);
+    xml_node_append_child(to_root, xml_node_first_child(root));
+    if (xml_node_dom(n) != to || xml_node_dom(xml_attr_node(xml_node_first_attr(n))) != to || xml_node_dom(xml_node_first_child(n)) != to)
+    {
+        all_ok_ = false;
+        printf("ERROR: the moved deep tree did not get the new dom.\n");
+    }
+    xml_dom_free(from);
+    xml_dom_free(to);
 }
 
 void test_stack()

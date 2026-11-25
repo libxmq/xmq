@@ -251,13 +251,33 @@ public abstract class XmlNode
         }
     }
 
+    /**
+     * Set the document of the node, its descendants and attributes. Iterative, not recursive,
+     * so that a deeply nested tree does not overflow the java stack.
+     */
     void setDocRecursive(XmlDocument doc)
     {
-        doc_ = doc;
-        for (XmlNode i = children_; i != null; i = i.next_) i.setDocRecursive(doc);
-        if (this instanceof XmlElement e)
+        if (children_ == null && !(this instanceof XmlElement e && !e.attributes().isEmpty()) && !(this instanceof XmlDtd))
         {
-            for (XmlAttr a : e.attributes()) a.setDocRecursive(doc);
+            // A leaf, eg appending a text node.
+            doc_ = doc;
+            return;
+        }
+        java.util.ArrayDeque<XmlNode> todo = new java.util.ArrayDeque<>();
+        todo.push(this);
+        while (!todo.isEmpty())
+        {
+            XmlNode n = todo.pop();
+            n.doc_ = doc;
+            for (XmlNode i = n.children_; i != null; i = i.next_) todo.push(i);
+            if (n instanceof XmlElement e)
+            {
+                for (XmlAttr a : e.attributes()) todo.push(a);
+            }
+            if (n instanceof XmlDtd d)
+            {
+                for (XmlDtdDecl x : d.notations_) x.doc_ = doc;
+            }
         }
     }
 
