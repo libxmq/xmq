@@ -14,13 +14,17 @@ if [ -n "$XMQJ" ]
 then
     # Generate and compile the C parser once, it reads a file and prints xmq.
     PARSER=$OUTPUT/cparser
+    # Build it with the compiler that built libxmq, CC in the spec.mk of the build
+    # (build/<host>/spec.mk for build/<host>/release/xmq), eg filcc, otherwise gcc.
+    PARSER_CC=$(sed -n 's/^CC:=//p' "$(dirname "$(dirname "$PROG")")/spec.mk" 2>/dev/null)
+    PARSER_CC=${PARSER_CC:-gcc}
     if ! "$XMQJ" generate-parser --c "$GRAMMAR" --prefix=cparser > "$PARSER.c" 2> "$PARSER.err"
     then
         echo "FAIL: xmqj generate-parser --c $GRAMMAR"
         head -5 "$PARSER.err"
         exit 1
     fi
-    if ! cc -O2 -Isrc/main/c -o "$PARSER" "$PARSER.c" $(./tests/xmq_link_libs.sh "$(dirname "$PROG")") 2> "$PARSER.cerr"
+    if ! $PARSER_CC -O2 -Isrc/main/c -o "$PARSER" "$PARSER.c" $(./tests/xmq_link_libs.sh "$(dirname "$PROG")") 2> "$PARSER.cerr"
     then
         echo "FAIL: compiling the generated parser $PARSER.c"
         head -5 "$PARSER.cerr"

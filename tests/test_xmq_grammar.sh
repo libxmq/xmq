@@ -36,6 +36,11 @@ LIBDIR=$(dirname "$PROG")
 TIMEOUT=${TIMEOUT:-60}
 JOBS=${JOBS:-$(nproc 2>/dev/null || echo 4)}
 
+# Build the generated parser with the compiler that built libxmq, CC in the spec.mk of the
+# build (build/<host>/spec.mk for build/<host>/release), eg filcc, otherwise gcc.
+CC=$(sed -n 's/^CC:=//p' "$(dirname "$LIBDIR")/spec.mk" 2>/dev/null)
+CC=${CC:-gcc}
+
 if [ ! -x "$PROG" ]
 then
     echo "Build first, make"
@@ -96,7 +101,7 @@ then
         head -20 "$OUTPUT/generate.err"
         exit 1
     fi
-    if ! cc -O2 -Isrc/main/c -o "$OUTPUT/xmqg" "$OUTPUT/xmqg.c" $(./tests/xmq_link_libs.sh "$LIBDIR") 2> "$OUTPUT/compile.err"
+    if ! $CC -O2 -Isrc/main/c -o "$OUTPUT/xmqg" "$OUTPUT/xmqg.c" $(./tests/xmq_link_libs.sh "$LIBDIR") 2> "$OUTPUT/compile.err"
     then
         echo "ERROR: cannot compile the generated parser:"
         head -20 "$OUTPUT/compile.err"
