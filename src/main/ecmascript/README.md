@@ -52,8 +52,27 @@ catch (e)
 }
 ```
 
-`tokenize(xmq, "debugtokens" | "debugcontent")` gives the same output as `xmq
-tokenize --type=debugtokens` and `--type=debugcontent`.
+## Api
+
+- `parse(xmq, options?)`: a new Document. Options: `dom` (the DOM implementation, the
+  browser's by default), `source` (the name in error messages), `xmlParser` (for
+  embedded xml), `root` (the implicit root element). Throws `XMQParseError` (with `code`,
+  `line`, `column`, `source` and the message of the C xmq) or `XMQDomError`.
+- `print(node, options?)`: the node as xmq, without a final newline. Options: `indent`,
+  `escapeNewlines`, `escapeNon7bit`, `escapeTabs`, `preferDoubleQuotes`, `trim`.
+- `toJson(node, options?)`: the node as a javascript value. Options: `trim`, `onWarning`.
+- `xmqToJson(xmq, options?)`: `toJson(parse(xmq, options), options)`.
+- `tokenize(xmq, "debugtokens" | "debugcontent", source?)`: the same text as `xmq
+  tokenize --type=debugtokens` and `--type=debugcontent`.
+- `entityName(node)`, `attrParts(attr)`, `doctypeText(doctype)`: what parse remembered
+  that a W3C DOM cannot hold, see below.
+- `ParseErrorCode`, `parseErrorToString(code)`: the error codes and texts of C.
+
+The typescript types come with the package (es module and commonjs). They use the DOM
+types of typescript (`"lib": ["dom"]` in tsconfig.json). Another DOM implementation,
+eg @xmldom/xmldom, has types of its own: `dom` takes any object with `createDocument` and
+`createDocumentType`, `parse` returns the document type of that implementation, and
+`print` and `toJson` take any node (`DOMNodeLike`).
 
 Printing trims the whitespace like the xmq command line does when it reads xml or html
 (the default `--trim`): the text nodes with only whitespace are skipped and the incidental

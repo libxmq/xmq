@@ -32,7 +32,7 @@ export function markEntity(t: Text): void
  * The name of the entity (without & and ;) if the node is a text node that the parser
  * created for an entity reference, otherwise null.
  */
-export function entityName(n: Node): string | null
+export function entityName(n: object): string | null
 {
     if (!entity_texts.has(n)) return null;
     const d = (n as Text).data;
@@ -49,7 +49,7 @@ export function markAttrParts(a: Attr, parts: AttrPart[] | null): void
  * The parts of an attribute value that contains entity references, null if the attribute
  * has no value, undefined if nothing is remembered (the value is plain text).
  */
-export function attrParts(a: Attr): AttrPart[] | null | undefined
+export function attrParts(a: object): AttrPart[] | null | undefined
 {
     return attr_parts.has(a) ? attr_parts.get(a) : undefined;
 }
@@ -61,7 +61,7 @@ export function markDoctype(dt: DocumentType, text: string): void
 }
 
 /** The full doctype text that the parser read, or undefined. */
-export function doctypeText(dt: DocumentType): string | undefined
+export function doctypeText(dt: object): string | undefined
 {
     return doctype_texts.get(dt);
 }

@@ -29,7 +29,8 @@ class TForeign extends TNode
 /** Something that can parse xml text, a DOMParser. */
 export interface XmlTextParser
 {
-    parseFromString(text: string, type: "text/xml"): Document;
+    /** Parse the xml text, the result must be a Document (of any DOM implementation). */
+    parseFromString(text: string, mimeType: "text/xml"): object;
 }
 
 /** Java XMQParseIntoDOM.potentially_add_leading_ending_space */
@@ -194,7 +195,7 @@ export class XMQParseIntoDOM extends XMQParser
         {
             try
             {
-                const fdoc = this.xml_parser.parseFromString(this.buffer_.substring(start, stop), "text/xml");
+                const fdoc = this.xml_parser.parseFromString(this.buffer_.substring(start, stop), "text/xml") as Document;
                 node = fdoc.documentElement;
                 // A browser reports the error in the document.
                 if (node !== null && node.getElementsByTagName("parsererror").length > 0) node = null;
