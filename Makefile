@@ -93,6 +93,8 @@ Build:
   xmqjc               Build build/xmqjc with javac directly instead of maven.
   xmqjs               Build build/xmqjs, the xmq command line in wasm for node (needs emcc).
   test_xmqjs          The test suite with xmqjs as xmq (node). FILTER=pattern selects tests.
+  libxmq_js           Build libxmq for javascript/typescript into build/libxmq_js/package (needs npm).
+  test_libxmq_js      The tests of libxmq for javascript (node).
   xmq_node_package    Pack xmqjs and the grammar library into build/xmq_node_package/xmqjs-<version>.tgz.
   java                mvn package (unsigned).
   java_sign           mvn package, signed.
@@ -181,7 +183,9 @@ ifeq (,$(BUILDDIRS))
                 ifneq (testj,$(findstring testj,$(MAKECMDGOALS)))
                     ifneq (help,$(findstring help,$(MAKECMDGOALS)))
                         ifneq (xmq_node_package,$(findstring xmq_node_package,$(MAKECMDGOALS)))
-                            $(error Run configure first!)
+                            ifneq (libxmq_js,$(findstring libxmq_js,$(MAKECMDGOALS)))
+                                $(error Run configure first!)
+                            endif
                         endif
                     endif
                 endif
@@ -564,7 +568,7 @@ clean:
 	@rm -rf xmq_browsing*
 	@rm -f build/xmqj
 	@rm -rf build/classes
-	@rm -rf build/xmqjs build/xmqjs.wasm build/xmq_node_package
+	@rm -rf build/xmqjs build/xmqjs.wasm build/xmq_node_package build/libxmq_js/package build/libxmq_js/test_output
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
@@ -624,7 +628,7 @@ pom.xml: pom.xmq jproject.settings
 
 xmqj: build/xmqj
 
-.PHONY: xmqj xmqjs xmq_node_package test_xmqjs
+.PHONY: xmqj xmqjs xmq_node_package test_xmqjs libxmq_js test_libxmq_js
 
 # make/java/Makefile knows the java sources and only runs maven when build/xmqj is
 # older than them (or pom.xml, scripts/run.sh), so always ask it.
@@ -687,6 +691,19 @@ xmq_node_package: $(XMQJS)
 # Only some tests: make test_xmqjs FILTER=json
 test_xmqjs: $(XMQJS)
 	@./tests/test_xmqjs.sh $(XMQJS) $(XMQJS_DIR)/test_output $(FILTER)
+
+# libxmq for javascript (src/main/ecmascript, typescript compiled with tsc): parse xmq into
+# a W3C DOM, print a DOM as xmq, convert a DOM to json. The npm package is built in
+# build/libxmq_js/package, the dev tools (typescript, @xmldom/xmldom) are installed with
+# npm into build/libxmq_js/tools. It needs no configure.
+LIBXMQ_JS:=build/libxmq_js
+
+libxmq_js:
+	@./scripts/build_libxmq_js.sh $(LIBXMQ_JS) $(DIST_VERSION)
+
+# The tests of libxmq for javascript in tests/libxmq_js, see tests/test_libxmq_js.sh.
+test_libxmq_js: libxmq_js
+	@./tests/test_libxmq_js.sh $(LIBXMQ_JS) $(LIBXMQ_JS)/test_output
 
 # Builds xmqj, and the release xmq that the java command line is compared with.
 testj: build/xmqj release

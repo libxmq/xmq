@@ -1,21 +1,41 @@
 {
     "name": "libxmq",
-    "version": "0.0.1",
-    "description": "Work with xmq/xml/json files.",
-    "main": "index.js",
+    "version": "@VERSION@",
+    "description": "Parse xmq into a W3C DOM, print a DOM as xmq and convert it to json, in the browser and in node.",
+    "type": "module",
+    "main": "./cjs/index.js",
+    "module": "./esm/index.js",
+    "types": "./esm/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./esm/index.d.ts",
+                "default": "./esm/index.js"
+            },
+            "require": {
+                "types": "./cjs/index.d.ts",
+                "default": "./cjs/index.js"
+            }
+        }
+    },
     "files": [
-        "index.js"
+        "esm",
+        "cjs",
+        "README.md",
+        "LICENSE"
     ],
+    "sideEffects": false,
+    "engines": {
+        "node": ">=18"
+    },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/libxmq/libxmq.git"
+        "url": "git+https://github.com/libxmq/xmq.git"
     },
     "author": "Fredrik Öhrström",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/libxmq/libxmq/issues"
+        "url": "https://github.com/libxmq/xmq/issues"
     },
-    "homepage": "https://github.com/libxmq",
-    "devDependencies": {},
-    "dependencies": {}
+    "homepage": "https://libxmq.org"
 }
