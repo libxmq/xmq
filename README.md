@@ -22,9 +22,9 @@ You can also install with `brew install xmq`
 
 ## XMQ another way to work with XML/HTML/JSON/YAML
 
-The xmq format can exactly represent the content of the xml/html/json/yaml file
-and can therefore be converted back to xml/html/json/yaml after any editing has
-been done.
+The xmq format can exactly represent the content of an xml/html/json
+file and can therefore be converted back to xml/html/json/yaml after
+any editing has been done.
 
 For html you can use the suffix htmq to indicate that you have written
 html using the xmq format.

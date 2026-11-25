@@ -74,13 +74,97 @@ $(shell echo "$(VERSION)" > build/VERSION)
 
 all: release
 
+# Keep this list in sync when a target is added or removed. A target name is a line
+# that starts with two spaces and a lower case letter, it is printed in bold green
+# when stdout is a terminal.
+define HELP_TEXT
+Usage: make [target] [linux64|winapi64|arm32] [VAR=value...]
+  linux64, winapi64, arm32
+                      Added after a target, use only the build for that host. E.g. make debug winapi64
+                      Without a host, all configured builds (build/*/spec.mk) are used.
+
+Build:
+  all, release        Build the release xmq, libxmq and testinternals (the default).
+  debug               Build the debug version.
+  asan                Build with AddressSanitizer.
+  dist                Regenerate the amalgamation dist/xmq.c and dist/xmq.h, build the dist examples.
+  build/xmq           Script that runs the latest built xmq with the library of the source tree.
+  xmqj                Build the Java command line build/xmqj.
+  xmqjc               Build build/xmqjc with javac directly instead of maven.
+  java                mvn package (unsigned).
+  java_sign           mvn package, signed.
+  java_install        mvn install (unsigned).
+  java_install_sign   mvn install, signed.
+  javadoc             Generate the javadoc of the public api.
+  javadoc_imp         Generate the javadoc of the implementation.
+  doxygen             Generate the C api documentation in build/doxygen.
+  web                 Build the web site in build/web.
+  generate_parsers    Regenerate the committed parsers from library/xmq-utils/xmqcli.ixml.
+  generate_categories Regenerate the unicode categories in src/main/c/parts/text.c.
+  library_index       Rebuild the index of the grammar library.
+  lcov                Build debug and generate a code coverage report.
+
+Test:
+  test, test_release  Build release and run the C tests, libxml2/libxslt suites, fuzz regressions,
+                      test_xmq_grammar and test_examples.   FILTER=pattern selects tests.
+  testd, test_debug   The tests with the debug build.
+  testa, test_asan    The tests with the asan build.
+  testv, test_valgrind  The tests with the debug build under valgrind.
+  teste, test_eclipse The tests with the eclipse cproject build.
+  testj               Java TestInternals and the jar tests.
+  testjc              The same with build/xmqjc.
+  testcj              Compare the C xmq and Java xmqj byte for byte (~10 min). JOBS=n.
+  testdiff            Native xml parts against the real libxml2/libxslt (>10 min).
+  test_xmq_grammar    The xmq examples through library/core/xmq.ixml.
+  test_examples       Build, run and compare the C and Java examples.
+  test_library        The library tests with xmq, markup-blitz and kaffepot.
+  test_generate_parser  Generated C and Java parsers vs the ixml engine (>2 min).
+  test_ixml_standard  The ixml community test suite. PROCESSOR=coffeepot|markup-blitz, FILTER=.
+  test_ixml_standard_coffeepot, test_ixml_standard_markup_blitz
+                      The same suite run with coffeepot or markup-blitz.
+  test_markup_blitz, test_kaffepot
+                      The ixml tests with markup-blitz or kaffepot as the ixml engine.
+  test_c_parse_myself       Parse xmq's own C source with library/lang/c.ixml (minutes).
+  test_c_parse_myself_fast  The same with a generated C parser (seconds).
+  test_java_parse_myself    Parse xmq's own Java source with library/lang/java.ixml.
+  test_java_parse_myself_fast  The same with a generated C parser.
+  test_without        Build without some parts and test, eg WITHOUT="IXML JSON".
+  test_excluded       Build dist xmq.c with each XMQ_NO_... define, as C and C++.
+  run_benchmarks      Run benchmarks/ with xmq and xmqj. SAVE=true stores the results.
+
+Fuzz:
+  build_fuzz_clang, run_fuzz_clang    libFuzzer + ASan/UBSan over all parsers and printers.
+  build_fuzz_clang_<type>, run_fuzz_clang_<type>
+                      Only one parser, <type> is xmq, xml, html, json or yaml.
+  extract_fuzz_clang_seeds  Create the seeds in fuzz_testcases/clang.
+  afl_prepared        Download and unpack AFL++ and clang into AFLplusplus/.
+  build_fuzz          Build xmq for AFL++.
+  run_fuzz_xmq, run_fuzz_yaml, run_fuzz_yaml_until_crash
+                      Run AFL++ on the xmq or yaml parser.
+  disable_address_randomization, enable_address_randomization   (uses sudo)
+
+Install and release:
+  install, uninstall  Install the release into DESTDIR.
+  install_user, uninstall_user  Install into ~/.local.
+  release_major, release_minor, release_patch, release_rc   Bump the version.
+  deploy              Run scripts/deploy.sh.
+  push_edge           Move the edge tag to HEAD and force push the tags.
+
+Other:
+  clean               Remove the release, debug, asan and fuzz builds, and build/xmqj.
+  clean-all           Remove the whole build directory, including the configuration.
+  import_category     Print the code points of a unicode category, CATEGORY=Ll.
+  help                Show this text.
+endef
+export HELP_TEXT
+
 help:
-	@echo "Usage: make (release|debug|asan|clean|clean-all)"
-	@echo "       if you have both linux64, winapi64 and arm32 configured builds,"
-	@echo "       then add linux64, winapi64 or arm32 to build only for that particular host."
-	@echo "E.g.:  make debug winapi64"
-	@echo "       make asan"
-	@echo "       make release linux64"
+	@if [ -t 1 ]; then \
+	    esc=$$(printf '\033'); \
+	    echo "$$HELP_TEXT" | sed "s/^  \([a-z][^ ,]*\(, [^ ,]*\)*\)/  $${esc}[1;32m\1$${esc}[0m/"; \
+	else \
+	    echo "$$HELP_TEXT"; \
+	fi
 
 BUILDDIRS:=$(dir $(realpath $(filter-out build/java/%,$(filter-out build/default/%,$(wildcard build/*/spec.mk)))))
 FIRSTDIR:=$(word 1,$(BUILDDIRS))
@@ -92,7 +176,9 @@ ifeq (,$(BUILDDIRS))
         ifneq (xmqj,$(findstring xmqj,$(MAKECMDGOALS)))
             ifneq (xmqjc,$(findstring xmqjc,$(MAKECMDGOALS)))
                 ifneq (testj,$(findstring testj,$(MAKECMDGOALS)))
-                    $(error Run configure first!)
+                    ifneq (help,$(findstring help,$(MAKECMDGOALS)))
+                        $(error Run configure first!)
+                    endif
                 endif
             endif
         endif
@@ -521,7 +607,7 @@ import_category:
 	curl -s https://www.fileformat.info/info/unicode/category/$(CATEGORY)/list.htm > tmp.lista
 	xmq tmp.lista select //a | grep -o U+.... | sort | awk '{ print $$1","}' | tr -d '\n' | sed 's/U+/0x/g'
 
-.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fasttest_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_kaffepot test_library test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
+.PHONY: all release debug asan fuzz afl_prepared build_fuzz build_fuzz_clang test_excluded test_without extract_fuzz_clang_seeds run_fuzz_clang test testdiff testcj test_release test_debug test_c_parse_myself test_c_parse_myself_fast test_java_parse_myself test_java_parse_myself_fast test_ixml_standard test_ixml_standard_coffeepot test_ixml_standard_markup_blitz test_markup_blitz test_kaffepot test_library test_generate_parser test_xmq_grammar test_examples run_benchmarks generate_parsers clean clean-all help linux64 winapi64 arm32 gtkdoc build/gtkdoc generate_categories
 
 pom.xml: pom.xmq jproject.settings
 	@if [ "$(KEEP_POM_XML)" = "true" ]; then touch $@ ; else xmq pom.xmq to-xml > pom.xml ; xmllint --format pom.xml > tmpo; mv tmpo pom.xml; echo "Generated pom.xml" ; fi
