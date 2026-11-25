@@ -71,8 +71,7 @@ typedef enum
     XMQ_CLI_TOKENIZE_DEBUG_CONTENT = 2,
     XMQ_CLI_TOKENIZE_TERMINAL = 3,
     XMQ_CLI_TOKENIZE_HTML = 4,
-    XMQ_CLI_TOKENIZE_TEX = 5,
-    XMQ_CLI_TOKENIZE_LOCATION = 6
+    XMQ_CLI_TOKENIZE_TEX = 5
 } XMQCliTokenizeType;
 
 typedef enum
@@ -719,10 +718,9 @@ const char *tokenize_type_to_string(XMQCliTokenizeType type)
     case XMQ_CLI_TOKENIZE_NONE: return "none";
     case XMQ_CLI_TOKENIZE_DEBUG_TOKENS: return "debugtokens";
     case XMQ_CLI_TOKENIZE_DEBUG_CONTENT: return "debugcontent";
-    case XMQ_CLI_TOKENIZE_TERMINAL: return "terminal;";
+    case XMQ_CLI_TOKENIZE_TERMINAL: return "terminal";
     case XMQ_CLI_TOKENIZE_HTML: return "html";
     case XMQ_CLI_TOKENIZE_TEX: return "tex";
-    case XMQ_CLI_TOKENIZE_LOCATION: return "location";
     }
     return "?";
 }
@@ -1135,11 +1133,6 @@ bool handle_option(const char *arg, bool is_option, XMQCliCommand *command)
             else if (!strcmp(arg, "--type=tex"))
             {
                 command->tok_type = XMQ_CLI_TOKENIZE_TEX;
-                return true;
-            }
-            else if (!strcmp(arg, "--type=location"))
-            {
-                command->tok_type = XMQ_CLI_TOKENIZE_LOCATION;
                 return true;
             }
             else

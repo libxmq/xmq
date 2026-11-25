@@ -264,7 +264,7 @@ picks the right one with \fBprefers-color-scheme\fP).
 Render the document as a LaTeX file.
 
 .TP
-.BR "tokenize " "[\-\-type=terminal|html|tex|debugtokens|debugcontent|location]"
+.BR "tokenize " "[\-\-type=terminal|html|tex|debugtokens|debugcontent]"
 Tokenize the input without building a DOM and print the tokens.
 .br
 .RS
@@ -274,7 +274,6 @@ Tokenize the input without building a DOM and print the tokens.
 \-\-type=tex          print tokens with LaTeX markup
 \-\-type=debugtokens  print each token on one line
 \-\-type=debugcontent print token contents with positions
-\-\-type=location     print token positions
 .fi
 .RE
 .SS DOCUMENT MODIFICATION COMMANDS
@@ -598,7 +597,7 @@ An unknown value is reported and xmq exits with status 1.
 (render-*) Use STR as the explicit-newline rendering.
 
 .TP
-.BR \-\-type=terminal|html|tex|debugtokens|debugcontent|location
+.BR \-\-type=terminal|html|tex|debugtokens|debugcontent
 (tokenize) Select the token output format (see the \fBtokenize\fP
 entry above).
 .SH THEME AND COLORS

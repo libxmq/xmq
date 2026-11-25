@@ -377,7 +377,17 @@ final class Cli
             c.xslt_params.put(key, val);
             return;
         }
-        if (c.name.equals("tokenize") && name.equals("type") && value != null) { c.tokenize_type = value; return; }
+        if (c.name.equals("tokenize") && name.equals("type") && value != null)
+        {
+            // Like the C version, an unknown type is an error.
+            switch (value)
+            {
+            case "terminal": case "html": case "tex": case "debugtokens": case "debugcontent":
+                c.tokenize_type = value;
+                return;
+            }
+            throw fail("No such tokenize " + optionString(name, value));
+        }
         if ((c.name.equals("quote-c") || c.name.equals("unquote-c")) && name.equals("add-nl") && value == null) { c.add_nl = true; return; }
         if (c.name.equals("replace-entity") && value == null)
         {

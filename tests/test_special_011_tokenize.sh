@@ -7,6 +7,8 @@
 #    reported where the input ends, like C.
 #  - a failed tokenize prints no tokens, only the error (Java).
 #  - debugcontent prints compound quotes and trims comments like C (Java).
+#  - an unknown type is an error, also the removed --type=location (C gave an
+#    internal error, Java printed nothing and exited with 0).
 PROG=$1
 OUTPUT=$2
 
@@ -42,6 +44,9 @@ printf 'a = (\n' > $O/bad.xmq
     $PROG $O/bad.xmq tokenize --type=debugtokens 2>&1; echo "[rc=$?]"
     echo "== xml"
     $PROG -i '<a/>' tokenize 2>&1; echo "[rc=$?]"
+    echo "== unknown type"
+    $PROG $O/t.xmq tokenize --type=location 2>&1; echo "[rc=$?]"
+    $PROG $O/t.xmq tokenize --type=nosuch 2>&1; echo "[rc=$?]"
     echo "== debugcontent"
     $PROG $O/t.xmq tokenize --type=debugcontent 2>&1
     $PROG $O/c.xmq tokenize --type=debugcontent 2>&1
@@ -75,6 +80,11 @@ bad.xmq:2:1: error: compound is not closed
 [rc=1]
 == xml
 xmq: you can only tokenize the xmq format
+[rc=1]
+== unknown type
+No such tokenize --type=location
+[rc=1]
+No such tokenize --type=nosuch
 [rc=1]
 == debugcontent
 {value "1"}{comment "c<&>_"}{quote "q\\\\b"}
