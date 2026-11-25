@@ -91,6 +91,9 @@ Build:
   build/xmq           Script that runs the latest built xmq with the library of the source tree.
   xmqj                Build the Java command line build/xmqj.
   xmqjc               Build build/xmqjc with javac directly instead of maven.
+  xmqjs               Build build/xmqjs, the xmq command line in wasm for node (needs emcc).
+  test_xmqjs          The test suite with xmqjs as xmq (node). FILTER=pattern selects tests.
+  xmq_node_package    Pack xmqjs and the grammar library into build/xmq_node_package/xmqjs-<version>.tgz.
   java                mvn package (unsigned).
   java_sign           mvn package, signed.
   java_install        mvn install (unsigned).
@@ -151,7 +154,7 @@ Install and release:
   push_edge           Move the edge tag to HEAD and force push the tags.
 
 Other:
-  clean               Remove the release, debug, asan and fuzz builds, and build/xmqj.
+  clean               Remove the release, debug, asan and fuzz builds, build/xmqj and build/xmqjs.
   clean-all           Remove the whole build directory, including the configuration.
   import_category     Print the code points of a unicode category, CATEGORY=Ll.
   help                Show this text.
@@ -177,7 +180,9 @@ ifeq (,$(BUILDDIRS))
             ifneq (xmqjc,$(findstring xmqjc,$(MAKECMDGOALS)))
                 ifneq (testj,$(findstring testj,$(MAKECMDGOALS)))
                     ifneq (help,$(findstring help,$(MAKECMDGOALS)))
-                        $(error Run configure first!)
+                        ifneq (xmq_node_package,$(findstring xmq_node_package,$(MAKECMDGOALS)))
+                            $(error Run configure first!)
+                        endif
                     endif
                 endif
             endif
@@ -559,6 +564,7 @@ clean:
 	@rm -rf xmq_browsing*
 	@rm -f build/xmqj
 	@rm -rf build/classes
+	@rm -rf build/xmqjs build/xmqjs.wasm build/xmq_node_package
 
 clean-all:
 	@echo "Removing build directory containing configuration and artifacts."
@@ -618,7 +624,7 @@ pom.xml: pom.xmq jproject.settings
 
 xmqj: build/xmqj
 
-.PHONY: xmqj
+.PHONY: xmqj xmqjs xmq_node_package test_xmqjs
 
 # make/java/Makefile knows the java sources and only runs maven when build/xmqj is
 # older than them (or pom.xml, scripts/run.sh), so always ask it.
@@ -637,6 +643,50 @@ javadoc_imp:
 
 xmqjc: pom.xml
 	@(make --no-print-directory -f make/java/Makefile xmqjc)
+
+# The xmq command line compiled with emscripten (emcc) to wasm for node: the executable
+# build/xmqjs (a node script) loads build/xmqjs.wasm/xmqjs.wasm, the other build artifacts
+# are in build/xmqjs.wasm too. It is built from the sources directly, so no wasm32 build
+# has to be configured. It runs with NODERAWFS, ie on the real file system.
+XMQJS:=build/xmqjs
+XMQJS_DIR:=build/xmqjs.wasm
+EMCC?=emcc
+XMQJS_SOURCES:=src/main/c/xmq.c src/main/c/xmq-cli.c $(filter-out %/testinternals.c,$(wildcard src/main/c/parts/*.c))
+XMQJS_OBJS:=$(patsubst src/main/c/%.c,$(XMQJS_DIR)/obj/%.o,$(XMQJS_SOURCES))
+XMQJS_CFLAGS:=-O3 -DPLATFORM_POSIX -DVERSION='"$(VERSION)"' -Isrc/main/c
+XMQJS_LDFLAGS:=-O3 -sENVIRONMENT=node -sNODERAWFS=1 -sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=8MB
+
+xmqjs: $(XMQJS)
+
+$(XMQJS_DIR)/obj/%.o: src/main/c/%.c
+	@command -v $(EMCC) >/dev/null 2>&1 || { echo "$(EMCC) not found, install emscripten (eg apt install emscripten)."; exit 1; }
+	@mkdir -p $(dir $@)
+	@echo Compiling wasm $*.c
+	@$(EMCC) $(XMQJS_CFLAGS) -MMD -c $< -o $@
+
+-include $(XMQJS_OBJS:.o=.d)
+
+$(XMQJS): $(XMQJS_OBJS) src/main/wasm/xmqjs_pre.js src/main/wasm/xmqjs_extern_pre.js
+	@echo Linking $@
+	@rm -rf $(XMQJS_DIR)/link && mkdir -p $(XMQJS_DIR)/link
+	@$(EMCC) $(XMQJS_LDFLAGS) --pre-js src/main/wasm/xmqjs_pre.js --extern-pre-js src/main/wasm/xmqjs_extern_pre.js \
+	    -o $(XMQJS_DIR)/link/xmqjs.js $(XMQJS_OBJS) -lm
+	@{ echo '#!/usr/bin/env node'; cat $(XMQJS_DIR)/link/xmqjs.js; } > $(XMQJS_DIR)/link/xmqjs
+	@chmod +x $(XMQJS_DIR)/link/xmqjs
+# Move the finished files in place, so that a running xmqjs never sees a half written pair.
+	@mv $(XMQJS_DIR)/link/xmqjs.wasm $(XMQJS_DIR)/xmqjs.wasm
+	@mv $(XMQJS_DIR)/link/xmqjs $@
+	@rm -rf $(XMQJS_DIR)/link
+
+# The node package with the xmqjs executable and the grammar library:
+# build/xmq_node_package/package and build/xmq_node_package/xmqjs-<version>.tgz
+xmq_node_package: $(XMQJS)
+	@./scripts/build_xmq_node_package.sh $(XMQJS) $(XMQJS_DIR)/xmqjs.wasm build/xmq_node_package $(DIST_VERSION)
+
+# Run the test suite (tests/test.sh) with xmqjs as the xmq binary, see tests/test_xmqjs.sh.
+# Only some tests: make test_xmqjs FILTER=json
+test_xmqjs: $(XMQJS)
+	@./tests/test_xmqjs.sh $(XMQJS) $(XMQJS_DIR)/test_output $(FILTER)
 
 # Builds xmqj, and the release xmq that the java command line is compared with.
 testj: build/xmqj release

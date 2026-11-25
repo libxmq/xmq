@@ -337,6 +337,8 @@ done
 for i in tests/test_???_*.c
 do
     if [ -n $FILTER ] && [[ ! "$i" =~ $FILTER ]]; then continue; fi
+    # A build without the C library, eg xmqjs (tests/test_xmqjs.sh), has only the command line.
+    if [ ! -f "$LIB" ]; then echo "SKIP: $i (no $LIB)"; continue; fi
     needs_features "$i" || continue
     tests/test_program.sh "$LIB" "$OUTPUT" "$i"
     if [ "$?" != 0 ]; then echo "Testing aborted"; exit 1 ; fi

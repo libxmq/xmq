@@ -1762,6 +1762,14 @@ void lookup_bg(bool *use_color, bool *bg_dark_mode, bool *bg_forced)
     if (!strcmp(term, "xterm-256color") ||
         !strcmp(term, "xterm"))
     {
+#ifdef __EMSCRIPTEN__
+        // In wasm (xmqjs) the terminal cannot be put in raw mode and alarm does not
+        // interrupt the read, so the query would wait for the answer forever.
+        *use_color = true;
+        *bg_dark_mode = true;
+        verbose_("xmq=", "cannot query xterm from wasm assuming console has dark background");
+        return;
+#endif
         if (!isatty(1))
         {
             *use_color = true;

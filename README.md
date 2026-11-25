@@ -386,6 +386,15 @@ CC=emcc LD=emcc ./configure --host=wasm32-unknown-emscripten STRIP=true
 make
 ```
 
+The xmq command line in wasm for node, build/xmqjs, and a node package with it
+and the grammar library, build/xmq_node_package/xmqjs-<version>.tgz (needs emcc, no configure):
+```
+sudo apt install emscripten nodejs npm
+make xmqjs
+make xmq_node_package
+npm install -g build/xmq_node_package/xmqjs-*.tgz
+```
+
 To a filc binary to detect and prevent memory errors from GNU/Linux AMD64:
 ```
 # Install /opt/filc check https://fil-c.org/

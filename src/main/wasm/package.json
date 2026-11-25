@@ -1,0 +1,29 @@
+{
+    "name": "xmqjs",
+    "version": "@VERSION@",
+    "description": "The xmq command line (xmq/xml/html/json/yaml, ixml and xslt) compiled to WebAssembly for node.",
+    "bin": {
+        "xmqjs": "xmqjs"
+    },
+    "files": [
+        "xmqjs",
+        "xmqjs.wasm",
+        "library",
+        "LICENSE",
+        "CONTRIBUTORS",
+        "README.md"
+    ],
+    "engines": {
+        "node": ">=16"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/libxmq/xmq.git"
+    },
+    "author": "Fredrik Öhrström",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/libxmq/xmq/issues"
+    },
+    "homepage": "https://libxmq.org"
+}
