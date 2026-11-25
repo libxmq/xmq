@@ -7,11 +7,13 @@
  */
 
 import { tree_to_document, XMQParseIntoDOM, type XmlTextParser } from "./dom.js";
+import { print_xmq, type PrintOptions } from "./printer.js";
 
 export { ParseErrorCode, parseErrorToString, XMQParseError } from "./errors.js";
 export { tokenize, type TokenizeType } from "./tokens.js";
 export { XMQDomError, type XmlTextParser } from "./dom.js";
 export { entityName, attrParts, doctypeText, type AttrPart } from "./marks.js";
+export { type PrintOptions } from "./printer.js";
 
 /** The options of parse. */
 export interface ParseOptions
@@ -72,4 +74,17 @@ export function parse(xmq: string, options: ParseOptions = {}): Document
     const p = new XMQParseIntoDOM(xml_parser(options), options.root ?? null);
     p.parse(xmq, options.source ?? "-");
     return tree_to_document(p.doc_, implementation(options));
+}
+
+/**
+ * Print a DOM node as xmq, like xmq FILE to-xmq: a document or a fragment with all its
+ * nodes, or a single node with its descendants. Not the compact form (yet). The text
+ * nodes that parse created for entities are printed as entities.
+ * @param node The document, fragment, element or other node.
+ * @param options The indentation and the escapes, as the to-xmq options of xmq.
+ * @returns The xmq text, without a final newline.
+ */
+export function print(node: Node, options: PrintOptions = {}): string
+{
+    return print_xmq(node, options);
 }

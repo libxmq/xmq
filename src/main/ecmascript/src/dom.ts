@@ -33,7 +33,7 @@ export interface XmlTextParser
 }
 
 /** Java XMQParseIntoDOM.potentially_add_leading_ending_space */
-function potentially_add_leading_ending_space(s: string): string
+export function potentially_add_leading_ending_space(s: string): string
 {
     if (s.length === 0) return s;
     const prefix = s.charAt(0) === "'";

@@ -4,14 +4,15 @@ A small part of [libxmq](https://libxmq.org) in javascript, with typescript type
 the browser and node:
 
 - parse xmq into a W3C DOM document,
-- print a DOM as xmq, also a DOM that the browser loaded from html (not yet),
+- print a DOM as xmq (not yet the compact form, nor a DOM that the browser loaded from
+  html),
 - convert a DOM to json, as a javascript value or as text (not yet).
 
 It is a port of the Java implementation of libxmq and gives the same result as the
 `xmq` command line, also the same error messages. It has no runtime dependencies.
 
 ```js
-import { parse, XMQParseError } from "libxmq";
+import { parse, print, XMQParseError } from "libxmq";
 
 // In a browser the DOM of the browser is used.
 const doc = parse("car { model = Volvo }");
@@ -23,6 +24,14 @@ const doc2 = parse("car { model = Volvo }", { dom: new DOMImplementation() });
 // A Document has one root element: several elements need an implicit root element,
 // like xmq --root=list: <list><a>1</a><b>2</b></list>
 const doc3 = parse("a = 1 b = 2", { root: "list" });
+
+// car {
+//     model = Volvo
+// }
+console.log(print(doc));
+// The to-xmq options of xmq: indent, escapeNewlines, escapeNon7bit, escapeTabs,
+// preferDoubleQuotes.
+console.log(print(doc, { indent: 2 }));
 
 try
 {
@@ -58,3 +67,8 @@ tokenize --type=debugtokens` and `--type=debugcontent`.
 - The doctype is not checked (C and Java report "doctype could not be parsed").
 - Embedded xml (`<b>bold</b>` in xmq) is parsed with a DOMParser: the one of the browser,
   or the `xmlParser` option. Without one it is an error.
+- An element can only have an attribute once in a W3C DOM, the last one wins:
+  `a(x=1 x=2)` prints as `a(x = 2)`, C keeps and prints both.
+- A W3C DOM has no internal subset of the doctype. The printer prints the declarations
+  of the doctype text that parse read, each on its own line like C, but as they were
+  written, not in the normalized form of libxml2.

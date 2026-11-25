@@ -1,7 +1,9 @@
 // libxmq - Copyright (C) 2026 Fredrik Öhrström (spdx: MIT)
 // Like the other parsers (tests/test_max_depth_parsers.sh) 10000 nested elements are
 // parsed into the DOM, 10001 are an error with the same message as the C xmq, and not a
-// stack overflow (node and the browsers have a much smaller stack than C and Java).
+// stack overflow (node and the browsers have a much smaller stack than C and Java). The
+// 10000 nested elements also print as xmq, the same as xmq --xmq FILE to-xmq --indent=0
+// (with indentation the output is 400 MB).
 //   node tests/libxmq_js/test_004_depth.mjs build/libxmq_js/package OUTPUT_DIR
 // The xmq binary is $XMQ, default build/default/release/xmq.
 import { spawnSync } from "node:child_process";
@@ -38,8 +40,24 @@ catch (e)
     err(MAX + " nested elements: " + e.message);
 }
 
-const deep = "a{".repeat(MAX + 1) + "}".repeat(MAX + 1) + "\n";
+// Printing, with a key = value in the innermost element.
 fs.mkdirSync(output, { recursive: true });
+const ok_kv = "a{".repeat(MAX - 1) + "b=1" + "}".repeat(MAX - 1) + "\n";
+const ok_file = path.join(output, "deep_ok.xmq");
+fs.writeFileSync(ok_file, ok_kv);
+const cp = spawnSync(xmq, ["--xmq", ok_file, "to-xmq", "--indent=0"], { encoding: "utf8", maxBuffer: 1 << 30 });
+try
+{
+    const js = lib.print(lib.parse(ok_kv, { dom }), { indent: 0 }) + "\n";
+    if (cp.status !== 0) err("print: C failed " + cp.stderr);
+    else if (js !== cp.stdout) err("print of " + MAX + " nested elements differs from C");
+}
+catch (e)
+{
+    err("print of " + MAX + " nested elements: " + e.message);
+}
+
+const deep = "a{".repeat(MAX + 1) + "}".repeat(MAX + 1) + "\n";
 const file = path.join(output, "deep.xmq");
 fs.writeFileSync(file, deep);
 const c = spawnSync(xmq, [file, "tokenize", "--type=debugtokens"], { encoding: "utf8" });
@@ -58,5 +76,5 @@ for (const [what, f] of [["parse", () => lib.parse(deep, { dom, source: file })]
     }
 }
 
-if (failed === 0) console.log("OK: depth (" + MAX + " nested elements parse, " + (MAX + 1) + " is the same error as " + xmq + ")");
+if (failed === 0) console.log("OK: depth (" + MAX + " nested elements parse and print, " + (MAX + 1) + " is the same error as " + xmq + ")");
 process.exit(failed === 0 ? 0 : 1);

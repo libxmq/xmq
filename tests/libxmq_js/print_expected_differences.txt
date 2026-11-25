@@ -1,0 +1,3 @@
+# The cases of test_005_print.mjs where libxmq for javascript prints other xmq than C:
+# name|options|reason, the options * are all option sets.
+web/resources/syntactic_sugar.xmq|*|a duplicate attribute (element(value = 123 value = 123)): C keeps both, a W3C element has each attribute once

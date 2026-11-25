@@ -5,9 +5,8 @@
 // attributes in order, text with the entities as &name;, comments, pis, doctype name).
 // When C rejects the input, javascript must reject it with the same message.
 //
-// The inputs are every tracked .xmq and .htmq file (not the copied libxml2/libxslt
-// suites) and the START section of every tests/*.test file, also those that are not xmq
-// (then both reject them). Every case is classified into OUTPUT/parse_results.txt:
+// The inputs are those of inputs.mjs: the xmq files and the START sections of the tests,
+// also those that are not xmq (then both reject them). Every case is classified into OUTPUT/parse_results.txt:
 //   SAME          the same DOM
 //   REJECT_SAME   both reject it with the same message
 //   ROOT_SAME     more than one root element or text outside of it: a W3C Document cannot
@@ -30,10 +29,11 @@
 // (name|class|reason).
 //   node tests/libxmq_js/test_003_parse.mjs build/libxmq_js/package OUTPUT_DIR
 // The xmq binary is $XMQ, default build/default/release/xmq.
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+import { xmq_inputs } from "./inputs.mjs";
 
 const require = createRequire(import.meta.url);
 const pkg = path.resolve(process.argv[2]);
@@ -109,25 +109,6 @@ function dump_children(n, indent, out, top)
     flush();
 }
 
-/** The inputs: [name, text]. */
-function inputs()
-{
-    const list = [];
-    const files = execFileSync("git", ["ls-files", "*.xmq", "*.htmq"], { encoding: "utf8" }).split("\n")
-        .filter(f => f !== "" && !f.startsWith("tests/libxml2") && !f.startsWith("tests/libxslt"));
-    for (const f of files) list.push([f, fs.readFileSync(f, "utf8")]);
-    for (const f of fs.readdirSync("tests").filter(f => f.endsWith(".test")).sort())
-    {
-        const lines = fs.readFileSync(path.join("tests", f), "utf8").split("\n");
-        const s = lines.indexOf("START");
-        if (s < 0) continue;
-        let e = s + 1;
-        while (e < lines.length && !/^[A-Z_]+$/.test(lines[e])) e++;
-        list.push([f.replace(/\.test$/, ""), lines.slice(s + 1, e).join("\n") + "\n"]);
-    }
-    return list;
-}
-
 const expected_diffs = new Map();
 const ed_file = "tests/libxmq_js/parse_expected_differences.txt";
 if (fs.existsSync(ed_file))
@@ -145,7 +126,7 @@ fs.mkdirSync(output, { recursive: true });
 const results = [];
 const counts = {};
 const failures = [];
-for (const [name, text] of inputs())
+for (const [name, text] of xmq_inputs())
 {
     const file = path.join(output, name.replace(/[\/]/g, "_") + ".xmq");
     fs.writeFileSync(file, text);

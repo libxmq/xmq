@@ -66,6 +66,15 @@ entities, the later elements) goes inside it? Then C, Java and javascript have t
 together. Also, `xmqj --root=NAME` prints `the global option --root=list is not implemented in
 xmqj yet`.
 
+## A duplicate attribute in xmq gives xml that is not well-formed
+
+`printf 'a(x=1 x=2)\n' | xmq --xmq - to-xml` prints `<a x="1" x="2"/>`, an xml parser
+rejects it. Java (`xmqj`) does the same. The xmq parser should reject the duplicate
+attribute or decide which one is kept. In javascript the W3C DOM keeps only the last one,
+`a(x = 2)`. `web/resources/syntactic_sugar.xmq` has one
+(`element(value = 123 value = 123)`); it is an expected difference of
+`tests/libxmq_js/test_005_print.mjs`.
+
 ## libxmq for javascript: limitations
 
 - **The doctype is not checked.** C and Java report `doctype could not be parsed`, the
@@ -78,5 +87,9 @@ xmqj yet`.
 - **The entity marks are fragile.** Entities are kept as text nodes, and the library
   remembers them. Cloning the nodes, or `normalize()`, loses the marks, and the nodes
   become plain text.
+- **The internal subset of a doctype is printed as written.** A W3C DOM has no internal
+  subset, the printer takes the declarations from the doctype text that parse read, one
+  per line like C, but not normalized like libxml2 does (`<!ENTITY  a   "b">` prints as
+  it is, C prints `<!ENTITY a "b">`).
 - **Not implemented yet:** an `expandEntities` like the one of C. It is planned, the marks
   of the entity text nodes and the attribute parts are what it needs.
