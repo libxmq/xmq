@@ -3,7 +3,7 @@
 /**
  * Parsing xmq into a W3C DOM. XMQParseIntoDOM is a port of the Java XMQParseIntoDOM (a
  * port of the parse callbacks of the C xmq.c), it builds the tree of tree.ts, which is
- * then turned into a W3C DOM document or fragment. The entity references, the attribute
+ * then turned into a W3C DOM document. The entity references, the attribute
  * values with entities or without a value, and the doctype text are remembered in
  * marks.ts, since a W3C DOM cannot store them.
  */
@@ -72,11 +72,16 @@ export class XMQParseIntoDOM extends XMQParser
     private declaring_xmlns_ = false;
     private declaring_xmlns_namespace_: TNs | null = null;
     private default_namespace_: TNs | null = null;
+    private implicit_root_: string | null; // Assume that this is the first element name.
 
-    /** @param xml_parser Parses the embedded xml fragments <...>, without one they are an error. */
-    constructor(private xml_parser: XmlTextParser | null)
+    /**
+     * @param xml_parser Parses the embedded xml fragments <...>, without one they are an error.
+     * @param implicit_root The implicit root element, or null (the C --root option).
+     */
+    constructor(private xml_parser: XmlTextParser | null, implicit_root: string | null = null)
     {
         super();
+        this.implicit_root_ = implicit_root === null || implicit_root === "" ? null : implicit_root;
     }
 
     protected setup(): void
@@ -139,9 +144,20 @@ export class XMQParseIntoDOM extends XMQParser
         const new_node = new TElement(name);
         if (this.element_last_ === null)
         {
-            // There is no implicit root (the C --root option is not supported).
-            this.element_last_ = new_node;
-            this.doc_.setRootElement(new_node);
+            if (this.implicit_root_ === null || name === this.implicit_root_)
+            {
+                // There is no implicit root, or name is the same as the implicit root.
+                this.element_last_ = new_node;
+                this.doc_.setRootElement(new_node);
+            }
+            else
+            {
+                // We have an implicit root and it is different from name.
+                const root = new TElement(this.implicit_root_);
+                this.element_last_ = root;
+                this.doc_.setRootElement(root);
+                this.push(root);
+            }
         }
         const parent = this.top();
         if (new_node.parent === null) parent.addChild(new_node);
@@ -197,7 +213,17 @@ export class XMQParseIntoDOM extends XMQParser
         const f = new TForeign(node);
         if (this.element_last_ === null)
         {
-            this.element_last_ = f;
+            if (this.implicit_root_ !== null && node.nodeName !== this.implicit_root_)
+            {
+                const root = new TElement(this.implicit_root_);
+                this.element_last_ = root;
+                this.doc_.setRootElement(root);
+                this.push(root);
+            }
+            else
+            {
+                this.element_last_ = f;
+            }
         }
         this.top().addChild(f);
         this.element_last_ = f;
@@ -583,7 +609,7 @@ function remove_blanks_and_cdata(node: Node): void
 
 /**
  * The xmq content cannot be stored in a W3C DOM: a Document has at most one element and
- * no text, a fragment no doctype, and the names must be valid xml names.
+ * no text, and the names must be valid xml names.
  */
 export class XMQDomError extends Error
 {
@@ -727,7 +753,7 @@ export function tree_to_document(tdoc: TDocument, impl: DOMImplementation): Docu
         if (c.kind === "element" || c.kind === "foreign") elements++;
         if (c.kind === "text" || c.kind === "entity" || elements > 1)
         {
-            throw new XMQDomError("xmq: a W3C Document can only have one root element and no text outside of it, use parseFragment");
+            throw new XMQDomError("xmq: a W3C Document can only have one root element and no text outside of it, use the root option to give an implicit root element");
         }
     }
     try
@@ -750,26 +776,6 @@ export function tree_to_document(tdoc: TDocument, impl: DOMImplementation): Docu
             doc.appendChild(to_w3c(c, doc));
         }
         return doc;
-    }
-    catch (e)
-    {
-        if (e instanceof XMQDomError) throw e;
-        throw dom_error(e);
-    }
-}
-
-/** Turn the parsed tree into a W3C DocumentFragment of doc, which can hold any content but a doctype. */
-export function tree_to_fragment(tdoc: TDocument, doc: Document): DocumentFragment
-{
-    try
-    {
-        const f = doc.createDocumentFragment();
-        for (const c of tdoc.children)
-        {
-            if (c.kind === "dtd") throw new XMQDomError("xmq: a W3C DocumentFragment cannot have a doctype, use parse");
-            f.appendChild(to_w3c(c, doc));
-        }
-        return f;
     }
     catch (e)
     {

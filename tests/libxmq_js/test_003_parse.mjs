@@ -10,8 +10,14 @@
 // (then both reject them). Every case is classified into OUTPUT/parse_results.txt:
 //   SAME          the same DOM
 //   REJECT_SAME   both reject it with the same message
-//   FRAGMENT_SAME more than one root element or text outside of it: a W3C Document cannot
-//                 hold it, parse throws XMQDomError, parseFragment gives the same nodes
+//   ROOT_SAME     more than one root element or text outside of it: a W3C Document cannot
+//                 hold it and parse throws XMQDomError, but with the implicit root option
+//                 root: "root" it gives the same DOM as xmq --root=root --xmq FILE to-xml
+//   ROOT_NOT_ENOUGH  parse throws XMQDomError also with the root option: the implicit root is
+//                 only created when the first node is an element (not after a comment or a
+//                 quote, not for xmq without elements), and not around the elements after
+//                 a first element named root. C does the same, it prints the same top level
+//                 nodes with --root=root, so this is not a difference (see doc/TODO.md).
 //   DIFF, REJECT_DIFF, ONLY_C_REJECTS, ONLY_JS_REJECTS
 // Skipped, with the reason:
 //   SKIP_C_NO_MESSAGE  C fails without a message: xmq --xmq on input that C detects as
@@ -19,7 +25,7 @@
 //                      compare with (a C bug, the message expected xmq source is missing).
 //   SKIP_C_XML_UNREADABLE  the xml that C prints cannot be read by the xmldom DOMParser,
 //                      eg a namespace prefix that is never declared, so there is no C DOM.
-// The test fails on any case that is not SAME, REJECT_SAME, FRAGMENT_SAME or skipped,
+// The test fails on any case that is not SAME, REJECT_SAME, ROOT_SAME, ROOT_NOT_ENOUGH or skipped,
 // unless it is listed with the reason in tests/libxmq_js/parse_expected_differences.txt
 // (name|class|reason).
 //   node tests/libxmq_js/test_003_parse.mjs build/libxmq_js/package OUTPUT_DIR
@@ -143,8 +149,8 @@ for (const [name, text] of inputs())
 {
     const file = path.join(output, name.replace(/[\/]/g, "_") + ".xmq");
     fs.writeFileSync(file, text);
-    const c = spawnSync(xmq, ["--xmq", file, "to-xml"], { encoding: "utf8" });
-    let js = null, js_error = null, fragment = false;
+    let c = spawnSync(xmq, ["--xmq", file, "to-xml"], { encoding: "utf8" });
+    let js = null, js_error = null, root = false, not_enough = false;
     try
     {
         js = lib.parse(text, { dom, source: file, xmlParser: xml_parser(true) });
@@ -153,10 +159,18 @@ for (const [name, text] of inputs())
     {
         if (e instanceof lib.XMQDomError)
         {
-            fragment = true;
-            js = lib.parseFragment(text, { dom, source: file, xmlParser: xml_parser(true) });
+            root = true;
+            c = spawnSync(xmq, ["--root=root", "--xmq", file, "to-xml"], { encoding: "utf8" });
+            try
+            {
+                js = lib.parse(text, { dom, source: file, xmlParser: xml_parser(true), root: "root" });
+            }
+            catch (e2)
+            {
+                if (!(e2 instanceof lib.XMQDomError)) throw e2;
+                not_enough = true;
+            }
         }
-        else if (e instanceof lib.XMQParseError) js_error = e;
         else js_error = e;
     }
     let cls, detail = "";
@@ -185,51 +199,40 @@ for (const [name, text] of inputs())
     }
     else
     {
-        // The C xml without its xml declaration, in a root element for the fragment case.
-        let xml = c.stdout.replace(/^<\?xml[^>]*\?>\n?/, "");
+        // The C xml without its xml declaration.
+        const xml = c.stdout.replace(/^<\?xml[^>]*\?>\n?/, "");
         let cdoc;
         try
         {
-            cdoc = fragment ? xml_parser(true).parseFromString("<xmq-fragment-root>" + xml + "</xmq-fragment-root>", "text/xml").documentElement
-                            : xml_parser(true).parseFromString(xml, "text/xml");
+            cdoc = xml_parser(true).parseFromString(xml, "text/xml");
         }
         catch (e)
         {
             cdoc = null;
         }
-        if (cdoc === null)
+        if (not_enough)
+        {
+            // C has the same nodes at the top level, so its xml is not a document either.
+            cls = cdoc === null ? "ROOT_NOT_ENOUGH" : "DIFF";
+            if (cdoc !== null) detail = "C gives a single root with --root=root, JS throws XMQDomError";
+        }
+        else if (cdoc === null)
         {
             cls = "SKIP_C_XML_UNREADABLE";
         }
         else
         {
             const a = [], b = [];
-            if (fragment)
-            {
-                // C prints a newline after every top level node, it merges with the text
-                // at the top level: do the same with the javascript nodes.
-                dump_children(cdoc, 0, a, true);
-                const f = js.ownerDocument.createDocumentFragment();
-                while (js.firstChild !== null)
-                {
-                    f.appendChild(js.firstChild);
-                    f.appendChild(js.ownerDocument.createTextNode("\n"));
-                }
-                dump_children(f, 0, b, true);
-            }
-            else
-            {
-                dump(cdoc, 0, a);
-                dump(js, 0, b);
-            }
+            dump(cdoc, 0, a);
+            dump(js, 0, b);
             const same = a.join("\n") === b.join("\n");
-            cls = same ? (fragment ? "FRAGMENT_SAME" : "SAME") : "DIFF";
+            cls = same ? (root ? "ROOT_SAME" : "SAME") : "DIFF";
             if (!same) detail = "C:\n" + a.join("\n") + "\nJS:\n" + b.join("\n");
         }
     }
     counts[cls] = (counts[cls] ?? 0) + 1;
     results.push(cls + " " + name);
-    const ok = cls === "SAME" || cls === "REJECT_SAME" || cls === "FRAGMENT_SAME" || cls.startsWith("SKIP_") ||
+    const ok = cls === "SAME" || cls === "REJECT_SAME" || cls === "ROOT_SAME" || cls === "ROOT_NOT_ENOUGH" || cls.startsWith("SKIP_") ||
         expected_diffs.get(name) === cls;
     if (!ok)
     {

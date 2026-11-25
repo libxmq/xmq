@@ -11,7 +11,7 @@ It is a port of the Java implementation of libxmq and gives the same result as t
 `xmq` command line, also the same error messages. It has no runtime dependencies.
 
 ```js
-import { parse, parseFragment, XMQParseError } from "libxmq";
+import { parse, XMQParseError } from "libxmq";
 
 // In a browser the DOM of the browser is used.
 const doc = parse("car { model = Volvo }");
@@ -20,8 +20,9 @@ const doc = parse("car { model = Volvo }");
 import { DOMImplementation } from "@xmldom/xmldom";
 const doc2 = parse("car { model = Volvo }", { dom: new DOMImplementation() });
 
-// A Document has one root element, a fragment can hold any xmq content.
-const frag = parseFragment("a = 1 b = 2 'some text'", { document: doc });
+// A Document has one root element: several elements need an implicit root element,
+// like xmq --root=list: <list><a>1</a><b>2</b></list>
+const doc3 = parse("a = 1 b = 2", { root: "list" });
 
 try
 {
@@ -48,10 +49,12 @@ tokenize --type=debugtokens` and `--type=debugcontent`.
   (`doctypeText(doctype)`). Cloning the nodes or calling `normalize()` loses this, the
   nodes are then plain text.
 - A W3C Document can only have one root element and no text outside of it, `parse`
-  throws an `XMQDomError` for such xmq, use `parseFragment`.
+  throws an `XMQDomError` for such xmq. Give the `root` option, an implicit root element
+  like `--root` of the command line. As in C, the implicit root is only created when the
+  first node is an element: after a leading comment or quote, or for xmq that is only a
+  quote, it still throws `XMQDomError`.
 - A namespace prefix that is never declared, eg `p:a` without `xmlns:p`, gives an element
   named `p:a` without a namespace.
 - The doctype is not checked (C and Java report "doctype could not be parsed").
 - Embedded xml (`<b>bold</b>` in xmq) is parsed with a DOMParser: the one of the browser,
   or the `xmlParser` option. Without one it is an error.
-- The `--root` option of the command line (an implicit root element) is not supported.

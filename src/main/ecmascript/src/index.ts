@@ -6,14 +6,14 @@
  * same output as the C implementation.
  */
 
-import { tree_to_document, tree_to_fragment, XMQParseIntoDOM, type XmlTextParser } from "./dom.js";
+import { tree_to_document, XMQParseIntoDOM, type XmlTextParser } from "./dom.js";
 
 export { ParseErrorCode, parseErrorToString, XMQParseError } from "./errors.js";
 export { tokenize, type TokenizeType } from "./tokens.js";
 export { XMQDomError, type XmlTextParser } from "./dom.js";
 export { entityName, attrParts, doctypeText, type AttrPart } from "./marks.js";
 
-/** The options of parse and parseFragment. */
+/** The options of parse. */
 export interface ParseOptions
 {
     /**
@@ -28,13 +28,13 @@ export interface ParseOptions
      * if there is one (a browser). Without one an embedded fragment is an error.
      */
     xmlParser?: XmlTextParser;
-}
-
-/** The options of parseFragment. */
-export interface ParseFragmentOptions extends ParseOptions
-{
-    /** The document that owns the fragment, by default a new document of the dom. */
-    document?: Document;
+    /**
+     * The implicit root element, like the --root option of the xmq command line: unless
+     * the first element of the xmq has this name, it and everything after it is placed
+     * inside a new root element with this name. Needed for xmq with several elements at
+     * the top level, eg a = 1 b = 2, since a W3C Document has only one root element.
+     */
+    root?: string;
 }
 
 /** The DOM implementation of the options, or of the browser. */
@@ -64,29 +64,12 @@ function xml_parser(options: ParseOptions): XmlTextParser | null
  * @returns The document.
  * @throws XMQParseError If the xmq cannot be parsed, with the same message as the C xmq.
  * @throws XMQDomError If the content cannot be stored in a Document, eg two root
- *         elements or text outside of the root element (use parseFragment).
+ *         elements or text outside of the root element (give the root option).
  */
 export function parse(xmq: string, options: ParseOptions = {}): Document
 {
     // The syntax errors need no DOM.
-    const p = new XMQParseIntoDOM(xml_parser(options));
+    const p = new XMQParseIntoDOM(xml_parser(options), options.root ?? null);
     p.parse(xmq, options.source ?? "-");
     return tree_to_document(p.doc_, implementation(options));
-}
-
-/**
- * Parse xmq into a W3C DocumentFragment, which can hold any xmq content except a doctype:
- * several elements and text, eg to insert into an existing document.
- * @param xmq The xmq text.
- * @param options The DOM implementation or the owner document, the source name for errors...
- * @returns The fragment.
- * @throws XMQParseError If the xmq cannot be parsed, with the same message as the C xmq.
- * @throws XMQDomError If the content cannot be stored in a fragment (a doctype).
- */
-export function parseFragment(xmq: string, options: ParseFragmentOptions = {}): DocumentFragment
-{
-    const p = new XMQParseIntoDOM(xml_parser(options));
-    p.parse(xmq, options.source ?? "-");
-    const doc = options.document ?? implementation(options).createDocument(null, "", null);
-    return tree_to_fragment(p.doc_, doc);
 }
