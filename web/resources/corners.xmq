@@ -15,6 +15,6 @@ newlines = '
 
             alfa
 
-           '
+            '
 newlines = ( &#10; 'alfa' &#10; )
 newlines { &#10; 'alfa' &#10; }
