@@ -2,34 +2,6 @@
 
 Known bugs, limitations and deferred work, each with a minimal repro.
 
-## The Java xmq parser differs from C
-
-The Java parser (`src/main/java/org/libxmq/imp/XMQParser.java`) accepts some invalid xmq
-that C rejects, and reports some errors at other positions. `make testj` does not run the
-`tests/error_*.test` files, so this is not caught. libxmq for javascript (a port of the
-Java parser) has the C behaviour, see `src/main/ecmascript/src/parser.ts`. Each item
-below lists the error test that shows it. The Java parser needs the same fixes. Then
-`make testj` should run the error tests.
-
-- **Error positions.** C reports the start of the quote, entity or comment, Java reports
-  where the parser stopped.
-  `tests/error_003_too_many_closing_quotes.test`: C `2:17`, Java `2:21`.
-  `tests/error_004_entity_not_closed.test` (`hello = &nbsp`): C `1:9`, Java `1:14`.
-- **Unexpected closing brace.** `printf 'a = 1 }\n'`: C gives `error: unexpected
-  closing brace`, Java accepts it (`<a>1</a>`). See
-  `tests/error_010_too_many_closing_braces.test`.
-- **Expected content after equals.** A `key =` followed by a new element: C gives `3:8:
-  error: expected content after equals`, Java `4:8: error: unexpected character "{"`.
-  See `tests/error_008_expected_content_after_equals.test`.
-- **The more quotes warning.** `tale = 'There's a candle, a room and a spirit.'`: C first
-  prints `1:14: warning: perhaps you need more quotes to quote this quote`, and then the
-  error. Java prints only `1:25: error: unexpected character ","`. See
-  `tests/error_013_more_quotes_needed.test`.
-- **When `!` starts a doctype.** `printf '!x = 1\n'`: C gives `error: unexpected
-  character "!"`, Java prints `<!x>1</!x>`. C treats `!DOCTYPE` as a doctype only when
-  `=` or whitespace follows it (`is_xmq_doctype_start`), and `?` as a pi only when a name
-  follows it (`is_xmq_pi_start`).
-
 ## xmq --xmq fails silently on input that looks like xml or json
 
 `printf '<b>x</b>\n' | xmq --xmq - to-xml` exits with 1 and prints nothing. It should
@@ -116,17 +88,49 @@ characters, so the padding is too small by the number of extra utf8 bytes. Java 
 libxmq for javascript count characters. `tests/libxml2/test/valid/objednavka.xml` shows it,
 it is an expected difference of `tests/libxmq_js/test_007_print_dom.mjs`.
 
-## The Java xmq quote trimming differs from C when a line starts with CR
+## A default namespace is also used by the following siblings
 
-`printf "a = 'x\n\r y'\n" | xmq - tokenize --type=debugcontent` gives `{quote "x\n\r y"}`:
-C finds no line with content after the first (the line starting with CR does not count),
-so there is no incidental indentation and nothing is trimmed. For this input `xmqj ...
-to-xml` prints `<a>x\n\ny</a>`, C `<a>x\n&#13; y</a>`. The javascript port had the same
-code as Java and gave the same `x\n\ny`: in `calculate_incidental_indent` C returns `(size_t)-1`
-both when there is no newline and when no line has content, and both mean "do not trim".
-Java `XmqTrim.calculate_incidental_indent` returns `-1` for the first case but
-`Long.MAX_VALUE` for the second, and then trims. Fixed in javascript, `test_002_trim.mjs`
-now has quotes with CR and tabs. Java needs the same fix.
+`xmlns=uri` on an element puts the element and its children in the namespace, but the
+parser also keeps it for the elements that follow the element. C, Java and javascript
+alike: `default_namespace` of the parse state is never reset when the element ends.
+
+```sh
+printf 'r { a(xmlns=urn:x) = 1 b = 2 }\n' > ns.xmq
+xmq ns.xmq select '//*[namespace-uri()="urn:x"]' to-xml   # selects a and b
+xmq ns.xmq to-xml      # <r><a xmlns="urn:x">1</a><b>2</b></r>, b is shown without it
+```
+
+The xml that C prints loses the namespace of `b` (it is not declared where `b` is), so the
+DOM and its xml disagree. `make fuzz_parse_print` counts these as KNOWN_DEFAULT_NS_LEAK.
+
+## A processing instruction with a compound value is parsed wrongly
+
+`?pi = ( 'a' )` gives the parts of the compound to whatever node was created last, not
+to the pi, and the pi gets the value of the next key = value:
+
+```sh
+printf "r { &apos; ?pi = ( 'a' ) x = 1 }\n" | xmq --xmq - to-xml
+# <r>&apos;<x/><?pi 1?></r>, the 'a' is a child of the entity reference &apos;
+```
+
+The same in Java and javascript (Java threw a ClassCastException when it printed such an
+entity reference, fixed). The printer writes `?pi = ( ... )` for a pi whose text needs a
+compound, so such a pi does not survive print and parse again.
+
+## Printing a comment that ends with a newline is not stable
+
+A comment whose text ends with a newline is printed as `/* text */`, which loses the
+newline, and the next print gives another comment:
+
+```sh
+printf '/* a\n\n*/\na = 1\n' > c.xmq   # the comment text is "a\n"
+xmq --xmq c.xmq to-xmq                  # /* a */
+xmq --xmq c.xmq to-xmq | xmq --xmq - to-xmq   # // a
+```
+
+Most of the ROUNDTRIP findings of `make fuzz_parse_print` (print, parse and print again
+gives another text) are comments with leading or ending whitespace and newlines; the
+printer of Java and javascript does the same as C.
 
 ## libxmq for javascript: limitations
 

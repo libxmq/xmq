@@ -146,6 +146,8 @@ Fuzz:
   build_fuzz          Build xmq for AFL++.
   run_fuzz_xmq, run_fuzz_yaml, run_fuzz_yaml_until_crash
                       Run AFL++ on the xmq or yaml parser.
+  fuzz_parse_print    Random xmq through the parsers and printers of C, Java and javascript.
+                      CASES=n per round, ROUNDS=n (0 until stopped), SEED=n repeats a run.
   disable_address_randomization, enable_address_randomization   (uses sudo)
 
 Install and release:
@@ -628,7 +630,7 @@ pom.xml: pom.xmq jproject.settings
 
 xmqj: build/xmqj
 
-.PHONY: xmqj xmqjs xmq_node_package test_xmqjs libxmq_js test_libxmq_js
+.PHONY: xmqj xmqjs xmq_node_package test_xmqjs libxmq_js test_libxmq_js fuzz_parse_print
 
 # make/java/Makefile knows the java sources and only runs maven when build/xmqj is
 # older than them (or pom.xml, scripts/run.sh), so always ask it.
@@ -704,6 +706,12 @@ libxmq_js:
 # The tests of libxmq for javascript in tests/libxmq_js, see tests/test_libxmq_js.sh.
 test_libxmq_js: libxmq_js
 	@./tests/test_libxmq_js.sh $(LIBXMQ_JS) $(LIBXMQ_JS)/test_output
+
+# A differential fuzzer of the xmq parsers and pretty printers of C, Java and javascript,
+# see tests/fuzz_parse_print/fuzz_parse_print.mjs. CASES=n cases per round (500), ROUNDS=n
+# (1, 0 runs until stopped), SEED=n repeats a run. The findings go to build/fuzz_parse_print.
+fuzz_parse_print: release xmqj libxmq_js
+	@NODE_PATH=$(CURDIR)/$(LIBXMQ_JS)/tools/node_modules node tests/fuzz_parse_print/fuzz_parse_print.mjs $(LIBXMQ_JS)/package build/fuzz_parse_print
 
 # Builds xmqj, and the release xmq that the java command line is compared with.
 testj: build/xmqj release
