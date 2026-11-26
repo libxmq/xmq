@@ -88,7 +88,8 @@ public abstract class XMQParser extends XMQParseCallbacks
     int last_equals_start_line_;
     int last_equals_start_col_;
 
-    int last_suspicios_quote_end_;
+    // A quote that perhaps ended too early, eg 'There's a man.', -1 if none (like C).
+    int last_suspicios_quote_end_ = -1;
     int last_suspicios_quote_end_line_;
     int last_suspicios_quote_end_col_;
 
@@ -108,10 +109,18 @@ public abstract class XMQParser extends XMQParseCallbacks
         line_ = 1;
         col_ = 1;
 
+        line_start_ = 0;
+        nesting_depth_ = 0;
+        last_suspicios_quote_end_ = -1;
         try
         {
             setup();
             parse_xmq();
+            if (i_ < buffer_len_)
+            {
+                // Like xmqTokenizeBuffer in C: parse_xmq returned at a } on the top level.
+                throw error_here(ParseErrorCode.XMQ_ERROR_UNEXPECTED_CLOSING_BRACE);
+            }
         }
         catch(XMQRuntimeException e)
         {
@@ -132,7 +141,9 @@ public abstract class XMQParser extends XMQParseCallbacks
     void increment(char c)
     {
         assert(c == buffer_.charAt(i_));
-        col_++;
+        // Like C the column counts characters (code points), the second half of a
+        // surrogate pair does not count.
+        if (!Character.isLowSurrogate(c)) col_++;
         if (c == '\n')
         {
             line_start_ = i_+1;
@@ -142,22 +153,100 @@ public abstract class XMQParser extends XMQParseCallbacks
         i_++;
     }
 
-    static private final boolean is_xmq_doctype_start(char c)
+    /** Like is_xmq_doctype_start in C: !DOCTYPE followed by = or whitespace. */
+    private boolean is_xmq_doctype_start()
     {
-        if (c == '!')
-        {
-            return true;
-        }
-        return false;
+        int i = i_;
+        if (buffer_.charAt(i) != '!') return false;
+        if (i + 8 > buffer_len_) return false;
+        if (!buffer_.startsWith("!DOCTYPE", i)) return false;
+        // Ooups, !DOCTYPE must have some value.
+        if (i + 8 == buffer_len_) return false;
+        char c = buffer_.charAt(i + 8);
+        // !DOCTYPE= or !DOCTYPE = etc
+        return c == '=' || c == ' ' || c == '\t' || c == '\n' || c == '\r';
     }
 
-    static private final boolean is_xmq_pi_start(char c)
+    /** Like is_xmq_pi_start in C: a ? followed by at least one character, eg ?x */
+    private boolean is_xmq_pi_start()
     {
-        if (c == '?')
+        return buffer_.charAt(i_) == '?' && i_ + 2 <= buffer_len_;
+    }
+
+    /** A parse error at the current position. */
+    XMQRuntimeException error_here(ParseErrorCode code)
+    {
+        return error_at(code, i_, line_, col_);
+    }
+
+    /**
+     * A parse error at a position, printed like the C xmq (xmqTokenizeBuffer and
+     * generate_state_error_message): an unexpected character after a quote that perhaps
+     * ended too early first gets a warning about it.
+     * @param code The error.
+     * @param pos The position of the error in the buffer.
+     * @param line The line of the position.
+     * @param col The column of the position.
+     * @return The exception to throw.
+     */
+    XMQRuntimeException error_at(ParseErrorCode code, int pos, int line, int col)
+    {
+        error_nr_ = code;
+        ParseException warning = null;
+        if (code == ParseErrorCode.XMQ_ERROR_INVALID_CHAR && last_suspicios_quote_end_ >= 0)
         {
-            return true;
+            warning = state_error(ParseErrorCode.XMQ_WARNING_QUOTES_NEEDED, last_suspicios_quote_end_,
+                                  last_suspicios_quote_end_line_, last_suspicios_quote_end_col_, null);
         }
-        return false;
+        return new XMQRuntimeException(state_error(code, pos, line, col, warning));
+    }
+
+    /**
+     * Like generate_state_error_message in C: the line of the position (at most 1024 utf8
+     * bytes) and the number of utf8 bytes before the position in the line.
+     */
+    private ParseException state_error(ParseErrorCode code, int pos, int line, int col, ParseException warning)
+    {
+        String b = buffer_;
+        int line_length = 0;
+        int indent = 0;
+        int line_start = pos;
+        while (line_start > 0 && b.charAt(line_start - 1) != '\n' && line_length < 1024)
+        {
+            // Step back one code point.
+            int k = line_start - 1;
+            if (Character.isLowSurrogate(b.charAt(k)) && k > 0 && Character.isHighSurrogate(b.charAt(k - 1))) k--;
+            int n = utf8_length(b, k, line_start);
+            line_start = k;
+            line_length += n;
+            indent += n;
+        }
+        int line_stop = pos;
+        while (line_stop < b.length() && b.charAt(line_stop) != '\0' && b.charAt(line_stop) != '\n' && line_length < 1024)
+        {
+            int w = Character.charCount(b.codePointAt(line_stop));
+            line_length += utf8_length(b, line_stop, line_stop + w);
+            line_stop += w;
+        }
+        boolean inside = pos < b.length();
+        int cp = inside ? b.codePointAt(pos) : 0;
+        return new ParseException(code, b.substring(Math.min(line_start, b.length()), Math.min(line_stop, b.length())),
+                                  line, col, source_, inside ? indent : -1, cp, warning);
+    }
+
+    /** The number of utf8 bytes of the chars from start to stop. */
+    static int utf8_length(String s, int start, int stop)
+    {
+        int n = 0;
+        for (int i = start; i < stop; i++)
+        {
+            char c = s.charAt(i);
+            if (c < 0x80) n += 1;
+            else if (c < 0x800) n += 2;
+            else if (Character.isHighSurrogate(c) && i + 1 < stop) { n += 4; i++; }
+            else n += 3;
+        }
+        return n;
     }
 
     static private final boolean is_xmq_token_whitespace(char c)
@@ -300,10 +389,12 @@ public abstract class XMQParser extends XMQParseCallbacks
     {
         int start = i_;
 
+        // Like C: a run of whitespace that starts with xmq token whitespace (space, newline,
+        // cr) continues over any whitespace, eg nbsp, but not a tab.
         while (i_ < buffer_len_)
         {
             char c = currentChar();
-            if (!is_xmq_token_whitespace(c)) break;
+            if (count_whitespace() == 0) break;
             // Tabs are not permitted as xmq token whitespace.
             if (c == '\t') break;
             // Pass the first char, needed to detect '\n' which increments line and set cols to 1.
@@ -392,8 +483,9 @@ public abstract class XMQParser extends XMQParseCallbacks
             count = count_xmq_quotes(q);
             if (count > depth)
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES;
-                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+                // Like C the error is reported where the quote starts.
+                throw error_at(ParseErrorCode.XMQ_ERROR_QUOTE_CLOSED_WITH_TOO_MANY_QUOTES, last_quote_start_,
+                               last_quote_start_line_, last_quote_start_col_);
             }
             else if (count < depth)
             {
@@ -419,26 +511,33 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         if (depth != 0)
         {
-            error_nr_ = ParseErrorCode.XMQ_ERROR_QUOTE_NOT_CLOSED;
-            throw new XMQRuntimeException(
-                new ParseException(error_nr_,
-                                   buffer_.substring(
-                                       findNLBackwards(last_quote_start_, 200),
-                                       findNL(last_quote_start_, 200)),
-                                   last_quote_start_line_,
-                                   last_quote_start_col_,
-                                   source_));
+            throw error_at(ParseErrorCode.XMQ_ERROR_QUOTE_NOT_CLOSED, last_quote_start_,
+                           last_quote_start_line_, last_quote_start_col_);
         }
 
-        /*
-          if (possibly_need_more_quotes(state))
-          {
-          state->last_suspicios_quote_end = state->i-1;
-          state->last_suspicios_quote_end_line = state->line;
-          state->last_suspicios_quote_end_col = state->col-1;
-          }*/
+        if (possibly_need_more_quotes())
+        {
+            last_suspicios_quote_end_ = i_ - 1;
+            last_suspicios_quote_end_line_ = line_;
+            last_suspicios_quote_end_col_ = col_ - 1;
+        }
 
         return new Pair<>(start, stop);
+    }
+
+    /**
+     * Like possibly_need_more_quotes in C: after a quote, a quote that ends inside a word,
+     * eg the s in 'There's a man.', perhaps needed more quotes. It is remembered and
+     * reported as a warning if the parse then fails with an unexpected character.
+     */
+    private boolean possibly_need_more_quotes()
+    {
+        if (i_ - 2 < 0 || i_ >= buffer_len_) return false;
+        char c0 = buffer_.charAt(i_ - 2);
+        char c1 = buffer_.charAt(i_ - 1); // This is the apostrophe.
+        char c2 = currentChar();
+        return c0 != '\'' && c0 != ' ' && c1 == '\'' && c2 != '\'' && c2 != 0 &&
+            " \t\r\n(){}".indexOf(c2) < 0;
     }
 
     void parse_xmq_quote(XMQLevel level)
@@ -472,6 +571,8 @@ public abstract class XMQParser extends XMQParseCallbacks
 
     void eat_xmq_entity()
     {
+        // Like C an error is reported where the entity starts.
+        int start = i_, start_line = line_, start_col = col_;
         increment('&');
         char c = 0;
         boolean expect_semicolon = false;
@@ -491,8 +592,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         }
         if (expect_semicolon)
         {
-            error_nr_ = ParseErrorCode.XMQ_ERROR_ENTITY_NOT_CLOSED;
-            throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+            throw error_at(ParseErrorCode.XMQ_ERROR_ENTITY_NOT_CLOSED, start, start_line, start_col);
         }
     }
 
@@ -558,16 +658,8 @@ public abstract class XMQParser extends XMQParseCallbacks
 
         if (c != ')')
         {
-            error_nr_ = ParseErrorCode.XMQ_ERROR_COMPOUND_NOT_CLOSED;
             // Like C, the error is reported where the compound should have been closed.
-            throw new XMQRuntimeException(
-                new ParseException(error_nr_,
-                                   buffer_.substring(
-                                       findNLBackwards(i_, 200),
-                                       findNL(i_, 200)),
-                                   line_,
-                                   col_,
-                                   source_));
+            throw error_here(ParseErrorCode.XMQ_ERROR_COMPOUND_NOT_CLOSED);
         }
 
         start = i_;
@@ -591,15 +683,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             else if (is_xmq_entity_start(c)) parse_xmq_entity(level);
             else
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN;
-                throw new XMQRuntimeException(
-                    new ParseException(error_nr_,
-                                       buffer_.substring(
-                                           findNLBackwards(i_, 200),
-                                           findNL(i_, 200)),
-                                       line_,
-                                       col_,
-                                       source_));
+                throw error_here(ParseErrorCode.XMQ_ERROR_COMPOUND_MAY_NOT_CONTAIN);
             }
         }
     }
@@ -636,6 +720,8 @@ public abstract class XMQParser extends XMQParseCallbacks
 
     boolean eat_xmq_comment_to_close(int num_slashes)
     {
+        // Like C an error is reported where this part of the comment starts.
+        int part_start = i_, part_line = line_, part_col = col_;
         int n = num_slashes;
 
         if (buffer_.charAt(i_) == '/')
@@ -674,8 +760,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (n > num_slashes)
             {
                 // Oups, too many slashes.
-                error_nr_ = ParseErrorCode.XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES;
-                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+                throw error_at(ParseErrorCode.XMQ_ERROR_COMMENT_CLOSED_WITH_TOO_MANY_SLASHES, part_start, part_line, part_col);
             }
 
             assert(n == num_slashes);
@@ -690,15 +775,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             return found_asterisk;
         }
         // We reached the end of the xmq and no */ was found!
-        error_nr_ = ParseErrorCode.XMQ_ERROR_COMMENT_NOT_CLOSED;
-        throw new XMQRuntimeException(
-                    new ParseException(error_nr_,
-                                   buffer_.substring(
-                                       findNLBackwards(last_comment_start_, 200),
-                                       findNL(last_comment_start_, 200)),
-                                   last_comment_start_line_,
-                                   last_comment_start_col_,
-                                   source_));
+        throw error_at(ParseErrorCode.XMQ_ERROR_COMMENT_NOT_CLOSED, part_start, part_line, part_col);
     }
 
     void parse_xmq_comment(char cc)
@@ -852,8 +929,7 @@ public abstract class XMQParser extends XMQParseCallbacks
             char cc = nextChar();
             if (unsafe_value_start(c, cc))
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_VALUE_CANNOT_START_WITH;
-                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+                throw error_here(ParseErrorCode.XMQ_ERROR_VALUE_CANNOT_START_WITH);
             }
             parse_xmq_text_value(level);
         }
@@ -1069,14 +1145,9 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = currentChar(); }
             if (c != ')')
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_ATTRIBUTES_NOT_CLOSED;
                 // Like C, report the error where the attributes started.
-                throw new XMQRuntimeException(
-                    new ParseException(error_nr_,
-                                       buffer_.substring(findNLBackwards(last_attr_start_, 200), findNL(last_attr_start_, 200)),
-                                       last_attr_start_line_,
-                                       last_attr_start_col_,
-                                       source_));
+                throw error_at(ParseErrorCode.XMQ_ERROR_ATTRIBUTES_NOT_CLOSED, last_attr_start_,
+                               last_attr_start_line_, last_attr_start_col_);
             }
 
             start = i_;
@@ -1124,8 +1195,7 @@ public abstract class XMQParser extends XMQParseCallbacks
 
             if (++nesting_depth_ > MAX_NESTING_DEPTH)
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_TOO_DEEP;
-                throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+                throw error_here(ParseErrorCode.XMQ_ERROR_TOO_DEEP);
             }
             parse_xmq();
             nesting_depth_--;
@@ -1135,15 +1205,8 @@ public abstract class XMQParser extends XMQParseCallbacks
             if (is_xmq_token_whitespace(c)) { parse_xmq_whitespace(); c = currentChar(); }
             if (c != '}')
             {
-                error_nr_ = ParseErrorCode.XMQ_ERROR_BODY_NOT_CLOSED;
-                throw new XMQRuntimeException(
-                    new ParseException(error_nr_,
-                                   buffer_.substring(
-                                       findNLBackwards(last_body_start_, 200),
-                                       findNL(last_body_start_, 200)),
-                                   last_body_start_line_,
-                                   last_body_start_col_,
-                                   source_));
+                throw error_at(ParseErrorCode.XMQ_ERROR_BODY_NOT_CLOSED, last_body_start_,
+                               last_body_start_line_, last_body_start_col_);
             }
 
             start = i_;
@@ -1168,29 +1231,51 @@ public abstract class XMQParser extends XMQParseCallbacks
             else if (is_xmq_comment_start(c, cc)) parse_xmq_comment(cc);
             else if (is_xmq_element_start(c)) parse_xmq_element();
             else if (c == '}') { return; }
-            else if (is_xmq_doctype_start(c)) parse_xmq_doctype();
-            else if (is_xmq_pi_start(c)) parse_xmq_pi();
+            else if (is_xmq_doctype_start()) parse_xmq_doctype();
+            else if (is_xmq_pi_start()) parse_xmq_pi();
             else if (c == '<') parse_xmq_embedded_xml();
+            else if (possibly_lost_content_after_equals())
+            {
+                throw error_at(ParseErrorCode.XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS, last_equals_start_,
+                               last_equals_start_line_, last_equals_start_col_);
+            }
+            else if (c == '\t')
+            {
+                throw error_here(ParseErrorCode.XMQ_ERROR_UNEXPECTED_TAB);
+            }
             else
             {
-                /*if (possibly_lost_content_after_equals(state))
-                {
-                    error_nr_ = XMQ_ERROR_EXPECTED_CONTENT_AFTER_EQUALS;
-                }
-                else */if (c == '\t')
-                {
-                    error_nr_ = ParseErrorCode.XMQ_ERROR_UNEXPECTED_TAB;
-                    throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
-                }
-                else
-                {
-                    error_nr_ = ParseErrorCode.XMQ_ERROR_INVALID_CHAR;
-                    throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
-                }
-                //System.err.println("Internal error.");
-                //System.exit(1);
+                throw error_here(ParseErrorCode.XMQ_ERROR_INVALID_CHAR);
             }
         }
+    }
+
+    /**
+     * Like possibly_lost_content_after_equals in C: an unexpected { ( or = after a name on
+     * a line that follows a line ending with an equals sign, eg
+     *     alfa =
+     *     beta { 'more' }
+     * where beta became the value of alfa.
+     */
+    private boolean possibly_lost_content_after_equals()
+    {
+        char c = currentChar();
+        if (!(c == '{' || c == '(' || c == '=')) return false;
+        String b = buffer_;
+        // Nothing before, eg the buffer starts with ( or {.
+        if (i_ <= 0) return false;
+        int i = i_ - 1;
+        // Scan backwards for newline accepting only texts and xml whitespace.
+        while (i > 0 && b.charAt(i) != '\n' && (is_xmq_text_name(b.charAt(i)) || is_xml_ws(b.charAt(i)))) i--;
+        if (i == 0 || b.charAt(i) != '\n') return false;
+        // We found the newline, see if the next character backwards is an equals sign.
+        while (i > 0 && is_xml_ws(b.charAt(i))) i--;
+        return b.charAt(i) == '=';
+    }
+
+    private static boolean is_xml_ws(char c)
+    {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r';
     }
 
     /**
@@ -1266,8 +1351,7 @@ public abstract class XMQParser extends XMQParseCallbacks
         int stop = find_xmq_embedded_xml_stop(start);
         if (stop < 0)
         {
-            error_nr_ = ParseErrorCode.XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED;
-            throw new XMQRuntimeException(new ParseException(error_nr_, buffer_.substring(line_start_, findNL(i_, 20)), line_, col_, source_));
+            throw error_here(ParseErrorCode.XMQ_ERROR_XML_FRAGMENT_NOT_CLOSED);
         }
         do_embedded_xml(start, stop);
         while (i_ < stop) increment(buffer_.charAt(i_));

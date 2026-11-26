@@ -105,7 +105,7 @@ function calculate_incidental_indent(b: string, start: number, stop: number): nu
         if (i >= stop) break;
     }
     // In C both no newline and no line with content are (size_t)-1, then nothing is
-    // trimmed. Java returns Long.MAX_VALUE for no line with content, and then trims.
+    // trimmed.
     return indent === SIZE_MAX ? -1 : indent;
 }
 

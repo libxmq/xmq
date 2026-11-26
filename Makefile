@@ -717,6 +717,8 @@ testj: build/xmqj release
 	@./tests/test_traceixml.sh build/xmqj build/test_output
 # At most 10000 nested elements in xmq, json, xml, yaml and ixml.
 	@./tests/test_max_depth_parsers.sh build/xmqj build/test_output
+# The xmq parse errors of tests/error_*.test, the same messages as xmq.
+	@for i in tests/error_???_*.test; do ./tests/test_error.sh build/xmqj build/test_output $$i || exit 1; done
 # Run xmqj cli binary comparing to xmq cli binary results.
 #	@./tests/testj.sh build/xmqj build build/test_output $(FILTER)
 

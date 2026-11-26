@@ -114,7 +114,9 @@ final class XmqTrim
             while (i < stop && b.charAt(i) != '\n') i++;
             if (i >= stop) break;
         }
-        return indent;
+        // In C both no newline and no line with content are (size_t)-1, then nothing is
+        // trimmed.
+        return indent == Long.MAX_VALUE ? -1 : indent;
     }
 
     // Like has_leading_space_nl in text.c: true if there is a newline before the content.

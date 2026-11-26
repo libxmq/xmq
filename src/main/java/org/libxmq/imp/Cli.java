@@ -1352,6 +1352,9 @@ final class Cli
             return ps.buffer + nl;
         }
         default -> {
+            // Like C xmq_print_xmq, a document without nodes prints nothing, not even the
+            // final newline.
+            if (doc.firstChild() == null) return "";
             XMQPrintState ps = new XMQPrintState();
             ps.output_settings = os;
             if (c.use_color)

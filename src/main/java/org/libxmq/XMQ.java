@@ -417,6 +417,13 @@ public class XMQ
     {
         // The same format as the C generate_state_error_message, followed by an empty line
         // like the C command line prints it.
+        if (e.cStyle())
+        {
+            ResourceBundle bundle = ResourceBundle.getBundle("Messages", locale);
+            String m = c_style_message(e, bundle);
+            if (e.warning() != null) m = c_style_message(e.warning(), bundle) + "\n" + m;
+            return m + "\n\n";
+        }
         StringBuilder out = new StringBuilder();
         out.append(e.source()).append(":").append(e.line()).append(":").append(e.column()).append(": ");
         out.append(e.errorCode().value >= ParseErrorCode.XMQ_WARNING_QUOTES_NEEDED.value ? "warning" : "error");
@@ -444,6 +451,49 @@ public class XMQ
         }
         out.append("\n\n");
         return out.toString();
+    }
+
+    /**
+       The message of an exception of the xmq parser, like generate_state_error_message in
+       C: the line and the ^ are printed into a buffer of 1024 bytes and the whole message
+       into a buffer of 2048 bytes, a long line loses its end.
+       @param e The parse exception.
+       @param bundle The messages.
+       @return The message, without a final newline.
+    */
+    static String c_style_message(ParseException e, ResourceBundle bundle)
+    {
+        String char_error = "";
+        if (e.errorCode() == ParseErrorCode.XMQ_ERROR_INVALID_CHAR)
+        {
+            int cp = e.codePoint();
+            char_error = " \"" + (cp == 0 ? "" : new String(Character.toChars(cp))) + "\" U+"
+                + Integer.toHexString(cp).toUpperCase(Locale.ROOT);
+        }
+        String line_error = "";
+        if (e.caretBytes() >= 0)
+        {
+            line_error = cut_utf8("\n" + e.text() + "\n " + " ".repeat(Math.max(0, e.caretBytes() - 1)) + "^", 1023);
+        }
+        String e_or_w = e.errorCode().value >= ParseErrorCode.XMQ_WARNING_QUOTES_NEEDED.value ? "warning" : "error";
+        return cut_utf8(e.source() + ":" + e.line() + ":" + e.column() + ": " + e_or_w + ": "
+                        + bundle.getString(e.errorCode().toString()) + char_error + line_error, 2047);
+    }
+
+    /** The longest start of s that is at most max bytes in utf8, like a C snprintf into max+1 bytes. */
+    static String cut_utf8(String s, int max)
+    {
+        int n = 0;
+        int i = 0;
+        while (i < s.length())
+        {
+            int cp = s.codePointAt(i);
+            int b = cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+            if (n + b > max) break;
+            n += b;
+            i += Character.charCount(cp);
+        }
+        return s.substring(0, i);
     }
 
     /**

@@ -1502,7 +1502,9 @@ function print_value(ps: XMQPrintState, parts: ValuePart[], level: Level): void
         }
         else
         {
-            print_value_string(ps, p.text, level, is_compound);
+            // Like C print_value_internal: the text with the quote kind of the whole value
+            // (it matters for the escapes of the compact form).
+            print_value_internal_text(ps, p.text, level, ud.v, is_compound);
         }
         if (level === Level.XMQ) break;
     }

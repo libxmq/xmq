@@ -34,6 +34,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { xmq_inputs } from "./inputs.mjs";
+import { dump } from "./dom_dump.mjs";
 
 const require = createRequire(import.meta.url);
 const pkg = path.resolve(process.argv[2]);
@@ -55,58 +56,6 @@ function xml_parser(strict)
             if (strict) throw new Error(msg);
         },
     });
-}
-
-/** A structural dump of a node, adjacent text (and entity text) is merged. */
-function dump(n, indent, out)
-{
-    const pad = "  ".repeat(indent);
-    if (n.nodeType === 9 || n.nodeType === 11)
-    {
-        dump_children(n, indent, out, true);
-        return;
-    }
-    if (n.nodeType === 1)
-    {
-        let line = pad + "E " + n.nodeName + (n.namespaceURI ? " {" + n.namespaceURI + "}" : "");
-        for (let i = 0; i < n.attributes.length; i++)
-        {
-            const a = n.attributes[i];
-            line += " " + a.name + (a.namespaceURI && !a.name.startsWith("xmlns") ? "{" + a.namespaceURI + "}" : "") + "=" + JSON.stringify(a.value);
-        }
-        out.push(line);
-        dump_children(n, indent + 1, out, false);
-        return;
-    }
-    // An xml comment cannot contain --, C prints -\u2410- (xmq_replace_transform_markers),
-    // the DOM has --.
-    if (n.nodeType === 8) out.push(pad + "C " + JSON.stringify(n.data.replace(/-\u2410/g, "-")));
-    else if (n.nodeType === 7) out.push(pad + "P " + n.target + " " + JSON.stringify(n.data));
-    else if (n.nodeType === 10) out.push(pad + "D " + n.name + " " + JSON.stringify(n.publicId || "") + " " + JSON.stringify(n.systemId || ""));
-    else out.push(pad + "? " + n.nodeType);
-}
-
-function dump_children(n, indent, out, top)
-{
-    let text = null;
-    const flush = () =>
-    {
-        // Whitespace between the top level nodes is how C prints them, not content. An
-        // empty text node (the quote '') cannot be seen in xml.
-        if (text !== null && text !== "" && !(top && /^\s*$/.test(text))) out.push("  ".repeat(indent) + "T " + JSON.stringify(text));
-        text = null;
-    };
-    for (let c = n.firstChild; c !== null; c = c.nextSibling)
-    {
-        if (c.nodeType === 3 || c.nodeType === 4)
-        {
-            text = (text ?? "") + c.data;
-            continue;
-        }
-        flush();
-        dump(c, indent, out);
-    }
-    flush();
 }
 
 const expected_diffs = new Map();

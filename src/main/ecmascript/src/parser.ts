@@ -303,14 +303,18 @@ export abstract class XMQParser
         return [start, this.i_];
     }
 
-    /** XMQParser.eat_xmq_token_whitespace */
+    /**
+     * XMQParser.eat_xmq_token_whitespace: like C, a run of whitespace that starts with xmq
+     * token whitespace (space, newline, cr) continues over any whitespace, eg nbsp, but not
+     * a tab.
+     */
     private eat_xmq_token_whitespace(): [number, number]
     {
         const start = this.i_;
         while (this.i_ < this.buffer_len_)
         {
             const c = this.currentChar();
-            if (!is_xmq_token_whitespace(c)) break;
+            if (this.count_whitespace() === 0 || c === "\t") break;
             this.increment(c);
         }
         return [start, this.i_];
@@ -430,9 +434,10 @@ export abstract class XMQParser
     }
 
     /**
-     * possibly_need_more_quotes in C (not in Java): after a quote, a quote that ends inside
-     * a word, eg the s in 'There's a man.', perhaps needed more quotes. It is remembered
-     * and reported as a warning if the parse then fails with an unexpected character.
+     * XMQParser.possibly_need_more_quotes (possibly_need_more_quotes in C): after a quote,
+     * a quote that ends inside a word, eg the s in 'There's a man.', perhaps needed more
+     * quotes. It is remembered and reported as a warning if the parse then fails with an
+     * unexpected character.
      */
     private possibly_need_more_quotes(): boolean
     {
@@ -1076,7 +1081,7 @@ export abstract class XMQParser
     }
 
     /**
-     * is_xmq_doctype_start in C (Java accepts any !): !DOCTYPE followed by = or whitespace.
+     * XMQParser.is_xmq_doctype_start (is_xmq_doctype_start in C): !DOCTYPE followed by = or whitespace.
      */
     private is_xmq_doctype_start(): boolean
     {
@@ -1092,14 +1097,14 @@ export abstract class XMQParser
         return c === "=" || c === " " || c === "\t" || c === "\n" || c === "\r";
     }
 
-    /** is_xmq_pi_start in C: a ? followed by at least one character, eg ?x */
+    /** XMQParser.is_xmq_pi_start (is_xmq_pi_start in C): a ? followed by at least one character, eg ?x */
     private is_xmq_pi_start(): boolean
     {
         return this.buffer_.charAt(this.i_) === "?" && this.i_ + 2 <= this.buffer_len_;
     }
 
     /**
-     * possibly_lost_content_after_equals in C (not in Java): an unexpected { ( or = after
+     * XMQParser.possibly_lost_content_after_equals (in C too): an unexpected { ( or = after
      * a name on a line that follows a line ending with an equals sign, eg
      *     alfa =
      *     beta { 'more' }

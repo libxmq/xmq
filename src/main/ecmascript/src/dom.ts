@@ -33,6 +33,37 @@ export interface XmlTextParser
     parseFromString(text: string, mimeType: "text/xml"): object;
 }
 
+/**
+ * C strtol(s + start, NULL, base) for base 10 or 16: an optional sign, for base 16 an
+ * optional 0x, the digits as far as they go, 0 if there are none. A value that does not
+ * fit a long is LONG_MAX (or LONG_MIN).
+ */
+export function c_strtol(s: string, start: number, base: number): number
+{
+    let i = start;
+    let neg = false;
+    if (s.charAt(i) === "-" || s.charAt(i) === "+")
+    {
+        neg = s.charAt(i) === "-";
+        i++;
+    }
+    const digit = (c: string) => base === 16 ? /[0-9a-fA-F]/.test(c) : /[0-9]/.test(c);
+    if (base === 16 && s.charAt(i) === "0" && (s.charAt(i + 1) === "x" || s.charAt(i + 1) === "X") && digit(s.charAt(i + 2))) i += 2;
+    let v = 0n;
+    let any = false;
+    while (i < s.length && digit(s.charAt(i)))
+    {
+        v = v * BigInt(base) + BigInt(parseInt(s.charAt(i), base));
+        if (v > 9223372036854775807n) v = 9223372036854775808n;
+        any = true;
+        i++;
+    }
+    if (!any) return 0;
+    if (neg) v = -v;
+    if (v > 9223372036854775807n) return Number.MAX_SAFE_INTEGER;
+    return Number(v);
+}
+
 /** Java XMQParseIntoDOM.potentially_add_leading_ending_space */
 export function potentially_add_leading_ending_space(s: string): string
 {
@@ -292,19 +323,17 @@ export class XMQParseIntoDOM extends XMQParser
         const tmp = this.buffer_.substring(start, stop);
         if (tmp.length > 1 && tmp.charAt(1) === "#")
         {
-            // Character entity, parsed like the Java Long.parseLong.
-            let uc = -1;
+            // Character entity, the number read like C strtol: the leading digits, 0 if
+            // there are none, eg &#; or &#10a;.
             const hex = tmp.charAt(2) === "x";
-            const digits = tmp.substring(hex ? 3 : 2, tmp.length - 1);
-            if (hex ? /^[+-]?[0-9a-fA-F]+$/.test(digits) : /^[+-]?[0-9]+$/.test(digits))
-            {
-                uc = parseInt(digits, hex ? 16 : 10);
-            }
-            if (!(uc >= 0 && uc <= 0x10ffff))
+            const uc = c_strtol(tmp, hex ? 3 : 2, hex ? 16 : 10);
+            // Reject character entities outside the valid Unicode range, ie #2000000.
+            if (uc < 0 || uc > 0x10ffff)
             {
                 throw this.error_here(ParseErrorCode.XMQ_ERROR_INVALID_CHAR);
             }
-            return parent.addChild(new TNode("text", "", String.fromCodePoint(uc)));
+            // The character 0 ends the C string: an empty text.
+            return parent.addChild(new TNode("text", "", uc === 0 ? "" : String.fromCodePoint(uc)));
         }
         // Named references are kept as is. Like xmlNewReference, drop the & and a
         // trailing ; if present (&ff needs no ; and a lone & gives an empty name).

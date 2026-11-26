@@ -1527,8 +1527,10 @@ public class XMQPrinter
             }
             else
             {
+                // Like C print_value_internal: the text with the quote kind of the whole
+                // value (it matters for the escapes of the compact form).
                 String t = i.content();
-                print_value_string(ps, t == null ? "" : t, level, is_compound);
+                print_value_internal_text(ps, t == null ? "" : t, level, ud[0], is_compound);
             }
             if (level == Level.XMQ) break;
         }
@@ -1607,15 +1609,16 @@ public class XMQPrinter
         XmlNode i = element;
         while (i != null)
         {
-            if (!is_key_value_node(i) || !((XmlElement)i).attributes().isEmpty())
+            // Like C, any node is checked: an entity reference with children (possible after
+            // a pi with a compound value) is a key value node without attributes.
+            if (!is_key_value_node(i) || (i instanceof XmlElement x && !x.attributes().isEmpty()))
             {
                 if (i == element) restart[0] = i.next();
                 else restart[0] = i;
                 return max;
             }
-            XmlElement e = (XmlElement)i;
-            String prefix = e.ns() != null ? e.ns().prefix() : null;
-            int len = u_len(e.name()) + (prefix != null ? u_len(prefix) + 1 : 0);
+            String prefix = i instanceof XmlElement e && e.ns() != null ? e.ns().prefix() : null;
+            int len = u_len(i.name()) + (prefix != null ? u_len(prefix) + 1 : 0);
             if (len > max) max = len;
             i = i.next();
         }

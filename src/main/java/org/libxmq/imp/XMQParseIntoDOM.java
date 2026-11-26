@@ -281,9 +281,7 @@ public class XMQParseIntoDOM extends XMQParser
         XmlElement node = fdoc == null ? null : fdoc.rootElement();
         if (node == null)
         {
-            throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_PARSING_XML,
-                                                             buffer_.substring(line_start_, findNL(i_, 20)),
-                                                             line_, col_, source_));
+            throw error_here(ParseErrorCode.XMQ_ERROR_PARSING_XML);
         }
         node.unlink();
         if (element_last_ == null)
@@ -325,7 +323,8 @@ public class XMQParseIntoDOM extends XMQParser
             XmlDtd dtd = null;
             try
             {
-                XmlDocument d = XmlParser.parse(buf, "noname.xml", 0);
+                // Like C parse_doctype_raw, the messages name the source of the xmq.
+                XmlDocument d = XmlParser.parse(buf, source_, 0);
                 dtd = d.intSubset();
             }
             catch (XmlParseException e)
@@ -334,9 +333,7 @@ public class XMQParseIntoDOM extends XMQParser
             }
             if (dtd == null)
             {
-                throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_BAD_DOCTYPE,
-                                                                 buffer_.substring(line_start_, findNL(i_, 20)),
-                                                                 line_, col_, source_));
+                throw error_here(ParseErrorCode.XMQ_ERROR_BAD_DOCTYPE);
             }
             dtd.unlink();
             if (add_pre_node_before_ != null) add_pre_node_before_.addPrevSibling(dtd);
@@ -377,6 +374,39 @@ public class XMQParseIntoDOM extends XMQParser
         do_quote(start_line, start_col, start, stop, stop_suffix);
     }
 
+    /**
+     * C strtol(s + start, NULL, base) for base 10 or 16: an optional sign, for base 16 an
+     * optional 0x, the digits as far as they go, 0 if there are none. A value that does not
+     * fit a long is Long.MAX_VALUE (or MIN_VALUE).
+     */
+    static long c_strtol(String s, int start, int base)
+    {
+        int i = start;
+        boolean neg = false;
+        if (i < s.length() && (s.charAt(i) == '-' || s.charAt(i) == '+'))
+        {
+            neg = s.charAt(i) == '-';
+            i++;
+        }
+        if (base == 16 && i + 2 < s.length() && s.charAt(i) == '0' && (s.charAt(i + 1) == 'x' || s.charAt(i + 1) == 'X')
+            && Character.digit(s.charAt(i + 2), 16) >= 0 && s.charAt(i + 2) < 128) i += 2;
+        java.math.BigInteger v = java.math.BigInteger.ZERO;
+        java.math.BigInteger max = java.math.BigInteger.valueOf(Long.MAX_VALUE);
+        boolean any = false;
+        while (i < s.length() && s.charAt(i) < 128 && Character.digit(s.charAt(i), base) >= 0)
+        {
+            v = v.multiply(java.math.BigInteger.valueOf(base)).add(java.math.BigInteger.valueOf(Character.digit(s.charAt(i), base)));
+            if (v.compareTo(max) > 0) v = max.add(java.math.BigInteger.ONE);
+            any = true;
+            i++;
+        }
+        if (!any) return 0;
+        if (neg) v = v.negate();
+        if (v.compareTo(max) > 0) return Long.MAX_VALUE;
+        if (v.compareTo(java.math.BigInteger.valueOf(Long.MIN_VALUE)) < 0) return Long.MIN_VALUE;
+        return v.longValue();
+    }
+
     XmlNode create_entity(int start, int stop, XmlNode parent)
     {
         // There is no node for the value, eg the value of a processing instruction
@@ -386,24 +416,17 @@ public class XMQParseIntoDOM extends XMQParser
         XmlNode n;
         if (tmp.length() > 1 && tmp.charAt(1) == '#')
         {
-            // Character entity.
-            long uc;
-            try
-            {
-                if (tmp.charAt(2) == 'x') uc = Long.parseLong(tmp.substring(3, tmp.length() - 1), 16);
-                else uc = Long.parseLong(tmp.substring(2, tmp.length() - 1), 10);
-            }
-            catch (NumberFormatException e)
-            {
-                uc = -1;
-            }
+            // Character entity, the number read like C strtol: the leading digits, 0 if
+            // there are none, eg &#; or &#10a;.
+            boolean hex = tmp.length() > 2 && tmp.charAt(2) == 'x';
+            long uc = c_strtol(tmp, hex ? 3 : 2, hex ? 16 : 10);
+            // Reject character entities outside the valid Unicode range, ie #2000000.
             if (uc < 0 || uc > 0x10ffff)
             {
-                throw new XMQRuntimeException(new ParseException(ParseErrorCode.XMQ_ERROR_INVALID_CHAR,
-                                                                 buffer_.substring(line_start_, findNL(i_, 20)),
-                                                                 line_, col_, source_));
+                throw error_here(ParseErrorCode.XMQ_ERROR_INVALID_CHAR);
             }
-            String ch = new String(Character.toChars((int)uc));
+            // The character 0 ends the C string: an empty text.
+            String ch = uc == 0 ? "" : new String(Character.toChars((int)uc));
             if (!merge_text_)
             {
                 // Do not merge with surrounding text, keep the character reference.

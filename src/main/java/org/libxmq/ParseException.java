@@ -61,6 +61,9 @@ public class ParseException extends Exception
         source_ = source;
         info_ = null;
         char_index_ = column - 1;
+        caret_bytes_ = NOT_C_STYLE;
+        code_point_ = 0;
+        warning_ = null;
     }
 
     /** Extra information appended to the error message, or null. */
@@ -88,6 +91,74 @@ public class ParseException extends Exception
         source_ = source;
         info_ = info;
         char_index_ = char_index;
+        caret_bytes_ = NOT_C_STYLE;
+        code_point_ = 0;
+        warning_ = null;
+    }
+
+    /** The caret_bytes of an exception that is not printed like generate_state_error_message. */
+    static final int NOT_C_STYLE = Integer.MIN_VALUE;
+    /** The number of utf8 bytes before the ^, -1 if the line is not shown, or NOT_C_STYLE. */
+    private final int caret_bytes_;
+    /** The character at the error, 0 at the end of the input, for an unexpected character. */
+    private final int code_point_;
+    /** A warning printed before the error, eg perhaps you need more quotes, or null. */
+    private final ParseException warning_;
+
+    /** Construct a parse exception of the xmq parser, printed like the C
+        generate_state_error_message: the line of the input (at most 1024 bytes) with the ^
+        after as many spaces as there are utf8 bytes before the error.
+     @param ec The error code.
+     @param text The line of the input around the error.
+     @param line The line number.
+     @param column The column, in characters (code points).
+     @param source Information about where the xmq originated from.
+     @param caret_bytes The number of utf8 bytes of the line before the error, -1 when the
+            error is at the end of the input (the line is not shown).
+     @param code_point The character at the error, 0 at the end of the input.
+     @param warning A warning printed before the error, or null.
+    */
+    public ParseException(ParseErrorCode ec, String text, int line, int column, String source, int caret_bytes, int code_point, ParseException warning)
+    {
+        super("Parse error: " + ec);
+        error_code_ = ec;
+        text_ = text;
+        line_ = line;
+        column_ = column;
+        source_ = source;
+        info_ = null;
+        char_index_ = column - 1;
+        caret_bytes_ = caret_bytes;
+        code_point_ = code_point;
+        warning_ = warning;
+    }
+
+    /** Is this exception printed like generate_state_error_message in C.
+     @return true if it is */
+    public boolean cStyle()
+    {
+        return caret_bytes_ != NOT_C_STYLE;
+    }
+
+    /** Get the number of utf8 bytes before the ^, -1 if the line is not shown.
+     @return the number of bytes */
+    public int caretBytes()
+    {
+        return caret_bytes_;
+    }
+
+    /** Get the character at the error, 0 at the end of the input.
+     @return the code point */
+    public int codePoint()
+    {
+        return code_point_;
+    }
+
+    /** Get the warning printed before the error, or null.
+     @return the warning */
+    public ParseException warning()
+    {
+        return warning_;
     }
 
     /** Get the extra information, or null.
