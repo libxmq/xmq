@@ -2,6 +2,14 @@
 
 Design decisions that have been made, so that they are not reopened.
 
+## C is the source of truth
+
+The C implementation is the reference for the behaviour of xmq; Java and javascript
+follow it. When a bug is found, in any implementation or by a differential test (eg
+`make testcj`, `make fuzz_parse_print`), it is fixed in C first, and then the fix is
+ported to Java and javascript so that they stay identical to C. A difference where C is
+wrong is not resolved by making the others the reference, nor by leaving C behind.
+
 ## The javascript/typescript api (libxmq for javascript)
 
 A small subset of libxmq in javascript: parse xmq into a W3C DOM, pretty print a DOM as
