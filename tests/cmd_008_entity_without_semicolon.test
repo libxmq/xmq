@@ -1,0 +1,12 @@
+INPUT
+x {
+   &ff
+   &a
+   &nbsp;
+}
+OUTPUT
+<?xml version="1.0" encoding="utf-8"?>
+<x>&ff;&a;&nbsp;</x>
+END
+ARGS
+CMDS to-xml

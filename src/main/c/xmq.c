@@ -2689,8 +2689,10 @@ XMQNode* create_entity(XMQParseState *state,
     }
     else
     {
-        // Named references are kept as is.
-        tmp[strlen(tmp)-1] = 0;
+        // Named references are kept as is. Drop the & and a trailing ; if present,
+        // eg &ff needs no ; (only lowercase hex characters) and is the reference ff.
+        size_t len = strlen(tmp);
+        if (len > 1 && tmp[len-1] == ';') tmp[len-1] = 0;
         n = xml_node_new_entity_ref(state->doq->dom_, tmp+1);
     }
     if (xml_node_kind(n) == XML_DOM_TEXT) n = xml_node_add_child(parent, n);
